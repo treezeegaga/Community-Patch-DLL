@@ -391,12 +391,7 @@ bool CvDllPreGame::isNetworkMultiplayerGame()
 	// Check the call site first: it is cheap and false for every caller but four, so
 	// gCustomMods is only read from inside a running game.
 	if (IsLeaderheadCallSite(LEADERHEAD_RETURN_ADDRESS()) && MOD_MP_LEADERHEADS)
-	{
-		// TEMPORARY diagnostics: shows the UI thread's id next to CvDllGame::Update's
-		extern void MPLeaderheadsLogCaller(const char* szWhat, void* pReturnAddress);
-		MPLeaderheadsLogCaller("leaderhead isNetworkMultiplayerGame", LEADERHEAD_RETURN_ADDRESS());
 		return false;
-	}
 
 	return CvPreGame::isNetworkMultiplayerGame();
 }
