@@ -346,7 +346,9 @@ bool CvDllPreGame::isMinorCiv(PlayerTypes p)
 // the EXE increments a counter (InterlockedIncrement) that the game core update loop checks
 // before calling CvDllGame::Update, and the leader view's End decrements it again if it is
 // non-zero. Nothing else uses the counter. In network MP that would freeze this player's
-// simulation for as long as they talk, so the counter is cleared at the activate and leave sites.
+// simulation for as long as they talk. The increment follows the enter site directly with no
+// call back into the DLL in between, so the counter is set to -1 there and the increment brings
+// it back to 0. As a safety net it is also cleared at the activate and leave sites.
 //
 // Addresses are at the EXE's preferred image base (0x400000), one entry per binary variant: the
 // return addresses of the four call sites, ordered as above, and the pause counter.
@@ -422,10 +424,10 @@ bool CvDllPreGame::isNetworkMultiplayerGame()
 	int iSite = GetLeaderheadCallSite(LEADERHEAD_RETURN_ADDRESS());
 	if (iSite >= 0 && MOD_MP_LEADERHEADS)
 	{
-		if ((iSite == LEADERHEAD_SITE_ACTIVATE || iSite == LEADERHEAD_SITE_LEAVE) && CvPreGame::isNetworkMultiplayerGame())
+		if (iSite != LEADERHEAD_SITE_PRELOAD && CvPreGame::isNetworkMultiplayerGame())
 		{
 			volatile LONG* pPauseCounter = reinterpret_cast<volatile LONG*>(RebaseLeaderheadAddress(s_pLeaderheadAddresses->uiPauseCounter));
-			InterlockedExchange(pPauseCounter, 0);
+			InterlockedExchange(pPauseCounter, iSite == LEADERHEAD_SITE_ENTER ? -1 : 0);
 		}
 		return false;
 	}
