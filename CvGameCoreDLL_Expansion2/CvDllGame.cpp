@@ -492,8 +492,34 @@ void CvDllGame::UnitIsMoving()
 	m_pGame->unitIsMoving();
 }
 //------------------------------------------------------------------------------
+// TEMPORARY diagnostics: log each distinct EXE caller (and its thread) of a few entry points.
+#if defined(__clang__)
+#define MPLH_RETURN_ADDRESS() __builtin_return_address(0)
+#elif defined(_MSC_VER)
+#define MPLH_RETURN_ADDRESS() _ReturnAddress()
+#endif
+void MPLeaderheadsLogCaller(const char* szWhat, void* pReturnAddress)
+{
+	static DWORD s_auiSeen[32];
+	static int s_iNumSeen = 0;
+	DWORD uiRet = (DWORD)pReturnAddress;
+	for (int i = 0; i < s_iNumSeen; i++)
+	{
+		if (s_auiSeen[i] == uiRet)
+			return;
+	}
+	if (s_iNumSeen >= 32)
+		return;
+	s_auiSeen[s_iNumSeen++] = uiRet;
+	DWORD uiBase = (DWORD)GetModuleHandleA(NULL);
+	CvString strMsg;
+	CvString::format(strMsg, "%s: caller preferred-base 0x%08X, thread %u", szWhat, uiRet - uiBase + 0x400000, GetCurrentThreadId());
+	LOGFILEMGR.GetLog("MPLeaderheads.log", FILogFile::kDontTimeStamp)->Msg(strMsg.c_str());
+}
+
 void CvDllGame::Update()
 {
+	MPLeaderheadsLogCaller("CvDllGame::Update", MPLH_RETURN_ADDRESS());
 	m_pGame->update();
 }
 //------------------------------------------------------------------------------
