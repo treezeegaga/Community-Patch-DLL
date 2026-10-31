@@ -347,6 +347,14 @@ static const DWORD s_aLeaderheadCallSitesDX11[4] = { 0x0051b2cc, 0x005db1ab, 0x0
 static const DWORD s_aLeaderheadCallSitesDX9[4] = { 0x007b24ac, 0x00428ecb, 0x00460781, 0x0049d3e1 };
 static const DWORD s_aLeaderheadCallSitesTablet[4] = { 0x006ce90c, 0x0079977b, 0x004f15c1, 0x0072d6e1 };
 
+// TEMPORARY diagnostics: logs the detected EXE and each distinct caller to MPLeaderheads.log.
+static void LogLeaderheadDiag(const char* szMsg)
+{
+	FILogFile* pLog = LOGFILEMGR.GetLog("MPLeaderheads.log", FILogFile::kDontTimeStamp);
+	if (pLog)
+		pLog->Msg(szMsg);
+}
+
 static bool IsLeaderheadCallSite(void* pReturnAddress)
 {
 #ifdef WIN32
@@ -357,6 +365,7 @@ static bool IsLeaderheadCallSite(void* pReturnAddress)
 	if (!s_bInitialized)
 	{
 		char moduleName[1024];
+		moduleName[0] = '\0';
 		if (GetModuleFileName(NULL, moduleName, sizeof(moduleName)))
 		{
 			size_t len = strlen(moduleName);
@@ -369,17 +378,44 @@ static bool IsLeaderheadCallSite(void* pReturnAddress)
 		}
 		s_uiBaseAddr = (DWORD)GetModuleHandleA(NULL);
 		s_bInitialized = true;
-	}
-	if (s_pCallSites == NULL)
-		return false;
 
-	// Same rebasing as CvDllGame::InitExeStuff: preferred-base address -> RVA -> actual address.
-	DWORD uiReturnAddr = (DWORD)pReturnAddress;
-	for (int i = 0; i < 4; i++)
-	{
-		if (uiReturnAddr == s_uiBaseAddr + (s_pCallSites[i] - 0x400000))
-			return true;
+		CvString strMsg;
+		CvString::format(strMsg, "init: exe '%s', base 0x%08X, call site table %s", moduleName, s_uiBaseAddr,
+			s_pCallSites == s_aLeaderheadCallSitesDX11 ? "DX11" : s_pCallSites == s_aLeaderheadCallSitesDX9 ? "DX9" : s_pCallSites == s_aLeaderheadCallSitesTablet ? "Tablet" : "none");
+		LogLeaderheadDiag(strMsg.c_str());
 	}
+
+	DWORD uiReturnAddr = (DWORD)pReturnAddress;
+	int iSite = -1;
+	if (s_pCallSites != NULL)
+	{
+		// Same rebasing as CvDllGame::InitExeStuff: preferred-base address -> RVA -> actual address.
+		for (int i = 0; i < 4; i++)
+		{
+			if (uiReturnAddr == s_uiBaseAddr + (s_pCallSites[i] - 0x400000))
+				iSite = i;
+		}
+	}
+
+	static DWORD s_auiSeenCallers[64];
+	static int s_iNumSeenCallers = 0;
+	bool bSeen = false;
+	for (int i = 0; i < s_iNumSeenCallers; i++)
+	{
+		if (s_auiSeenCallers[i] == uiReturnAddr)
+			bSeen = true;
+	}
+	if (!bSeen && s_iNumSeenCallers < 64)
+	{
+		s_auiSeenCallers[s_iNumSeenCallers++] = uiReturnAddr;
+		CvString strMsg;
+		CvString::format(strMsg, "caller 0x%08X (preferred-base 0x%08X): site %d, MP_LEADERHEADS %d, real network MP %d",
+			uiReturnAddr, uiReturnAddr - s_uiBaseAddr + 0x400000, iSite, MOD_MP_LEADERHEADS ? 1 : 0, CvPreGame::isNetworkMultiplayerGame() ? 1 : 0);
+		LogLeaderheadDiag(strMsg.c_str());
+	}
+
+	if (iSite >= 0)
+		return true;
 #else
 	(void)pReturnAddress;
 #endif

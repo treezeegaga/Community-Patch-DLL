@@ -34062,7 +34062,11 @@ void CvPlayer::setTurnActive(bool bNewValue, bool bDoTurn) // R: bDoTurn default
 				// them each turn in network MP; scenes that are already loaded are skipped. See
 				// CvDllPreGame::isNetworkMultiplayerGame for why the requests are accepted.
 				if (MOD_MP_LEADERHEADS && kGame.isReallyNetworkMultiPlayer())
+				{
+					// TEMPORARY diagnostics
+					LOGFILEMGR.GetLog("MPLeaderheads.log", FILogFile::kDontTimeStamp)->Msg("NotifyAILeadersInGame requested at local turn start");
 					gDLL->NotifyAILeadersInGame();
+				}
 			}
 			else if(isHuman() && kGame.isGameMultiPlayer())
 			{
