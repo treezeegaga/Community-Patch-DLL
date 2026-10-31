@@ -14,14 +14,6 @@
 #include "CvGameCoreUtils.h"
 #include "CvDllNetMessageExt.h"
 
-// TEMPORARY diagnostics (defined in CvDllGame.cpp)
-void MPLeaderheadsLogCaller(const char* szWhat, void* pReturnAddress);
-#if defined(__clang__)
-#define MPLH_RETURN_ADDRESS() __builtin_return_address(0)
-#elif defined(_MSC_VER)
-#define MPLH_RETURN_ADDRESS() _ReturnAddress()
-#endif
-
 bool PlayerInvalid(PlayerTypes ePlayer)
 {
 	return ePlayer<0 || ePlayer>=MAX_PLAYERS;
@@ -282,7 +274,6 @@ void CvDllNetMessageHandler::ResponseDestroyUnit(PlayerTypes ePlayer, int iUnitI
 //------------------------------------------------------------------------------
 void CvDllNetMessageHandler::ResponseDiplomacyFromUI(PlayerTypes ePlayer, PlayerTypes eOtherPlayer, FromUIDiploEventTypes eEvent, int iArg1, int iArg2)
 {
-	MPLeaderheadsLogCaller("ResponseDiplomacyFromUI", MPLH_RETURN_ADDRESS());
 	//safeguard
 	if (!GC.getGame().isFinalInitialized() || PlayerInvalid(ePlayer))
 		return;
@@ -856,7 +847,6 @@ void CvDllNetMessageHandler::ResponsePledgeMinorProtection(PlayerTypes ePlayer, 
 //------------------------------------------------------------------------------
 void CvDllNetMessageHandler::ResponsePushMission(PlayerTypes ePlayer, int iUnitID, MissionTypes eMission, int iData1, int iData2, int iFlags, bool bShift)
 {
-	MPLeaderheadsLogCaller("ResponsePushMission", MPLH_RETURN_ADDRESS());
 	//safeguard
 	if (!GC.getGame().isFinalInitialized() || PlayerInvalid(ePlayer))
 		return;
