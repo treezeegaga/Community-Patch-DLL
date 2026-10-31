@@ -34057,6 +34057,12 @@ void CvPlayer::setTurnActive(bool bNewValue, bool bDoTurn) // R: bDoTurn default
 
 				// slewis - added this so the tutorial knows when a turn begins
 				DLLUI->PublishActivePlayerTurnStart();
+
+				// The EXE only preloads AI leader scenes at the start of a single player game. Ask for
+				// them each turn in network MP; scenes that are already loaded are skipped. See
+				// CvDllPreGame::isNetworkMultiplayerGame for why the requests are accepted.
+				if (MOD_MP_LEADERHEADS && kGame.isReallyNetworkMultiPlayer())
+					gDLL->NotifyAILeadersInGame();
 			}
 			else if(isHuman() && kGame.isGameMultiPlayer())
 			{

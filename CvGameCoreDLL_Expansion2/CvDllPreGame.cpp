@@ -327,8 +327,72 @@ bool CvDllPreGame::isMinorCiv(PlayerTypes p)
 	return CvPreGame::isMinorCiv(p);
 }
 //------------------------------------------------------------------------------
+#if defined(__clang__)
+#define LEADERHEAD_RETURN_ADDRESS() __builtin_return_address(0)
+#elif defined(_MSC_VER)
+#define LEADERHEAD_RETURN_ADDRESS() _ReturnAddress()
+#endif
+
+// MP_LEADERHEADS: the EXE's leaderhead system refuses to load or show 3D leader scenes when this
+// returns true. Four call sites decide that (all four "call [PreGame vtable + 0xD4]"):
+//   - GameplayDiplomacyAILeaderMessage: enter the leader view, or only open the 2D UI
+//   - the RequestLeaveLeader handler: return to the previous game state, or not
+//   - the NotifyAILeaderInGame handler: load a leader's scene file
+//   - the leader message handler: activate a loaded scene and play its animation
+// Answering "not network MP" to just these call sites enables 3D leaders in MP. Gameplay code
+// reads CvPreGame directly and never comes through here, so nothing synced is affected.
+// Addresses are return addresses at the EXE's preferred image base (0x400000), one row per
+// binary variant, ordered as above.
+static const DWORD s_aLeaderheadCallSitesDX11[4] = { 0x0051b2cc, 0x005db1ab, 0x005985d1, 0x006ec841 };
+static const DWORD s_aLeaderheadCallSitesDX9[4] = { 0x007b24ac, 0x00428ecb, 0x00460781, 0x0049d3e1 };
+static const DWORD s_aLeaderheadCallSitesTablet[4] = { 0x006ce90c, 0x0079977b, 0x004f15c1, 0x0072d6e1 };
+
+static bool IsLeaderheadCallSite(void* pReturnAddress)
+{
+#ifdef WIN32
+	// The EXE can't change while the DLL is loaded, so work out the variant once.
+	static const DWORD* s_pCallSites = NULL;
+	static DWORD s_uiBaseAddr = 0;
+	static bool s_bInitialized = false;
+	if (!s_bInitialized)
+	{
+		char moduleName[1024];
+		if (GetModuleFileName(NULL, moduleName, sizeof(moduleName)))
+		{
+			size_t len = strlen(moduleName);
+			if (len >= 17 && _stricmp(moduleName + len - 17, "CivilizationV.exe") == 0)
+				s_pCallSites = s_aLeaderheadCallSitesDX9;
+			else if (len >= 22 && _stricmp(moduleName + len - 22, "CivilizationV_DX11.exe") == 0)
+				s_pCallSites = s_aLeaderheadCallSitesDX11;
+			else if (len >= 24 && _stricmp(moduleName + len - 24, "CivilizationV_Tablet.exe") == 0)
+				s_pCallSites = s_aLeaderheadCallSitesTablet;
+		}
+		s_uiBaseAddr = (DWORD)GetModuleHandleA(NULL);
+		s_bInitialized = true;
+	}
+	if (s_pCallSites == NULL)
+		return false;
+
+	// Same rebasing as CvDllGame::InitExeStuff: preferred-base address -> RVA -> actual address.
+	DWORD uiReturnAddr = (DWORD)pReturnAddress;
+	for (int i = 0; i < 4; i++)
+	{
+		if (uiReturnAddr == s_uiBaseAddr + (s_pCallSites[i] - 0x400000))
+			return true;
+	}
+#else
+	(void)pReturnAddress;
+#endif
+	return false;
+}
+
 bool CvDllPreGame::isNetworkMultiplayerGame()
 {
+	// Check the call site first: it is cheap and false for every caller but four, so
+	// gCustomMods is only read from inside a running game.
+	if (IsLeaderheadCallSite(LEADERHEAD_RETURN_ADDRESS()) && MOD_MP_LEADERHEADS)
+		return false;
+
 	return CvPreGame::isNetworkMultiplayerGame();
 }
 //------------------------------------------------------------------------------

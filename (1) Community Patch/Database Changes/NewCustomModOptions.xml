@@ -34,6 +34,9 @@
 		<!-- Enables runtime interoperability features for enhanced multiplayer functionality -->
 		<Row Class="5" Name="BIN_HOOKS" Value="1"/>
 
+		<!-- Shows the 3D leader scenes for AI diplomacy in network multiplayer -->
+		<Row Class="5" Name="MP_LEADERHEADS" Value="1"/>
+
 		<!-- FUNCTIONALITY NOT GUARANTEED -->
 		<!-- Allows Steam achievements to be obtained in single player games despite the game being modded -->
 		<!-- Affects savegame format; do not change midgame! -->
