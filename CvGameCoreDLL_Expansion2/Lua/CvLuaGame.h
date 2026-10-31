@@ -179,6 +179,7 @@ protected:
 	static int lGetPausePlayer(lua_State* L);
 	static int lSetPausePlayer(lua_State* L);
 	static int lIsPaused(lua_State* L);
+	static int lUpdateCoreInLeaderScene(lua_State* L);
 	static int lGetBestLandUnit(lua_State* L);
 	static int lGetBestLandUnitCombat(lua_State* L);
 

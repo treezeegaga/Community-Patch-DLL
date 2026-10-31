@@ -197,6 +197,7 @@ void CvLuaGame::RegisterMembers(lua_State* L)
 	Method(GetPausePlayer);
 	Method(SetPausePlayer);
 	Method(IsPaused);
+	Method(UpdateCoreInLeaderScene);
 	Method(GetBestLandUnit);
 	Method(GetBestLandUnitCombat);
 
@@ -1392,6 +1393,16 @@ int CvLuaGame::lSetPausePlayer(lua_State* L)
 int CvLuaGame::lIsPaused(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvGame::isPaused);
+}
+//------------------------------------------------------------------------------
+//void UpdateCoreInLeaderScene(float fDeltaTime);
+// MP_LEADERHEADS: keeps the game core running while a 3D leader scene is up in network MP. See
+// UpdateGameCoreInLeaderScene in CvDllPreGame.cpp.
+void UpdateGameCoreInLeaderScene(float fDeltaTime);
+int CvLuaGame::lUpdateCoreInLeaderScene(lua_State* L)
+{
+	UpdateGameCoreInLeaderScene((float)lua_tonumber(L, 1));
+	return 0;
 }
 //------------------------------------------------------------------------------
 //UnitTypes getBestLandUnit();
