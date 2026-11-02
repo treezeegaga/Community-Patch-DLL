@@ -33320,12 +33320,15 @@ static const bool kABTestVersusBase = true;
 // AI_AB_TEST candidate flags (see CandidateFixTypes in CvPlayer.h). These names go in AIABTest.ini and the results file.
 static const char* const kCandidateFixNames[NUM_CANDIDATE_FIXES] = {
 	"WidePlans", "BoxedIn", "LongWide", "BoxedInWar", "TimingAttack", "SiegeTechs", "SiegeBook", "DeclareTiming",
-	"GrowthTech", "AqueductValue", "GreedyArmyCap", "GreedyBook", "GreedyTarget", "CanWin", "ClosedBorders" };
+	"GrowthTech", "AqueductValue", "GreedyArmyCap", "GreedyBook", "GreedyTarget", "CanWin", "ClosedBorders",
+	"SiegeStay", "SiegePosture", "DeclareAtBorder" };
 
 // The bundle: what group c ran in the last C build (c7c), and what every civ runs outside a test game. Off in it:
 // LongWide (c1: c's wide civs got no more cities from the longer opening, and stopping settlers ended expansion that b
-// completed) and GreedyArmyCap (c6, 0-3: the greedy tall civs drew wars).
-static const int kCandidateFixBundle = ~((1 << FIX_LONG_WIDE) | (1 << FIX_GREEDY_ARMY_CAP)) & ((1 << NUM_CANDIDATE_FIXES) - 1);
+// completed) and GreedyArmyCap (c6, 0-3: the greedy tall civs drew wars). Also off: the War flags added after c7c
+// (SiegeStay, SiegePosture, DeclareAtBorder), so the bundle stays c7c until they pass.
+static const int kCandidateFixBundle = ~((1 << FIX_LONG_WIDE) | (1 << FIX_GREEDY_ARMY_CAP) |
+	(1 << FIX_SIEGE_STAY) | (1 << FIX_SIEGE_POSTURE) | (1 << FIX_DECLARE_AT_BORDER)) & ((1 << NUM_CANDIDATE_FIXES) - 1);
 
 const char* CvPlayer::GetCandidateFixName(int iFix)
 {

@@ -158,6 +158,9 @@ enum CandidateFixTypes
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
 	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
+	FIX_SIEGE_STAY,			// War: units at a siege stay unless below a third of their HP (not at 20 damage). Off in the bundle
+	FIX_SIEGE_POSTURE,		// War: the attrition posture also bombards the city (safe shots only). Off in the bundle
+	FIX_DECLARE_AT_BORDER,	// War: a sneak attack counts as discovered only at the target's border. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 
