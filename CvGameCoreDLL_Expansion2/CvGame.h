@@ -710,6 +710,7 @@ public:
 	// AI_AB_TEST paired games: the second game of a pair replays the first one's map, civs and city-states with the
 	// groups swapped (Flip = 1 in AIABTest.ini)
 	bool IsABTestFlipped() const { return (m_iABTestFlags & 1) != 0; }
+	int GetABTestStopTurn() const { return m_iABTestStopTurn; }
 	void WriteABTestReplayRecord() const;
 	void unitIsMoving() const;
 
@@ -947,6 +948,7 @@ protected:
 	int m_iABTestCandidateFixes;
 	int m_iABTestScreenedFixes;
 	int m_iABTestFlags;
+	int m_iABTestStopTurn;
 
 	CvEnumMap<PlayerTypes, int> m_aiEndTurnMessagesReceived;
 	CvEnumMap<PlayerTypes, int> m_aiRankPlayer;		// Ordered by rank...

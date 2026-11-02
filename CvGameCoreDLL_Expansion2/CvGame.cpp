@@ -255,6 +255,7 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 ///     Fixes = bundle      ; flags group c runs (see ParseABTestFixList); empty or no file = the bundle
 ///     Screen =            ; flags each on for a random half of the AI civs instead, for screening
 ///     Flip = 0            ; 1 swaps the groups (c/b, new/cp, and the screened halves)
+///     StopTurn = 150      ; where the runner stops the game, recorded in the results file
 ///     MapSeed, SyncSeed, Player<i> = replay of an earlier game, from its AIABTest_lastgame.ini (paired games)
 /// Read once when the game starts and saved with it, so a reloaded game keeps its flags whatever the file says by then.
 /// Test games are single player only (AI decisions in multiplayer must not depend on a local file).
@@ -263,6 +264,7 @@ void CvGame::ReadABTestSettings()
 	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_iABTestScreenedFixes = 0;
 	m_iABTestFlags = 0;
+	m_iABTestStopTurn = 0;
 
 	CvString strFolder = gDLL->GetCacheFolderPath();
 	strFolder += "..\\";
@@ -293,6 +295,7 @@ void CvGame::ReadABTestSettings()
 	// init) and before InitPlayers and the map script (init2), so the map and the start come out the same.
 	if (GetPrivateProfileIntW(L"ABTest", L"Flip", 0, wstrPath.c_str()) != 0)
 		m_iABTestFlags |= 1;
+	m_iABTestStopTurn = (int)GetPrivateProfileIntW(L"ABTest", L"StopTurn", 0, wstrPath.c_str());
 	GetPrivateProfileStringW(L"ABTest", L"MapSeed", L"", szBuffer, 1024, wstrPath.c_str());
 	if (szBuffer[0] != 0)
 		CvPreGame::setMapRandomSeed((unsigned int)wcstoul(szBuffer, NULL, 0));
@@ -1492,6 +1495,7 @@ void CvGame::uninit()
 	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_iABTestScreenedFixes = 0;
 	m_iABTestFlags = 0;
+	m_iABTestStopTurn = 0;
 	m_iEarliestBarbarianReleaseTurn = 0;
 
 	m_iLastMouseoverUnitID = 0;
@@ -11230,6 +11234,7 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 		visitor(game.m_iABTestCandidateFixes);
 		visitor(game.m_iABTestScreenedFixes);
 		visitor(game.m_iABTestFlags);
+		visitor(game.m_iABTestStopTurn);
 	}
 }
 
@@ -13078,7 +13083,38 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c3b: c3 with a committed war target (no re-picking every turn) and no targets with defensive allies.
 /// c7c_flags: c7c with every candidate idea behind its own flag (CandidateFixTypes, AIABTest.ini), and a Warmonger
 /// column. With no AIABTest.ini it plays the same as c7c.
-static const char* const AI_AB_TEST_BATCH = "c7c_flags";
+/// c7c_settings: c7c_flags with the game's settings in every row: Flip, Fixes (the flags this civ runs), Screen (the
+/// game's screened flags), Map (script), MapOptions (name=value;...), Ruins, Barbarians, Pace, Difficulty, WorldSize,
+/// StopTurn (from AIABTest.ini, 0 = unknown) and Build (the DLL's git describe).
+static const char* const AI_AB_TEST_BATCH = "c7c_settings";
+
+/// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
+static CvString GetABTestFixListText(int iMask)
+{
+	CvString strList;
+	for (int i = 0; i < NUM_CANDIDATE_FIXES; i++)
+	{
+		if (iMask & (1 << i))
+		{
+			if (!strList.empty())
+				strList += "+";
+			strList += CvPlayer::GetCandidateFixName(i);
+		}
+	}
+	return strList.empty() ? CvString("none") : strList;
+}
+
+/// AI_AB_TEST: keeps a text safe for one CSV field
+static CvString GetABTestCsvText(const char* szText)
+{
+	CvString strText = szText ? szText : "";
+	for (size_t i = 0; i < strText.size(); i++)
+	{
+		if (strText[i] == ',' || strText[i] == '"' || strText[i] == '\r' || strText[i] == '\n')
+			strText[i] = ' ';
+	}
+	return strText;
+}
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
@@ -13093,9 +13129,40 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
+
+	// The game's settings, the same in every row (lead job 3: a setup change starts a new baseline)
+	CvString strMap = CvPreGame::mapScriptName();
+	size_t iSlash = strMap.find_last_of("\\/");
+	if (iSlash != CvString::npos)
+		strMap = strMap.substr(iSlash + 1);
+	size_t iDot = strMap.find_last_of('.');
+	if (iDot != CvString::npos)
+		strMap = strMap.substr(0, iDot);
+	CvString strMapOptions;
+	const std::vector<CvPreGame::CustomOption>& vMapOptions = CvPreGame::GetMapOptions();
+	for (size_t i = 0; i < vMapOptions.size(); i++)
+	{
+		if (!strMapOptions.empty())
+			strMapOptions += ";";
+		strMapOptions += CvString::format("%s=%d", vMapOptions[i].GetName(), vMapOptions[i].GetValue());
+	}
+	CvHandicapInfo* pkHandicap = GC.getHandicapInfo(getHandicapType());
+	// everything after Flip and Fixes (Fixes is per civ)
+	const CvString strSettings = CvString::format("%s,%s,%s,%d,%d,%s,%s,%s,%d,%s",
+		GetABTestFixListText(m_iABTestScreenedFixes).c_str(),
+		GetABTestCsvText(strMap.c_str()).c_str(),
+		GetABTestCsvText(strMapOptions.c_str()).c_str(),
+		isOption(GAMEOPTION_NO_GOODY_HUTS) ? 0 : 1,
+		isOption(GAMEOPTION_NO_BARBARIANS) ? 0 : 1,
+		getGameSpeedInfo().GetType(),
+		pkHandicap ? pkHandicap->GetType() : "",
+		GC.getMap().getWorldInfo().GetType(),
+		m_iABTestStopTurn,
+		GetABTestCsvText(CURRENT_GAMECORE_VERSION).c_str());
+
 	const BuildingClassTypes eNationalCollege = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_NATIONAL_COLLEGE", true);
 
 	const char* szVictory = "";
@@ -13131,7 +13198,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 		OpeningBookType eBook = kPlayer.GetOpeningBook();
 
 		// a flipped game replays its pair's seeds, so its GameId gets an F to stay unique
-		fprintf(pFile, "%08X%08X%s,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d\r\n",
+		fprintf(pFile, "%08X%08X%s,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d",
 			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(), IsABTestFlipped() ? "F" : "",
 			getElapsedGameTurns(),
 			bFinal ? 1 : 0,
@@ -13155,6 +13222,15 @@ void CvGame::LogABTestResults(bool bFinal) const
 			bNationalCollege ? 1 : 0,
 			kBookNames[(eBook >= OPENING_BOOK_NONE && eBook <= OPENING_BOOK_CONQUEST) ? eBook : 0],
 			kPlayer.IsABTestWarmonger() ? 1 : 0);
+
+		// the settings columns, with this civ's flags in Fixes
+		int iFixes = 0;
+		for (int iFix = 0; iFix < NUM_CANDIDATE_FIXES; iFix++)
+		{
+			if (kPlayer.UsesCandidateAI((CandidateFixTypes)iFix))
+				iFixes |= 1 << iFix;
+		}
+		fprintf(pFile, ",%d,%s,%s\r\n", IsABTestFlipped() ? 1 : 0, GetABTestFixListText(iFixes).c_str(), strSettings.c_str());
 	}
 
 	fclose(pFile);
