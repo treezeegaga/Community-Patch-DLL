@@ -21037,6 +21037,27 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 		}
 	}
 
+	// AI_AB_TEST: the new AI attacks early when a strong player would (see GetNewAIConquestTarget). In 14 test games no
+	// capital fell before turn 150 on either side. Done here rather than after DoUpdateWarTargets so the WAR approach
+	// holds from turn to turn (changing it back and forth cancels the attack being gathered); a zero-out above
+	// (recent peace, no reachable target, bankruptcy...) still rules it out.
+	if (GetPlayer()->UsesCandidateAI() && vScratchValueOverrides[CIV_APPROACH_WAR] != 0)
+	{
+		const char* szReason = "";
+		if (GetNewAIConquestTarget(szReason) == ePlayer)
+		{
+			int iHighest = 0;
+			for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
+				iHighest = max(iHighest, vApproachScores[iApproachLoop]);
+			vApproachScores[CIV_APPROACH_WAR] = iHighest + 1000;
+			bAllZero = false;
+
+			if (!bStrategic && GetCivApproach(ePlayer) != CIV_APPROACH_WAR && GC.getLogging() && GC.getAILogging())
+				GetPlayer()->GetHomelandAI()->LogHomelandMessage(CvString::format("CONQUEST: going for %s (%s)",
+					GET_PLAYER(ePlayer).getCivilizationShortDescription(), szReason));
+		}
+	}
+
 	//--------------------------------//
 	// [PART 15: APPROACH SELECTION]  //
 	//--------------------------------//
@@ -23275,6 +23296,79 @@ int CvDiplomacyAI::ScoreDefensivePactChoice(PlayerTypes eChoice, bool bCoastal)
 	return iDPValue;
 }
 
+/// AI_AB_TEST (candidate): which major civ to attack now, if any. Two kinds of civ fight for different reasons:
+/// - an expansionist (wide-plan) civ fights to keep expanding: once it is boxed in (no reachable site, or a settler
+///   standing idle) it attacks the nearest neighbour blocking it, if that neighbour isn't stronger;
+/// - a warmonger (warmonger trait or offense flavor 8+) plans a timing attack: from turn 45 (Standard speed) it hits
+///   its weakest close neighbour, if that neighbour is weaker than us.
+/// Tall civs don't start wars here. One war at a time. (A first version attacked any "weaker" neighbour by current
+/// military alone and picked a fast-expanding civ that then crushed it.)
+PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
+{
+	szReason = "";
+	CvPlayer* pPlayer = GetPlayer();
+	if (!pPlayer->UsesCandidateAI() || pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
+		return NO_PLAYER;
+
+	FlavorTypes eOffense = (FlavorTypes)GC.getInfoTypeForString("FLAVOR_OFFENSE", true);
+	int iOffense = (eOffense != NO_FLAVOR) ? pPlayer->GetFlavorManager()->GetPersonalityIndividualFlavor(eOffense) : 0;
+	const bool bWarmonger = pPlayer->GetPlayerTraits()->IsWarmonger() || iOffense >= 8;
+	const bool bExpansionist = !bWarmonger && pPlayer->GetOpeningBook() == OPENING_BOOK_WIDE;
+	if (!bWarmonger && !bExpansionist)
+		return NO_PLAYER;
+
+	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
+	const int iTurn = GC.getGame().getElapsedGameTurns();
+	if (bWarmonger && iTurn < 45 * iSpeed / 100)
+		return NO_PLAYER;
+	if (bExpansionist && !pPlayer->IsBoxedInForSettling())
+		return NO_PLAYER;
+
+	const CvCity* pCapital = pPlayer->getCapitalCity();
+	PlayerTypes eBest = NO_PLAYER;
+	int iBestScore = INT_MIN;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (!IsPlayerValid(eLoopPlayer) || !GET_PLAYER(eLoopPlayer).isMajorCiv() || GET_PLAYER(eLoopPlayer).getTeam() == pPlayer->getTeam())
+			continue;
+		if (!GET_TEAM(pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eLoopPlayer).getTeam(), pPlayer->GetID()))
+			continue;
+
+		PlayerProximityTypes eProximity = pPlayer->GetProximityToPlayer(eLoopPlayer);
+		if (eProximity < (bExpansionist ? PLAYER_PROXIMITY_NEIGHBORS : PLAYER_PROXIMITY_CLOSE))
+			continue;
+
+		StrengthTypes eTheirStrength = GetMilitaryStrengthComparedToUs(eLoopPlayer);
+		if (eTheirStrength > (bExpansionist ? STRENGTH_AVERAGE : STRENGTH_POOR))
+			continue;
+
+		if (!pPlayer->GetMilitaryAI()->HavePossibleAttackTarget(eLoopPlayer) || IsWarWouldBankruptUs(eLoopPlayer))
+			continue;
+
+		int iScore = 0;
+		if (bExpansionist)
+		{
+			// the blocker: the nearest neighbour
+			const CvCity* pTheirCapital = GET_PLAYER(eLoopPlayer).getCapitalCity();
+			iScore = (pCapital && pTheirCapital) ? -plotDistance(pCapital->getX(), pCapital->getY(), pTheirCapital->getX(), pTheirCapital->getY()) : -1000;
+		}
+		else
+		{
+			// the weakest, neighbours before close civs
+			iScore = (NUM_STRENGTH_VALUES - (int)eTheirStrength) * 10 + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 5 : 0);
+		}
+
+		if (iScore > iBestScore)
+		{
+			iBestScore = iScore;
+			eBest = eLoopPlayer;
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, weakest neighbour";
+		}
+	}
+	return eBest;
+}
+
 /// Update which major civs we're targeting for war. NOTE: City-State targets are handled in DoUpdateMinorCivApproaches() and SelectBestApproachTowardsMinorCiv().
 void CvDiplomacyAI::DoUpdateWarTargets()
 {
@@ -23316,11 +23410,17 @@ void CvDiplomacyAI::DoUpdateWarTargets()
 		}
 	}
 
+	// AI_AB_TEST (candidate): a conquest target (GetNewAIConquestTarget) counts as a war plan, like an agreed coop war.
+	// Otherwise the filters below can reject it (sanity, conflict limit) and reset the approach, which cancels the
+	// army being gathered; a test game showed it re-chosen and cancelled every turn, so the attack never came.
+	const char* szConquestReason = "";
+	PlayerTypes eConquestTarget = GetNewAIConquestTarget(szConquestReason);
+
 	// Who are we PLANNING war against?
 	for (std::vector<PlayerTypes>::iterator it = vNotAtWarPlayers.begin(); it != vNotAtWarPlayers.end(); ++it)
 	{
 		vector<PlayerTypes> vTeam = GET_TEAM(GET_PLAYER(*it).getTeam()).getPlayers();
-		bool bWarPlans = false;
+		bool bWarPlans = (*it == eConquestTarget);
 
 		for (size_t i=0; i<vMyTeam.size(); i++)
 		{

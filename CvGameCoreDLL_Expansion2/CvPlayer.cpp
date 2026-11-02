@@ -33306,8 +33306,8 @@ static const bool kABTestVersusBase = true;
 // Candidate features that are off in the current candidate bundle. In c1 (4 games, c 48.3% +/- 1.7 against b) c's
 // tall civs ended with fewer cities than b's (3.7 vs 4.4): stopping settlers once one stood idle 10 turns ended
 // expansion that b's civs later completed, and the longer wide opening didn't give c's wide civs more cities. The
-// idle-settler rule comes back together with a conquest response.
-static const bool kCandidateBoxedInBySettlers = false;
+// idle-settler rule is back in c3, where being boxed in makes an expansionist attack its blocker.
+static const bool kCandidateBoxedInBySettlers = true;
 static const bool kCandidateLongWideOpening = false;
 
 static bool IsABTestOddSlot(PlayerTypes ePlayer)
@@ -33482,6 +33482,11 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	// A settler waiting for its escort comes first: let the normal production choice build units for operations
 	CvAIOperation* pFoundCityOp = getFirstAIOperationOfType(AI_OPERATION_FOUND_CITY);
 	if (pFoundCityOp && pFoundCityOp->GetNumUnitsNeededToBeBuilt() > 0)
+		return false;
+
+	// So does an attack being gathered (see CvDiplomacyAI::GetNewAIConquestTarget): its army gets built first
+	CvAIOperation* pAttackOp = UsesCandidateAI() ? getFirstOffensiveAIOperation(NO_PLAYER) : NULL;
+	if (pAttackOp && pAttackOp->GetNumUnitsNeededToBeBuilt() > 0)
 		return false;
 
 	OpeningBookType eBook = GetOpeningBook();
