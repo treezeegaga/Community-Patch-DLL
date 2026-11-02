@@ -3095,8 +3095,12 @@ static void BuyExpansionSettler(CvPlayer* pPlayer)
 	if (!pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eSettler, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
 		return;
 
+	bool bWasTraining = (pBuyCity->getProductionUnit() == eSettler);
 	if (pBuyCity->PurchaseUnit(eSettler, YIELD_GOLD))
 	{
+		// one settler at a time: drop the one in training (the city keeps its progress for the next settler)
+		if (bWasTraining && pBuyCity->getProductionUnit() == eSettler)
+			pBuyCity->popOrder(0, false, true);
 		pPlayer->GetMilitaryAI()->ResetNumberOfTimesSettlerBuildSkippedOver();
 		if (GC.getLogging() && GC.getAILogging())
 		{

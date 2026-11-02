@@ -12837,7 +12837,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// leaving settlers idle), falling back to CP's search when none of the top sites is reachable.
 /// batch2g: batch2f plus settlers bought with gold while expanding, no scout purchases, and opening-book
 /// settlers only when the city's next citizen is further away than the settler.
-static const char* const AI_AB_TEST_BATCH = "batch2g";
+/// batch2h: batch2g with opening-book settlers one at a time (none while another is on the map or in training).
+static const char* const AI_AB_TEST_BATCH = "batch2h";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

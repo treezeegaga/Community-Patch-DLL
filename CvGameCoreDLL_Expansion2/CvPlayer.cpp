@@ -33449,6 +33449,10 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 				continue;
 			if (bSettler && pCity->getYieldRateTimes100(YIELD_FOOD) > 0 && pCity->getFoodTurnsLeft() <= pCity->getProductionTurnsLeft(eUnit, 0))
 				continue;
+			// One settler at a time: a second one only waits around while the first walks, and with two idle
+			// settlers the found-city operation can take the one that can't reach a site and abort every turn
+			if (bSettler && GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) > 0)
+				continue;
 			if (!pCity->canTrain(eUnit))
 				continue;
 
