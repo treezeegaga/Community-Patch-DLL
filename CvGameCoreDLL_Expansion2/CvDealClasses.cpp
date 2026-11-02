@@ -4475,6 +4475,13 @@ bool CvGameDeals::FinalizeDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, b
 
 void CvGameDeals::ActivateDeal(PlayerTypes eFromPlayer, PlayerTypes eToPlayer, CvDeal& kDeal, CvWeightedVector<TeamTypes>& veNowAtPeacePairs)
 {
+	// AI_AB_TEST (lead job 10): deals between major civs, for the interactivity counts
+	if (MOD_AI_AB_TEST && eFromPlayer != NO_PLAYER && eToPlayer != NO_PLAYER && GET_PLAYER(eFromPlayer).isMajorCiv() && GET_PLAYER(eToPlayer).isMajorCiv())
+	{
+		GC.getGame().ChangeABTestCount(eFromPlayer, AB_COUNT_DEALS);
+		GC.getGame().ChangeABTestCount(eToPlayer, AB_COUNT_DEALS);
+	}
+
 	// Determine total duration of the Deal
 	int iLatestItemLastTurn = 0;
 	int iLongestDuration = 0;

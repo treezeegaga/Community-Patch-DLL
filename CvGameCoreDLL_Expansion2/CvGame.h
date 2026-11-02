@@ -711,6 +711,11 @@ public:
 	// groups swapped (Flip = 1 in AIABTest.ini)
 	bool IsABTestFlipped() const { return (m_iABTestFlags & 1) != 0; }
 	int GetABTestStopTurn() const { return m_iABTestStopTurn; }
+	int GetABTestMode() const { return m_iABTestMode; }		// ABTestModeTypes
+	int GetABTestHeadStartProduction() const { return m_iABTestHeadStartProduction; }
+	int GetABTestHeadStartGold() const { return m_iABTestHeadStartGold; }
+	void ChangeABTestCount(PlayerTypes ePlayer, int eCount, int iChange = 1);	// ABTestCountTypes
+	int GetABTestCount(PlayerTypes ePlayer, int eCount) const;
 	void WriteABTestReplayRecord() const;
 	void unitIsMoving() const;
 
@@ -949,6 +954,10 @@ protected:
 	int m_iABTestScreenedFixes;
 	int m_iABTestFlags;
 	int m_iABTestStopTurn;
+	int m_iABTestMode;
+	int m_iABTestHeadStartProduction;
+	int m_iABTestHeadStartGold;
+	std::vector<int> m_aiABTestCounts;	// MAX_MAJOR_CIVS x NUM_AB_COUNTS
 
 	CvEnumMap<PlayerTypes, int> m_aiEndTurnMessagesReceived;
 	CvEnumMap<PlayerTypes, int> m_aiRankPlayer;		// Ordered by rank...

@@ -1094,6 +1094,17 @@ bool CvTeam::canDeclareWar(TeamTypes eTeam, PlayerTypes eOriginatingPlayer)
 		return false;
 	}
 
+	// AI_AB_TEST builders test (lead job 10): a builder starts no wars (a defensive pact can still pull it in)
+	if (MOD_AI_AB_TEST && !GET_TEAM(eTeam).isBarbarian())
+	{
+		const std::vector<PlayerTypes> vMembers = getPlayers();
+		for (size_t i = 0; i < vMembers.size(); i++)
+		{
+			if ((eOriginatingPlayer == NO_PLAYER || eOriginatingPlayer == vMembers[i]) && GET_PLAYER(vMembers[i]).GetABTestRole() == AB_ROLE_BUILDER)
+				return false;
+		}
+	}
+
 	if (!isHasMet(eTeam))
 	{
 		return false;
@@ -1402,6 +1413,20 @@ void CvTeam::DoDeclareWar(PlayerTypes eOriginatingPlayer, bool bAggressor, TeamT
 		}
 	}
 #endif
+
+	// AI_AB_TEST (lead job 10): count wars between major civs for the results file: declared by the originating player
+	// (not ones a defensive pact pulled it into), and declared on each member of the other team
+	if (MOD_AI_AB_TEST && bAggressor && !bDefensivePact && isMajorCiv() && GET_TEAM(eTeam).isMajorCiv())
+	{
+		if (eOriginatingPlayer != NO_PLAYER)
+			GC.getGame().ChangeABTestCount(eOriginatingPlayer, AB_COUNT_WARS_DECLARED);
+		const std::vector<PlayerTypes> vTargets = GET_TEAM(eTeam).getPlayers();
+		for (size_t i = 0; i < vTargets.size(); i++)
+		{
+			if (GET_PLAYER(vTargets[i]).isAlive())
+				GC.getGame().ChangeABTestCount(vTargets[i], AB_COUNT_WARS_ON_US);
+		}
+	}
 
 	setAtWar(eTeam, true, bAggressor);
 	GET_TEAM(eTeam).setAtWar(GetID(), true, !bAggressor);

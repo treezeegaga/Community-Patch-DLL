@@ -161,6 +161,35 @@ enum CandidateFixTypes
 	NUM_CANDIDATE_FIXES
 };
 
+// AI_AB_TEST game modes (Mode = in AIABTest.ini; lead job 10). AB_MODE_SPLIT is the usual c/b split. In the bully and
+// builders tests a few civs play fixed roles (ABTestRoleTypes) and group c is every other AI civ; the second game of
+// a pair (Flip = 1) has no c at all, so the pair measures what the candidate changes do to the roles' games.
+enum ABTestModeTypes
+{
+	AB_MODE_SPLIT,
+	AB_MODE_BULLY,		// one aggressor with a head start, one tall civ
+	AB_MODE_BUILDERS,	// two builders: tall, no wars of their own
+};
+enum ABTestRoleTypes
+{
+	AB_ROLE_NONE,
+	AB_ROLE_AGGRESSOR,	// the warmonger friend's role: a warmonger personality plus a production and gold head start
+	AB_ROLE_TALL,		// the tall friend's role in the bully test: the tall opening plan
+	AB_ROLE_BUILDER,	// a turtling friend in the builders test: the tall opening plan and no wars of its own
+};
+// AI_AB_TEST running counts per major civ, for the results file (CvGame::ChangeABTestCount)
+enum ABTestCountTypes
+{
+	AB_COUNT_WARS_DECLARED,		// wars it declared on major civs (not ones a defensive pact pulled it into)
+	AB_COUNT_WARS_ON_US,		// wars major civs declared on it
+	AB_COUNT_CITIES_CAPTURED,	// cities it conquered from major civs
+	AB_COUNT_CITIES_LOST,		// cities major civs conquered from it
+	AB_COUNT_DEALS,				// deals with another major civ that went into effect
+	AB_COUNT_WORKERS_STOLEN,	// banned: civilians it captured from city-states
+	AB_COUNT_WONDER_CHOPS,		// banned: forests or jungles chopped into a city building a world wonder
+	NUM_AB_COUNTS
+};
+
 class CvPlayer
 {
 	friend class CvPlayerPolicies;
@@ -1678,6 +1707,8 @@ public:
 	bool UsesCandidateAI(CandidateFixTypes eFix) const;
 	bool IsInCandidateGroup() const;
 	bool IsABTestWarmonger() const;
+	ABTestRoleTypes GetABTestRole() const;
+	int GetABTestHeadStartProduction() const;
 	static bool IsABTestVersusBase();
 	static const char* GetCandidateFixName(int iFix);
 	static int GetCandidateFixByName(const char* szName);

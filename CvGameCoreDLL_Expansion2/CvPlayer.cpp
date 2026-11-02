@@ -2958,6 +2958,13 @@ CvCity* CvPlayer::acquireCity(CvCity* pCity, bool bConquest, bool bGift, bool bO
 	if (eOldOwner == GetID())
 		return pCity;
 
+	// AI_AB_TEST (lead job 10): conquests between major civs, for the results file
+	if (MOD_AI_AB_TEST && bConquest && isMajorCiv() && GET_PLAYER(eOldOwner).isMajorCiv())
+	{
+		GC.getGame().ChangeABTestCount(GetID(), AB_COUNT_CITIES_CAPTURED);
+		GC.getGame().ChangeABTestCount(eOldOwner, AB_COUNT_CITIES_LOST);
+	}
+
 	// make sure the player is alive
 	setAlive(true);
 
@@ -10117,6 +10124,10 @@ void CvPlayer::doTurn()
 	m_iNumUnitsSuppliedCachedWarWeariness = -1;
 	m_bUnlockedGrowthAnywhereThisTurn = false;
 
+	// AI_AB_TEST bully test: the aggressor's gold head start, per city
+	if (GetABTestRole() == AB_ROLE_AGGRESSOR && GC.getGame().GetABTestHeadStartGold() > 0)
+		GetTreasury()->ChangeGold(GC.getGame().GetABTestHeadStartGold() * getNumCities());
+
 	AI_doTurnPre();
 
 	if(getCultureBombTimer() > 0)
@@ -15616,6 +15627,9 @@ int CvPlayer::getProductionModifier(CvString* toolTipSink) const
 		CvString strTurns = CvString::format("%d", GetProductionBonusTurnsConquest());
 		GC.getGame().BuildProdModHelpText(toolTipSink, "TXT_KEY_PRODMOD_CONQUEST", iTempMod, strTurns.c_str());
 	}
+
+	// AI_AB_TEST bully test: the aggressor's head start (0 for everyone else and outside test games)
+	iModifier += GetABTestHeadStartProduction();
 
 	return iModifier;
 }
@@ -33464,12 +33478,87 @@ static bool IsABTestScreenSlot(PlayerTypes ePlayer, int iFix)
 	return ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS && iFix >= 0 && iFix < NUM_CANDIDATE_FIXES && s_abOn[iFix][ePlayer];
 }
 
+/// AI_AB_TEST bully and builders tests (lead job 10): which civs play the friends' roles. Picked from the map seed
+/// and the civs' personalities (flavors are fixed for the game, and hash the map seed), so both games of a pair get
+/// the same roles. Bully: the aggressor is a warmonger (IsABTestWarmongerCiv; the most offensive personality if the
+/// game has none), the tall civ the most science/culture-minded of the rest (nerd and smaller traits first). Builders:
+/// the two most science/culture-minded civs, warmongers last.
+static ABTestRoleTypes GetABTestRoleOfSlot(PlayerTypes ePlayer)
+{
+	static unsigned int s_uSeed = 0;
+	static int s_iTurn = -1;
+	static int s_iMode = -1;
+	static ABTestRoleTypes s_aeRole[MAX_MAJOR_CIVS];
+	const unsigned int uSeed = CvPreGame::mapRandomSeed();
+	const int iTurn = GC.getGame().getGameTurn();
+	const int iMode = GC.getGame().GetABTestMode();
+	if (uSeed != s_uSeed || iTurn != s_iTurn || iMode != s_iMode)
+	{
+		s_uSeed = uSeed;
+		s_iTurn = iTurn;
+		s_iMode = iMode;
+		std::vector< std::pair<int, int> > aAggressor, aTall;	// (score, player), highest first after sorting
+		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+		{
+			s_aeRole[i] = AB_ROLE_NONE;
+			const CvPlayer& kLoop = GET_PLAYER((PlayerTypes)i);
+			if (iMode == AB_MODE_SPLIT || !kLoop.isEverAlive() || !kLoop.isMajorCiv() || kLoop.isHuman())
+				continue;
+			const int iOffense = GetOpeningBookFlavor(kLoop, "FLAVOR_OFFENSE");
+			const int iPeaceful = max(GetOpeningBookFlavor(kLoop, "FLAVOR_SCIENCE"), GetOpeningBookFlavor(kLoop, "FLAVOR_CULTURE")) - iOffense;
+			const bool bWarmonger = IsABTestWarmongerCiv(kLoop);
+			const bool bTallTrait = kLoop.GetPlayerTraits()->IsNerd() || kLoop.GetPlayerTraits()->IsSmaller();
+			const int iTie = (int)(ABTestHash(uSeed, 0xAB10u, (unsigned int)i) & 0xFF);	// random order among equals
+			aAggressor.push_back(std::make_pair((bWarmonger ? 100000 : 0) + iOffense * 1000 + iTie, i));
+			aTall.push_back(std::make_pair((bTallTrait ? 100000 : 0) + (bWarmonger ? -100000 : 0) + iPeaceful * 1000 + iTie, i));
+		}
+		std::sort(aAggressor.rbegin(), aAggressor.rend());
+		std::sort(aTall.rbegin(), aTall.rend());
+		if (iMode == AB_MODE_BULLY && !aAggressor.empty())
+		{
+			s_aeRole[aAggressor[0].second] = AB_ROLE_AGGRESSOR;
+			for (size_t i = 0; i < aTall.size(); i++)
+			{
+				if (s_aeRole[aTall[i].second] == AB_ROLE_NONE)
+				{
+					s_aeRole[aTall[i].second] = AB_ROLE_TALL;
+					break;
+				}
+			}
+		}
+		else if (iMode == AB_MODE_BUILDERS)
+		{
+			for (size_t i = 0; i < aTall.size() && i < 2; i++)
+				s_aeRole[aTall[i].second] = AB_ROLE_BUILDER;
+		}
+	}
+	return (ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS) ? s_aeRole[ePlayer] : AB_ROLE_NONE;
+}
+
+ABTestRoleTypes CvPlayer::GetABTestRole() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv())
+		return AB_ROLE_NONE;
+	return GetABTestRoleOfSlot(GetID());
+}
+
+/// AI_AB_TEST bully test: the aggressor's head start on all production (%)
+int CvPlayer::GetABTestHeadStartProduction() const
+{
+	return (GetABTestRole() == AB_ROLE_AGGRESSOR) ? GC.getGame().GetABTestHeadStartProduction() : 0;
+}
+
 /// AI_AB_TEST: in group c (the half of the civs that runs candidate changes; see IsABTestCandidateSlot). This only says
 /// which group a civ is in: gate candidate changes on UsesCandidateAI(FIX_xx), which also checks the flag.
+/// In the bully and builders tests group c is every AI civ without a role (the defenders, or the AIs around the
+/// builders), and nobody in the second game of a pair: the roles' results with and without the candidate changes.
 bool CvPlayer::IsInCandidateGroup() const
 {
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
 		return true;
+
+	if (GC.getGame().GetABTestMode() != AB_MODE_SPLIT)
+		return !isHuman() && !GC.getGame().IsABTestFlipped() && GetABTestRole() == AB_ROLE_NONE;
 
 	return kABTestVersusBase ? IsABTestCandidateSlot(GetID()) : UsesNewAI();
 }
@@ -33525,6 +33614,11 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 {
 	if (!UsesNewAI() || !isMajorCiv() || isHuman() || isBarbarian())
 		return OPENING_BOOK_NONE;
+
+	// AI_AB_TEST bully and builders tests: the tall and builder civs play the tall friends' plan
+	const ABTestRoleTypes eRole = GetABTestRole();
+	if (eRole == AB_ROLE_TALL || eRole == AB_ROLE_BUILDER)
+		return OPENING_BOOK_TALL;
 
 	// The conquest plan (fewer settlers, two archers, Honor, no planned attack) was the weakest of the three in test
 	// games: 10% of the score against 13.4% for tall. Warmongers use the other plans until there is a real timing

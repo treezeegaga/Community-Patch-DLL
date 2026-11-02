@@ -2831,6 +2831,11 @@ bool CvUnit::getCaptureDefinition(CvUnitCaptureDefinition* pkCaptureDef, PlayerT
 
 	pkCapturedUnit->SetOriginalOwner(kCaptureDef.eOriginalOwner);
 
+	// AI_AB_TEST (lead job 10), banned behaviour: a major civ capturing a city-state's civilian (stealing its workers)
+	if (MOD_AI_AB_TEST && pkCapturedUnit->IsCivilianUnit() && kCaptureDef.eOldPlayer != NO_PLAYER &&
+		GET_PLAYER(kCaptureDef.eOldPlayer).isMinorCiv() && kCapturingPlayer.isMajorCiv())
+		GC.getGame().ChangeABTestCount(kCaptureDef.eCapturingPlayer, AB_COUNT_WORKERS_STOLEN);
+
 	if (MOD_BALANCE_PRISONERS_OF_WAR && pkCapturedUnit->IsCivilianUnit())
 	{
 		PromotionTypes ePrisonersOfWar = static_cast<PromotionTypes>(GD_INT_GET(PRISONERS_OF_WAR_PROMOTION));

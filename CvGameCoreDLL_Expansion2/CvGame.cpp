@@ -257,6 +257,7 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 ///     Flip = 0            ; 1 swaps the groups (c/b, new/cp, and the screened halves)
 ///     StopTurn = 150      ; where the runner stops the game, recorded in the results file
 ///     Ruins = 0           ; 0 = no ancient ruins, 1 = ruins (missing = as set up)
+///     Mode = bully        ; bully or builders test (lead job 10); HeadStartProduction = 50, HeadStartGold = 3
 ///     MapOption5 = 5      ; the map script's option 5 (Pangaea: resources; 5 = Strategic Balance)
 ///     MapSeed, SyncSeed, Player<i> = replay of an earlier game, from its AIABTest_lastgame.ini (paired games)
 /// Read once when the game starts and saved with it, so a reloaded game keeps its flags whatever the file says by then.
@@ -267,6 +268,10 @@ void CvGame::ReadABTestSettings()
 	m_iABTestScreenedFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
+	m_iABTestMode = AB_MODE_SPLIT;
+	m_iABTestHeadStartProduction = 0;
+	m_iABTestHeadStartGold = 0;
+	m_aiABTestCounts.assign(MAX_MAJOR_CIVS * NUM_AB_COUNTS, 0);
 
 	CvString strFolder = gDLL->GetCacheFolderPath();
 	strFolder += "..\\";
@@ -298,6 +303,20 @@ void CvGame::ReadABTestSettings()
 	if (GetPrivateProfileIntW(L"ABTest", L"Flip", 0, wstrPath.c_str()) != 0)
 		m_iABTestFlags |= 1;
 	m_iABTestStopTurn = (int)GetPrivateProfileIntW(L"ABTest", L"StopTurn", 0, wstrPath.c_str());
+
+	// The bully and builders tests (lead job 10): Mode = bully | builders (anything else: the usual split), and the
+	// aggressor's head start in the bully test: HeadStartProduction (% on all its production, default 50) and
+	// HeadStartGold (gold per city per turn, default 3)
+	GetPrivateProfileStringW(L"ABTest", L"Mode", L"", szBuffer, 1024, wstrPath.c_str());
+	if (_wcsicmp(szBuffer, L"bully") == 0)
+		m_iABTestMode = AB_MODE_BULLY;
+	else if (_wcsicmp(szBuffer, L"builders") == 0)
+		m_iABTestMode = AB_MODE_BUILDERS;
+	if (m_iABTestMode == AB_MODE_BULLY)
+	{
+		m_iABTestHeadStartProduction = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartProduction", 50, wstrPath.c_str());
+		m_iABTestHeadStartGold = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartGold", 3, wstrPath.c_str());
+	}
 
 	// The setup the runner can't click reliably (lead job 5): Civ forgets game options between games, and the map
 	// options sit in dropdowns. Set before the map script runs (init2): Ruins = 0 sets "no ancient ruins", which the
@@ -385,6 +404,24 @@ void CvGame::ReadABTestSettings()
 			}
 		}
 	}
+}
+
+/// AI_AB_TEST: a running count for the results file (ABTestCountTypes); test games and major civs only
+void CvGame::ChangeABTestCount(PlayerTypes ePlayer, int eCount, int iChange)
+{
+	if (!MOD_AI_AB_TEST || ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || eCount < 0 || eCount >= NUM_AB_COUNTS)
+		return;
+	if (m_aiABTestCounts.size() != (size_t)(MAX_MAJOR_CIVS * NUM_AB_COUNTS))
+		m_aiABTestCounts.assign(MAX_MAJOR_CIVS * NUM_AB_COUNTS, 0);
+	m_aiABTestCounts[ePlayer * NUM_AB_COUNTS + eCount] += iChange;
+}
+
+int CvGame::GetABTestCount(PlayerTypes ePlayer, int eCount) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || eCount < 0 || eCount >= NUM_AB_COUNTS ||
+		m_aiABTestCounts.size() != (size_t)(MAX_MAJOR_CIVS * NUM_AB_COUNTS))
+		return 0;
+	return m_aiABTestCounts[ePlayer * NUM_AB_COUNTS + eCount];
 }
 
 /// AI_AB_TEST paired games: writes what the second game of a pair needs to replay this one to AIABTest_lastgame.ini in
@@ -1514,6 +1551,10 @@ void CvGame::uninit()
 	m_iABTestScreenedFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
+	m_iABTestMode = AB_MODE_SPLIT;
+	m_iABTestHeadStartProduction = 0;
+	m_iABTestHeadStartGold = 0;
+	m_aiABTestCounts.assign(MAX_MAJOR_CIVS * NUM_AB_COUNTS, 0);
 	m_iEarliestBarbarianReleaseTurn = 0;
 
 	m_iLastMouseoverUnitID = 0;
@@ -11253,6 +11294,10 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 		visitor(game.m_iABTestScreenedFixes);
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
+		visitor(game.m_iABTestMode);
+		visitor(game.m_iABTestHeadStartProduction);
+		visitor(game.m_iABTestHeadStartGold);
+		visitor(game.m_aiABTestCounts);
 	}
 }
 
@@ -13104,7 +13149,10 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c7c_settings: c7c_flags with the game's settings in every row: Flip, Fixes (the flags this civ runs), Screen (the
 /// game's screened flags), Map (script), MapOptions (name=value;...), Ruins, Barbarians, Pace, Difficulty, WorldSize,
 /// StopTurn (from AIABTest.ini, 0 = unknown) and Build (the DLL's git describe).
-static const char* const AI_AB_TEST_BATCH = "c7c_settings";
+/// c7c_roles: c7c_settings with the bully and builders tests (Mode, Role) and diplomacy and war columns: WarsDeclared,
+/// WarsOnUs, CitiesCaptured, CitiesLost, Deals, WorkersStolen, WonderChops (running counts, ABTestCountTypes), and
+/// AtWar, AtWarAggressor, Pacts, Friends, Denouncing, Influential (the state at that turn). The AI is unchanged.
+static const char* const AI_AB_TEST_BATCH = "c7c_roles";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
 static CvString GetABTestFixListText(int iMask)
@@ -13147,7 +13195,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 
@@ -13248,7 +13296,44 @@ void CvGame::LogABTestResults(bool bFinal) const
 			if (kPlayer.UsesCandidateAI((CandidateFixTypes)iFix))
 				iFixes |= 1 << iFix;
 		}
-		fprintf(pFile, ",%d,%s,%s\r\n", IsABTestFlipped() ? 1 : 0, GetABTestFixListText(iFixes).c_str(), strSettings.c_str());
+		fprintf(pFile, ",%d,%s,%s", IsABTestFlipped() ? 1 : 0, GetABTestFixListText(iFixes).c_str(), strSettings.c_str());
+
+		// the bully and builders tests, and diplomacy (lead job 10): running counts, then this turn's state toward
+		// the other major civs
+		static const char* const kModeNames[] = { "split", "bully", "builders" };
+		static const char* const kRoleNames[] = { "", "aggressor", "tall", "builder" };
+		const PlayerTypes ePlayer = (PlayerTypes)iI;
+		const ABTestRoleTypes eRole = kPlayer.GetABTestRole();
+		int iAtWar = 0, iAtWarAggressor = 0, iPacts = 0, iFriends = 0, iDenouncing = 0;
+		for (int iOther = 0; iOther < MAX_MAJOR_CIVS; iOther++)
+		{
+			const PlayerTypes eOther = (PlayerTypes)iOther;
+			const CvPlayer& kOther = GET_PLAYER(eOther);
+			if (eOther == ePlayer || !kOther.isAlive() || !kOther.isMajorCiv() || !kPlayer.isAlive())
+				continue;
+			const bool bAtWar = GET_TEAM(kPlayer.getTeam()).isAtWar(kOther.getTeam());
+			if (bAtWar)
+			{
+				iAtWar++;
+				if (kOther.GetABTestRole() == AB_ROLE_AGGRESSOR)
+					iAtWarAggressor = 1;
+			}
+			if (GET_TEAM(kPlayer.getTeam()).IsHasDefensivePact(kOther.getTeam()))
+				iPacts++;
+			if (kPlayer.GetDiplomacyAI()->IsDoFAccepted(eOther))
+				iFriends++;
+			if (kPlayer.GetDiplomacyAI()->IsDenouncedPlayer(eOther))
+				iDenouncing++;
+		}
+		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
+			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_BUILDERS) ? m_iABTestMode : 0],
+			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BUILDER) ? eRole : 0],
+			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
+			GetABTestCount(ePlayer, AB_COUNT_CITIES_CAPTURED), GetABTestCount(ePlayer, AB_COUNT_CITIES_LOST),
+			GetABTestCount(ePlayer, AB_COUNT_DEALS), GetABTestCount(ePlayer, AB_COUNT_WORKERS_STOLEN),
+			GetABTestCount(ePlayer, AB_COUNT_WONDER_CHOPS),
+			iAtWar, iAtWarAggressor, iPacts, iFriends, iDenouncing,
+			kPlayer.isAlive() ? kPlayer.GetCulture()->GetNumCivsInfluentialOn() : 0);
 	}
 
 	fclose(pFile);

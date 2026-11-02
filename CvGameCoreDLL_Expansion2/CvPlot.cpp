@@ -12889,6 +12889,9 @@ bool CvPlot::changeBuildProgress(BuildTypes eBuild, int iChange, PlayerTypes ePl
 
 					if(iProduction > 0)
 					{
+						// AI_AB_TEST (lead job 10), banned behaviour: chopping into a city that is building a world wonder
+						if (MOD_AI_AB_TEST && pCity->IsBuildingWorldWonder())
+							GC.getGame().ChangeABTestCount(pCity->getOwner(), AB_COUNT_WONDER_CHOPS);
 						pCity->changeFeatureProduction(iProduction);
 						if(pCity->getOwner() == GC.getGame().getActivePlayer())
 						{
