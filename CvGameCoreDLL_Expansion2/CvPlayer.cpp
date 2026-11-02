@@ -33298,12 +33298,35 @@ bool CvPlayer::isMajorCiv() const
 /// with the map seed, so over many games each slot plays both sides. Outside a test game (the
 /// default) every player runs the changed code. Gate each AI change on this, e.g.
 ///     if (m_pPlayer->UsesNewAI()) { new behaviour } else { CP's behaviour }
+// AI_AB_TEST "B vs C" builds: once a build beat CP consistently it became the base AI ("b"). Every major civ runs it
+// (all changes behind UsesNewAI()), and half of them also run the candidate changes behind UsesCandidateAI() ("c").
+// false gives the earlier "new vs CP" split, with UsesCandidateAI() following UsesNewAI().
+static const bool kABTestVersusBase = true;
+
+static bool IsABTestOddSlot(PlayerTypes ePlayer)
+{
+	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(ePlayer)) & 1) != 0;
+}
+
 bool CvPlayer::UsesNewAI() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv() || kABTestVersusBase)
+		return true;
+
+	return IsABTestOddSlot(GetID());
+}
+
+bool CvPlayer::UsesCandidateAI() const
 {
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
 		return true;
 
-	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(GetID())) & 1) != 0;
+	return kABTestVersusBase ? IsABTestOddSlot(GetID()) : UsesNewAI();
+}
+
+bool CvPlayer::IsABTestVersusBase()
+{
+	return kABTestVersusBase;
 }
 
 //	--------------------------------------------------------------------------------
@@ -33334,17 +33357,61 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	// games: 10% of the score against 13.4% for tall. Warmongers use the other plans until there is a real timing
 	// attack plan for them.
 	const CvPlayerTraits* pTraits = GetPlayerTraits();
+	int iExpansion = GetOpeningBookFlavor(*this, "FLAVOR_EXPANSION");
+	int iScience = GetOpeningBookFlavor(*this, "FLAVOR_SCIENCE");
+	int iCulture = GetOpeningBookFlavor(*this, "FLAVOR_CULTURE");
+
+	// Candidate: a conquering civ should be wide, and wide was the strongest plan in test games (13.3% strength
+	// share and 5.3 cities against 12.6% and 4.4 for tall), so warmongers and aggressive personalities play wide;
+	// science and diplomacy civs stay tall; culture civs go wide when their personality is expansionist.
+	if (UsesCandidateAI())
+	{
+		if (pTraits->IsExpansionist() || pTraits->IsWarmonger())
+			return OPENING_BOOK_WIDE;
+		if (pTraits->IsNerd() || pTraits->IsSmaller())
+			return OPENING_BOOK_TALL;
+		if (pTraits->IsTourism())
+			return (iExpansion >= iCulture) ? OPENING_BOOK_WIDE : OPENING_BOOK_TALL;
+		int iOffense = GetOpeningBookFlavor(*this, "FLAVOR_OFFENSE");
+		if (iOffense >= 8 && iOffense >= max(iScience, iCulture))
+			return OPENING_BOOK_WIDE;
+		if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
+			return OPENING_BOOK_WIDE;
+		return OPENING_BOOK_TALL;
+	}
+
 	if (pTraits->IsExpansionist())
 		return OPENING_BOOK_WIDE;
 	if (pTraits->IsNerd() || pTraits->IsTourism() || pTraits->IsSmaller())
 		return OPENING_BOOK_TALL;
-
-	int iExpansion = GetOpeningBookFlavor(*this, "FLAVOR_EXPANSION");
-	int iScience = GetOpeningBookFlavor(*this, "FLAVOR_SCIENCE");
-	int iCulture = GetOpeningBookFlavor(*this, "FLAVOR_CULTURE");
 	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
 		return OPENING_BOOK_WIDE;
 	return OPENING_BOOK_TALL;
+}
+
+/// AI_AB_TEST (candidate): no room left to settle: no site at all, or one of our settlers has stood for 10+ turns
+/// (Standard speed) without an operation. The second case is the usual one: the free sites left are behind other
+/// civs' borders, which settlers can't cross, so GetBestSettlePlot(NULL) still finds them while every found-city
+/// operation aborts with NoTarget (two civs in a test game kept two idle settlers each from turn 67 to 150).
+/// The base AI only checks for a site.
+bool CvPlayer::IsBoxedInForSettling() const
+{
+	if (getNumCities() == 0)
+		return false;
+	if (GetBestSettlePlot(NULL) == NULL)
+		return true;
+	if (!UsesCandidateAI())
+		return false;
+
+	const int iStuckTurns = max(5, 10 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
+	int iLoop = 0;
+	for (const CvUnit* pLoopUnit = firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = nextUnit(&iLoop))
+	{
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_SETTLE && pLoopUnit->getArmyID() == -1 &&
+			GC.getGame().getGameTurn() - pLoopUnit->getGameTurnCreated() >= iStuckTurns)
+			return true;
+	}
+	return false;
 }
 
 bool CvPlayer::IsOpeningBookActive() const
@@ -33354,7 +33421,10 @@ bool CvPlayer::IsOpeningBookActive() const
 		return false;
 
 	// Turn limits are for Standard speed
-	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? 100 : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
+	// Candidate: wide civs keep settling longer. In test games they led CP by a city at turn 60 on Quick, then expanded
+	// no faster than CP once the book ended (turn 67), so the lead never grew.
+	int iWideLimit = UsesCandidateAI() ? 130 : 100;
+	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
 }
@@ -33382,6 +33452,12 @@ static const OpeningBookStep kOpeningWideCapital[] = {
 	{false, "BUILDINGCLASS_SHRINE"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
+// Candidate: up to 8 cities instead of 6
+static const OpeningBookStep kOpeningWideCapitalLong[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"},
+	{false, "BUILDINGCLASS_SHRINE"},
+	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
 static const OpeningBookStep kOpeningConquestCapital[] = {
@@ -33412,6 +33488,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
 		break;
 	case OPENING_BOOK_WIDE:
+		if (bCapital && UsesCandidateAI())
+		{
+			pSteps = kOpeningWideCapitalLong;
+			iNumSteps = (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
+			break;
+		}
 		pSteps = bCapital ? kOpeningWideCapital : kOpeningWideCity;
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningWideCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningWideCity) / sizeof(OpeningBookStep));
 		break;
@@ -33456,7 +33538,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 
 			if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE && GC.getGame().getElapsedGameTurns() > iScoutTurnLimit)
 				continue;
-			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || GetBestSettlePlot(NULL) == NULL))
+			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || IsBoxedInForSettling()))
 				continue;
 			// only wait for growth that is imminent: a fast-growing capital always has its next citizen closer than the
 			// settler, and waiting for that kept one capital from starting a settler until turn 37

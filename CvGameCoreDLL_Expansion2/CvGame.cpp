@@ -12849,7 +12849,11 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2n: batch2m with book settlers waiting only for growth due within 3 turns.
 /// batch2o: batch2n with the opening book's later buildings giving way to a wanted wonder in the best wonder city.
 /// batch2p: batch2o plus a warrior in the opening book before the first settler, to be its escort.
-static const char* const AI_AB_TEST_BATCH = "batch2p";
+/// "B vs C" builds (CvPlayer.cpp kABTestVersusBase): batch2p beat CP consistently (52.0% +/- 0.7 strength share over
+/// 4 games) and is the base "b" every civ runs; half the civs ("c") also run candidate changes.
+/// c1: warmongers, aggressive and expansionist culture civs wide; wide opening to turn 130 (Standard) and 8 cities;
+/// a settler idle for 10+ turns means no land left.
+static const char* const AI_AB_TEST_BATCH = "c1";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
@@ -12909,7 +12913,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 			szVictory,
 			iI,
 			kPlayer.getCivilizationTypeKey(),
-			kPlayer.UsesNewAI() ? "new" : "cp",
+			CvPlayer::IsABTestVersusBase() ? (kPlayer.UsesCandidateAI() ? "c" : "b") : (kPlayer.UsesNewAI() ? "new" : "cp"),
 			kPlayer.isAlive() ? 1 : 0,
 			kPlayer.getNumCities(),
 			kPlayer.getTotalPopulation(),
