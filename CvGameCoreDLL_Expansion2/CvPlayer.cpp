@@ -48118,6 +48118,24 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 		}
 		return it->pPlot;
 	}
+
+	// AI_AB_TEST diagnostics: new-AI settlers sat idle for the whole game with dozens of valid sites, so say why no
+	// path was found to the best few (with the search's flags and with none)
+	if (UsesNewAI() && GC.getLogging() && GC.getAILogging())
+	{
+		CvString strMsg = CvString::format("SETTLE SEARCH FAILED: unit %d at (%d,%d) area %d, %d sites, %d moves left:",
+			pUnit->GetID(), pUnit->getX(), pUnit->getY(), pUnit->plot()->getArea(), (int)vSettlePlots.size(), pUnit->getMoves());
+		int iShown = 0;
+		for (vector<SPlotWithScore>::reverse_iterator it = vSettlePlots.rbegin(); it != vSettlePlots.rend() && iShown < 3; ++it, ++iShown)
+		{
+			int iTurns = -1;
+			bool bPath = pUnit->GeneratePath(it->pPlot, iFlags, 23, &iTurns);
+			bool bPathNoFlags = pUnit->GeneratePath(it->pPlot, 0, INT_MAX);
+			strMsg += CvString::format(" (%d,%d) area %d path %d nofl %d turns %d;", it->pPlot->getX(), it->pPlot->getY(),
+				it->pPlot->getArea(), bPath ? 1 : 0, bPathNoFlags ? 1 : 0, iTurns);
+		}
+		GetHomelandAI()->LogHomelandMessage(strMsg);
+	}
 	return NULL;
 }
 

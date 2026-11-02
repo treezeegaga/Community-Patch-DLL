@@ -5416,15 +5416,26 @@ bool EconomicAIHelpers::IsTestStrategy_FoundCity(EconomicAIStrategyTypes eStrate
 	if(pPlayer->isHuman(ISHUMAN_AI_UNITS))
 		return false;
 
+	// AI_AB_TEST diagnostics: new-AI settlers sat idle all game with no operation, so log each settler this skips
+	const bool bDiag = pPlayer->UsesNewAI() && GC.getLogging() && GC.getAILogging();
+
 	// Won't be allowed to settle ...
 	if (pPlayer->IsEmpireVeryUnhappy())
+	{
+		if (bDiag && pPlayer->GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0)
+			pPlayer->GetHomelandAI()->LogHomelandMessage(CvString("FOUND CITY: empire very unhappy, settlers wait"));
 		return false;
+	}
 
 	// Look at map for loose settlers
 	std::vector<CvUnit*> vSettlers;
 	int iUnitLoop = 0;
 	for(CvUnit* pLoopUnit = pPlayer->firstUnit(&iUnitLoop); pLoopUnit != NULL; pLoopUnit = pPlayer->nextUnit(&iUnitLoop))
 	{
+		if (bDiag && pLoopUnit->AI_getUnitAIType() == UNITAI_SETTLE && (pLoopUnit->getArmyID() != -1 || !pLoopUnit->canFoundCity(NULL, true, true)))
+			pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("FOUND CITY: settler %d at (%d,%d) skipped, army %d, can found %d",
+				pLoopUnit->GetID(), pLoopUnit->getX(), pLoopUnit->getY(), pLoopUnit->getArmyID(), pLoopUnit->canFoundCity(NULL, true, true) ? 1 : 0));
+
 		if (pLoopUnit->getArmyID() != -1)
 			continue;
 
@@ -5461,6 +5472,9 @@ bool EconomicAIHelpers::IsTestStrategy_FoundCity(EconomicAIStrategyTypes eStrate
 			}
 		}
 
+		if (bDiag)
+			pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("FOUND CITY: starting operation for settler %d at (%d,%d) to (%d,%d)",
+				pLoopUnit->GetID(), pLoopUnit->getX(), pLoopUnit->getY(), pBestSettle->getX(), pBestSettle->getY()));
 		pPlayer->addAIOperation(AI_OPERATION_FOUND_CITY, 1, NO_PLAYER, NULL, NULL);
 ;	}
 
