@@ -166,6 +166,7 @@ enum CandidateFixTypes
 							// GreedyArmyCap). Not in the bundle
 	FIX_IDEOLOGY_PICK,		// Economy (CvPolicyAI audit P2): a ruled-out ideology can't win the pick when the others score below 0. Not in the bundle
 	FIX_POLICY_PREREQ_DEPTH,	// Economy (CvPolicyAI audit P3): policy weight passed to prerequisites at the right depth. Not in the bundle
+	FIX_ESPIONAGE_POLICY_VALUE,	// Economy (CvPolicyAI audit P4): the passive espionage bonus is scored by its own value. Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

@@ -2350,7 +2350,11 @@ Firaxis::Array< int, NUM_YIELD_TYPES > CvPolicyAI::WeightPolicyAttributes(CvPlay
 	}
 	if (PolicyInfo->GetPassiveEspionageBonusModifier() != 0)
 	{
-		yield[YIELD_SCIENCE] += PolicyInfo->GetRigElectionInfluenceModifier() / 10;
+		// AI_AB_TEST candidate (EspionagePolicyValue): CP scores this with the rig-election value (copy-paste)
+		if (pPlayer->UsesCandidateAI(FIX_ESPIONAGE_POLICY_VALUE))
+			yield[YIELD_SCIENCE] += PolicyInfo->GetPassiveEspionageBonusModifier() / 10;
+		else
+			yield[YIELD_SCIENCE] += PolicyInfo->GetRigElectionInfluenceModifier() / 10;
 	}
 	if (PolicyInfo->GetMilitaryUnitGiftExtraInfluence() != 0)
 	{
