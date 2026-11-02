@@ -698,7 +698,9 @@ jobs:
   publish-ab-test-dll:
     name: Publish A/B test DLL
     needs: [get-version, build-msvc]
-    if: always() && needs.build-msvc.result == 'success' && github.ref == 'refs/heads/claude/sleepy-hopper-x77moh'
+    # The main test branch also moves ab-latest; other claude/ branches only publish ab-<commit>, so they can be
+    # tested with Run-ABTest.ps1 -Release ab-<commit> without replacing the build people are testing.
+    if: always() && needs.build-msvc.result == 'success' && startsWith(github.ref, 'refs/heads/claude/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -725,6 +727,7 @@ jobs:
           gh release delete "ab-${SHA}" --yes --cleanup-tag || true
           gh release create "ab-${SHA}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease \
             --title "AI A/B test DLL ${SHA}" --notes "${NOTES}"
+          if [ "${GITHUB_REF}" != "refs/heads/claude/sleepy-hopper-x77moh" ]; then exit 0; fi
           gh release delete ab-latest --yes --cleanup-tag || true
           gh release create ab-latest dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
             --title "AI A/B test DLL (latest: ${SHA})" --notes "${NOTES}"

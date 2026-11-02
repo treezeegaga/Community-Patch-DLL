@@ -1576,6 +1576,8 @@ void CvPlayer::uninit()
 	m_iNumPolicies = 0;
 	m_iHolyCityID = -1;
 	m_iTurnsSinceSettledLastCity = -1;
+	m_aiAIChangesOn.clear();
+	m_aiABTestStats.clear();
 	m_iNumNaturalWondersDiscoveredInArea = 0;
 	m_iStrategicResourceMod = 0;
 	m_iGreatPeopleSpawnCounter = -1;
@@ -33296,14 +33298,236 @@ bool CvPlayer::isMajorCiv() const
 /// AI_AB_TEST: which side of the A/B test this player is on. In a test game the major civs split into
 /// two groups: true runs the changed AI code, false runs Community Patch's original. The split flips
 /// with the map seed, so over many games each slot plays both sides. Outside a test game (the
-/// default) every player runs the changed code. Gate each AI change on this, e.g.
-///     if (m_pPlayer->UsesNewAI()) { new behaviour } else { CP's behaviour }
+/// default) every player runs the changed code. Gate each AI change on the version that names it, e.g.
+///     if (m_pPlayer->UsesNewAI(AI_CHANGE_TINY_ARMY)) { new behaviour } else { CP's behaviour }
 bool CvPlayer::UsesNewAI() const
 {
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
 		return true;
 
 	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(GetID())) & 1) != 0;
+}
+
+namespace
+{
+struct AIChangeInfo
+{
+	const char* szName;
+	const char* szGroup;
+};
+
+// Same order as AIChangeTypes. The names are what AIABSwitches.txt and the results file use.
+const AIChangeInfo kAIChanges[] =
+{
+	{"SettlersFirst", "batch1"},
+	{"KillBonus", "batch1"},
+	{"SkipFailedKill", "batch1"},
+	{"HpFloor", "batch1"},
+	{"GoldReserve", "batch1"},
+	{"TileSavings", "batch1"},
+	{"SettleAvoidEnemy", "batch1"},
+	{"TechPropagation", "batch1"},
+	{"ArmySlots", "batch1"},
+	{"DefenseLevels", "batch1"},
+	{"ExposedCity", "batch1"},
+	{"BookBuilds", "book"},
+	{"BookTechs", "book"},
+	{"BookPolicy", "book"},
+	{"ModifierScoring", "batch2b"},
+	{"TinyArmy", "batch2b"},
+	{"EarlyExpansion", "batch2b"},
+	{"SecondAttack", "batch2b"},
+	{"TechPriorities", "batch2b"},
+	{"TechCost", "batch2b"},
+	{"CityFood", "batch2b"},
+	{"CultureRivals", "batch2b"},
+	{"PurchaseWeight", "batch2b"},
+	{"PreferredTarget", "batch2b"},
+	{"ArmyAbort", "batch2b"},
+	{"DefendCity", "batch2b"},
+	{"FogTactical", "fog"},
+	{"FogDanger", "fog"},
+	{"SettlerEscort", "batch2c"},
+	{"SettleTravel", "batch2c"},
+	{"ArmyHelpers", "batch2d"},
+	{"TurnEndSurvival", "batch2e"},
+	{"DangerWeight", "batch2e"},
+	{"EscapeScore", "batch2e"},
+	{"WiderSearch", "batch2e"},
+};
+// fails to compile when the table and AIChangeTypes don't have the same number of entries
+typedef char AIChangeTableSizeCheck[(sizeof(kAIChanges) / sizeof(kAIChanges[0]) == NUM_AI_CHANGES) ? 1 : -1];
+
+/// Applies one switches line ("all", "none", "only <names>" or "except <names>") to a fresh set of changes.
+/// Returns false when the line doesn't start with one of those words.
+bool ParseAIChangeSpec(const std::vector<std::string>& vTokens, size_t iFirst, std::vector<int>& aiOn)
+{
+	if (iFirst >= vTokens.size())
+		return false;
+
+	const std::string& strMode = vTokens[iFirst];
+	int iListedValue = 0;
+	if (_stricmp(strMode.c_str(), "all") == 0)
+	{
+		aiOn.assign(NUM_AI_CHANGES, 1);
+		return true;
+	}
+	else if (_stricmp(strMode.c_str(), "none") == 0)
+	{
+		aiOn.assign(NUM_AI_CHANGES, 0);
+		return true;
+	}
+	else if (_stricmp(strMode.c_str(), "only") == 0)
+		iListedValue = 1;
+	else if (_stricmp(strMode.c_str(), "except") == 0)
+		iListedValue = 0;
+	else
+		return false;
+
+	aiOn.assign(NUM_AI_CHANGES, 1 - iListedValue);
+	for (size_t i = iFirst + 1; i < vTokens.size(); i++)
+	{
+		// a change name, or a group name for all of its changes; unknown names are ignored (the results
+		// file records which changes actually ran)
+		for (int iChange = 0; iChange < NUM_AI_CHANGES; iChange++)
+		{
+			if (_stricmp(vTokens[i].c_str(), kAIChanges[iChange].szName) == 0 || _stricmp(vTokens[i].c_str(), kAIChanges[iChange].szGroup) == 0)
+				aiOn[iChange] = iListedValue;
+		}
+	}
+	return true;
+}
+
+/// AI_AB_TEST: which changes ePlayer runs, from AIABSwitches.txt in My Games\Sid Meier's Civilization 5 (next to
+/// the results files). Without the file every change is on. Each line is
+///     [P<player id>] all | none | only <names> | except <names>
+/// with change or group names (batch1, book, batch2b, fog, batch2c, batch2d, batch2e) separated by spaces, commas
+/// or '+', e.g. "only TinyArmy" or "except fog". A line without P<id> is for every new-AI player; a P<id> line
+/// (0 is the first player) overrides it for that one. The last matching line wins, and '#' starts a comment.
+/// Test games are single player, so reading a local file can't cause a desync.
+void ReadAIChangeSwitches(PlayerTypes ePlayer, std::vector<int>& aiOn)
+{
+	aiOn.assign(NUM_AI_CHANGES, 1);
+
+	CvString strPath = gDLL->GetCacheFolderPath();
+	strPath += "..\\AIABSwitches.txt";
+	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
+	FILE* pFile = NULL;
+	if (_wfopen_s(&pFile, wstrPath.c_str(), L"r") != 0 || pFile == NULL)
+		return;
+
+	std::vector<int> aiDefault(NUM_AI_CHANGES, 1);
+	std::vector<int> aiPlayer;
+	char szLine[2048];
+	while (fgets(szLine, sizeof(szLine), pFile) != NULL)
+	{
+		std::vector<std::string> vTokens;
+		std::string strToken;
+		for (const char* p = szLine; ; p++)
+		{
+			char c = *p;
+			if (c == '#' || c == '\0' || c == '\r' || c == '\n' || c == ' ' || c == '\t' || c == ',' || c == '+' || c == ':' || c == '=')
+			{
+				if (!strToken.empty())
+					vTokens.push_back(strToken);
+				strToken.clear();
+				if (c == '#' || c == '\0' || c == '\r' || c == '\n')
+					break;
+			}
+			else
+				strToken += c;
+		}
+		if (vTokens.empty())
+			continue;
+
+		const std::string& strFirst = vTokens[0];
+		if ((strFirst[0] == 'P' || strFirst[0] == 'p') && strFirst.size() > 1 && strFirst[1] >= '0' && strFirst[1] <= '9')
+		{
+			if (atoi(strFirst.c_str() + 1) != (int)ePlayer)
+				continue;
+			std::vector<int> aiLine;
+			if (ParseAIChangeSpec(vTokens, 1, aiLine))
+				aiPlayer = aiLine;
+		}
+		else
+		{
+			std::vector<int> aiLine;
+			if (ParseAIChangeSpec(vTokens, 0, aiLine))
+				aiDefault = aiLine;
+		}
+	}
+	fclose(pFile);
+
+	aiOn = aiPlayer.empty() ? aiDefault : aiPlayer;
+}
+}
+
+/// AI_AB_TEST: does this player run the new code for this change? Players in the CP group never do. In a test game
+/// the new-AI players run the changes AIABSwitches.txt picks for them (all by default), decided when the game
+/// starts and then saved with it, so editing the file only affects new games. Outside a test game: always.
+bool CvPlayer::UsesNewAI(AIChangeTypes eChange) const
+{
+	if (!UsesNewAI())
+		return false;
+	if (!MOD_AI_AB_TEST || !isMajorCiv())
+		return true;
+
+	if ((int)m_aiAIChangesOn.size() != NUM_AI_CHANGES)
+		ReadAIChangeSwitches(GetID(), m_aiAIChangesOn);
+
+	return eChange >= 0 && eChange < NUM_AI_CHANGES && m_aiAIChangesOn[eChange] != 0;
+}
+
+const char* CvPlayer::GetAIChangeName(AIChangeTypes eChange)
+{
+	return (eChange >= 0 && eChange < NUM_AI_CHANGES) ? kAIChanges[eChange].szName : "";
+}
+
+/// AI_AB_TEST: the changes this player runs, for the results file: "all", "none", "only:A+B" or "except:A+B"
+/// (whichever list is shorter)
+CvString CvPlayer::GetAIChangesDescription() const
+{
+	int iNumOn = 0;
+	for (int iChange = 0; iChange < NUM_AI_CHANGES; iChange++)
+	{
+		if (UsesNewAI((AIChangeTypes)iChange))
+			iNumOn++;
+	}
+	if (iNumOn == NUM_AI_CHANGES)
+		return "all";
+	if (iNumOn == 0)
+		return "none";
+
+	const bool bListOn = (iNumOn * 2 <= NUM_AI_CHANGES);
+	CvString strResult = bListOn ? "only:" : "except:";
+	bool bFirst = true;
+	for (int iChange = 0; iChange < NUM_AI_CHANGES; iChange++)
+	{
+		if (UsesNewAI((AIChangeTypes)iChange) != bListOn)
+			continue;
+		if (!bFirst)
+			strResult += "+";
+		strResult += kAIChanges[iChange].szName;
+		bFirst = false;
+	}
+	return strResult;
+}
+
+int CvPlayer::GetABTestStat(ABTestStatTypes eStat) const
+{
+	if (eStat < 0 || eStat >= (int)m_aiABTestStats.size())
+		return 0;
+	return m_aiABTestStats[eStat];
+}
+
+/// AI_AB_TEST: running totals for the results file, kept only in test games
+void CvPlayer::ChangeABTestStat(ABTestStatTypes eStat, int iChange)
+{
+	if (!MOD_AI_AB_TEST || eStat < 0 || eStat >= NUM_AB_TEST_STATS)
+		return;
+	if ((int)m_aiABTestStats.size() != NUM_AB_TEST_STATS)
+		m_aiABTestStats.resize(NUM_AB_TEST_STATS, 0);
+	m_aiABTestStats[eStat] += iChange;
 }
 
 //	--------------------------------------------------------------------------------
@@ -33325,9 +33549,11 @@ static int GetOpeningBookFlavor(const CvPlayer& kPlayer, const char* szFlavor)
 	return kPlayer.GetFlavorManager()->GetPersonalityIndividualFlavor(eFlavor);
 }
 
-OpeningBookType CvPlayer::GetOpeningBook() const
+/// The opening plan this player's personality picks, whether or not it follows it (the results file records it for
+/// both groups, so plans can be compared like for like)
+OpeningBookType CvPlayer::GetOpeningBookPlan() const
 {
-	if (!UsesNewAI() || !isMajorCiv() || isHuman() || isBarbarian())
+	if (!isMajorCiv() || isHuman() || isBarbarian())
 		return OPENING_BOOK_NONE;
 
 	const CvPlayerTraits* pTraits = GetPlayerTraits();
@@ -33347,6 +33573,14 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
 		return OPENING_BOOK_WIDE;
 	return OPENING_BOOK_TALL;
+}
+
+/// The opening plan this player follows: none for the CP group, or when every part of the book is switched off
+OpeningBookType CvPlayer::GetOpeningBook() const
+{
+	if (!UsesNewAI(AI_CHANGE_BOOK_BUILDS) && !UsesNewAI(AI_CHANGE_BOOK_TECHS) && !UsesNewAI(AI_CHANGE_BOOK_POLICY))
+		return OPENING_BOOK_NONE;
+	return GetOpeningBookPlan();
 }
 
 bool CvPlayer::IsOpeningBookActive() const
@@ -33387,7 +33621,7 @@ static const OpeningBookStep kOpeningConquestCity[] = {
 /// The next build the opening book wants in this city, if any
 bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData)
 {
-	if (!pCity || pCity->IsPuppet() || pCity->isUnderSiege() || !IsOpeningBookActive())
+	if (!pCity || pCity->IsPuppet() || pCity->isUnderSiege() || !UsesNewAI(AI_CHANGE_BOOK_BUILDS) || !IsOpeningBookActive())
 		return false;
 
 	OpeningBookType eBook = GetOpeningBook();
@@ -33497,7 +33731,7 @@ static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech
 /// The next tech the opening book wants researched, if any
 TechTypes CvPlayer::GetOpeningBookTech() const
 {
-	if (!IsOpeningBookActive())
+	if (!UsesNewAI(AI_CHANGE_BOOK_TECHS) || !IsOpeningBookActive())
 		return NO_TECH;
 
 	static const char* const kTall[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY" };
@@ -33530,7 +33764,7 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 /// The first policy branch the opening book wants opened
 PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 {
-	if (!IsOpeningBookActive())
+	if (!UsesNewAI(AI_CHANGE_BOOK_POLICY) || !IsOpeningBookActive())
 		return NO_POLICY_BRANCH_TYPE;
 
 	switch (GetOpeningBook())
@@ -46215,6 +46449,13 @@ void CvPlayer::Serialize(Player& player, Visitor& visitor)
 	visitor(player.m_refuseBrokeredWarTrade);
 	visitor(player.m_refuseBrokeredPeaceTrade);
 	visitor(player.m_refuseResearchAgreementTrade);
+
+	// AI_AB_TEST: only test games save these, so normal saves keep their format
+	if (MOD_AI_AB_TEST)
+	{
+		visitor(player.m_aiAIChangesOn);
+		visitor(player.m_aiABTestStats);
+	}
 }
 
 //
@@ -47932,7 +48173,7 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 		}
 		// AI_AB_TEST: the continue above only moves to the next enemy, so CP never skipped these plots and sent
 		// settlers next to enemy cities during wars. The new AI skips them.
-		if (bCloseToEnemyCity && UsesNewAI())
+		if (bCloseToEnemyCity && UsesNewAI(AI_CHANGE_SETTLE_AVOID_ENEMY))
 			continue;
 
 		if(pUnit && (!pUnit->canFoundCity(pPlot) || !pUnit->canMoveInto(*pPlot)))
@@ -48051,7 +48292,7 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 	// settler's travel time: a site 5 turns away keeps 80% of its value, 20 turns away 50%. The current target
 	// gets a 15% edge so the settler doesn't swap between two similar sites every turn. Not used for the first
 	// city, which homeland AI handles.
-	if (UsesNewAI() && getNumCities() > 0)
+	if (UsesNewAI(AI_CHANGE_SETTLE_TRAVEL) && getNumCities() > 0)
 	{
 		const int iTravelTurnsForHalfValue = 20;
 		ReachablePlots reachable = GC.GetPathFinder().GetPlotsInReach(pUnit->plot(), SPathFinderUserData(pUnit, iFlags, 23));

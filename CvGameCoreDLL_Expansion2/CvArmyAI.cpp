@@ -643,7 +643,7 @@ int CvArmyAI::RemoveUnit(int iUnitToRemoveID, bool bTempOnly)
 			// AI_AB_TEST: Clear() marks the slot optional, so in CP an army that loses a unit while recruiting
 			// counts itself complete and leaves without it (often its siege). The new AI keeps the slot's
 			// required flag from the formation, so the army waits for a replacement (up to the usual timeout).
-			if (GET_PLAYER(GetOwner()).UsesNewAI())
+			if (GET_PLAYER(GetOwner()).UsesNewAI(AI_CHANGE_ARMY_SLOTS))
 				slot = CvArmyFormationSlot(-1, GetSlotInfo(iI).m_requiredSlot);
 
 			CvUnit* pThisUnit = GET_PLAYER(GetOwner()).getUnit(iUnitToRemoveID);

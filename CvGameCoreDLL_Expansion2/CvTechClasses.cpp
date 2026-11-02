@@ -2036,7 +2036,7 @@ void CvPlayerTechs::AddFlavorAsStrategies(int iPropagatePercent)
 	}
 
 	// AI_AB_TEST: the new AI adds the civ/locale/grand strategy priorities once per tech, not once per flavor
-	if (m_pPlayer->UsesNewAI())
+	if (m_pPlayer->UsesNewAI(AI_CHANGE_TECH_PRIORITIES))
 		m_pTechAI->AddPriorityWeights(iPropagatePercent);
 
 	//don't care about minors.

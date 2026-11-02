@@ -13,6 +13,7 @@
 #include "CvMap.h"
 #include "CvPlot.h"
 #include "CvPlayerAI.h"
+#include "CvEconomicAI.h"
 #include "CvRandom.h"
 #include "CvTeam.h"
 #include "CvGlobals.h"
@@ -12815,7 +12816,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// Bump this when the set of changes gated on UsesNewAI() changes.
 /// batch1: 11 bug fixes. batch2a: batch1 plus the opening book, and early-game milestone columns.
 /// batch2b: batch2a plus fog cheats removed and 11 more fixes (see AUDIT.md in Civ5-CP-AnimatedLeaders).
-static const char* const AI_AB_TEST_BATCH = "batch2e";
+/// batch2f: batch2e's AI with every change switchable (AIABSwitches.txt, see CvPlayer::UsesNewAI(AIChangeTypes)),
+/// plus the Changes and Plan columns and the settler, production, unit and gold columns.
+static const char* const AI_AB_TEST_BATCH = "batch2f";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
@@ -12830,10 +12833,12 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,"
+			"Changes,Plan,SettlersTrained,SettlersFounded,SettlersWaiting,SettlerTurns,MilitaryTrained,MilitaryUnits,ProdUnits,ProdBuildings,ProdWonders,GoldPurchases,GoldTiles,SettleSite,WantsExpansion,Unhappy\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 	const BuildingClassTypes eNationalCollege = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_NATIONAL_COLLEGE", true);
+	const EconomicAIStrategyTypes eEarlyExpansion = (EconomicAIStrategyTypes)GC.getInfoTypeForString("ECONOMICAISTRATEGY_EARLY_EXPANSION", true);
 
 	const char* szVictory = "";
 	if (bFinal && getVictory() != NO_VICTORY)
@@ -12866,8 +12871,28 @@ void CvGame::LogABTestResults(bool bFinal) const
 		int iCity3Turn = vFoundedTurns.size() > 2 ? vFoundedTurns[2] : -1;
 		int iCity4Turn = vFoundedTurns.size() > 3 ? vFoundedTurns[3] : -1;
 		OpeningBookType eBook = kPlayer.GetOpeningBook();
+		OpeningBookType ePlan = kPlayer.GetOpeningBookPlan();
 
-		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\r\n",
+		// Why a civ stops expanding: settlers it never trained, settlers that wait instead of settling (turns from
+		// training to founding, plus the turns so far of settlers still waiting), no site left, or the AI not
+		// wanting to expand (or not able to, while unhappy)
+		int iSettlersWaiting = 0;
+		int iSettlerTurns = kPlayer.GetABTestStat(AB_STAT_SETTLER_TURNS);
+		int iUnitLoop = 0;
+		for (const CvUnit* pLoopUnit = kPlayer.firstUnit(&iUnitLoop); pLoopUnit != NULL; pLoopUnit = kPlayer.nextUnit(&iUnitLoop))
+		{
+			if (pLoopUnit->isFound())
+			{
+				iSettlersWaiting++;
+				iSettlerTurns += getGameTurn() - pLoopUnit->getGameTurnCreated();
+			}
+		}
+		bool bSettleSite = kPlayer.isAlive() && kPlayer.GetBestSettlePlot(NULL) != NULL;
+		bool bWantsExpansion = kPlayer.isAlive() && eEarlyExpansion != NO_ECONOMICAISTRATEGY && kPlayer.GetEconomicAI()->IsUsingStrategy(eEarlyExpansion);
+		CvString strChanges = kPlayer.GetAIChangesDescription();
+
+		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,"
+			"%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
 			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(),
 			getElapsedGameTurns(),
 			bFinal ? 1 : 0,
@@ -12889,7 +12914,23 @@ void CvGame::LogABTestResults(bool bFinal) const
 			kPlayer.IsHasLostCapital() ? 1 : 0,
 			iCity2Turn, iCity3Turn, iCity4Turn,
 			bNationalCollege ? 1 : 0,
-			kBookNames[(eBook >= OPENING_BOOK_NONE && eBook <= OPENING_BOOK_CONQUEST) ? eBook : 0]);
+			kBookNames[(eBook >= OPENING_BOOK_NONE && eBook <= OPENING_BOOK_CONQUEST) ? eBook : 0],
+			strChanges.c_str(),
+			kBookNames[(ePlan >= OPENING_BOOK_NONE && ePlan <= OPENING_BOOK_CONQUEST) ? ePlan : 0],
+			kPlayer.GetABTestStat(AB_STAT_SETTLERS_TRAINED),
+			kPlayer.GetABTestStat(AB_STAT_SETTLERS_FOUNDED),
+			iSettlersWaiting,
+			iSettlerTurns,
+			kPlayer.GetABTestStat(AB_STAT_MILITARY_TRAINED),
+			kPlayer.getNumMilitaryUnits(),
+			kPlayer.GetABTestStat(AB_STAT_PRODUCTION_UNITS) / 100,
+			kPlayer.GetABTestStat(AB_STAT_PRODUCTION_BUILDINGS) / 100,
+			kPlayer.GetABTestStat(AB_STAT_PRODUCTION_WONDERS) / 100,
+			kPlayer.GetABTestStat(AB_STAT_GOLD_PURCHASES),
+			kPlayer.GetABTestStat(AB_STAT_GOLD_TILES),
+			bSettleSite ? 1 : 0,
+			bWantsExpansion ? 1 : 0,
+			kPlayer.IsEmpireUnhappy() ? 1 : 0);
 	}
 
 	fclose(pFile);

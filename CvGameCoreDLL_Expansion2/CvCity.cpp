@@ -28597,6 +28597,7 @@ void CvCity::BuyPlot(int iPlotX, int iPlotY, bool bAutomaticPurchaseFromBuilding
 	if (iCost > 0)
 	{
 		thisPlayer.GetTreasury()->LogExpenditure("buy plot", iCost, 1);
+		thisPlayer.ChangeABTestStat(AB_STAT_GOLD_TILES, iCost);
 		thisPlayer.GetTreasury()->ChangeGold(-iCost);
 		bWithGold = true;
 		if (MOD_UI_CITY_EXPANSION && GET_PLAYER(getOwner()).isHuman(ISHUMAN_AI_CITY_MANAGEMENT))
@@ -30135,6 +30136,15 @@ CvUnit* CvCity::CreateUnit(UnitTypes eUnitType, UnitAITypes eAIType, UnitCreatio
 	CvUnit* pUnit = kOwner.initUnit(eUnitType, pUnitPlot->getX(), pUnitPlot->getY(), eAIType, eReason);
 	bool bIsPurchased = (eReason == REASON_BUY || eReason == REASON_FAITH_BUY);
 
+	// AI_AB_TEST: unit statistics for the results file
+	if (MOD_AI_AB_TEST && pUnit && (eReason == REASON_TRAIN || bIsPurchased))
+	{
+		if (pUnit->isFound())
+			kOwner.ChangeABTestStat(AB_STAT_SETTLERS_TRAINED, 1);
+		else if (pUnit->IsCombatUnit())
+			kOwner.ChangeABTestStat(AB_STAT_MILITARY_TRAINED, 1);
+	}
+
 	if (MOD_BALANCE_PURCHASED_UNIT_DAMAGE && bIsPurchased && !pUnit->IsCivilianUnit())
 	{
 		int iCityDamagePercent = min(80, (100 * getDamage()) / max(1, GetMaxHitPoints()));
@@ -31095,6 +31105,7 @@ CvUnit* CvCity::PurchaseUnit(UnitTypes eUnitType, YieldTypes ePurchaseYield)
 		}
 
 		kPlayer.GetTreasury()->LogExpenditure(CvString(pGameUnit->GetText()), iGoldCost, 2);
+		kPlayer.ChangeABTestStat(AB_STAT_GOLD_PURCHASES, iGoldCost);
 
 		bool bCivilian = (pGameUnit->GetCombat() <= 0 && pGameUnit->GetRangedCombat() <= 0);
 		SetUnitPurchaseCooldown(bCivilian, pGameUnit->GetCooldown() - GetUnitPurchaseCooldownMod(bCivilian));
@@ -31357,6 +31368,7 @@ bool CvCity::PurchaseBuilding(BuildingTypes eBuildingType, YieldTypes ePurchaseY
 		}
 
 		kPlayer.GetTreasury()->LogExpenditure((CvString)pGameBuilding->GetText(), iGoldCost, 2);
+		kPlayer.ChangeABTestStat(AB_STAT_GOLD_PURCHASES, iGoldCost);
 		GET_PLAYER(getOwner()).GetTreasury()->ChangeGold(-iGoldCost);
 		if (iGoldCost > 0)
 		{
@@ -31463,6 +31475,7 @@ bool CvCity::PurchaseProject(ProjectTypes eProjectType, YieldTypes ePurchaseYiel
 	{
 		int iGoldCost = GetPurchaseCost(eProjectType);
 		kPlayer.GetTreasury()->LogExpenditure((CvString)GC.getProjectInfo(eProjectType)->GetText(), iGoldCost, 2);
+		kPlayer.ChangeABTestStat(AB_STAT_GOLD_PURCHASES, iGoldCost);
 
 		GET_PLAYER(getOwner()).GetTreasury()->ChangeGold(-iGoldCost);
 		if (iGoldCost > 0)
@@ -31970,6 +31983,20 @@ void CvCity::doProduction(bool bAllowNoProduction)
 						DLLUI->AddDeferredWonderCommand(WONDER_CREATED, pDllCity.get(), eBuilding, 0);
 					}
 				}
+			}
+		}
+
+		// AI_AB_TEST: production statistics for the results file (this turn's production, by what it goes into)
+		if (MOD_AI_AB_TEST)
+		{
+			int iProductionTimes100 = getYieldRateTimes100(YIELD_PRODUCTION);
+			if (isProductionUnit())
+				GET_PLAYER(getOwner()).ChangeABTestStat(AB_STAT_PRODUCTION_UNITS, iProductionTimes100);
+			else if (isProductionBuilding())
+			{
+				CvBuildingEntry* pkProductionBuilding = GC.getBuildingInfo(getProductionBuilding());
+				bool bWorldWonder = pkProductionBuilding && isWorldWonderClass(pkProductionBuilding->GetBuildingClassInfo());
+				GET_PLAYER(getOwner()).ChangeABTestStat(bWorldWonder ? AB_STAT_PRODUCTION_WONDERS : AB_STAT_PRODUCTION_BUILDINGS, iProductionTimes100);
 			}
 		}
 

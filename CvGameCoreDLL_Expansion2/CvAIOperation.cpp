@@ -872,7 +872,7 @@ void CvAIOperation::UnitWasRemoved(int iArmyID, int iSlotID)
 				// AI_AB_TEST: with integer division CP lets a 4-5 unit army march on with 2 units and arrive too weak to
 				// do anything. The new AI gives up below two thirds while still gathering or moving; once at the
 				// target it keeps CP's rule so it doesn't abandon a fight it's already in.
-				else if (GET_PLAYER(m_eOwner).UsesNewAI() && m_eCurrentState != AI_OPERATION_STATE_AT_TARGET &&
+				else if (GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_ARMY_ABORT) && m_eCurrentState != AI_OPERATION_STATE_AT_TARGET &&
 					pThisArmy->GetNumSlotsFilled() * 3 < iNumRequiredSlots * 2)
 				{
 					SetToAbort(AI_ABORT_HALF_STRENGTH);
@@ -1817,7 +1817,7 @@ void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 
 	// AI_AB_TEST: CP always asks for an escort unless the site is reachable this turn, and a settler can wait up to
 	// 42 turns for one while the city builds it. The new AI sends the settler alone when the trip looks safe.
-	bool bSkipEscort = (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && SettlerTripLooksSafe(pOurCivilian, pTargetSite));
+	bool bSkipEscort = (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_SETTLER_ESCORT) && SettlerTripLooksSafe(pOurCivilian, pTargetSite));
 
 	//don't wait for the escort in the wild
 	CvPlot* pMusterPlot = pOurCivilian->plot();
@@ -1864,7 +1864,7 @@ bool CvAIOperationCivilian::CheckTransitionToNextStage()
 	case ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE:
 		{
 			// AI_AB_TEST: if no escort has turned up after a few turns and the trip now looks safe, go without one
-			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && pCivilian &&
+			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_SETTLER_ESCORT) && pCivilian &&
 				GC.getGame().getGameTurn() - GetTurnStarted() >= 3 && pThisArmy->GetNumFormationEntries() > 1 &&
 				pThisArmy->GetSlotStatus(1)->IsFree() && SettlerTripLooksSafe(pCivilian, GetTargetPlot()))
 			{

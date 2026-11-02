@@ -788,7 +788,7 @@ void CvTacticalAnalysisMap::CalculateMilitaryStrengths()
 	int iUnitStrengthMultiplier = 1; //relative to cities
 
 	//AI_AB_TEST: the new AI only uses what it can actually see (no adjacent-plot visibility, no hidden units)
-	const bool bNoFogCheat = thisPlayer.UsesNewAI();
+	const bool bNoFogCheat = thisPlayer.UsesNewAI(AI_CHANGE_FOG_TACTICAL);
 
 	//performance optimization, create a visibility lookup table
 	int iGridSize = GC.getMap().numPlots();

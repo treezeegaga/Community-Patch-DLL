@@ -3069,7 +3069,7 @@ void CvEconomicAI::DoHurry()
 	{
 		// AI_AB_TEST: adding a negative income shrank the cushion, so CP spent down to zero while losing
 		// money. The new AI keeps 10 turns of the deficit in reserve.
-		iTreasuryBuffer += (m_pPlayer->UsesNewAI() ? -10 : 10) * iGPT;
+		iTreasuryBuffer += (m_pPlayer->UsesNewAI(AI_CHANGE_GOLD_RESERVE) ? -10 : 10) * iGPT;
 	}
 	else
 	{
@@ -3378,7 +3378,7 @@ void CvEconomicAI::DoPlotPurchases()
 	// AI_AB_TEST: CP never cancels a tile savings request, so after one unaffordable plot the amount stays
 	// reserved (and blocks hurrying) for the rest of the game. The new AI clears it here; the loop below
 	// renews it while a plot is still wanted and unaffordable.
-	if (m_pPlayer->UsesNewAI())
+	if (m_pPlayer->UsesNewAI(AI_CHANGE_TILE_SAVINGS))
 		CancelSaveForPurchase(PURCHASE_TYPE_TILE);
 
 	// No plot buying when at war and losing
@@ -3403,7 +3403,7 @@ void CvEconomicAI::DoPlotPurchases()
 	if (iGPT < 0)
 	{
 		// AI_AB_TEST: same sign fix as in DoHurry
-		iTreasuryBuffer += (m_pPlayer->UsesNewAI() ? -10 : 10) * iGPT;
+		iTreasuryBuffer += (m_pPlayer->UsesNewAI(AI_CHANGE_GOLD_RESERVE) ? -10 : 10) * iGPT;
 	}
 	else
 	{
@@ -5079,7 +5079,7 @@ bool EconomicAIHelpers::IsTestStrategy_EarlyExpansion(EconomicAIStrategyTypes eS
 	//AI_AB_TEST: CP guarantees 3 cities, then stops as soon as any stronger civ is a direct neighbour, before it
 	//even looks for free land, so many AIs stall at 3-4 cities. The new AI guarantees 4, and a stronger
 	//neighbour only stops it while at war with us; otherwise the free-land checks below decide.
-	const bool bNewAI = pPlayer->UsesNewAI();
+	const bool bNewAI = pPlayer->UsesNewAI(AI_CHANGE_EARLY_EXPANSION);
 
 	//we do not want to lose time for building our settlers even if we haven't explored yet
 	if (pPlayer->GetNumCitiesFounded() < (bNewAI ? 4 : 3))

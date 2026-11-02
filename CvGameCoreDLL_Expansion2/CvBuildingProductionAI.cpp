@@ -1330,7 +1330,7 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//AI_AB_TEST: in CP this applies in peacetime too, so a peaceful AI with under 3 units per city cuts every
 		//building's value by 75% and keeps building units. The new AI uses 3 per city only at war, and at peace
 		//only reacts to a truly tiny army (1 per city).
-		int iTinyArmyUnitsPerCity = (kPlayer.UsesNewAI() && iNumWar == 0) ? 1 : 3;
+		int iTinyArmyUnitsPerCity = (kPlayer.UsesNewAI(AI_CHANGE_TINY_ARMY) && iNumWar == 0) ? 1 : 3;
 		if (kPlayer.getNumMilitaryUnits() <= (kPlayer.getNumCities() * iTinyArmyUnitsPerCity))
 		{
 			WarPenalty += 75;
