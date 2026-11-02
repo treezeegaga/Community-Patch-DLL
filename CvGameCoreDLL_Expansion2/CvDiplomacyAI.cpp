@@ -23371,7 +23371,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		if (bCommitted)
 		{
 			eBest = eLoopPlayer;
-			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, weakest neighbour";
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, greediest neighbour";
 			break;
 		}
 
@@ -23384,15 +23384,17 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		}
 		else
 		{
-			// the weakest, neighbours before close civs
-			iScore = (NUM_STRENGTH_VALUES - (int)eTheirStrength) * 10 + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 5 : 0);
+			// c7: the greediest, fewest land units per city (USER: greedy civs are the ones a warmonger can punish; c5b's
+			// two warmongers picked each other by the "weakest" strength estimate), neighbours before close civs
+			const CvPlayer& kTarget = GET_PLAYER(eLoopPlayer);
+			iScore = -kTarget.getNumMilitaryLandUnits() * 100 / max(1, kTarget.getNumCities()) + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 50 : 0);
 		}
 
 		if (iScore > iBestScore)
 		{
 			iBestScore = iScore;
 			eBest = eLoopPlayer;
-			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, weakest neighbour";
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, greediest neighbour";
 		}
 	}
 

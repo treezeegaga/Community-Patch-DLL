@@ -33492,7 +33492,9 @@ bool CvPlayer::IsOpeningBookActive() const
 	// Candidate: wide civs keep settling longer. In test games they led CP by a city at turn 60 on Quick, then expanded
 	// no faster than CP once the book ended (turn 67), so the lead never grew.
 	int iWideLimit = (UsesCandidateAI() && kCandidateLongWideOpening) ? 130 : 100;
-	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
+	// c7: a candidate tall civ's book runs on through the National College, aqueduct and university
+	int iTallLimit = UsesCandidateAI() ? 130 : 80;
+	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : iTallLimit;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
 }
@@ -33513,6 +33515,13 @@ static const OpeningBookStep kOpeningTallCapital[] = {
 	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WARRIOR"},
 	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
+// c7, candidate tall civs play greedy (USER: "library -> national college -> aqueducts -> university"): no
+// change to the start (its two warriors escort the settlers), then the capital goes on to growth and science
+static const OpeningBookStep kOpeningTallCapitalGreedy[] = {
+	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WARRIOR"},
+	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"}, {false, "BUILDINGCLASS_AQUEDUCT"},
+	{false, "BUILDINGCLASS_UNIVERSITY"} };
 static const OpeningBookStep kOpeningTallCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCapital[] = {
@@ -33567,6 +33576,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	switch (eBook)
 	{
 	case OPENING_BOOK_TALL:
+		if (bCapital && UsesCandidateAI())
+		{
+			pSteps = kOpeningTallCapitalGreedy;
+			iNumSteps = (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
+			break;
+		}
 		pSteps = bCapital ? kOpeningTallCapital : kOpeningTallCity;
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
 		break;
@@ -33712,6 +33727,8 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	static const char* const kTall[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY" };
 	static const char* const kWide[] = { "TECH_POTTERY", "TECH_MINING", "TECH_WRITING", "TECH_CURRENCY" };
 	static const char* const kConquest[] = { "TECH_ARCHERY", "TECH_BRONZE_WORKING", "TECH_WRITING", "TECH_CONSTRUCTION" };
+	// c7, candidate tall civs: the techs for the greedy capital's library, college, aqueduct and university
+	static const char* const kTallGreedy[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY", "TECH_ENGINEERING", "TECH_EDUCATION" };
 	// candidate warmongers: catapults (Mathematics needs only The Wheel) and the spearman class (hoplite, ram...)
 	static const char* const kWarmonger[] = { "TECH_POTTERY", "TECH_THE_WHEEL", "TECH_MATHEMATICS", "TECH_BRONZE_WORKING", "TECH_ARCHERY", "TECH_WRITING" };
 
@@ -33722,6 +33739,11 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	{
 		pTechs = kWarmonger;
 		iNumTechs = (int)(sizeof(kWarmonger) / sizeof(kWarmonger[0]));
+	}
+	else if (eBook == OPENING_BOOK_TALL && UsesCandidateAI())
+	{
+		pTechs = kTallGreedy;
+		iNumTechs = (int)(sizeof(kTallGreedy) / sizeof(kTallGreedy[0]));
 	}
 	else if (eBook == OPENING_BOOK_WIDE)
 	{
