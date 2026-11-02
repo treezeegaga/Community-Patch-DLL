@@ -33453,7 +33453,10 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 				continue;
 			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || GetBestSettlePlot(NULL) == NULL))
 				continue;
-			if (bSettler && pCity->getYieldRateTimes100(YIELD_FOOD) > 0 && pCity->getFoodTurnsLeft() <= pCity->getProductionTurnsLeft(eUnit, 0))
+			// only wait for growth that is imminent: a fast-growing capital always has its next citizen closer than the
+			// settler, and waiting for that kept one capital from starting a settler until turn 37
+			if (bSettler && pCity->getYieldRateTimes100(YIELD_FOOD) > 0 && pCity->getFoodTurnsLeft() <= 3 &&
+				pCity->getFoodTurnsLeft() < pCity->getProductionTurnsLeft(eUnit, 0))
 				continue;
 			// One settler at a time: a second one only waits around while the first walks, and with two idle
 			// settlers the found-city operation can take the one that can't reach a site and abort every turn
