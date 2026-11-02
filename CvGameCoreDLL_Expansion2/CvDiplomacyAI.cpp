@@ -34364,6 +34364,7 @@ void CvDiplomacyAI::DoSendStatementToPlayer(PlayerTypes ePlayer, DiploStatementT
 				szText = GetDiploStringForMessage(DIPLO_MESSAGE_COOP_WAR_REQUEST, ePlayer, strAgainstPlayerKey);
 
 				CvDiplomacyRequests::SendRequest(GetID(), ePlayer, DIPLO_UI_STATE_DISCUSS_COOP_WAR, szText, LEADERHEAD_ANIM_POSITIVE, eAgainstPlayer);
+				GC.getGame().ChangeABTestCountAgainst(GetID(), eAgainstPlayer, AB_COUNT_COOP_WAR_ASKED, AB_COUNT_COOP_WAR_ASKED_VS_AGGRESSOR);
 			}
 			// AI resolution
 			else
@@ -40188,6 +40189,7 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 		else if (iArg1 == 3 || iArg1 == 4)
 		{
 			ChangeRecentAssistValue(eFromPlayer, 300);
+			GC.getGame().ChangeABTestCountAgainst(GetID(), eTargetPlayer, AB_COUNT_COOP_WAR_AGREED, AB_COUNT_COOP_WAR_AGREED_VS_AGGRESSOR);
 
 			// Human says he needs to prepare
 			if (iArg1 == 3)
@@ -42965,6 +42967,8 @@ CoopWarStates CvDiplomacyAI::RespondToCoopWarRequest(PlayerTypes eAskingPlayer, 
 		return COOP_WAR_STATE_REJECTED;
 	}
 
+	GC.getGame().ChangeABTestCountAgainst(eAskingPlayer, eTargetPlayer, AB_COUNT_COOP_WAR_ASKED, AB_COUNT_COOP_WAR_ASKED_VS_AGGRESSOR);
+
 	bool bBold = GetBoldness() > 7 || GetPlayer()->GetPlayerTraits()->IsWarmonger() || (IsCompetingForVictory() && IsGoingForWorldConquest());
 	bool bCloseToTarget = GetPlayer()->CanCrossOcean() ? GetPlayer()->GetProximityToPlayer(eTargetPlayer) >= PLAYER_PROXIMITY_CLOSE : GetPlayer()->GetProximityToPlayer(eTargetPlayer) == PLAYER_PROXIMITY_NEIGHBORS;
 	bool bGoodAttackTarget = GetPlayer()->GetMilitaryAI()->HavePreferredAttackTarget(eTargetPlayer);
@@ -43050,6 +43054,7 @@ CoopWarStates CvDiplomacyAI::RespondToCoopWarRequest(PlayerTypes eAskingPlayer, 
 		// Update approach to WAR
 		SetCivApproach(eTargetPlayer, CIV_APPROACH_WAR);
 		GET_PLAYER(eAskingPlayer).GetDiplomacyAI()->SetCivApproach(eTargetPlayer, CIV_APPROACH_WAR);
+		GC.getGame().ChangeABTestCountAgainst(eAskingPlayer, eTargetPlayer, AB_COUNT_COOP_WAR_AGREED, AB_COUNT_COOP_WAR_AGREED_VS_AGGRESSOR);
 	}
 
 	return eResponse;

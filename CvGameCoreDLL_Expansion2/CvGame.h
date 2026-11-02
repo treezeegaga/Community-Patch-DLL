@@ -716,6 +716,7 @@ public:
 	int GetABTestHeadStartGold() const { return m_iABTestHeadStartGold; }
 	void ChangeABTestCount(PlayerTypes ePlayer, int eCount, int iChange = 1);	// ABTestCountTypes
 	int GetABTestCount(PlayerTypes ePlayer, int eCount) const;
+	void ChangeABTestCountAgainst(PlayerTypes ePlayer, PlayerTypes eTarget, int eCount, int eVsAggressorCount);	// ABTestCountTypes
 	void WriteABTestReplayRecord() const;
 	void unitIsMoving() const;
 

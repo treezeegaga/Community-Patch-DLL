@@ -418,6 +418,17 @@ void CvGame::ChangeABTestCount(PlayerTypes ePlayer, int eCount, int iChange)
 	m_aiABTestCounts[ePlayer * NUM_AB_COUNTS + eCount] += iChange;
 }
 
+/// AI_AB_TEST: count a proposal ePlayer made against eTarget, and again in eVsAggressorCount if eTarget is the bully
+/// test's aggressor
+void CvGame::ChangeABTestCountAgainst(PlayerTypes ePlayer, PlayerTypes eTarget, int eCount, int eVsAggressorCount)
+{
+	if (!MOD_AI_AB_TEST)
+		return;
+	ChangeABTestCount(ePlayer, eCount);
+	if (eTarget >= 0 && eTarget < MAX_MAJOR_CIVS && GET_PLAYER(eTarget).GetABTestRole() == AB_ROLE_AGGRESSOR)
+		ChangeABTestCount(ePlayer, eVsAggressorCount);
+}
+
 int CvGame::GetABTestCount(PlayerTypes ePlayer, int eCount) const
 {
 	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || eCount < 0 || eCount >= NUM_AB_COUNTS ||
@@ -13155,7 +13166,10 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// WarsOnUs, CitiesCaptured, CitiesLost, Deals, WorkersStolen, WonderChops (running counts, ABTestCountTypes), and
 /// AtWar, AtWarAggressor, Pacts, Friends, Denouncing, Influential (the state at that turn), and TurnSecs (real seconds
 /// per turn since the last logged row). The AI is unchanged.
-static const char* const AI_AB_TEST_BATCH = "c7c_roles";
+/// c7c_proposals: c7c_roles with joint-war and sanction proposals, as running counts per proposer: CoopWarAsked,
+/// CoopWarAskedVsAggressor, CoopWarAgreed, CoopWarAgreedVsAggressor, SanctionsProposed, SanctionsProposedVsAggressor,
+/// SanctionsPassed, SanctionsPassedVsAggressor. The AI is unchanged.
+static const char* const AI_AB_TEST_BATCH = "c7c_proposals";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
 static CvString GetABTestFixListText(ABTestFixMask uMask)
@@ -13198,7 +13212,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 
@@ -13343,7 +13357,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 			if (kPlayer.GetDiplomacyAI()->IsDenouncedPlayer(eOther))
 				iDenouncing++;
 		}
-		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f\r\n",
+		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
 			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_BUILDERS) ? m_iABTestMode : 0],
 			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BUILDER) ? eRole : 0],
 			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
@@ -13352,7 +13366,11 @@ void CvGame::LogABTestResults(bool bFinal) const
 			GetABTestCount(ePlayer, AB_COUNT_WONDER_CHOPS),
 			iAtWar, iAtWarAggressor, iPacts, iFriends, iDenouncing,
 			kPlayer.isAlive() ? kPlayer.GetCulture()->GetNumCivsInfluentialOn() : 0,
-			fTurnSecs);
+			fTurnSecs,
+			GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_ASKED), GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_ASKED_VS_AGGRESSOR),
+			GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_AGREED), GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_AGREED_VS_AGGRESSOR),
+			GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PROPOSED), GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PROPOSED_VS_AGGRESSOR),
+			GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED), GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR));
 	}
 
 	fclose(pFile);

@@ -2630,6 +2630,10 @@ void CvLeague::DoProposeEnact(ResolutionTypes eResolution, PlayerTypes eProposer
 	
 	CvEnactProposal proposal(GC.getGame().GetGameLeagues()->GenerateResolutionUniqueID(), eResolution, GetID(), eProposer, iChoice);
 	m_vEnactProposals.push_back(proposal);
+
+	// AI_AB_TEST: count sanctions proposals
+	if (eProposer != NO_PLAYER && proposal.GetEffects()->bEmbargoPlayer)
+		GC.getGame().ChangeABTestCountAgainst(eProposer, (PlayerTypes)iChoice, AB_COUNT_SANCTIONS_PROPOSED, AB_COUNT_SANCTIONS_PROPOSED_VS_AGGRESSOR);
 	GC.GetEngineUserInterface()->setDirty(LeagueScreen_DIRTY_BIT, true);
 }
 
@@ -8455,6 +8459,10 @@ void CvLeague::AssignNewHost()
 void CvLeague::DoEnactResolution(CvEnactProposal* pProposal, bool bFromLua)
 {
 	ASSERT(bFromLua || pProposal->IsPassed(GetVotesSpentThisSession()), "Doing a proposal that has not been passed.");
+
+	// AI_AB_TEST: count sanctions that passed, for their proposer
+	if (pProposal->GetEffects()->bEmbargoPlayer && pProposal->GetProposalPlayer() != NO_PLAYER)
+		GC.getGame().ChangeABTestCountAgainst(pProposal->GetProposalPlayer(), (PlayerTypes)pProposal->GetProposerDecision()->GetDecision(), AB_COUNT_SANCTIONS_PASSED, AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR);
 
 	CvActiveResolution resolution(pProposal);
 	for (uint i = 0; i < m_vMembers.size(); i++)

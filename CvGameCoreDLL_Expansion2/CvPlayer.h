@@ -190,6 +190,14 @@ enum ABTestCountTypes
 	AB_COUNT_DEALS,				// deals with another major civ that went into effect
 	AB_COUNT_WORKERS_STOLEN,	// banned: civilians it captured from city-states
 	AB_COUNT_WONDER_CHOPS,		// banned: forests or jungles chopped into a city building a world wonder
+	AB_COUNT_COOP_WAR_ASKED,				// joint wars it proposed to another major civ
+	AB_COUNT_COOP_WAR_ASKED_VS_AGGRESSOR,	// ... of them against the bully test's aggressor
+	AB_COUNT_COOP_WAR_AGREED,				// joint wars it proposed that the other civ agreed to (now or after preparing)
+	AB_COUNT_COOP_WAR_AGREED_VS_AGGRESSOR,	// ... of them against the aggressor
+	AB_COUNT_SANCTIONS_PROPOSED,				// World Congress sanctions (embargo on a player) it proposed
+	AB_COUNT_SANCTIONS_PROPOSED_VS_AGGRESSOR,	// ... of them against the aggressor
+	AB_COUNT_SANCTIONS_PASSED,				// sanctions it proposed that passed
+	AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR,	// ... of them against the aggressor
 	NUM_AB_COUNTS
 };
 
