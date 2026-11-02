@@ -37,6 +37,9 @@
 		<!-- Shows the 3D leader scenes for AI diplomacy in network multiplayer -->
 		<Row Class="5" Name="MP_LEADERHEADS" Value="1"/>
 
+		<!-- AI A/B test, for AI-only test games: half the major civs run the changed AI code, half run Community Patch's original, and each civ's standing is appended to My Games\Sid Meier's Civilization 5\AIABTest.csv every 10 turns and when the game is won. Off in normal games: everyone runs the changed code. -->
+		<Row Class="4" Name="AI_AB_TEST" Value="0"/>
+
 		<!-- FUNCTIONALITY NOT GUARANTEED -->
 		<!-- Allows Steam achievements to be obtained in single player games despite the game being modded -->
 		<!-- Affects savegame format; do not change midgame! -->

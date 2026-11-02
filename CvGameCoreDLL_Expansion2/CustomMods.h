@@ -47,6 +47,10 @@
 // Shows the 3D leader scenes for AI diplomacy in network multiplayer
 #define MOD_MP_LEADERHEADS											gCustomMods.isMP_LEADERHEADS()
 
+// AI A/B test: splits the major civs into two groups, one running the changed AI code and one running
+// Community Patch's original, and appends each civ's standing to AIABTest.csv (see CvPlayer::UsesNewAI)
+#define MOD_AI_AB_TEST												gCustomMods.isAI_AB_TEST()
+
 // FUNCTIONALITY NOT GUARANTEED
 // Allows Steam achievements to be obtained in single player games despite the game being modded
 #define MOD_ENABLE_ACHIEVEMENTS										gCustomMods.isENABLE_ACHIEVEMENTS()
@@ -1548,6 +1552,7 @@ public:
 	MOD_OPT_DECL(ACTIVE_DIPLOMACY);
 	MOD_OPT_DECL(BIN_HOOKS);
 	MOD_OPT_DECL(MP_LEADERHEADS);
+	MOD_OPT_DECL(AI_AB_TEST);
 	MOD_OPT_DECL(ENABLE_ACHIEVEMENTS);
 	MOD_OPT_DECL(DIPLO_DEBUG_MODE);
 	MOD_OPT_DECL(CORE_DEBUGGING);

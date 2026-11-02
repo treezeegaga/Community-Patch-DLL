@@ -1639,6 +1639,7 @@ public:
 
 	bool isMinorCiv() const;
 	bool isMajorCiv() const;
+	bool UsesNewAI() const;
 
 	bool IsVassalOfSomeone() const;
 	int GetNumVassals() const;

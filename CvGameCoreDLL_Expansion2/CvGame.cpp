@@ -6708,6 +6708,9 @@ void CvGame::setWinner(TeamTypes eNewWinner, VictoryTypes eNewVictory)
 		m_eVictory = eNewVictory;
 		SetWinningTurn(getElapsedGameTurns());
 
+		if (MOD_AI_AB_TEST && eNewVictory != NO_VICTORY)
+			LogABTestResults(true);
+
 		// Reset UN countdown if necessary
 		SetUnitedNationsCountdown(0);
 
@@ -8669,6 +8672,9 @@ void CvGame::doTurn()
 	}
 
 	LogGameState();
+
+	if (MOD_AI_AB_TEST && getElapsedGameTurns() > 0 && getElapsedGameTurns() % 10 == 0)
+		LogABTestResults(false);
 
 	if (isNetworkMultiPlayer())
 	{
@@ -12787,6 +12793,62 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 }
 
 //	--------------------------------------------------------------------------------
+/// AI_AB_TEST: appends one row per major civ to AIABTest.csv in My Games\Sid Meier's Civilization 5
+/// (next to the cache folder). The file is never cleared, so rows from many test games collect in it;
+/// GameId tells the games apart. Called every 10 turns and once more when the game is won. Writing a
+/// local file doesn't touch synced game state.
+void CvGame::LogABTestResults(bool bFinal) const
+{
+	CvString strPath = gDLL->GetCacheFolderPath();
+	strPath += "..\\AIABTest.csv";
+	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
+	FILE* pFile = NULL;
+	if (_wfopen_s(&pFile, wstrPath.c_str(), L"ab") != 0 || pFile == NULL)
+		return;
+
+	fseek(pFile, 0, SEEK_END);
+	if (ftell(pFile) == 0)
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital\r\n", pFile);
+
+	const char* szVictory = "";
+	if (bFinal && getVictory() != NO_VICTORY)
+	{
+		CvVictoryInfo* pkVictoryInfo = GC.getVictoryInfo(getVictory());
+		if (pkVictoryInfo)
+			szVictory = pkVictoryInfo->GetType();
+	}
+
+	for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+	{
+		const CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iI);
+		if (!kPlayer.isEverAlive() || kPlayer.isObserver() || !kPlayer.isMajorCiv())
+			continue;
+
+		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
+			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(),
+			getElapsedGameTurns(),
+			bFinal ? 1 : 0,
+			(bFinal && getWinner() != NO_TEAM && getWinner() == kPlayer.getTeam()) ? 1 : 0,
+			szVictory,
+			iI,
+			kPlayer.getCivilizationTypeKey(),
+			kPlayer.UsesNewAI() ? "new" : "cp",
+			kPlayer.isAlive() ? 1 : 0,
+			kPlayer.getNumCities(),
+			kPlayer.getTotalPopulation(),
+			kPlayer.GetScore(),
+			GET_TEAM(kPlayer.getTeam()).GetTeamTechs()->GetNumTechsKnown(),
+			kPlayer.GetPlayerPolicies()->GetNumPoliciesOwned(),
+			kPlayer.GetMilitaryMight(),
+			kPlayer.GetTreasury()->GetGold(),
+			kPlayer.getTotalLand(),
+			kPlayer.GetNumWonders(),
+			kPlayer.IsHasLostCapital() ? 1 : 0);
+	}
+
+	fclose(pFile);
+}
+
 void CvGame::LogGameState(bool bLogHeaders) const
 {
 	if(GC.getLogging() && GC.getAILogging())

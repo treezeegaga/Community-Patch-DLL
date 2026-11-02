@@ -702,6 +702,7 @@ public:
 	void LogMapUnitsState() const;
 	void LogCivTurnEra() const;
 	void LogGameState(bool bLogHeaders = false) const;
+	void LogABTestResults(bool bFinal) const;
 	void unitIsMoving() const;
 
 	void BuildProdModHelpText(CvString* toolTipSink, const char* strTextKey, int iMod, const char* strExtraKey = "", bool bShowIfZero = false) const;

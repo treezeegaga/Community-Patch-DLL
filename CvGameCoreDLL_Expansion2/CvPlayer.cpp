@@ -33293,6 +33293,19 @@ bool CvPlayer::isMajorCiv() const
 	return GET_TEAM(getTeam()).isMajorCiv();
 }
 
+/// AI_AB_TEST: which side of the A/B test this player is on. In a test game the major civs split into
+/// two groups: true runs the changed AI code, false runs Community Patch's original. The split flips
+/// with the map seed, so over many games each slot plays both sides. Outside a test game (the
+/// default) every player runs the changed code. Gate each AI change on this, e.g.
+///     if (m_pPlayer->UsesNewAI()) { new behaviour } else { CP's behaviour }
+bool CvPlayer::UsesNewAI() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv())
+		return true;
+
+	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(GetID())) & 1) != 0;
+}
+
 bool CvPlayer::IsVassalOfSomeone() const
 {
 	return GET_TEAM(getTeam()).IsVassalOfSomeone();
