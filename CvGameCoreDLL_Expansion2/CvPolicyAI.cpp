@@ -1046,7 +1046,12 @@ void CvPolicyAI::PropagateWeights(int iPolicy, int iWeight, int iPropagationPerc
 				// Recurse to its prereqs (assuming we have any weight left)
 				if(iPropagatedWeight > 0)
 				{
-					PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel++);
+					// AI_AB_TEST candidate (PolicyPrereqDepth): CP passes iPropagationLevel++ (AUDIT.md item 8's bug, in the
+					// policy copy): the first prerequisite recurses at the same depth and later ones a level deeper each
+					if (m_pCurrentPolicies->GetPlayer()->UsesCandidateAI(FIX_POLICY_PREREQ_DEPTH))
+						PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel + 1);
+					else
+						PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel++);
 				}
 			}
 			else
