@@ -257,7 +257,7 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 ///     Flip = 0            ; 1 swaps the groups (c/b, new/cp, and the screened halves)
 ///     StopTurn = 150      ; where the runner stops the game, recorded in the results file
 ///     Ruins = 0           ; 0 = no ancient ruins, 1 = ruins (missing = as set up)
-///     Mode = bully        ; bully or builders test (lead job 10); HeadStartProduction = 50, HeadStartGold = 3
+///     Mode = bully        ; bully or builders test (lead job 10); HeadStartProduction = 0, HeadStartGold = 0
 ///     MapOption5 = 5      ; the map script's option 5 (Pangaea: resources; 5 = Strategic Balance)
 ///     MapSeed, SyncSeed, Player<i> = replay of an earlier game, from its AIABTest_lastgame.ini (paired games)
 /// Read once when the game starts and saved with it, so a reloaded game keeps its flags whatever the file says by then.
@@ -304,9 +304,10 @@ void CvGame::ReadABTestSettings()
 		m_iABTestFlags |= 1;
 	m_iABTestStopTurn = (int)GetPrivateProfileIntW(L"ABTest", L"StopTurn", 0, wstrPath.c_str());
 
-	// The bully and builders tests (lead job 10): Mode = bully | builders (anything else: the usual split), and the
-	// aggressor's head start in the bully test: HeadStartProduction (% on all its production, default 50) and
-	// HeadStartGold (gold per city per turn, default 3)
+	// The bully and builders tests (lead job 10): Mode = bully | builders (anything else: the usual split). The
+	// aggressor plays its own aggressive personality with no head start (the players' decision: the friend it stands
+	// in for is aggressive, not a strong player); HeadStartProduction (% on all its production) and HeadStartGold
+	// (gold per city per turn) can still give it one, default 0
 	GetPrivateProfileStringW(L"ABTest", L"Mode", L"", szBuffer, 1024, wstrPath.c_str());
 	if (_wcsicmp(szBuffer, L"bully") == 0)
 		m_iABTestMode = AB_MODE_BULLY;
@@ -314,8 +315,8 @@ void CvGame::ReadABTestSettings()
 		m_iABTestMode = AB_MODE_BUILDERS;
 	if (m_iABTestMode == AB_MODE_BULLY)
 	{
-		m_iABTestHeadStartProduction = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartProduction", 50, wstrPath.c_str());
-		m_iABTestHeadStartGold = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartGold", 3, wstrPath.c_str());
+		m_iABTestHeadStartProduction = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartProduction", 0, wstrPath.c_str());
+		m_iABTestHeadStartGold = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartGold", 0, wstrPath.c_str());
 	}
 
 	// The setup the runner can't click reliably (lead job 5): Civ forgets game options between games, and the map

@@ -167,13 +167,13 @@ enum CandidateFixTypes
 enum ABTestModeTypes
 {
 	AB_MODE_SPLIT,
-	AB_MODE_BULLY,		// one aggressor with a head start, one tall civ
+	AB_MODE_BULLY,		// one aggressor, one tall civ
 	AB_MODE_BUILDERS,	// two builders: tall, no wars of their own
 };
 enum ABTestRoleTypes
 {
 	AB_ROLE_NONE,
-	AB_ROLE_AGGRESSOR,	// the warmonger friend's role: a warmonger personality plus a production and gold head start
+	AB_ROLE_AGGRESSOR,	// the warmonger friend's role: the most aggressive personality (a head start only if AIABTest.ini asks)
 	AB_ROLE_TALL,		// the tall friend's role in the bully test: the tall opening plan
 	AB_ROLE_BUILDER,	// a turtling friend in the builders test: the tall opening plan and no wars of its own
 };
