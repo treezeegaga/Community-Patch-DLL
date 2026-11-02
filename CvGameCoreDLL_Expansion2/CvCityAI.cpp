@@ -148,7 +148,27 @@ void CvCityAI::AI_chooseProduction(bool bInterruptWonders, bool bInterruptBuildi
 	{
 		OrderTypes eBookOrder = ORDER_TRAIN;
 		int iBookData = -1;
-		if (kOwner.GetOpeningBookProduction(this, eBookOrder, iBookData))
+		bool bBookPick = kOwner.GetOpeningBookProduction(this, eBookOrder, iBookData);
+
+		// The book's later buildings (library and on) give way to the wonder this city is best placed for: over 7
+		// test games the new AI had a fifth of CP's wonders at turn 50, and CP's runaway civs were built on them.
+		// Monuments, shrines and units (settlers) keep priority.
+		if (bBookPick && eBookOrder == ORDER_CONSTRUCT && eNextWonder != NO_BUILDING && !bAlreadyBuilt)
+		{
+			static const BuildingClassTypes eMonumentClass = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_MONUMENT", true);
+			static const BuildingClassTypes eShrineClass = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_SHRINE", true);
+			CvBuildingEntry* pkBookBuilding = GC.getBuildingInfo((BuildingTypes)iBookData);
+			CvBuildingEntry* pkWonder = GC.getBuildingInfo(eNextWonder);
+			if (pkBookBuilding && pkWonder && pkBookBuilding->GetBuildingClassType() != eMonumentClass &&
+				pkBookBuilding->GetBuildingClassType() != eShrineClass && IsBestForWonder(pkWonder->GetBuildingClassType()) &&
+				canConstruct(eNextWonder))
+			{
+				bBookPick = false;
+				bBuildWonder = true;
+			}
+		}
+
+		if (bBookPick)
 		{
 			int iUnitAI = -1;
 			bool bSettler = false;
