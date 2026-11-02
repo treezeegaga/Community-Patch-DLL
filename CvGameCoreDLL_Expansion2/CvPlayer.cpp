@@ -33364,7 +33364,9 @@ bool CvPlayer::IsOpeningBookActive() const
 		return false;
 
 	// Turn limits are for Standard speed
-	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? 100 : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
+	// Wide civs keep settling longer: in test games they led CP by a city at turn 60 on Quick, then expanded no faster
+	// than CP once the book ended (turn 67), so the lead never grew. Wide now asks for up to 8 cities by turn 130.
+	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? 130 : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
 }
@@ -33391,7 +33393,7 @@ static const OpeningBookStep kOpeningWideCapital[] = {
 	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"},
 	{false, "BUILDINGCLASS_SHRINE"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
-	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
+	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
 static const OpeningBookStep kOpeningConquestCapital[] = {
