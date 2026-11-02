@@ -14103,13 +14103,13 @@ void CvLeagueAI::AllocateProposals(CvLeague* pLeague)
 						{
 							for (EnactProposalList::iterator it = pLeague->m_vLastTurnEnactProposals.begin(); it != pLeague->m_vLastTurnEnactProposals.end(); ++it)
 							{
-								if (it->GetID() == pkInfo->GetID())
+								if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 									iScore /= 2;
 							}
 
 							for (RepealProposalList::iterator it = pLeague->m_vLastTurnRepealProposals.begin(); it != pLeague->m_vLastTurnRepealProposals.end(); ++it)
 							{
-								if (it->GetID() == pkInfo->GetID())
+								if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 									iScore /= 2;
 							}
 
@@ -14133,13 +14133,13 @@ void CvLeagueAI::AllocateProposals(CvLeague* pLeague)
 							{
 								for (EnactProposalList::iterator it = pLeague->m_vLastTurnEnactProposals.begin(); it != pLeague->m_vLastTurnEnactProposals.end(); ++it)
 								{
-									if (it->GetID() == pkInfo->GetID())
+									if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 										iScore /= 2;
 								}
 
 								for (RepealProposalList::iterator it = pLeague->m_vLastTurnRepealProposals.begin(); it != pLeague->m_vLastTurnRepealProposals.end(); ++it)
 								{
-									if (it->GetID() == pkInfo->GetID())
+									if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 										iScore /= 2;
 								}
 

@@ -3904,6 +3904,11 @@ void CvDealAI::DoAddLuxuryResourceToThem(CvDeal* pDeal, PlayerTypes eThem, int& 
 					}
 					viTradeValues.push_back(eResource, iItemValue);
 				}
+				// FIX_LUXURY_ASK (D9): CP only listed luxuries for civs whose imports count towards monopolies
+				else if (iItemValue > 0 && GetPlayer()->UsesCandidateAI(FIX_LUXURY_ASK))
+				{
+					viTradeValues.push_back(eResource, iItemValue);
+				}
 			}
 		}
 		// Sort the vector based on value to get the best possible item to trade.

@@ -11344,6 +11344,19 @@ int CvMinorCivAI::GetFriendshipNeededForNextLevel(PlayerTypes ePlayer)
 	return 0;
 }
 
+/// AI_AB_TEST: city-state behaviour is shared by everyone, so its flag is on for the whole game when any major civ has it
+/// (in the bully test that's the first game of a pair, not the second)
+static bool AnyMajorUsesCandidateAI(CandidateFixTypes eFix)
+{
+	for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+	{
+		const CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iI);
+		if (kPlayer.isEverAlive() && kPlayer.isMajorCiv() && kPlayer.UsesCandidateAI(eFix))
+			return true;
+	}
+	return false;
+}
+
 /// What happens when Friendship changes?
 void CvMinorCivAI::DoFriendshipChangeEffects(const PlayerTypes ePlayer, const int iOldFriendshipTimes100, const int iNewFriendshipTimes100, const bool bFromQuest, const bool bAliveStatusChanged)
 {
@@ -11481,7 +11494,12 @@ void CvMinorCivAI::DoFriendshipChangeEffects(const PlayerTypes ePlayer, const in
 		else
 		{
 			// another player is now ally? the ally change is handled in DoFriendshipChangeEffects for the new ally
-			DoFriendshipChangeEffects(eNewAlly, GetEffectiveFriendshipWithMajorTimes100(eNewAlly), GetEffectiveFriendshipWithMajorTimes100(eNewAlly));
+			// FIX_CITY_STATE_BUGS (D10): that call passes equal old and new values and returns at once, so the old ally
+			// kept the city-state; hand it over directly
+			if (AnyMajorUsesCandidateAI(FIX_CITY_STATE_BUGS) && IsFriendshipAboveAlliesThreshold(eNewAlly, GetEffectiveFriendshipWithMajor(eNewAlly)) && !IsAtWarWithPlayersTeam(eNewAlly))
+				SetAlly(eNewAlly, bFromQuest);
+			else
+				DoFriendshipChangeEffects(eNewAlly, GetEffectiveFriendshipWithMajorTimes100(eNewAlly), GetEffectiveFriendshipWithMajorTimes100(eNewAlly));
 		}
 	}
 }
@@ -16130,7 +16148,11 @@ void CvMinorCivAI::DoTeamDeclaredWarOnMe(TeamTypes eEnemyTeam)
 			if(GET_TEAM(pOtherMinorCiv->getTeam()).isAtWar(eEnemyTeam))
 				iChance += /*20*/ GD_INT_GET(PERMANENT_WAR_OTHER_AT_WAR);
 
-			iRand = GC.getGame().randRangeInclusive(1, 100, CvSeeder::fromRaw(0x81afb53c).mix(m_pPlayer->GetPseudoRandomSeed()).mix(pEnemyTeam->GetID()));
+			// FIX_CITY_STATE_BUGS (D11): one roll per city-state; CP's seed left out eOtherMinorCiv, so all rolled the same
+			if (AnyMajorUsesCandidateAI(FIX_CITY_STATE_BUGS))
+				iRand = GC.getGame().randRangeInclusive(1, 100, CvSeeder::fromRaw(0x81afb53c).mix(m_pPlayer->GetPseudoRandomSeed()).mix(pEnemyTeam->GetID()).mix(eOtherMinorCiv));
+			else
+				iRand = GC.getGame().randRangeInclusive(1, 100, CvSeeder::fromRaw(0x81afb53c).mix(m_pPlayer->GetPseudoRandomSeed()).mix(pEnemyTeam->GetID()));
 			if (iRand <= iChance)
 			{
 				if(!pOtherMinorCiv->GetMinorCivAI()->IsWaryOfTeam(eEnemyTeam))

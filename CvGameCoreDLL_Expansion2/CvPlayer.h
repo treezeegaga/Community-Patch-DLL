@@ -159,6 +159,11 @@ enum CandidateFixTypes
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
 	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
+	FIX_EASY_TARGET,		// Diplomacy D1+D2: civs at peace can be rated easy targets (CP skipped them all)
+	FIX_DIPLO_BUGS,			// Diplomacy D3-D8, D12, D13: confirmed diplomacy bugs (AUDIT.md, "Diplomacy audit")
+	FIX_LUXURY_ASK,			// Diplomacy D9: when balancing a deal the AI may ask for the other side's luxuries
+	FIX_CITY_STATE_BUGS,	// Diplomacy D10+D11: city-state alliance handover; city-states roll separately against an aggressor.
+							// Game-wide: on when any major civ has it, so the bully test's pair measures it
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
