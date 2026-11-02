@@ -21037,6 +21037,27 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 		}
 	}
 
+	// AI_AB_TEST: the new AI attacks early when a strong player would (see GetNewAIConquestTarget). In 14 test games no
+	// capital fell before turn 150 on either side. Done here rather than after DoUpdateWarTargets so the WAR approach
+	// holds from turn to turn (changing it back and forth cancels the attack being gathered); a zero-out above
+	// (recent peace, no reachable target, bankruptcy...) still rules it out.
+	if (GetPlayer()->UsesNewAI() && vScratchValueOverrides[CIV_APPROACH_WAR] != 0)
+	{
+		const char* szReason = "";
+		if (GetNewAIConquestTarget(szReason) == ePlayer)
+		{
+			int iHighest = 0;
+			for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
+				iHighest = max(iHighest, vApproachScores[iApproachLoop]);
+			vApproachScores[CIV_APPROACH_WAR] = iHighest + 1000;
+			bAllZero = false;
+
+			if (!bStrategic && GetCivApproach(ePlayer) != CIV_APPROACH_WAR && GC.getLogging() && GC.getAILogging())
+				GetPlayer()->GetHomelandAI()->LogHomelandMessage(CvString::format("CONQUEST: going for %s (%s)",
+					GET_PLAYER(ePlayer).getCivilizationShortDescription(), szReason));
+		}
+	}
+
 	//--------------------------------//
 	// [PART 15: APPROACH SELECTION]  //
 	//--------------------------------//
@@ -23273,6 +23294,66 @@ int CvDiplomacyAI::ScoreDefensivePactChoice(PlayerTypes eChoice, bool bCoastal)
 		iDPValue = -5;
 
 	return iDPValue;
+}
+
+/// AI_AB_TEST: which major civ the new AI should attack now, if any. A strong player doesn't wait for the land to run
+/// out: an aggressive civ jumps a weaker neighbour early, a boxed-in civ takes land from a neighbour that isn't
+/// stronger, and anyone takes a neighbour that is clearly weaker. One war at a time; the weakest, closest target wins.
+/// Turn limits are for Standard speed.
+PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
+{
+	szReason = "";
+	CvPlayer* pPlayer = GetPlayer();
+	if (!pPlayer->UsesNewAI() || pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor())
+		return NO_PLAYER;
+
+	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
+	const int iTurn = GC.getGame().getElapsedGameTurns();
+	if (iTurn < 30 * iSpeed / 100)
+		return NO_PLAYER;
+
+	FlavorTypes eOffense = (FlavorTypes)GC.getInfoTypeForString("FLAVOR_OFFENSE", true);
+	int iOffense = (eOffense != NO_FLAVOR) ? pPlayer->GetFlavorManager()->GetPersonalityIndividualFlavor(eOffense) : 0;
+	const bool bAggressive = pPlayer->GetPlayerTraits()->IsWarmonger() || iOffense >= 8;
+	const bool bBoxedIn = pPlayer->GetBestSettlePlot(NULL) == NULL;
+
+	PlayerTypes eBest = NO_PLAYER;
+	int iBestScore = 0;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (!IsPlayerValid(eLoopPlayer) || !GET_PLAYER(eLoopPlayer).isMajorCiv() || GET_PLAYER(eLoopPlayer).getTeam() == pPlayer->getTeam())
+			continue;
+		if (!GET_TEAM(pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eLoopPlayer).getTeam(), pPlayer->GetID()))
+			continue;
+
+		PlayerProximityTypes eProximity = pPlayer->GetProximityToPlayer(eLoopPlayer);
+		if (eProximity < PLAYER_PROXIMITY_CLOSE)
+			continue;
+
+		StrengthTypes eTheirStrength = GetMilitaryStrengthComparedToUs(eLoopPlayer);
+		const char* szWhy = NULL;
+		if (eTheirStrength <= STRENGTH_WEAK && eProximity == PLAYER_PROXIMITY_NEIGHBORS)
+			szWhy = "clearly weaker neighbour";
+		else if (bAggressive && eTheirStrength <= STRENGTH_POOR)
+			szWhy = "aggressive civ, weaker neighbour";
+		else if (bBoxedIn && eTheirStrength <= STRENGTH_AVERAGE)
+			szWhy = "no land left, neighbour not stronger";
+		if (!szWhy)
+			continue;
+
+		if (!pPlayer->GetMilitaryAI()->HavePossibleAttackTarget(eLoopPlayer) || IsWarWouldBankruptUs(eLoopPlayer))
+			continue;
+
+		int iScore = (NUM_STRENGTH_VALUES - (int)eTheirStrength) * 10 + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 5 : 0);
+		if (iScore > iBestScore)
+		{
+			iBestScore = iScore;
+			eBest = eLoopPlayer;
+			szReason = szWhy;
+		}
+	}
+	return eBest;
 }
 
 /// Update which major civs we're targeting for war. NOTE: City-State targets are handled in DoUpdateMinorCivApproaches() and SelectBestApproachTowardsMinorCiv().

@@ -33413,6 +33413,11 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	if (pFoundCityOp && pFoundCityOp->GetNumUnitsNeededToBeBuilt() > 0)
 		return false;
 
+	// So does an attack being gathered (see CvDiplomacyAI::GetNewAIConquestTarget): its army gets built first
+	CvAIOperation* pAttackOp = getFirstOffensiveAIOperation(NO_PLAYER);
+	if (pAttackOp && pAttackOp->GetNumUnitsNeededToBeBuilt() > 0)
+		return false;
+
 	OpeningBookType eBook = GetOpeningBook();
 	const OpeningBookStep* pSteps = NULL;
 	int iNumSteps = 0;

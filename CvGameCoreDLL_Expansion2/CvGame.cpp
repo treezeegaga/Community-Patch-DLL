@@ -12852,7 +12852,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2q: batch2p with warmongers and high-offense personalities on the wide opening plan.
 /// batch2r: batch2q with culture (tourism) civs going wide when their expansion flavor is at least their culture one.
 /// batch2s: batch2r with the wide opening running to turn 130 (Standard speed) and asking for up to 8 cities.
-static const char* const AI_AB_TEST_BATCH = "batch2s";
+/// batch2t: batch2s plus early conquest: from turn 30 (Standard) the new AI goes to war with a clearly weaker
+/// neighbour, or a weaker one if it is aggressive, or one that isn't stronger if it has no land left.
+static const char* const AI_AB_TEST_BATCH = "batch2t";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

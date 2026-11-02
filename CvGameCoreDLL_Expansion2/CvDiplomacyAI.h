@@ -1202,6 +1202,8 @@ public:
 
 	// War!
 	void DoUpdateWarTargets();
+	// AI_AB_TEST: the major civ the new AI wants to conquer now, if any, and why
+	PlayerTypes GetNewAIConquestTarget(const char*& szReason);
 
 	// Minor Civ Approach
 	void DoUpdateMinorCivApproaches();
