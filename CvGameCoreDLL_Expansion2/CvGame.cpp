@@ -187,6 +187,21 @@ CvGame::~CvGame()
 }
 
 //	--------------------------------------------------------------------------------
+/// AI_AB_TEST: with the test pack installed no AI logs were written even with LoggingEnabled = 1 and AILog = 1 in
+/// config.ini (the pack's game core is swapped in as a DLC and apparently never gets those settings), so test games
+/// read the two [Debug] settings from config.ini themselves. Logging only writes local files.
+static void ApplyABTestLoggingSettings()
+{
+	CvString strPath = gDLL->GetCacheFolderPath();
+	strPath += "..\\config.ini";
+	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
+	if (GetPrivateProfileIntW(L"Debug", L"LoggingEnabled", 0, wstrPath.c_str()) != 0)
+		GC.setLogging(true);
+	if (GetPrivateProfileIntW(L"Debug", L"AILog", 0, wstrPath.c_str()) != 0)
+		GC.setAILogging(true);
+}
+
+//	--------------------------------------------------------------------------------
 void CvGame::init(HandicapTypes eHandicap)
 {
 	bool bValid = false;
@@ -197,6 +212,9 @@ void CvGame::init(HandicapTypes eHandicap)
 	//--------------------------------
 	// Init saved data
 	reset(eHandicap);
+
+	if (MOD_AI_AB_TEST)
+		ApplyABTestLoggingSettings();
 
 	m_mapRand.init(CvPreGame::mapRandomSeed() % 73637381);
 	m_jonRand.init(CvPreGame::syncRandomSeed() % 52319761);
