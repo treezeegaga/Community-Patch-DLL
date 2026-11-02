@@ -1877,7 +1877,10 @@ void CvHomelandAI::PlotUpgradeMoves()
 	// No units found, cancel request for money if we have one in
 	if(m_CurrentMoveUnits.size() == 0)
 	{
-		if(!m_pPlayer->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_UNIT_UPGRADE))
+		//AI_AB_TEST (candidate, flag UpgradeSaveCancel): CP's condition is inverted (it cancels only when there is
+		//nothing to cancel), so a stale upgrade request kept blocking lower-priority purchases
+		bool bSaving = m_pPlayer->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_UNIT_UPGRADE);
+		if(m_pPlayer->UsesCandidateAI(FIX_UPGRADE_SAVE_CANCEL) ? bSaving : !bSaving)
 		{
 			m_pPlayer->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_UNIT_UPGRADE);
 		}
@@ -1948,7 +1951,12 @@ void CvHomelandAI::PlotUpgradeMoves()
 
 		//return if there is nothing left to do
 		if (pFirstNonUpgradedUnit == NULL)
+		{
+			//AI_AB_TEST (candidate, flag UpgradeSaveCancel): every upgrade is done, so the gold request is stale
+			if (m_pPlayer->UsesCandidateAI(FIX_UPGRADE_SAVE_CANCEL))
+				m_pPlayer->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_UNIT_UPGRADE);
 			return;
+		}
 
 		// Couldn't do all upgrades this turn, get ready for highest priority unit to upgrade
 		int iAmountRequired = pFirstNonUpgradedUnit->upgradePrice(pFirstNonUpgradedUnit->GetUpgradeUnitType());
@@ -5692,6 +5700,12 @@ void CvHomelandAI::ExecuteAircraftMoves()
 				//healing in cities only
 				if (!pUnit->canRebase() || !(it->pPlot->isCity()))
 					continue;
+
+				//AI_AB_TEST (candidate, flag AirRebaseHeal): the bases are sorted quietest first, so once we reach one no
+				//quieter than our own there is nothing better. CP skips past its own base and rebases to a busier one every
+				//turn, and a plane that rebases never heals.
+				if (m_pPlayer->UsesCandidateAI(FIX_AIR_REBASE_HEAL) && it->score >= scoreLookup[pUnit->plot()->GetPlotIndex()])
+					break;
 
 				//apparently we're already in the best possible base?
 				if (pUnit->plot() == it->pPlot)
