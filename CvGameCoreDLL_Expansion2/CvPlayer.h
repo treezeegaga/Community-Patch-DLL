@@ -164,6 +164,7 @@ enum CandidateFixTypes
 	FIX_DIPLO_POLICY_VALUE,	// Economy (CvPolicyAI audit P1): diplomacy-flavoured policies lose their value only when hostile to a city-state. Not in the bundle
 	FIX_GREEDY_ALARM,		// Economy (c8): a tall civ that sees a neighbour's army near its cities builds walls and ranged units (and lifts
 							// GreedyArmyCap). Not in the bundle
+	FIX_IDEOLOGY_PICK,		// Economy (CvPolicyAI audit P2): a ruled-out ideology can't win the pick when the others score below 0. Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

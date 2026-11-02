@@ -420,6 +420,11 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	
 	// We will score each ideology in this vector
 	std::vector<int> vIdeologyPriorities(vIdeologyBranches.size(), 1);
+	// AI_AB_TEST candidate (IdeologyPick): CP marks a ruled-out ideology by setting its score to 0, but the relations
+	// step below can push the others to 0 or below, and the final pick is a plain maximum, so a ruled-out ideology
+	// could win (and an ideology that lands exactly on 0 skipped the later steps). The candidate tracks them apart.
+	const bool bTrackRuledOut = pPlayer->UsesCandidateAI(FIX_IDEOLOGY_PICK);
+	std::vector<bool> vRuledOut(vIdeologyBranches.size(), false);
 	int iGrandTotal = 0;
 	int iPriorityToDivide = /*1000*/ GD_INT_GET(IDEOLOGY_SCORE_GRAND_STRATS);
 	int iHappinessModifier = /*10*/ GD_INT_GET(IDEOLOGY_SCORE_HAPPINESS);
@@ -467,13 +472,19 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 			{
 				CvPlayerPolicies* pPolicies = pPlayer->GetPlayerPolicies();
 				if (!pPolicies->CanAdoptIdeology(eBranch))
+				{
 					vIdeologyPriorities[i] = 0;
+					vRuledOut[i] = true;
+				}
 			}
 			
 			// Rule out one ideology if we are clearly (at least X% more priority) going for a victory this ideology doesn't support
 			int iClearPrefPercent = /*25*/ GD_INT_GET(IDEOLOGY_PERCENT_CLEAR_VICTORY_PREF);
 			if (iMaxUnsupported > (iMaxSupported * (100 + iClearPrefPercent) / 100))
+			{
 				vIdeologyPriorities[i] = 0;
+				vRuledOut[i] = true;
+			}
 		}
 	}
 
@@ -486,7 +497,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	for (size_t i = 0; i < vIdeologyPriorities.size(); i++)
 	{
 		// if we've ruled it out, move on to the next item in the loop
-		if (vIdeologyPriorities[i] == 0)
+		if (bTrackRuledOut ? (bool)vRuledOut[i] : (vIdeologyPriorities[i] == 0))
 			continue;
 
 		// normalize
@@ -566,7 +577,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	for (size_t i = 0; i < vIdeologyPriorities.size(); i++)
 	{
 		// if we've ruled it out, move on to the next item in the loop
-		if (vIdeologyPriorities[i] == 0)
+		if (bTrackRuledOut ? (bool)vRuledOut[i] : (vIdeologyPriorities[i] == 0))
 			continue;
 
 		PolicyBranchTypes eBranch = vIdeologyBranches[i];
@@ -589,7 +600,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	for (size_t i = 0; i < vIdeologyPriorities.size(); i++)
 	{
 		// if we've ruled it out, move on to the next item in the loop
-		if (vIdeologyPriorities[i] == 0)
+		if (bTrackRuledOut ? (bool)vRuledOut[i] : (vIdeologyPriorities[i] == 0))
 			continue;
 
 		// now actually look at the policies in the branch and see how much we like them!
@@ -606,6 +617,18 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	{
 	    if (vIdeologyPriorities[i] > vIdeologyPriorities[iBestBranchIdx])
 	        iBestBranchIdx = i;
+	}
+	// candidate: the best of those not ruled out (if all were ruled out, CP's pick stands)
+	if (bTrackRuledOut)
+	{
+		int iBestOpen = -1;
+		for (size_t i = 0; i < vIdeologyPriorities.size(); ++i)
+		{
+			if (!vRuledOut[i] && (iBestOpen < 0 || vIdeologyPriorities[i] > vIdeologyPriorities[iBestOpen]))
+				iBestOpen = (int)i;
+		}
+		if (iBestOpen >= 0)
+			iBestBranchIdx = iBestOpen;
 	}
 	PolicyBranchTypes eChosenBranch = vIdeologyBranches[iBestBranchIdx];
 	
