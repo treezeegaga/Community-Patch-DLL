@@ -1347,7 +1347,10 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			{
 				PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
 
-				if (eLoopPlayer != kPlayer.GetID() && GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsPlayerValid(eLoopPlayer) && GET_TEAM(kPlayer.getTeam()).isAtWar(GET_PLAYER(eLoopPlayer).getTeam()))
+				// AI_AB_TEST candidate (LosingWarBuildings): CP asks the enemy whether it is valid to itself, which is always
+				// false (IsPlayerValid rejects one's own team), so this loop never added anything
+				CvDiplomacyAI* pValidator = kPlayer.UsesCandidateAI(FIX_LOSING_WAR_BUILDINGS) ? kPlayer.GetDiplomacyAI() : GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
+				if (eLoopPlayer != kPlayer.GetID() && pValidator->IsPlayerValid(eLoopPlayer) && GET_TEAM(kPlayer.getTeam()).isAtWar(GET_PLAYER(eLoopPlayer).getTeam()))
 				{
 					if (kPlayer.GetDiplomacyAI()->GetWarState(eLoopPlayer) < WAR_STATE_STALEMATE)
 					{
