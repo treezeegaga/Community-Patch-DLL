@@ -33690,9 +33690,12 @@ static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech
 
 /// AI_AB_TEST candidate (c5): after the opening book, head for Engineering (aqueducts keep 40% of the food when a
 /// city grows) once the capital has grown to 6. Growth is worth more than CP's tech weights give it.
+/// c5b: tall civs only; a warmonger's cities are building its army then, and a wide civ's its settlers.
 TechTypes CvPlayer::GetCandidateGrowthTech() const
 {
 	if (!MOD_AI_AB_TEST || !UsesCandidateAI() || !isMajorCiv() || isHuman() || IsOpeningBookActive())
+		return NO_TECH;
+	if (GetOpeningBook() != OPENING_BOOK_TALL)
 		return NO_TECH;
 	const CvCity* pCapital = getCapitalCity();
 	if (!pCapital || pCapital->getPopulation() < 6)

@@ -5284,8 +5284,8 @@ int CityStrategyAIHelpers::GetBuildingBasicValue(CvCity *pCity, BuildingTypes eB
 	{
 		iValue += pkBuildingInfo->GetFoodKept() * pCity->getPopulation();
 		// AI_AB_TEST candidate (c5): growth is worth more than CP thinks (every citizen adds to everything), so the
-		// aqueduct counts double
-		if (GET_PLAYER(pCity->getOwner()).UsesCandidateAI())
+		// aqueduct counts double for tall civs (c5b: wide and warmonger civs' cities are busy with settlers and armies)
+		if (GET_PLAYER(pCity->getOwner()).UsesCandidateAI() && GET_PLAYER(pCity->getOwner()).GetOpeningBook() == OPENING_BOOK_TALL)
 			iValue += pkBuildingInfo->GetFoodKept() * pCity->getPopulation();
 	}
 	// NoStarvation is not as good as MinimumFood, but there is large overlap to consider
