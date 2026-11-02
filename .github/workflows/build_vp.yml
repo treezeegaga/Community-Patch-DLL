@@ -6,7 +6,8 @@ permissions:
 
 on:
   push:
-    branches: [ master ]
+    # AI A/B tests (fork only): the integration branch and the topic sessions' branches build on every push
+    branches: [ master, 'claude/ab-c1', 'ai/**' ]
     tags:
       - 'Release-*'  # Triggers on official releases (always builds)
   pull_request:
@@ -698,7 +699,10 @@ jobs:
   publish-ab-test-dll:
     name: Publish A/B test DLL
     needs: [get-version, build-msvc]
-    if: always() && needs.build-msvc.result == 'success' && github.ref == 'refs/heads/claude/sleepy-hopper-x77moh'
+    # every claude/ and ai/ branch publishes ab-<commit>; the A/B branches also move a "latest" release:
+    # claude/sleepy-hopper-x77moh -> ab-latest (stage 1), claude/ab-c1 -> ab-c-latest (the integration branch),
+    # ai/<topic> -> ab-ai-<topic>-latest
+    if: always() && needs.build-msvc.result == 'success' && (startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/ai/'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -721,10 +725,19 @@ jobs:
           test -f dll/CvGameCore_Expansion2.dll
           SHA="${GITHUB_SHA:0:7}"
           NOTES="AI A/B test DLL built from ${GITHUB_SHA} on ${GITHUB_REF_NAME}. Not for normal play: see tools/ab/README.md in treezeegaga/Civ5-CP-AnimatedLeaders."
-          # one release per commit, plus ab-latest pointing at the newest build
+          # one release per commit
           gh release delete "ab-${SHA}" --yes --cleanup-tag || true
-          gh release create "ab-${SHA}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease \
-            --title "AI A/B test DLL ${SHA}" --notes "${NOTES}"
-          gh release delete ab-latest --yes --cleanup-tag || true
-          gh release create ab-latest dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
-            --title "AI A/B test DLL (latest: ${SHA})" --notes "${NOTES}"
+          gh release create "ab-${SHA}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "AI A/B test DLL ${SHA} (${GITHUB_REF_NAME})" --notes "${NOTES}"
+          # and the branch's "latest" release pointing at its newest build
+          case "${GITHUB_REF_NAME}" in
+            claude/sleepy-hopper-x77moh) LATEST=ab-latest ;;
+            claude/ab-c1) LATEST=ab-c-latest ;;
+            ai/*) LATEST="ab-ai-$(echo "${GITHUB_REF_NAME#ai/}" | tr '/' '-')-latest" ;;
+            *) LATEST="" ;;
+          esac
+          if [ -n "${LATEST}" ]; then
+            gh release delete "${LATEST}" --yes --cleanup-tag || true
+            gh release create "${LATEST}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
+              --title "AI A/B test DLL, newest on ${GITHUB_REF_NAME} (${SHA})" --notes "${NOTES}"
+          fi
