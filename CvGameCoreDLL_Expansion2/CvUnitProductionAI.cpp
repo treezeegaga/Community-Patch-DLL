@@ -267,6 +267,22 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	int iNumLandUnits = kPlayer.getNumMilitaryLandUnits() + kPlayer.GetNumUnitsInProduction(DOMAIN_LAND, true);
 	int iNumSeaUnits = kPlayer.getNumMilitarySeaUnits() + kPlayer.GetNumUnitsInProduction(DOMAIN_SEA, true);
 
+	// AI_AB_TEST candidate (c6): tall civs play greedy. In test games almost no city ever changed hands, so an army
+	// beyond a garrison was mostly upkeep and lost production. Outside of a war or a defense emergency, a tall civ
+	// keeps about one land unit per city (plus one) and builds them only for operations (settler escorts).
+	if (bCombat && !bFree && !bDesperate && !bForOperation && pkUnitEntry->GetDomainType() == DOMAIN_LAND &&
+		kPlayer.UsesCandidateAI() && kPlayer.GetOpeningBook() == OPENING_BOOK_TALL && !kPlayer.IsAtWarAnyMajor() &&
+		iNumLandUnits - iNumExplorers > kPlayer.getNumCities())
+	{
+		MilitaryAIStrategyTypes eDefense = (MilitaryAIStrategyTypes)GC.getInfoTypeForString("MILITARYAISTRATEGY_EMPIRE_DEFENSE");
+		MilitaryAIStrategyTypes eCritical = (MilitaryAIStrategyTypes)GC.getInfoTypeForString("MILITARYAISTRATEGY_EMPIRE_DEFENSE_CRITICAL");
+		bool bThreatened = (eDefense != NO_MILITARYAISTRATEGY && kPlayer.GetMilitaryAI()->IsUsingStrategy(eDefense)) ||
+			(eCritical != NO_MILITARYAISTRATEGY && kPlayer.GetMilitaryAI()->IsUsingStrategy(eCritical));
+		if (!bThreatened)
+			return SR_STRATEGY;
+	}
+
+
 	UnitTypes eCurrentlyProducing = m_pCity->getProductionUnit();
 
 	if (eCurrentlyProducing != NO_UNIT && !bForPurchase)
