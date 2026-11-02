@@ -33299,16 +33299,40 @@ bool CvPlayer::isMajorCiv() const
 /// default) every player runs the changed code. Gate each AI change on this, e.g.
 ///     if (m_pPlayer->UsesNewAI()) { new behaviour } else { CP's behaviour }
 // AI_AB_TEST "B vs C" builds: once a build beat CP consistently it became the base AI ("b"). Every major civ runs it
-// (all changes behind UsesNewAI()), and half of them also run the candidate changes behind UsesCandidateAI() ("c").
-// false gives the earlier "new vs CP" split, with UsesCandidateAI() following UsesNewAI().
+// (all changes behind UsesNewAI()), and half of them also run the candidate changes behind UsesCandidateAI(FIX_xx) ("c").
+// false gives the earlier "new vs CP" split, with group c following UsesNewAI().
 static const bool kABTestVersusBase = true;
 
-// Candidate features that are off in the current candidate bundle. In c1 (4 games, c 48.3% +/- 1.7 against b) c's
-// tall civs ended with fewer cities than b's (3.7 vs 4.4): stopping settlers once one stood idle 10 turns ended
-// expansion that b's civs later completed, and the longer wide opening didn't give c's wide civs more cities. The
-// idle-settler rule is back in c3, where being boxed in makes an expansionist attack its blocker.
-static const bool kCandidateBoxedInBySettlers = true;
-static const bool kCandidateLongWideOpening = false;
+// AI_AB_TEST candidate flags (see CandidateFixTypes in CvPlayer.h). These names go in AIABTest.ini and the results file.
+static const char* const kCandidateFixNames[NUM_CANDIDATE_FIXES] = {
+	"WidePlans", "BoxedIn", "LongWide", "BoxedInWar", "TimingAttack", "SiegeTechs", "SiegeBook", "DeclareTiming",
+	"GrowthTech", "AqueductValue", "GreedyArmyCap", "GreedyBook", "GreedyTarget", "CanWin", "ClosedBorders" };
+
+// The bundle: what group c ran in the last C build (c7c), and what every civ runs outside a test game. Off in it:
+// LongWide (c1: c's wide civs got no more cities from the longer opening, and stopping settlers ended expansion that b
+// completed) and GreedyArmyCap (c6, 0-3: the greedy tall civs drew wars).
+static const int kCandidateFixBundle = ~((1 << FIX_LONG_WIDE) | (1 << FIX_GREEDY_ARMY_CAP)) & ((1 << NUM_CANDIDATE_FIXES) - 1);
+
+const char* CvPlayer::GetCandidateFixName(int iFix)
+{
+	return (iFix >= 0 && iFix < NUM_CANDIDATE_FIXES) ? kCandidateFixNames[iFix] : "";
+}
+
+/// The flag with this name (any case), or -1
+int CvPlayer::GetCandidateFixByName(const char* szName)
+{
+	for (int i = 0; i < NUM_CANDIDATE_FIXES; i++)
+	{
+		if (_stricmp(szName, kCandidateFixNames[i]) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int CvPlayer::GetCandidateFixBundle()
+{
+	return kCandidateFixBundle;
+}
 
 static bool IsABTestOddSlot(PlayerTypes ePlayer)
 {
@@ -33373,12 +33397,94 @@ bool CvPlayer::UsesNewAI() const
 	return IsABTestOddSlot(GetID());
 }
 
-bool CvPlayer::UsesCandidateAI() const
+/// AI_AB_TEST: a hash of three numbers, for random draws that don't touch the game's random number generators
+static unsigned int ABTestHash(unsigned int a, unsigned int b, unsigned int c)
+{
+	unsigned int h = a * 0x9E3779B1u;
+	h ^= (b + 0x7F4A7C15u) * 0x85EBCA77u;
+	h ^= (c + 1u) * 0xC2B2AE3Du;
+	h ^= h >> 16;
+	h *= 0x7FEB352Du;
+	h ^= h >> 15;
+	h *= 0x846CA68Bu;
+	h ^= h >> 16;
+	return h;
+}
+
+/// AI_AB_TEST screening: a flag listed under Screen= in AIABTest.ini is on for a random half of the AI civs, drawn
+/// separately for every flag from the map seed. Dealt like the c/b split, warmongers first (so warmonger-only flags get
+/// tried by half the warmongers), but in a random order per flag, so the flags are independent of each other and of
+/// the c/b split. The regression in Summarize-ABTest.ps1 then estimates every screened flag from the same games.
+static bool IsABTestScreenSlot(PlayerTypes ePlayer, int iFix)
+{
+	static unsigned int s_uSeed = 0;
+	static int s_iTurn = -1;
+	static bool s_abOn[NUM_CANDIDATE_FIXES][MAX_MAJOR_CIVS];
+	const unsigned int uSeed = CvPreGame::mapRandomSeed();
+	const int iTurn = GC.getGame().getGameTurn();
+	if (uSeed != s_uSeed || iTurn != s_iTurn)
+	{
+		s_uSeed = uSeed;
+		s_iTurn = iTurn;
+		for (int iLoopFix = 0; iLoopFix < NUM_CANDIDATE_FIXES; iLoopFix++)
+		{
+			std::vector<int> aiOrder;
+			for (int iPass = 0; iPass < 2; iPass++)
+			{
+				std::vector< std::pair<unsigned int, int> > aKind;
+				for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+				{
+					s_abOn[iLoopFix][i] = false;
+					const CvPlayer& kLoop = GET_PLAYER((PlayerTypes)i);
+					if (!kLoop.isEverAlive() || !kLoop.isMajorCiv() || kLoop.isHuman())
+						continue;
+					if (kLoop.IsABTestWarmonger() == (iPass == 0))
+						aKind.push_back(std::make_pair(ABTestHash(uSeed, (unsigned int)iLoopFix, (unsigned int)i), i));
+				}
+				std::sort(aKind.begin(), aKind.end());
+				for (size_t i = 0; i < aKind.size(); i++)
+					aiOrder.push_back(aKind[i].second);
+			}
+			// which of each pair gets the flag is random too, so an odd number of warmongers doesn't always favour "on"
+			const int iFirst = (int)(ABTestHash(uSeed, (unsigned int)iLoopFix, 0xFFFFu) & 1);
+			for (size_t i = 0; i < aiOrder.size(); i++)
+				s_abOn[iLoopFix][aiOrder[i]] = ((int)(i % 2) == iFirst);
+		}
+	}
+	return ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS && iFix >= 0 && iFix < NUM_CANDIDATE_FIXES && s_abOn[iFix][ePlayer];
+}
+
+/// AI_AB_TEST: in group c (the half of the civs that runs candidate changes; see IsABTestCandidateSlot). This only says
+/// which group a civ is in: gate candidate changes on UsesCandidateAI(FIX_xx), which also checks the flag.
+bool CvPlayer::IsInCandidateGroup() const
 {
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
 		return true;
 
 	return kABTestVersusBase ? IsABTestCandidateSlot(GetID()) : UsesNewAI();
+}
+
+/// AI_AB_TEST: does this player run candidate change eFix?
+/// - Outside a test game: the changes in the bundle are on for every player (so a non-test pack built from this branch
+///   gives everyone the bundle, untested changes included).
+/// - In a test game, a flag listed under Screen= in AIABTest.ini is on for a random half of the AI civs
+///   (IsABTestScreenSlot). Otherwise it's on for group c when Fixes= lists it (the bundle if there's no ini file).
+bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
+{
+	const int iBit = 1 << (int)eFix;
+	if (!MOD_AI_AB_TEST || !isMajorCiv())
+		return (kCandidateFixBundle & iBit) != 0;
+
+	const CvGame& kGame = GC.getGame();
+	if (kGame.GetABTestScreenedFixes() & iBit)
+		return !isHuman() && IsABTestScreenSlot(GetID(), (int)eFix);
+	return (kGame.GetABTestCandidateFixes() & iBit) != 0 && IsInCandidateGroup();
+}
+
+/// AI_AB_TEST: counts as a warmonger for the c/b split and the warmonger candidate changes (IsABTestWarmongerCiv)
+bool CvPlayer::IsABTestWarmonger() const
+{
+	return isMajorCiv() && IsABTestWarmongerCiv(*this);
 }
 
 bool CvPlayer::IsABTestVersusBase()
@@ -33421,7 +33527,7 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	// Candidate: a conquering civ should be wide, and wide was the strongest plan in test games (13.3% strength
 	// share and 5.3 cities against 12.6% and 4.4 for tall), so warmongers and aggressive personalities play wide;
 	// science and diplomacy civs stay tall; culture civs go wide when their personality is expansionist.
-	if (UsesCandidateAI())
+	if (UsesCandidateAI(FIX_WIDE_PLANS))
 	{
 		if (pTraits->IsExpansionist() || pTraits->IsWarmonger())
 			return OPENING_BOOK_WIDE;
@@ -33450,9 +33556,9 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 /// opening book researches Mathematics early and builds catapults (or the civ's own siege, ballista or siege tower,
 /// or the Huns' battering ram as spearman) before the attack is launched. Early attack armies otherwise filled their
 /// two siege slots with archers and couldn't take a city.
-bool CvPlayer::IsCandidateWarmonger() const
+bool CvPlayer::IsCandidateWarmonger(CandidateFixTypes eFix) const
 {
-	if (!UsesCandidateAI() || !isMajorCiv() || isHuman())
+	if (!UsesCandidateAI(eFix) || !isMajorCiv() || isHuman())
 		return false;
 	return IsABTestWarmongerCiv(*this);
 }
@@ -33468,7 +33574,7 @@ bool CvPlayer::IsBoxedInForSettling() const
 		return false;
 	if (GetBestSettlePlot(NULL) == NULL)
 		return true;
-	if (!UsesCandidateAI() || !kCandidateBoxedInBySettlers)
+	if (!UsesCandidateAI(FIX_BOXED_IN))
 		return false;
 
 	const int iStuckTurns = max(5, 10 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
@@ -33491,9 +33597,9 @@ bool CvPlayer::IsOpeningBookActive() const
 	// Turn limits are for Standard speed
 	// Candidate: wide civs keep settling longer. In test games they led CP by a city at turn 60 on Quick, then expanded
 	// no faster than CP once the book ended (turn 67), so the lead never grew.
-	int iWideLimit = (UsesCandidateAI() && kCandidateLongWideOpening) ? 130 : 100;
+	int iWideLimit = UsesCandidateAI(FIX_LONG_WIDE) ? 130 : 100;
 	// c7: a candidate tall civ's book runs on through the National College, aqueduct and university
-	int iTallLimit = UsesCandidateAI() ? 130 : 80;
+	int iTallLimit = UsesCandidateAI(FIX_GREEDY_BOOK) ? 130 : 80;
 	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : iTallLimit;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
@@ -33565,7 +33671,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		return false;
 
 	// So does an attack being gathered (see CvDiplomacyAI::GetNewAIConquestTarget): its army gets built first
-	CvAIOperation* pAttackOp = UsesCandidateAI() ? getFirstOffensiveAIOperation(NO_PLAYER) : NULL;
+	CvAIOperation* pAttackOp = (UsesCandidateAI(FIX_TIMING_ATTACK) || UsesCandidateAI(FIX_BOXED_IN_WAR)) ? getFirstOffensiveAIOperation(NO_PLAYER) : NULL;
 	if (pAttackOp && pAttackOp->GetNumUnitsNeededToBeBuilt() > 0)
 		return false;
 
@@ -33573,10 +33679,16 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	const OpeningBookStep* pSteps = NULL;
 	int iNumSteps = 0;
 	bool bCapital = pCity->isCapital();
-	switch (eBook)
+	// The siege book is checked before the plan, so it works without WidePlans too (with WidePlans every warmonger is wide)
+	if (bCapital && eBook != OPENING_BOOK_NONE && IsCandidateWarmonger(FIX_SIEGE_BOOK))
+	{
+		pSteps = kOpeningWarmongerCapital;
+		iNumSteps = (int)(sizeof(kOpeningWarmongerCapital) / sizeof(OpeningBookStep));
+	}
+	else switch (eBook)
 	{
 	case OPENING_BOOK_TALL:
-		if (bCapital && UsesCandidateAI())
+		if (bCapital && UsesCandidateAI(FIX_GREEDY_BOOK))
 		{
 			pSteps = kOpeningTallCapitalGreedy;
 			iNumSteps = (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
@@ -33586,13 +33698,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
 		break;
 	case OPENING_BOOK_WIDE:
-		if (bCapital && IsCandidateWarmonger())
-		{
-			pSteps = kOpeningWarmongerCapital;
-			iNumSteps = (int)(sizeof(kOpeningWarmongerCapital) / sizeof(OpeningBookStep));
-			break;
-		}
-		if (bCapital && UsesCandidateAI() && kCandidateLongWideOpening)
+		if (bCapital && UsesCandidateAI(FIX_LONG_WIDE))
 		{
 			pSteps = kOpeningWideCapitalLong;
 			iNumSteps = (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
@@ -33708,7 +33814,7 @@ static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech
 /// c5b: tall civs only; a warmonger's cities are building its army then, and a wide civ's its settlers.
 TechTypes CvPlayer::GetCandidateGrowthTech() const
 {
-	if (!MOD_AI_AB_TEST || !UsesCandidateAI() || !isMajorCiv() || isHuman() || IsOpeningBookActive())
+	if (!MOD_AI_AB_TEST || !UsesCandidateAI(FIX_GROWTH_TECH) || !isMajorCiv() || isHuman() || IsOpeningBookActive())
 		return NO_TECH;
 	if (GetOpeningBook() != OPENING_BOOK_TALL)
 		return NO_TECH;
@@ -33735,12 +33841,12 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	const char* const* pTechs = kTall;
 	int iNumTechs = (int)(sizeof(kTall) / sizeof(kTall[0]));
 	OpeningBookType eBook = GetOpeningBook();
-	if (IsCandidateWarmonger())
+	if (IsCandidateWarmonger(FIX_SIEGE_TECHS))
 	{
 		pTechs = kWarmonger;
 		iNumTechs = (int)(sizeof(kWarmonger) / sizeof(kWarmonger[0]));
 	}
-	else if (eBook == OPENING_BOOK_TALL && UsesCandidateAI())
+	else if (eBook == OPENING_BOOK_TALL && UsesCandidateAI(FIX_GREEDY_BOOK))
 	{
 		pTechs = kTallGreedy;
 		iNumTechs = (int)(sizeof(kTallGreedy) / sizeof(kTallGreedy[0]));

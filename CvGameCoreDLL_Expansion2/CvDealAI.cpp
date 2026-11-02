@@ -2394,7 +2394,7 @@ int CvDealAI::GetOpenBordersValue(bool bFromMe, PlayerTypes eOtherPlayer) const
 		// AI_AB_TEST candidate (c7c): a greedy (tall) civ keeps its borders closed to other major civs (USER: "when i want
 		// to be super greedy i also avoid open borders"): their armies can't walk up to its cities, and it gives them no
 		// tourism or easy look at its land
-		if (GetPlayer()->UsesCandidateAI() && GetPlayer()->GetOpeningBook() == OPENING_BOOK_TALL && GET_PLAYER(eOtherPlayer).isMajorCiv())
+		if (GetPlayer()->UsesCandidateAI(FIX_CLOSED_BORDERS) && GetPlayer()->GetOpeningBook() == OPENING_BOOK_TALL && GET_PLAYER(eOtherPlayer).isMajorCiv())
 		{
 			return INT_MAX;
 		}

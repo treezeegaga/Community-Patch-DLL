@@ -703,6 +703,10 @@ public:
 	void LogCivTurnEra() const;
 	void LogGameState(bool bLogHeaders = false) const;
 	void LogABTestResults(bool bFinal) const;
+	// AI_AB_TEST settings from AIABTest.ini, read when a test game starts and saved with it (bit i = CandidateFixTypes i)
+	void ReadABTestSettings();
+	int GetABTestCandidateFixes() const { return m_iABTestCandidateFixes; }
+	int GetABTestScreenedFixes() const { return m_iABTestScreenedFixes; }
 	void unitIsMoving() const;
 
 	void BuildProdModHelpText(CvString* toolTipSink, const char* strTextKey, int iMod, const char* strExtraKey = "", bool bShowIfZero = false) const;
@@ -934,6 +938,10 @@ protected:
 	CvString m_strGameId;
 
 	int m_intGameId;
+
+	// AI_AB_TEST (see ReadABTestSettings); saved only in test games
+	int m_iABTestCandidateFixes;
+	int m_iABTestScreenedFixes;
 
 	CvEnumMap<PlayerTypes, int> m_aiEndTurnMessagesReceived;
 	CvEnumMap<PlayerTypes, int> m_aiRankPlayer;		// Ordered by rank...

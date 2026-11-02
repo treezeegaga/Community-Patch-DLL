@@ -21041,7 +21041,7 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 	// capital fell before turn 150 on either side. Done here rather than after DoUpdateWarTargets so the WAR approach
 	// holds from turn to turn (changing it back and forth cancels the attack being gathered); a zero-out above
 	// (recent peace, no reachable target, bankruptcy...) still rules it out.
-	if (GetPlayer()->UsesCandidateAI() && vScratchValueOverrides[CIV_APPROACH_WAR] != 0)
+	if ((GetPlayer()->UsesCandidateAI(FIX_TIMING_ATTACK) || GetPlayer()->UsesCandidateAI(FIX_BOXED_IN_WAR)) && vScratchValueOverrides[CIV_APPROACH_WAR] != 0)
 	{
 		const char* szReason = "";
 		if (GetNewAIConquestTarget(szReason) == ePlayer)
@@ -23380,11 +23380,12 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 {
 	szReason = "";
 	CvPlayer* pPlayer = GetPlayer();
-	if (!pPlayer->UsesCandidateAI() || pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
+	if (pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
 		return NO_PLAYER;
 
-	const bool bWarmonger = pPlayer->IsCandidateWarmonger();
-	const bool bExpansionist = !bWarmonger && pPlayer->GetOpeningBook() == OPENING_BOOK_WIDE;
+	// flags TimingAttack (warmongers) and BoxedInWar (other wide civs)
+	const bool bWarmonger = pPlayer->IsCandidateWarmonger(FIX_TIMING_ATTACK);
+	const bool bExpansionist = pPlayer->UsesCandidateAI(FIX_BOXED_IN_WAR) && !pPlayer->IsABTestWarmonger() && pPlayer->GetOpeningBook() == OPENING_BOOK_WIDE;
 	if (!bWarmonger && !bExpansionist)
 		return NO_PLAYER;
 
@@ -23394,13 +23395,16 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// no siege and took no cities. Turn 90 (Standard) is the fallback if the siege never comes.
 	// c5: and an army around them (2 siege + 4 other land units): c4's war came with the siege but an army too thin to
 	// take a city
-	if (bWarmonger && iTurn < 90 * iSpeed / 100)
+	// Flag DeclareTiming; without it a warmonger attacks from turn 45 (Standard), as in c3
+	if (bWarmonger && pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 90 * iSpeed / 100)
 	{
 		int iSiege = pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 		int iLand = pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
 		if (iSiege < 2 || iLand - iSiege < 4)
 			return NO_PLAYER;
 	}
+	if (bWarmonger && !pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 45 * iSpeed / 100)
+		return NO_PLAYER;
 	if (bExpansionist && !pPlayer->IsBoxedInForSettling())
 		return NO_PLAYER;
 
@@ -23441,14 +23445,14 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		if (!GetDefensiveWarAllies(eLoopPlayer, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty())
 			continue;
 
-		// c7c: and only a war we can win
-		if (!CanTakeNearestCity(pPlayer, eLoopPlayer))
+		// c7c: and only a war we can win (flag CanWin)
+		if (pPlayer->UsesCandidateAI(FIX_CAN_WIN) && !CanTakeNearestCity(pPlayer, eLoopPlayer))
 			continue;
 
 		if (bCommitted)
 		{
 			eBest = eLoopPlayer;
-			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, greediest neighbour";
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, committed target";
 			break;
 		}
 
@@ -23459,19 +23463,25 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			const CvCity* pTheirCapital = GET_PLAYER(eLoopPlayer).getCapitalCity();
 			iScore = (pCapital && pTheirCapital) ? -plotDistance(pCapital->getX(), pCapital->getY(), pTheirCapital->getX(), pTheirCapital->getY()) : -1000;
 		}
-		else
+		else if (pPlayer->UsesCandidateAI(FIX_GREEDY_TARGET))
 		{
 			// c7: the greediest, fewest land units per city (USER: greedy civs are the ones a warmonger can punish; c5b's
 			// two warmongers picked each other by the "weakest" strength estimate), neighbours before close civs
 			const CvPlayer& kTarget = GET_PLAYER(eLoopPlayer);
 			iScore = -kTarget.getNumMilitaryLandUnits() * 100 / max(1, kTarget.getNumCities()) + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 50 : 0);
 		}
+		else
+		{
+			// c4: the weakest, neighbours before close civs
+			iScore = (NUM_STRENGTH_VALUES - (int)eTheirStrength) * 10 + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 5 : 0);
+		}
 
 		if (iScore > iBestScore)
 		{
 			iBestScore = iScore;
 			eBest = eLoopPlayer;
-			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, greediest neighbour";
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : pPlayer->UsesCandidateAI(FIX_GREEDY_TARGET) ?
+				"warmonger timing attack, greediest neighbour" : "warmonger timing attack, weakest neighbour";
 		}
 	}
 

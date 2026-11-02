@@ -270,11 +270,10 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// AI_AB_TEST candidate (c6): tall civs play greedy. In test games almost no city ever changed hands, so an army
 	// beyond a garrison was mostly upkeep and lost production. Outside of a war or a defense emergency, a tall civ
 	// keeps about one land unit per city (plus one) and builds them only for operations (settler escorts).
-	// c7b: off. In c6 (0-3, 46.5%) the greedy tall civs drew wars: Egypt was attacked by three civs and a city-state,
-	// Ethiopia by four. Greed needs an early alarm before it can work.
-	static const bool kCandidateGreedyArmyCap = false;
-	if (kCandidateGreedyArmyCap && bCombat && !bFree && !bDesperate && !bForOperation && pkUnitEntry->GetDomainType() == DOMAIN_LAND &&
-		kPlayer.UsesCandidateAI() && kPlayer.GetOpeningBook() == OPENING_BOOK_TALL && !kPlayer.IsAtWarAnyMajor() &&
+	// c7b: off in the bundle (flag GreedyArmyCap). In c6 (0-3, 46.5%) the greedy tall civs drew wars: Egypt was attacked
+	// by three civs and a city-state, Ethiopia by four. Greed needs an early alarm before it can work.
+	if (bCombat && !bFree && !bDesperate && !bForOperation && pkUnitEntry->GetDomainType() == DOMAIN_LAND &&
+		kPlayer.UsesCandidateAI(FIX_GREEDY_ARMY_CAP) && kPlayer.GetOpeningBook() == OPENING_BOOK_TALL && !kPlayer.IsAtWarAnyMajor() &&
 		iNumLandUnits - iNumExplorers > kPlayer.getNumCities())
 	{
 		MilitaryAIStrategyTypes eDefense = (MilitaryAIStrategyTypes)GC.getInfoTypeForString("MILITARYAISTRATEGY_EMPIRE_DEFENSE");

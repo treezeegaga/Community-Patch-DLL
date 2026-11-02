@@ -135,6 +135,32 @@ enum OpeningBookType
 	OPENING_BOOK_CONQUEST,	// Honor, 3 cities, archers, Bronze Working -> Construction
 };
 
+// AI_AB_TEST: one flag per candidate idea (the C changes on branch claude/ab-c1), so each can be tested on its own or
+// screened together. Gate every candidate change on CvPlayer::UsesCandidateAI(FIX_xx). Which flags are on comes from
+// AIABTest.ini in My Games, read when a test game starts and saved with it (see CvGame::ReadABTestSettings). The names
+// in CvPlayer.cpp (kCandidateFixNames) are what the ini file and the results file use. Append new flags at the end;
+// a flag's number is its bit in the saved masks.
+enum CandidateFixTypes
+{
+	FIX_WIDE_PLANS,			// c1/c2 (2q, 2r): warmongers, aggressive and expansionist culture civs play the wide plan
+	FIX_BOXED_IN,			// c1 (2u): a settler idle 10+ turns means no land is left
+	FIX_LONG_WIDE,			// c1 (2s): the wide opening settles up to 8 cities, to turn 130 (Standard). Off in the bundle
+	FIX_BOXED_IN_WAR,		// c3: a boxed-in wide civ attacks the neighbour blocking it
+	FIX_TIMING_ATTACK,		// c3/c3b: a warmonger attacks a weak close neighbour (committed target, one front)
+	FIX_SIEGE_TECHS,		// c4: warmongers research Pottery, The Wheel, Mathematics, Bronze Working, Archery, Writing
+	FIX_SIEGE_BOOK,			// c4/c5: the warmonger capital builds 3 catapults, 2 spearmen and 2 archers after its 2nd settler
+	FIX_DECLARE_TIMING,		// c4/c5: a warmonger declares once it has 2 siege units and 4 other land units (fallback T90
+							// Standard); off: from turn 45 Standard, as in c3
+	FIX_GROWTH_TECH,		// c5/c5b: tall civs head for Engineering once the capital reaches size 6
+	FIX_AQUEDUCT_VALUE,		// c5/c5b: tall civs value the aqueduct's kept food twice
+	FIX_GREEDY_ARMY_CAP,	// c6: tall civs keep cities + 1 land units outside war and defence emergencies. Off in the bundle
+	FIX_GREEDY_BOOK,		// c7: the tall capital book goes on to the aqueduct and university, to turn 130 (Standard)
+	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
+	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
+	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
+	NUM_CANDIDATE_FIXES
+};
+
 class CvPlayer
 {
 	friend class CvPlayerPolicies;
@@ -1649,14 +1675,19 @@ public:
 	bool isMinorCiv() const;
 	bool isMajorCiv() const;
 	bool UsesNewAI() const;
-	bool UsesCandidateAI() const;
+	bool UsesCandidateAI(CandidateFixTypes eFix) const;
+	bool IsInCandidateGroup() const;
+	bool IsABTestWarmonger() const;
 	static bool IsABTestVersusBase();
+	static const char* GetCandidateFixName(int iFix);
+	static int GetCandidateFixByName(const char* szName);
+	static int GetCandidateFixBundle();
 
 	// AI_AB_TEST opening book (new AI only; all state is derived from the game, nothing is saved)
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
 	bool IsBoxedInForSettling() const;
-	bool IsCandidateWarmonger() const;
+	bool IsCandidateWarmonger(CandidateFixTypes eFix) const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;

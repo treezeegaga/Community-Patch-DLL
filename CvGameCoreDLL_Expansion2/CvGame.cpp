@@ -202,6 +202,91 @@ static void ApplyABTestLoggingSettings()
 }
 
 //	--------------------------------------------------------------------------------
+/// AI_AB_TEST: a list of candidate flags from AIABTest.ini: names (CandidateFixTypes, any case) separated by commas or
+/// spaces; "bundle" adds the bundle, "all" every flag, "none" nothing, and "-Name" takes a flag out again. So
+/// "CanWin" is that flag alone and "bundle, -CanWin" the bundle without it. Unknown names go to AIABTest_errors.txt.
+static int ParseABTestFixList(const std::string& strList, const CvString& strErrorPath)
+{
+	int iMask = 0;
+	size_t iPos = 0;
+	while (iPos < strList.size())
+	{
+		size_t iEnd = strList.find_first_of(", ;\t", iPos);
+		if (iEnd == std::string::npos)
+			iEnd = strList.size();
+		std::string strName = strList.substr(iPos, iEnd - iPos);
+		iPos = iEnd + 1;
+		if (strName.empty())
+			continue;
+
+		bool bRemove = (strName[0] == '-');
+		if (bRemove)
+			strName = strName.substr(1);
+		int iBits = 0;
+		if (_stricmp(strName.c_str(), "bundle") == 0)
+			iBits = CvPlayer::GetCandidateFixBundle();
+		else if (_stricmp(strName.c_str(), "all") == 0)
+			iBits = (1 << NUM_CANDIDATE_FIXES) - 1;
+		else if (_stricmp(strName.c_str(), "none") == 0)
+			iBits = 0;
+		else
+		{
+			int iFix = CvPlayer::GetCandidateFixByName(strName.c_str());
+			if (iFix < 0)
+			{
+				FILE* pFile = NULL;
+				std::wstring wstrErrorPath = CvStringUtils::FromUTF8ToUTF16(strErrorPath);
+				if (_wfopen_s(&pFile, wstrErrorPath.c_str(), L"ab") == 0 && pFile != NULL)
+				{
+					fprintf(pFile, "AIABTest.ini: no candidate flag called \"%s\", ignored\r\n", strName.c_str());
+					fclose(pFile);
+				}
+				continue;
+			}
+			iBits = 1 << iFix;
+		}
+		iMask = bRemove ? (iMask & ~iBits) : (iMask | iBits);
+	}
+	return iMask;
+}
+
+/// AI_AB_TEST: which candidate flags this test game runs, from AIABTest.ini in My Games\Sid Meier's Civilization 5:
+///     [ABTest]
+///     Fixes = bundle      ; flags group c runs (see ParseABTestFixList); empty or no file = the bundle
+///     Screen =            ; flags each on for a random half of the AI civs instead, for screening
+/// Read once when the game starts and saved with it, so a reloaded game keeps its flags whatever the file says by then.
+/// Test games are single player only (AI decisions in multiplayer must not depend on a local file).
+void CvGame::ReadABTestSettings()
+{
+	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
+	m_iABTestScreenedFixes = 0;
+
+	CvString strFolder = gDLL->GetCacheFolderPath();
+	strFolder += "..\\";
+	CvString strPath = strFolder + "AIABTest.ini";
+	CvString strErrorPath = strFolder + "AIABTest_errors.txt";
+	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
+
+	wchar_t szBuffer[1024];
+	const wchar_t* const aszKeys[2] = { L"Fixes", L"Screen" };
+	for (int iKey = 0; iKey < 2; iKey++)
+	{
+		szBuffer[0] = 0;
+		GetPrivateProfileStringW(L"ABTest", aszKeys[iKey], L"", szBuffer, 1024, wstrPath.c_str());
+		// flag names are plain ASCII
+		std::string strList;
+		for (const wchar_t* p = szBuffer; *p != 0; ++p)
+			strList += (*p < 128) ? (char)*p : '?';
+		if (strList.find_first_not_of(" \t") == std::string::npos)
+			continue;
+		if (iKey == 0)
+			m_iABTestCandidateFixes = ParseABTestFixList(strList, strErrorPath);
+		else
+			m_iABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
+	}
+}
+
+//	--------------------------------------------------------------------------------
 void CvGame::init(HandicapTypes eHandicap)
 {
 	bool bValid = false;
@@ -214,7 +299,10 @@ void CvGame::init(HandicapTypes eHandicap)
 	reset(eHandicap);
 
 	if (MOD_AI_AB_TEST)
+	{
 		ApplyABTestLoggingSettings();
+		ReadABTestSettings();
+	}
 
 	m_mapRand.init(CvPreGame::mapRandomSeed() % 73637381);
 	m_jonRand.init(CvPreGame::syncRandomSeed() % 52319761);
@@ -1280,6 +1368,8 @@ void CvGame::uninit()
 	m_strScriptData = "";
 	m_strGameId = "";
 	m_intGameId = 0;
+	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
+	m_iABTestScreenedFixes = 0;
 	m_iEarliestBarbarianReleaseTurn = 0;
 
 	m_iLastMouseoverUnitID = 0;
@@ -11011,6 +11101,13 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	visitor(*game.m_pGameContracts);
 
 	visitor(game.m_strGameId);
+
+	// AI_AB_TEST: the test pack's saves only, so the normal pack's save format is unchanged
+	if (MOD_AI_AB_TEST)
+	{
+		visitor(game.m_iABTestCandidateFixes);
+		visitor(game.m_iABTestScreenedFixes);
+	}
 }
 
 //	--------------------------------------------------------------------------------
@@ -12856,7 +12953,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c2: only the plan choices from c1. Result: c 48.6% +/- 2.3 over 4 games, not better.
 /// c3: c2 plus conquest: boxed-in wide civs attack whoever blocks them, warmongers attack their weakest neighbour.
 /// c3b: c3 with a committed war target (no re-picking every turn) and no targets with defensive allies.
-static const char* const AI_AB_TEST_BATCH = "c7c";
+/// c7c_flags: c7c with every candidate idea behind its own flag (CandidateFixTypes, AIABTest.ini), and a Warmonger
+/// column. With no AIABTest.ini it plays the same as c7c.
+static const char* const AI_AB_TEST_BATCH = "c7c_flags";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
@@ -12871,7 +12970,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 	const BuildingClassTypes eNationalCollege = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_NATIONAL_COLLEGE", true);
@@ -12908,7 +13007,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 		int iCity4Turn = vFoundedTurns.size() > 3 ? vFoundedTurns[3] : -1;
 		OpeningBookType eBook = kPlayer.GetOpeningBook();
 
-		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\r\n",
+		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d\r\n",
 			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(),
 			getElapsedGameTurns(),
 			bFinal ? 1 : 0,
@@ -12916,7 +13015,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 			szVictory,
 			iI,
 			kPlayer.getCivilizationTypeKey(),
-			CvPlayer::IsABTestVersusBase() ? (kPlayer.UsesCandidateAI() ? "c" : "b") : (kPlayer.UsesNewAI() ? "new" : "cp"),
+			CvPlayer::IsABTestVersusBase() ? (kPlayer.IsInCandidateGroup() ? "c" : "b") : (kPlayer.UsesNewAI() ? "new" : "cp"),
 			kPlayer.isAlive() ? 1 : 0,
 			kPlayer.getNumCities(),
 			kPlayer.getTotalPopulation(),
@@ -12930,7 +13029,8 @@ void CvGame::LogABTestResults(bool bFinal) const
 			kPlayer.IsHasLostCapital() ? 1 : 0,
 			iCity2Turn, iCity3Turn, iCity4Turn,
 			bNationalCollege ? 1 : 0,
-			kBookNames[(eBook >= OPENING_BOOK_NONE && eBook <= OPENING_BOOK_CONQUEST) ? eBook : 0]);
+			kBookNames[(eBook >= OPENING_BOOK_NONE && eBook <= OPENING_BOOK_CONQUEST) ? eBook : 0],
+			kPlayer.IsABTestWarmonger() ? 1 : 0);
 	}
 
 	fclose(pFile);
