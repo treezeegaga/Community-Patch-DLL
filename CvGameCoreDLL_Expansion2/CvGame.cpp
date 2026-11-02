@@ -12850,7 +12850,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2o: batch2n with the opening book's later buildings giving way to a wanted wonder in the best wonder city.
 /// batch2p: batch2o plus a warrior in the opening book before the first settler, to be its escort.
 /// batch2q: batch2p with warmongers and high-offense personalities on the wide opening plan.
-static const char* const AI_AB_TEST_BATCH = "batch2q";
+/// batch2r: batch2q with culture (tourism) civs going wide when their expansion flavor is at least their culture one.
+static const char* const AI_AB_TEST_BATCH = "batch2r";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

@@ -33337,13 +33337,19 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	const CvPlayerTraits* pTraits = GetPlayerTraits();
 	if (pTraits->IsExpansionist() || pTraits->IsWarmonger())
 		return OPENING_BOOK_WIDE;
-	if (pTraits->IsNerd() || pTraits->IsTourism() || pTraits->IsSmaller())
+	// science and diplomacy (city-state) civs are always tall
+	if (pTraits->IsNerd() || pTraits->IsSmaller())
 		return OPENING_BOOK_TALL;
 
 	int iOffense = GetOpeningBookFlavor(*this, "FLAVOR_OFFENSE");
 	int iExpansion = GetOpeningBookFlavor(*this, "FLAVOR_EXPANSION");
 	int iScience = GetOpeningBookFlavor(*this, "FLAVOR_SCIENCE");
 	int iCulture = GetOpeningBookFlavor(*this, "FLAVOR_CULTURE");
+
+	// culture civs usually go tall (each city makes policies dearer), but an expansionist one does better wide, with
+	// more cities for wonders, great works and theming
+	if (pTraits->IsTourism())
+		return (iExpansion >= iCulture) ? OPENING_BOOK_WIDE : OPENING_BOOK_TALL;
 	if (iOffense >= 8 && iOffense >= max(iScience, iCulture))
 		return OPENING_BOOK_WIDE;
 	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
