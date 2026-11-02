@@ -48078,7 +48078,10 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 				pBestPlot = it->pPlot;
 			}
 		}
-		return pBestPlot;
+		// GetPlotsInReach can miss sites that a direct path reaches (seen with a settler that had 12 valid sites
+		// and sat idle for 50 turns), so when nothing matched, fall back to CP's search below
+		if (pBestPlot)
+			return pBestPlot;
 	}
 
 	// Try the top candidates individually first; successful paths terminate quickly.
