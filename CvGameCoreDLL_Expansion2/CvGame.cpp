@@ -12841,7 +12841,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2i: batch2h plus found-city operations that start without a spare military unit (CP's precondition never
 /// counted the settler itself, so new-AI settlers with no warrior around stood idle all game), and the opening
 /// book letting the normal choice build a waiting settler's escort.
-static const char* const AI_AB_TEST_BATCH = "batch2i";
+/// batch2j: batch2i plus saving gold for the next settler (no hurries, tile buys or city-state gold gifts meanwhile).
+static const char* const AI_AB_TEST_BATCH = "batch2j";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

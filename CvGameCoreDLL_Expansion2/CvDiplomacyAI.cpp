@@ -36744,8 +36744,10 @@ void CvDiplomacyAI::DoContactMinorCivs()
 	}
 
 	// Do we want to give someone Gold enough to actually do it?
+	// AI_AB_TEST: not while the new AI is saving for its next settler
+	const bool bSavingForSettler = GetPlayer()->GetEconomicAI()->IsSavingForExpansionSettler();
 	veMinorsToGiveGold.StableSortItems(); // Sort from highest desirability to lowest
-	for (int i = 0; i < veMinorsToGiveGold.size(); i++)
+	for (int i = 0; i < veMinorsToGiveGold.size() && !bSavingForSettler; i++)
 	{
 		int iGoldLeft = GetPlayer()->GetTreasury()->GetGold();
 		MinorGoldGiftInfo sGift = veMinorsToGiveGold.GetElement(i);

@@ -217,6 +217,8 @@ public:
 	const CvExplorationPlotSet& GetExplorationPlots(ExplorationDomainTypes ePlotType);
 	const CvExplorationPlotSet GetExplorationPlots(const CvUnit* pUnit);
 
+	// AI_AB_TEST: the new AI saving gold to buy its next settler
+	bool IsSavingForExpansionSettler();
 	void StartSaveForPurchase(PurchaseType ePurchase, int iAmount, int iPriority);
 	bool IsSavingForThisPurchase(PurchaseType ePurchase);
 	void CancelSaveForPurchase(PurchaseType ePurchase);

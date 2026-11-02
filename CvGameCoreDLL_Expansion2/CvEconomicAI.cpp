@@ -3050,31 +3050,32 @@ void CvEconomicAI::LogPossibleHurries(CvWeightedVector<CvCityBuildable> const& m
 }
 /// AI_AB_TEST: strong players buy their early settlers with gold, so the capital keeps growing and building while
 /// the new city starts sooner. CP's AI never does (its hurry goes to whatever a city is building, often a scout).
-/// The new AI buys a settler while it wants to expand, has none on the map, has a site for one and can pay.
-static void BuyExpansionSettler(CvPlayer* pPlayer)
+/// The new AI wants to buy a settler while it wants to expand, has none on the map, has a site for one and isn't
+/// losing money. This finds that settler, the city to buy it in and its price.
+static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, CvCity*& pBuyCity, int& iCost)
 {
 	static EconomicAIStrategyTypes eEarlyExpansion = (EconomicAIStrategyTypes)GC.getInfoTypeForString("ECONOMICAISTRATEGY_EARLY_EXPANSION");
 	bool bWantCities = pPlayer->IsOpeningBookActive() ||
 		(eEarlyExpansion != NO_ECONOMICAISTRATEGY && pPlayer->GetEconomicAI()->IsUsingStrategy(eEarlyExpansion));
 	if (!bWantCities || pPlayer->getNumCities() == 0 || pPlayer->IsEmpireUnhappy())
-		return;
+		return false;
 
 	// a settler on the map still has to get somewhere; don't stack them up
 	if (pPlayer->GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0)
-		return;
+		return false;
 
 	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->GetBestSettlePlot(NULL) == NULL)
-		return;
+		return false;
 
 	UnitClassTypes eSettlerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
 	if (eSettlerClass == NO_UNITCLASS)
-		return;
-	UnitTypes eSettler = pPlayer->GetSpecificUnitType(eSettlerClass);
+		return false;
+	eSettler = pPlayer->GetSpecificUnitType(eSettlerClass);
 	if (eSettler == NO_UNIT)
-		return;
+		return false;
 
 	// a city already training a settler keeps that progress for the next one; otherwise the capital
-	CvCity* pBuyCity = NULL;
+	pBuyCity = NULL;
 	int iLoop = 0;
 	for (CvCity* pLoopCity = pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = pPlayer->nextCity(&iLoop))
 	{
@@ -3087,10 +3088,34 @@ static void BuyExpansionSettler(CvPlayer* pPlayer)
 	if (!pBuyCity)
 		pBuyCity = pPlayer->getCapitalCity();
 	if (!pBuyCity || pBuyCity->IsPuppet())
-		return;
+		return false;
+	if (!pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ false, /*bTestTrainable*/ true, eSettler, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
+		return false;
 
-	int iCost = pBuyCity->GetPurchaseCost(eSettler);
-	if (iCost <= 0 || pPlayer->GetTreasury()->GetGold() < iCost)
+	iCost = pBuyCity->GetPurchaseCost(eSettler);
+	return iCost > 0;
+}
+
+/// AI_AB_TEST: true while the new AI is putting gold aside for a settler (a settler is about 370 gold on Quick speed and
+/// early income is a few gold a turn, so without saving the gold always went on tiles and hurries first)
+bool CvEconomicAI::IsSavingForExpansionSettler()
+{
+	if (!m_pPlayer->UsesNewAI())
+		return false;
+
+	UnitTypes eSettler = NO_UNIT;
+	CvCity* pBuyCity = NULL;
+	int iCost = 0;
+	return GetWantedExpansionSettler(m_pPlayer, eSettler, pBuyCity, iCost) && m_pPlayer->GetTreasury()->GetGold() < iCost;
+}
+
+/// AI_AB_TEST: buys the wanted settler as soon as the new AI can pay for it
+static void BuyExpansionSettler(CvPlayer* pPlayer)
+{
+	UnitTypes eSettler = NO_UNIT;
+	CvCity* pBuyCity = NULL;
+	int iCost = 0;
+	if (!GetWantedExpansionSettler(pPlayer, eSettler, pBuyCity, iCost) || pPlayer->GetTreasury()->GetGold() < iCost)
 		return;
 	if (!pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eSettler, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
 		return;
@@ -3116,7 +3141,12 @@ void CvEconomicAI::DoHurry()
 	int iLoop = 0;
 
 	if (m_pPlayer->UsesNewAI())
+	{
 		BuyExpansionSettler(m_pPlayer);
+		// the next city comes before any other purchase
+		if (IsSavingForExpansionSettler())
+			return;
+	}
 
 	//Let's give the AI a treasury cushion ...
 	int iTreasuryBuffer = /*50*/ GD_INT_GET(AI_GOLD_TREASURY_BUFFER);
@@ -3443,6 +3473,10 @@ void CvEconomicAI::DoPlotPurchases()
 	{
 		return;
 	}
+
+	// AI_AB_TEST: the new AI's next city comes before tiles
+	if (IsSavingForExpansionSettler())
+		return;
 
 	// AI_AB_TEST: CP never cancels a tile savings request, so after one unaffordable plot the amount stays
 	// reserved (and blocks hurrying) for the rest of the game. The new AI clears it here; the loop below
