@@ -211,7 +211,7 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 	size_t iPos = 0;
 	while (iPos < strList.size())
 	{
-		size_t iEnd = strList.find_first_of(", ;\t", iPos);
+		size_t iEnd = strList.find_first_of(", \t", iPos);
 		if (iEnd == std::string::npos)
 			iEnd = strList.size();
 		std::string strName = strList.substr(iPos, iEnd - iPos);
@@ -273,9 +273,9 @@ void CvGame::ReadABTestSettings()
 	{
 		szBuffer[0] = 0;
 		GetPrivateProfileStringW(L"ABTest", aszKeys[iKey], L"", szBuffer, 1024, wstrPath.c_str());
-		// flag names are plain ASCII
+		// flag names are plain ASCII; Windows leaves a comment after the value in it, so cut at ';' or '#'
 		std::string strList;
-		for (const wchar_t* p = szBuffer; *p != 0; ++p)
+		for (const wchar_t* p = szBuffer; *p != 0 && *p != L';' && *p != L'#'; ++p)
 			strList += (*p < 128) ? (char)*p : '?';
 		if (strList.find_first_not_of(" \t") == std::string::npos)
 			continue;
