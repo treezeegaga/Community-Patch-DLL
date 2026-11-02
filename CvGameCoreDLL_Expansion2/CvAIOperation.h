@@ -290,6 +290,7 @@ public:
 
 	virtual bool CheckTransitionToNextStage();
 	virtual void OnSuccess() const;
+	bool IsNextToEnemyTerritory(const CvPlot* pPlot) const;
 
 protected:
 	//default version does nothing

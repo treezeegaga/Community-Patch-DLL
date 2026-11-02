@@ -13154,7 +13154,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// WarsOnUs, CitiesCaptured, CitiesLost, Deals, WorkersStolen, WonderChops (running counts, ABTestCountTypes), and
 /// AtWar, AtWarAggressor, Pacts, Friends, Denouncing, Influential (the state at that turn), and TurnSecs (real seconds
 /// per turn since the last logged row). The AI is unchanged.
-static const char* const AI_AB_TEST_BATCH = "c7c_roles";
+/// screen1: c7c_roles plus Economy's and War's first flags (branch claude/ab-screen1, a test build only: ai/economy and
+/// ai/war merged, every new flag off in the bundle), for one screening run of all candidate flags at T100.
+static const char* const AI_AB_TEST_BATCH = "screen1";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
 static CvString GetABTestFixListText(int iMask)
