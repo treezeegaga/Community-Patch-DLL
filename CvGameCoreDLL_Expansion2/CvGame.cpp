@@ -12836,7 +12836,7 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2f: batch2e with the settle-site travel times from direct paths (GetPlotsInReach missed reachable sites,
 /// leaving settlers idle), falling back to CP's search when none of the top sites is reachable.
 /// batch2g: batch2f plus settlers bought with gold while expanding, no scout purchases, and opening-book
-/// settlers only from size 4 (tall) or 3.
+/// settlers only when the city's next citizen is further away than the settler.
 static const char* const AI_AB_TEST_BATCH = "batch2g";
 
 void CvGame::LogABTestResults(bool bFinal) const

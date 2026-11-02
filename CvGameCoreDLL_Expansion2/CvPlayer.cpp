@@ -33412,10 +33412,11 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		return false;
 	}
 
-	// Tall play grows the capital a bit before each settler
-	// (A city doesn't grow while it trains a settler, so starting one at size 2 kept capitals small for 20+ turns;
-	// settlers bought with gold come on top of these, see BuyExpansionSettler.)
-	const int iMinSettlerPop = (eBook == OPENING_BOOK_TALL) ? 4 : 3;
+	// A city doesn't grow while it trains a settler (its spare food goes into the settler). So a settler waits while
+	// the next citizen is closer than the settler would be: grow first, then build it faster from a bigger city.
+	// (Starting settlers at size 2 kept capitals small for 20+ turns. Settlers bought with gold come on top of these,
+	// see BuyExpansionSettler.)
+	const int iMinSettlerPop = 2;
 	const int iScoutTurnLimit = 20 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 
 	// How many of each unit class the steps so far ask for (a step for the 3rd settler means 3 settlers)
@@ -33445,6 +33446,8 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE && GC.getGame().getElapsedGameTurns() > iScoutTurnLimit)
 				continue;
 			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || GetBestSettlePlot(NULL) == NULL))
+				continue;
+			if (bSettler && pCity->getYieldRateTimes100(YIELD_FOOD) > 0 && pCity->getFoodTurnsLeft() <= pCity->getProductionTurnsLeft(eUnit, 0))
 				continue;
 			if (!pCity->canTrain(eUnit))
 				continue;
