@@ -48051,24 +48051,28 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 	// settler's travel time: a site 5 turns away keeps 80% of its value, 20 turns away 50%. The current target
 	// gets a 15% edge so the settler doesn't swap between two similar sites every turn. Not used for the first
 	// city, which homeland AI handles.
+	// Travel time comes from a direct path to each of the top few sites. (The first version took it from
+	// GetPlotsInReach, which missed sites the settler could walk to: settlers with a dozen valid sites sat idle or
+	// had their operation abort with NoTarget every turn.)
 	if (UsesNewAI() && getNumCities() > 0)
 	{
 		const int iTravelTurnsForHalfValue = 20;
-		ReachablePlots reachable = GC.GetPathFinder().GetPlotsInReach(pUnit->plot(), SPathFinderUserData(pUnit, iFlags, 23));
+		const int iMaxPathChecks = 8;
+		int iPathChecks = 0;
 		CvPlot* pBestPlot = NULL;
 		int iBestScore = 0;
-		for (vector<SPlotWithScore>::reverse_iterator it = vSettlePlots.rbegin(); it != vSettlePlots.rend(); ++it)
+		for (vector<SPlotWithScore>::reverse_iterator it = vSettlePlots.rbegin(); it != vSettlePlots.rend() && iPathChecks < iMaxPathChecks; ++it)
 		{
 			// the list is sorted by value and the discount only lowers it, so nothing further down can win
 			if ((it->score * 115) / 100 <= iBestScore)
 				break;
 
-			ReachablePlots::const_iterator itReach = reachable.find(it->pPlot->GetPlotIndex());
-			if (itReach == reachable.end())
+			int iTurns = 0;
+			iPathChecks++;
+			if (!pUnit->GeneratePath(it->pPlot, iFlags, 23, &iTurns))
 				continue;
 
-			int iTurns = max(0, itReach->iPathLength);
-			int iScore = (it->score * iTravelTurnsForHalfValue) / (iTravelTurnsForHalfValue + iTurns);
+			int iScore = (it->score * iTravelTurnsForHalfValue) / (iTravelTurnsForHalfValue + max(0, iTurns));
 			if (it->pPlot == pCurrentTarget)
 				iScore = (iScore * 115) / 100;
 
@@ -48078,8 +48082,7 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 				pBestPlot = it->pPlot;
 			}
 		}
-		// GetPlotsInReach can miss sites that a direct path reaches (seen with a settler that had 12 valid sites
-		// and sat idle for 50 turns), so when nothing matched, fall back to CP's search below
+		// nothing reachable among the top sites: CP's search below also tries the rest
 		if (pBestPlot)
 			return pBestPlot;
 	}
