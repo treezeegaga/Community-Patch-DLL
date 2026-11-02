@@ -160,6 +160,7 @@ enum CandidateFixTypes
 	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
 	FIX_SETTLERS_FIRST,		// Economy: the capital's opening-book settlers come before its monument, shrine and worker. Not in the bundle
 	FIX_SETTLER_OVERLAP,	// Economy: the next book settler may start training while the last one walks to its site. Not in the bundle
+	FIX_DIPLO_POLICY_VALUE,	// Economy (CvPolicyAI audit P1): diplomacy-flavoured policies lose their value only when hostile to a city-state. Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 

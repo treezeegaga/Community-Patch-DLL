@@ -4805,7 +4805,13 @@ int CvPolicyAI::WeighPolicy(CvPlayer* pPlayer, PolicyTypes ePolicy)
 						// Loop through all minors - if we're itching to conquer, bail out on diplo policies.
 						if (GET_PLAYER(eMinor).isMinorCiv() && GET_PLAYER(eMinor).isAlive())
 						{
-							if (pPlayer->GetDiplomacyAI()->GetCivApproach(eMinor) >= CIV_APPROACH_HOSTILE)
+							// AI_AB_TEST candidate (DiploPolicyValue): ">= HOSTILE" is true for every approach but WAR
+							// (WAR < HOSTILE < ... < FRIENDLY), so the diplomacy value was dropped for nearly every civ and
+							// kept only by those planning war on a city-state: the opposite of the comment above
+							bool bHostileToMinor = pPlayer->UsesCandidateAI(FIX_DIPLO_POLICY_VALUE) ?
+								pPlayer->GetDiplomacyAI()->GetCivApproach(eMinor) <= CIV_APPROACH_HOSTILE :
+								pPlayer->GetDiplomacyAI()->GetCivApproach(eMinor) >= CIV_APPROACH_HOSTILE;
+							if (bHostileToMinor)
 							{
 								iDiploValue -= iFlavorValue;
 								break;

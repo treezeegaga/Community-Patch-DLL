@@ -33321,14 +33321,14 @@ static const bool kABTestVersusBase = true;
 static const char* const kCandidateFixNames[NUM_CANDIDATE_FIXES] = {
 	"WidePlans", "BoxedIn", "LongWide", "BoxedInWar", "TimingAttack", "SiegeTechs", "SiegeBook", "DeclareTiming",
 	"GrowthTech", "AqueductValue", "GreedyArmyCap", "GreedyBook", "GreedyTarget", "CanWin", "ClosedBorders",
-	"SettlersFirst", "SettlerOverlap" };
+	"SettlersFirst", "SettlerOverlap", "DiploPolicyValue" };
 
 // The bundle: what group c ran in the last C build (c7c), and what every civ runs outside a test game. Off in it:
 // LongWide (c1: c's wide civs got no more cities from the longer opening, and stopping settlers ended expansion that b
 // completed) and GreedyArmyCap (c6, 0-3: the greedy tall civs drew wars). Flags added after c7c stay out until they pass,
-// so a game without AIABTest.ini still plays c7c: SettlersFirst, SettlerOverlap.
+// so a game without AIABTest.ini still plays c7c: SettlersFirst, SettlerOverlap, DiploPolicyValue.
 static const int kCandidateFixBundle = ~((1 << FIX_LONG_WIDE) | (1 << FIX_GREEDY_ARMY_CAP) | (1 << FIX_SETTLERS_FIRST) |
-	(1 << FIX_SETTLER_OVERLAP)) & ((1 << NUM_CANDIDATE_FIXES) - 1);
+	(1 << FIX_SETTLER_OVERLAP) | (1 << FIX_DIPLO_POLICY_VALUE)) & ((1 << NUM_CANDIDATE_FIXES) - 1);
 
 const char* CvPlayer::GetCandidateFixName(int iFix)
 {
