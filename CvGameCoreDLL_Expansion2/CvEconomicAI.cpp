@@ -3065,7 +3065,7 @@ static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, Cv
 	if (!bForSaving && pPlayer->GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0)
 		return false;
 
-	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->GetBestSettlePlot(NULL) == NULL)
+	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->IsBoxedInForSettling())
 		return false;
 
 	UnitClassTypes eSettlerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);

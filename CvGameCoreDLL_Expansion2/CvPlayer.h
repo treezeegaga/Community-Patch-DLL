@@ -1653,6 +1653,7 @@ public:
 	// AI_AB_TEST opening book (new AI only; all state is derived from the game, nothing is saved)
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
+	bool IsBoxedInForSettling() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;

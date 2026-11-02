@@ -12854,7 +12854,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2s: batch2r with the wide opening running to turn 130 (Standard speed) and asking for up to 8 cities.
 /// batch2t: batch2s plus early conquest: from turn 30 (Standard) the new AI goes to war with a clearly weaker
 /// neighbour, or a weaker one if it is aggressive, or one that isn't stronger if it has no land left.
-static const char* const AI_AB_TEST_BATCH = "batch2t";
+/// batch2u: batch2t with "no land left" also meaning a settler idle for 10+ turns (sites behind others' borders);
+/// then no more book or bought settlers.
+static const char* const AI_AB_TEST_BATCH = "batch2u";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

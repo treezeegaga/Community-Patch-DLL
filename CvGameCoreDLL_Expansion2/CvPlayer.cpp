@@ -33357,6 +33357,28 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	return OPENING_BOOK_TALL;
 }
 
+/// AI_AB_TEST: no room left to settle: no site at all, or one of our settlers has stood for 10+ turns (Standard speed)
+/// without an operation. The second case is the usual one: the free sites left are behind other civs' borders, which
+/// settlers can't cross, so GetBestSettlePlot(NULL) still finds them while every found-city operation aborts with
+/// NoTarget (two civs in a test game kept two idle settlers each from turn 67 to 150 and built more).
+bool CvPlayer::IsBoxedInForSettling() const
+{
+	if (getNumCities() == 0)
+		return false;
+	if (GetBestSettlePlot(NULL) == NULL)
+		return true;
+
+	const int iStuckTurns = max(5, 10 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
+	int iLoop = 0;
+	for (const CvUnit* pLoopUnit = firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = nextUnit(&iLoop))
+	{
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_SETTLE && pLoopUnit->getArmyID() == -1 &&
+			GC.getGame().getGameTurn() - pLoopUnit->getGameTurnCreated() >= iStuckTurns)
+			return true;
+	}
+	return false;
+}
+
 bool CvPlayer::IsOpeningBookActive() const
 {
 	OpeningBookType eBook = GetOpeningBook();
@@ -33473,7 +33495,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 
 			if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE && GC.getGame().getElapsedGameTurns() > iScoutTurnLimit)
 				continue;
-			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || GetBestSettlePlot(NULL) == NULL))
+			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || IsBoxedInForSettling()))
 				continue;
 			// only wait for growth that is imminent: a fast-growing capital always has its next citizen closer than the
 			// settler, and waiting for that kept one capital from starting a settler until turn 37

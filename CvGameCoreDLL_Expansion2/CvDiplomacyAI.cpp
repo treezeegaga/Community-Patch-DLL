@@ -23315,7 +23315,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	FlavorTypes eOffense = (FlavorTypes)GC.getInfoTypeForString("FLAVOR_OFFENSE", true);
 	int iOffense = (eOffense != NO_FLAVOR) ? pPlayer->GetFlavorManager()->GetPersonalityIndividualFlavor(eOffense) : 0;
 	const bool bAggressive = pPlayer->GetPlayerTraits()->IsWarmonger() || iOffense >= 8;
-	const bool bBoxedIn = pPlayer->GetBestSettlePlot(NULL) == NULL;
+	const bool bBoxedIn = pPlayer->IsBoxedInForSettling();
 
 	PlayerTypes eBest = NO_PLAYER;
 	int iBestScore = 0;
