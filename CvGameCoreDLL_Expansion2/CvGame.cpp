@@ -12855,7 +12855,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// a settler idle for 10+ turns means no land left. Result: c 49.1% +/- 1.5 over 5 games, not better.
 /// c2: only the plan choices from c1. Result: c 48.6% +/- 2.3 over 4 games, not better.
 /// c3: c2 plus conquest: boxed-in wide civs attack whoever blocks them, warmongers attack their weakest neighbour.
-static const char* const AI_AB_TEST_BATCH = "c3";
+/// c3b: c3 with a committed war target (no re-picking every turn) and no targets with defensive allies.
+static const char* const AI_AB_TEST_BATCH = "c3b";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

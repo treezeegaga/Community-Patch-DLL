@@ -23324,6 +23324,14 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	if (bExpansionist && !pPlayer->IsBoxedInForSettling())
 		return NO_PLAYER;
 
+	// Commit to a target once chosen: re-picking every turn (a test game had a civ switch between two targets and
+	// back) switches the approach away from WAR, which cancels the army being gathered, so the attack never came.
+	// A committed target is kept while it still passes the checks with one strength step of slack.
+	// (Not saved with the game; a reload just picks again.)
+	static int s_aiCommittedTarget[MAX_MAJOR_CIVS]; // target + 1, 0 = none
+	const int iMe = (int)pPlayer->GetID();
+	PlayerTypes eCommitted = (iMe >= 0 && iMe < MAX_MAJOR_CIVS) ? (PlayerTypes)(s_aiCommittedTarget[iMe] - 1) : NO_PLAYER;
+
 	const CvCity* pCapital = pPlayer->getCapitalCity();
 	PlayerTypes eBest = NO_PLAYER;
 	int iBestScore = INT_MIN;
@@ -23339,12 +23347,26 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		if (eProximity < (bExpansionist ? PLAYER_PROXIMITY_NEIGHBORS : PLAYER_PROXIMITY_CLOSE))
 			continue;
 
+		const bool bCommitted = (eLoopPlayer == eCommitted);
 		StrengthTypes eTheirStrength = GetMilitaryStrengthComparedToUs(eLoopPlayer);
-		if (eTheirStrength > (bExpansionist ? STRENGTH_AVERAGE : STRENGTH_POOR))
+		int iMaxStrength = (bExpansionist ? STRENGTH_AVERAGE : STRENGTH_POOR) + (bCommitted ? 1 : 0);
+		if ((int)eTheirStrength > iMaxStrength)
 			continue;
 
 		if (!pPlayer->GetMilitaryAI()->HavePossibleAttackTarget(eLoopPlayer) || IsWarWouldBankruptUs(eLoopPlayer))
 			continue;
+
+		// One front: not a civ whose defensive allies would join in (a test game's first timing attack pulled a
+		// second civ into the war through a defensive pact)
+		if (!GetDefensiveWarAllies(eLoopPlayer, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty())
+			continue;
+
+		if (bCommitted)
+		{
+			eBest = eLoopPlayer;
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, weakest neighbour";
+			break;
+		}
 
 		int iScore = 0;
 		if (bExpansionist)
@@ -23366,6 +23388,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : "warmonger timing attack, weakest neighbour";
 		}
 	}
+
+	if (iMe >= 0 && iMe < MAX_MAJOR_CIVS)
+		s_aiCommittedTarget[iMe] = (int)eBest + 1;
 	return eBest;
 }
 
