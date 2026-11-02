@@ -255,6 +255,8 @@ namespace CityStrategyAIHelpers
 {
 // CvCityStrategy namespace - non-member functions
 int ReweightByTurnsLeft(int iOriginalWeight, int iTurnsLeft);
+// AI_AB_TEST candidate (GreedyAlarm): the major civ whose visible army near our cities alarms a tall civ, or NO_PLAYER
+PlayerTypes GetGreedyAlarmThreat(const CvPlayer& kPlayer);
 int GetWeightThresholdModifier(AICityStrategyTypes eStrategy, CvCity* pCity);
 
 // The following functions check triggers to see if a particular CityStrategy should be adopted/continued

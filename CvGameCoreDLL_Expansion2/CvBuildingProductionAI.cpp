@@ -783,6 +783,10 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	else if (kPlayer.IsAtWarAnyMajor())
 		iDefenseMod += 150;
 
+	// AI_AB_TEST candidate (GreedyAlarm): a neighbour's army is at the border; wall up as if at war
+	if (!bIgnoreSituational && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) != NO_PLAYER)
+		iDefenseMod += m_pCity->isBorderCity() ? 1000 : 300;
+
 	bool bDanger = !bIgnoreSituational && m_pCity->isUnderSiege();
 	if (bDanger)
 	{

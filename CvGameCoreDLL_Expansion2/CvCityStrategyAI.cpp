@@ -5586,3 +5586,32 @@ int  CityStrategyAIHelpers::GetBuildingTraitValue(CvCity *pCity, YieldTypes eYie
 
 	return iBonus;
 }
+
+/// AI_AB_TEST candidate (GreedyAlarm, the c8 idea in RESULTS.md): greedy tall civs that kept a small army drew wars
+/// (c6, 0-3). A good greedy player keeps the economy but watches the border: when a neighbour's army shows up near its
+/// cities it walls up and adds archers before the war starts. The signal is CP's military aggressive posture, which
+/// counts only units we can see near our cities (CountAggressiveMilitaryScore: 2 per unit outside their own land, 1
+/// inside it, MEDIUM from 6), so it uses nothing a human couldn't see. Not at war: war has its own production rules.
+PlayerTypes CityStrategyAIHelpers::GetGreedyAlarmThreat(const CvPlayer& kPlayer)
+{
+	if (!kPlayer.isMajorCiv() || kPlayer.isHuman() || !kPlayer.UsesCandidateAI(FIX_GREEDY_ALARM))
+		return NO_PLAYER;
+	if (kPlayer.GetOpeningBook() != OPENING_BOOK_TALL || kPlayer.IsAtWarAnyMajor())
+		return NO_PLAYER;
+
+	PlayerTypes eWorst = NO_PLAYER;
+	int iWorst = AGGRESSIVE_POSTURE_LOW;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (eLoopPlayer == kPlayer.GetID() || !kPlayer.GetDiplomacyAI()->IsPlayerValid(eLoopPlayer))
+			continue;
+		int iPosture = (int)kPlayer.GetDiplomacyAI()->GetMilitaryAggressivePosture(eLoopPlayer);
+		if (iPosture > iWorst)
+		{
+			iWorst = iPosture;
+			eWorst = eLoopPlayer;
+		}
+	}
+	return eWorst;
+}
