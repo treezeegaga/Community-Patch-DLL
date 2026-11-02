@@ -33529,11 +33529,14 @@ static const OpeningBookStep kOpeningWideCapitalLong[] = {
 static const OpeningBookStep kOpeningWideCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
 // Candidate warmongers: a siege army after the second settler (catapult class, so the civ's own ballista or siege
-// tower; the spearman class gives the Huns' battering ram), three catapults so two are left for the attack
+// tower; the spearman class gives the Huns' battering ram), three catapults so two are left for the attack.
+// c5: two spearmen and two archers too: in c4 the attack army marched with 2 catapults and a warrior or two, and the
+// tactical AI wouldn't try to take the city
 static const OpeningBookStep kOpeningWarmongerCapital[] = {
 	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"},
-	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_CATAPULT"}, {true, "UNITCLASS_CATAPULT"}, {true, "UNITCLASS_SPEARMAN"},
-	{false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_CATAPULT"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"},
+	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_CATAPULT"}, {true, "UNITCLASS_SPEARMAN"}, {true, "UNITCLASS_CATAPULT"},
+	{true, "UNITCLASS_ARCHER"}, {true, "UNITCLASS_SPEARMAN"}, {true, "UNITCLASS_CATAPULT"}, {true, "UNITCLASS_ARCHER"},
+	{false, "BUILDINGCLASS_SHRINE"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"},
 	{false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningConquestCapital[] = {
 	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_ARCHER"},
@@ -33695,7 +33698,7 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	static const char* const kWide[] = { "TECH_POTTERY", "TECH_MINING", "TECH_WRITING", "TECH_CURRENCY" };
 	static const char* const kConquest[] = { "TECH_ARCHERY", "TECH_BRONZE_WORKING", "TECH_WRITING", "TECH_CONSTRUCTION" };
 	// candidate warmongers: catapults (Mathematics needs only The Wheel) and the spearman class (hoplite, ram...)
-	static const char* const kWarmonger[] = { "TECH_POTTERY", "TECH_THE_WHEEL", "TECH_MATHEMATICS", "TECH_BRONZE_WORKING", "TECH_WRITING" };
+	static const char* const kWarmonger[] = { "TECH_POTTERY", "TECH_THE_WHEEL", "TECH_MATHEMATICS", "TECH_BRONZE_WORKING", "TECH_ARCHERY", "TECH_WRITING" };
 
 	const char* const* pTechs = kTall;
 	int iNumTechs = (int)(sizeof(kTall) / sizeof(kTall[0]));

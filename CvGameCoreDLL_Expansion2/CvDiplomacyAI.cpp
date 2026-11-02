@@ -23319,8 +23319,15 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	const int iTurn = GC.getGame().getElapsedGameTurns();
 	// c4: the timing is the siege army (built by the warmonger opening book), not a turn: an attack at turn 45 had
 	// no siege and took no cities. Turn 90 (Standard) is the fallback if the siege never comes.
-	if (bWarmonger && iTurn < 90 * iSpeed / 100 && pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < 2)
-		return NO_PLAYER;
+	// c5: and an army around them (2 siege + 4 other land units): c4's war came with the siege but an army too thin to
+	// take a city
+	if (bWarmonger && iTurn < 90 * iSpeed / 100)
+	{
+		int iSiege = pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+		int iLand = pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+		if (iSiege < 2 || iLand - iSiege < 4)
+			return NO_PLAYER;
+	}
 	if (bExpansionist && !pPlayer->IsBoxedInForSettling())
 		return NO_PLAYER;
 

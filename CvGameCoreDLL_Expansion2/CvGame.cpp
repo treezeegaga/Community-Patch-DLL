@@ -12856,7 +12856,7 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c2: only the plan choices from c1. Result: c 48.6% +/- 2.3 over 4 games, not better.
 /// c3: c2 plus conquest: boxed-in wide civs attack whoever blocks them, warmongers attack their weakest neighbour.
 /// c3b: c3 with a committed war target (no re-picking every turn) and no targets with defensive allies.
-static const char* const AI_AB_TEST_BATCH = "c4";
+static const char* const AI_AB_TEST_BATCH = "c5";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
