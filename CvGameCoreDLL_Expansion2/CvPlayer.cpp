@@ -33331,17 +33331,21 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 		return OPENING_BOOK_NONE;
 
 	// The conquest plan (fewer settlers, two archers, Honor, no planned attack) was the weakest of the three in test
-	// games: 10% of the score against 13.4% for tall. Warmongers use the other plans until there is a real timing
-	// attack plan for them.
+	// games: 10% of the score against 13.4% for tall. Until there is a real timing-attack plan, warmongers and
+	// aggressive personalities play wide like expansionists: a conquering civ should be wide, and wide was the
+	// strongest plan in test games (13.3% strength share, 5.3 cities, against 12.6% and 4.4 for tall).
 	const CvPlayerTraits* pTraits = GetPlayerTraits();
-	if (pTraits->IsExpansionist())
+	if (pTraits->IsExpansionist() || pTraits->IsWarmonger())
 		return OPENING_BOOK_WIDE;
 	if (pTraits->IsNerd() || pTraits->IsTourism() || pTraits->IsSmaller())
 		return OPENING_BOOK_TALL;
 
+	int iOffense = GetOpeningBookFlavor(*this, "FLAVOR_OFFENSE");
 	int iExpansion = GetOpeningBookFlavor(*this, "FLAVOR_EXPANSION");
 	int iScience = GetOpeningBookFlavor(*this, "FLAVOR_SCIENCE");
 	int iCulture = GetOpeningBookFlavor(*this, "FLAVOR_CULTURE");
+	if (iOffense >= 8 && iOffense >= max(iScience, iCulture))
+		return OPENING_BOOK_WIDE;
 	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
 		return OPENING_BOOK_WIDE;
 	return OPENING_BOOK_TALL;
