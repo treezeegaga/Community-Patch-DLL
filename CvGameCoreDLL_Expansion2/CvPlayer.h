@@ -159,6 +159,8 @@ enum CandidateFixTypes
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
 	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
+	FIX_SETTLERS_FIRST,		// Economy: the capital's opening-book settlers come before its monument, shrine and worker. Not in the bundle
+	FIX_SETTLER_OVERLAP,	// Economy: the next book settler may start training while the last one walks to its site. Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

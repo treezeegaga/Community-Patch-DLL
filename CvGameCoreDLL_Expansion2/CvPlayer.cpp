@@ -33331,6 +33331,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"WidePlans", true}, {"BoxedIn", true}, {"LongWide", false}, {"BoxedInWar", true}, {"TimingAttack", true},
 	{"SiegeTechs", true}, {"SiegeBook", true}, {"DeclareTiming", true}, {"GrowthTech", true}, {"AqueductValue", true},
 	{"GreedyArmyCap", false}, {"GreedyBook", true}, {"GreedyTarget", true}, {"CanWin", true}, {"ClosedBorders", true},
+	{"SettlersFirst", false}, {"SettlerOverlap", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33757,6 +33758,18 @@ static const OpeningBookStep kOpeningTallCapitalGreedy[] = {
 	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"}, {false, "BUILDINGCLASS_AQUEDUCT"},
 	{false, "BUILDINGCLASS_UNIVERSITY"} };
+// Economy candidate (SettlersFirst): the same steps with the settlers ahead of the monument, shrine and worker. In B
+// the 2nd city came at T35-45 on Quick for tall civs and the 3rd at T55-75 for both plans, against T33-40 for a good
+// human's 4th: each settler waited behind 15-25 turns of buildings (a monument or shrine is 8-10 turns, a worker 8)
+static const OpeningBookStep kOpeningTallCapitalSF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WORKER"},
+	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
+static const OpeningBookStep kOpeningTallCapitalGreedySF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WORKER"},
+	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"},
+	{false, "BUILDINGCLASS_AQUEDUCT"}, {false, "BUILDINGCLASS_UNIVERSITY"} };
 static const OpeningBookStep kOpeningTallCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCapital[] = {
@@ -33770,6 +33783,16 @@ static const OpeningBookStep kOpeningWideCapitalLong[] = {
 	{false, "BUILDINGCLASS_SHRINE"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
+// Economy candidate (SettlersFirst): two settlers before the worker, the shrine and monument after the third
+static const OpeningBookStep kOpeningWideCapitalSF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
+static const OpeningBookStep kOpeningWideCapitalLongSF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
 // Candidate warmongers: a siege army after the second settler (catapult class, so the civ's own ballista or siege
@@ -33819,8 +33842,15 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	case OPENING_BOOK_TALL:
 		if (bCapital && UsesCandidateAI(FIX_GREEDY_BOOK))
 		{
-			pSteps = kOpeningTallCapitalGreedy;
-			iNumSteps = (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
+			bool bSF = UsesCandidateAI(FIX_SETTLERS_FIRST);
+			pSteps = bSF ? kOpeningTallCapitalGreedySF : kOpeningTallCapitalGreedy;
+			iNumSteps = bSF ? (int)(sizeof(kOpeningTallCapitalGreedySF) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
+			break;
+		}
+		if (bCapital && UsesCandidateAI(FIX_SETTLERS_FIRST))
+		{
+			pSteps = kOpeningTallCapitalSF;
+			iNumSteps = (int)(sizeof(kOpeningTallCapitalSF) / sizeof(OpeningBookStep));
 			break;
 		}
 		pSteps = bCapital ? kOpeningTallCapital : kOpeningTallCity;
@@ -33829,8 +33859,15 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	case OPENING_BOOK_WIDE:
 		if (bCapital && UsesCandidateAI(FIX_LONG_WIDE))
 		{
-			pSteps = kOpeningWideCapitalLong;
-			iNumSteps = (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
+			bool bSF = UsesCandidateAI(FIX_SETTLERS_FIRST);
+			pSteps = bSF ? kOpeningWideCapitalLongSF : kOpeningWideCapitalLong;
+			iNumSteps = bSF ? (int)(sizeof(kOpeningWideCapitalLongSF) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
+			break;
+		}
+		if (bCapital && UsesCandidateAI(FIX_SETTLERS_FIRST))
+		{
+			pSteps = kOpeningWideCapitalSF;
+			iNumSteps = (int)(sizeof(kOpeningWideCapitalSF) / sizeof(OpeningBookStep));
 			break;
 		}
 		pSteps = bCapital ? kOpeningWideCapital : kOpeningWideCity;
@@ -33886,7 +33923,17 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 				continue;
 			// One settler at a time: a second one only waits around while the first walks, and with two idle
 			// settlers the found-city operation can take the one that can't reach a site and abort every turn
-			if (bSettler && GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) > 0)
+			// Economy candidate (SettlerOverlap): only settlers in training count against it. A settler takes 10+ turns
+			// to train and 3-4 to walk to its site, so the next one starts while the last one walks, instead of the
+			// capital falling through to the book's next building (a monument or library, 8-20 turns) and the next
+			// settler waiting for it. At most one is on the map unless training finishes before the walk does.
+			if (bSettler && UsesCandidateAI(FIX_SETTLER_OVERLAP))
+			{
+				if (GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) - GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0 ||
+					GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 1)
+					continue;
+			}
+			else if (bSettler && GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) > 0)
 				continue;
 			if (!pCity->canTrain(eUnit))
 				continue;
