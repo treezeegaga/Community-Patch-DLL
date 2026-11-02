@@ -2639,7 +2639,7 @@ public:
 
 	int GetMinAcceptableSettleQuality() const;
 	bool HaveGoodSettlePlot(int iAreaID);
-	CvPlot* GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore=NULL, bool bForceLogging=false) const;
+	CvPlot* GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore=NULL, bool bForceLogging=false, const CvPlot* pCurrentTarget=NULL) const;
 	PlayerTypes GetPlayerWhoStoleMyFavoriteCitySite();
 	int GetSettlePlotQualityMeasure(CvPlot* pPlot);
 

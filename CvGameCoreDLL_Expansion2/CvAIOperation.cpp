@@ -1763,6 +1763,41 @@ CvPlot* CvAIOperationPillageEnemy::FindBestTarget(CvPlot** ppMuster) const
 // CvAIOperationCivilian
 ////////////////////////////////////////////////////////////////////////////////
 
+/// AI_AB_TEST: can this settler go without an escort? Uses only what the player can see: no visible danger at the
+/// settler or the site, no known barbarian camp or city of a civ we're at war with within 5 tiles of the site, and
+/// a short trip (longer walks give unseen barbarians time to show up).
+bool CvAIOperationCivilian::SettlerTripLooksSafe(CvUnit* pSettler, CvPlot* pTarget)
+{
+	if (!pSettler || !pTarget)
+		return false;
+
+	if (pSettler->GetDanger() > 0 || pSettler->GetDanger(pTarget) > 0)
+		return false;
+
+	const int iMaxTurns = 5;
+	int iFlags = CvUnit::MOVEFLAG_NO_ENEMY_TERRITORY | CvUnit::MOVEFLAG_PRETEND_ALL_REVEALED;
+	if (pSettler->TurnsToReachTarget(pTarget, iFlags, iMaxTurns) > iMaxTurns)
+		return false;
+
+	CvPlayer& kOwner = GET_PLAYER(pSettler->getOwner());
+	TeamTypes eTeam = pSettler->getTeam();
+	ImprovementTypes eCamp = (ImprovementTypes)GD_INT_GET(BARBARIAN_CAMP_IMPROVEMENT);
+	for (int i = 0; i < RING5_PLOTS; i++)
+	{
+		CvPlot* pLoopPlot = iterateRingPlots(pTarget, i);
+		if (!pLoopPlot || !pLoopPlot->isRevealed(eTeam))
+			continue;
+
+		if (eCamp != NO_IMPROVEMENT && pLoopPlot->getRevealedImprovementType(eTeam) == eCamp)
+			return false;
+
+		if (pLoopPlot->isCity() && kOwner.IsAtWarWith(pLoopPlot->getOwner()))
+			return false;
+	}
+
+	return true;
+}
+
 /// Kick off this operation
 void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 {
@@ -1780,9 +1815,13 @@ void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 		return;
 	}
 
+	// AI_AB_TEST: CP always asks for an escort unless the site is reachable this turn, and a settler can wait up to
+	// 42 turns for one while the city builds it. The new AI sends the settler alone when the trip looks safe.
+	bool bSkipEscort = (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && SettlerTripLooksSafe(pOurCivilian, pTargetSite));
+
 	//don't wait for the escort in the wild
 	CvPlot* pMusterPlot = pOurCivilian->plot();
-	if (IsEscorted() && pMusterPlot->getOwner() != m_eOwner)
+	if (!bSkipEscort && IsEscorted() && pMusterPlot->getOwner() != m_eOwner)
 	{
 		CvCity* pClosestCity = NULL;
 		if (IsNavalOperation())
@@ -1802,7 +1841,7 @@ void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 	pArmy->AddUnit(pOurCivilian->GetID(),0,true);
 
 	//a little hack - set the escort slot to not required if we can reach the target this turn
-	if (pOurCivilian->TurnsToReachTarget(pTargetSite, CvUnit::MOVEFLAG_TURN_END_IS_NEXT_TURN, 1) < 1)
+	if (bSkipEscort || pOurCivilian->TurnsToReachTarget(pTargetSite, CvUnit::MOVEFLAG_TURN_END_IS_NEXT_TURN, 1) < 1)
 		pArmy->GetSlotStatus(1)->Clear();
 
 	SetUpArmy(pArmy,pMusterPlot,pTargetSite,NULL);
@@ -1824,6 +1863,23 @@ bool CvAIOperationCivilian::CheckTransitionToNextStage()
 		break;
 	case ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE:
 		{
+			// AI_AB_TEST: if no escort has turned up after a few turns and the trip now looks safe, go without one
+			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && pCivilian &&
+				GC.getGame().getGameTurn() - GetTurnStarted() >= 3 && pThisArmy->GetNumFormationEntries() > 1 &&
+				pThisArmy->GetSlotStatus(1)->IsFree() && SettlerTripLooksSafe(pCivilian, GetTargetPlot()))
+			{
+				pThisArmy->GetSlotStatus(1)->Clear();
+				for (std::deque<OperationSlot>::iterator it = m_viListOfUnitsWeStillNeedToBuild.begin(); it != m_viListOfUnitsWeStillNeedToBuild.end(); ++it)
+				{
+					if (it->m_iSlotID == 1)
+					{
+						m_viListOfUnitsWeStillNeedToBuild.erase(it);
+						break;
+					}
+				}
+				LogOperationSpecialMessage("No escort yet and the trip looks safe, going alone");
+			}
+
 			if(OperationalAIHelpers::HaveEnoughUnits(pThisArmy->GetSlotStatus(),0) || (pCivilian && pCivilian->TurnsToReachTarget(GetTargetPlot(),0,1)<1))
 			{
 				pThisArmy->SetArmyAIState(ARMYAISTATE_WAITING_FOR_UNITS_TO_CATCH_UP);
@@ -2043,7 +2099,7 @@ AIOperationAbortReason CvAIOperationCivilianFoundCity::VerifyOrAdjustTarget(CvAr
 //need to have this, it's pure virtual in civilian operation
 CvPlot* CvAIOperationCivilianFoundCity::FindBestTargetForUnit(CvUnit* pUnit)
 {
-	CvPlot* pNewTarget = GET_PLAYER(m_eOwner).GetBestSettlePlot(pUnit, this);
+	CvPlot* pNewTarget = GET_PLAYER(m_eOwner).GetBestSettlePlot(pUnit, this, false, GetTargetPlot());
 	if (!pNewTarget)
 		return NULL;
 

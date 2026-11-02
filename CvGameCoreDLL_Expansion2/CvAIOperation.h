@@ -486,6 +486,9 @@ public:
 	virtual bool IsEscorted() const;
 	virtual bool IsOffensive() const { return false; }
 
+	// AI_AB_TEST: true when a settler can safely go without an escort
+	static bool SettlerTripLooksSafe(CvUnit* pSettler, CvPlot* pTarget);
+
 	virtual UnitAITypes GetCivilianType() const
 	{
 		return m_eCivilianType;

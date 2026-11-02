@@ -21,6 +21,7 @@
 #include "CvCitySpecializationAI.h"
 #include "CvWonderProductionAI.h"
 #include "CvGrandStrategyAI.h"
+#include "CvMilitaryAI.h"
 #include "cvStopWatch.h"
 #include "CvInternalGameCoreUtils.h"
 

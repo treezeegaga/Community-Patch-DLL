@@ -47831,7 +47831,7 @@ ostream& operator<<(ostream& os, const CvPlot* pPlot)
 	return os;
 }
 
-CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, bool bForceLogging) const
+CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, bool bForceLogging, const CvPlot* pCurrentTarget) const
 {
 	std::vector<SPlotWithScore> vSettlePlots;
 
@@ -48045,6 +48045,41 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 
 	if (!pUnit)
 		return vSettlePlots.back().pPlot;
+
+	// AI_AB_TEST: CP takes the best-scoring site the settler can reach within 23 turns, however long the walk.
+	// Every turn spent walking is a turn the new city isn't working, so the new AI discounts each site by the
+	// settler's travel time: a site 5 turns away keeps 80% of its value, 20 turns away 50%. The current target
+	// gets a 15% edge so the settler doesn't swap between two similar sites every turn. Not used for the first
+	// city, which homeland AI handles.
+	if (UsesNewAI() && getNumCities() > 0)
+	{
+		const int iTravelTurnsForHalfValue = 20;
+		ReachablePlots reachable = GC.GetPathFinder().GetPlotsInReach(pUnit->plot(), SPathFinderUserData(pUnit, iFlags, 23));
+		CvPlot* pBestPlot = NULL;
+		int iBestScore = 0;
+		for (vector<SPlotWithScore>::reverse_iterator it = vSettlePlots.rbegin(); it != vSettlePlots.rend(); ++it)
+		{
+			// the list is sorted by value and the discount only lowers it, so nothing further down can win
+			if ((it->score * 115) / 100 <= iBestScore)
+				break;
+
+			ReachablePlots::const_iterator itReach = reachable.find(it->pPlot->GetPlotIndex());
+			if (itReach == reachable.end())
+				continue;
+
+			int iTurns = max(0, itReach->iPathLength);
+			int iScore = (it->score * iTravelTurnsForHalfValue) / (iTravelTurnsForHalfValue + iTurns);
+			if (it->pPlot == pCurrentTarget)
+				iScore = (iScore * 115) / 100;
+
+			if (iScore > iBestScore)
+			{
+				iBestScore = iScore;
+				pBestPlot = it->pPlot;
+			}
+		}
+		return pBestPlot;
+	}
 
 	// Try the top candidates individually first; successful paths terminate quickly.
 	// After enough consecutive failures (enemy territory likely blocking), switch to a
