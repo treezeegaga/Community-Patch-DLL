@@ -171,6 +171,12 @@ TechTypes CvTechAI::ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech)
 			LogResearchChoice(eBookTech);
 			return eBookTech;
 		}
+		eBookTech = pPlayer->GetCandidateGrowthTech();
+		if (eBookTech != NO_TECH)
+		{
+			LogResearchChoice(eBookTech);
+			return eBookTech;
+		}
 	}
 
 	TechTypes rtnValue = NO_TECH;

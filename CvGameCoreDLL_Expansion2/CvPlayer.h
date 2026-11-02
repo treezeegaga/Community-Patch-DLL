@@ -1659,6 +1659,7 @@ public:
 	bool IsCandidateWarmonger() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
+	TechTypes GetCandidateGrowthTech() const;
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
 	bool IsVassalOfSomeone() const;

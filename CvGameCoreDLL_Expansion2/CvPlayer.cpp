@@ -33688,6 +33688,18 @@ static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech
 	return NO_TECH;
 }
 
+/// AI_AB_TEST candidate (c5): after the opening book, head for Engineering (aqueducts keep 40% of the food when a
+/// city grows) once the capital has grown to 6. Growth is worth more than CP's tech weights give it.
+TechTypes CvPlayer::GetCandidateGrowthTech() const
+{
+	if (!MOD_AI_AB_TEST || !UsesCandidateAI() || !isMajorCiv() || isHuman() || IsOpeningBookActive())
+		return NO_TECH;
+	const CvCity* pCapital = getCapitalCity();
+	if (!pCapital || pCapital->getPopulation() < 6)
+		return NO_TECH;
+	return GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_ENGINEERING", true), 0);
+}
+
 /// The next tech the opening book wants researched, if any
 TechTypes CvPlayer::GetOpeningBookTech() const
 {

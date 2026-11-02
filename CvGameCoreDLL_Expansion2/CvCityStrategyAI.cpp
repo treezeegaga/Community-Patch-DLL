@@ -5283,6 +5283,10 @@ int CityStrategyAIHelpers::GetBuildingBasicValue(CvCity *pCity, BuildingTypes eB
 	if (pkBuildingInfo->GetFoodKept() > 0)
 	{
 		iValue += pkBuildingInfo->GetFoodKept() * pCity->getPopulation();
+		// AI_AB_TEST candidate (c5): growth is worth more than CP thinks (every citizen adds to everything), so the
+		// aqueduct counts double
+		if (GET_PLAYER(pCity->getOwner()).UsesCandidateAI())
+			iValue += pkBuildingInfo->GetFoodKept() * pCity->getPopulation();
 	}
 	// NoStarvation is not as good as MinimumFood, but there is large overlap to consider
 	if (pkBuildingInfo->IsNoStarvationNonSpecialist() && !pCity->IsNoStarvationNonSpecialist() && pCity->GetMinimumFood() <= 0)
