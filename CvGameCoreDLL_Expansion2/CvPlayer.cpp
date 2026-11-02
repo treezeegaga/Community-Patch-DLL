@@ -33315,6 +33315,56 @@ static bool IsABTestOddSlot(PlayerTypes ePlayer)
 	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(ePlayer)) & 1) != 0;
 }
 
+static int GetOpeningBookFlavor(const CvPlayer& kPlayer, const char* szFlavor);
+
+/// A warmonger trait, or an aggressive personality that isn't a science, small or tourism civ (the same civs the
+/// candidate's GetOpeningBook sends wide for offense)
+static bool IsABTestWarmongerCiv(const CvPlayer& kPlayer)
+{
+	const CvPlayerTraits* pTraits = kPlayer.GetPlayerTraits();
+	if (pTraits->IsWarmonger())
+		return true;
+	if (pTraits->IsNerd() || pTraits->IsSmaller() || pTraits->IsTourism())
+		return false;
+	int iOffense = GetOpeningBookFlavor(kPlayer, "FLAVOR_OFFENSE");
+	return iOffense >= 8 && iOffense >= max(GetOpeningBookFlavor(kPlayer, "FLAVOR_SCIENCE"), GetOpeningBookFlavor(kPlayer, "FLAVOR_CULTURE"));
+}
+
+/// B vs C split, balanced on warmongers: the AI civs are dealt to c and b in turn, warmongers first, so each group
+/// gets half of them and group c gets the odd one. Test games with random civs often gave c no warmonger at all,
+/// and the conquest changes went untested. The order within each kind rotates with the map seed, so a slot still
+/// plays both sides over many games. Recomputed once per turn (traits and flavors are set when the game starts).
+static bool IsABTestCandidateSlot(PlayerTypes ePlayer)
+{
+	static unsigned int s_uSeed = 0;
+	static int s_iTurn = -1;
+	static bool s_abCandidate[MAX_MAJOR_CIVS];
+	const unsigned int uSeed = CvPreGame::mapRandomSeed();
+	const int iTurn = GC.getGame().getGameTurn();
+	if (uSeed != s_uSeed || iTurn != s_iTurn)
+	{
+		s_uSeed = uSeed;
+		s_iTurn = iTurn;
+		std::vector<int> aiOrder;
+		for (int iPass = 0; iPass < 2; iPass++)
+		{
+			for (int i = 0; i < MAX_MAJOR_CIVS; i++)
+			{
+				int iPlayer = (int)((uSeed + (unsigned int)i) % MAX_MAJOR_CIVS);
+				s_abCandidate[iPlayer] = false;
+				const CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayer);
+				if (!kLoop.isEverAlive() || !kLoop.isMajorCiv() || kLoop.isHuman())
+					continue;
+				if (IsABTestWarmongerCiv(kLoop) == (iPass == 0))
+					aiOrder.push_back(iPlayer);
+			}
+		}
+		for (size_t i = 0; i < aiOrder.size(); i++)
+			s_abCandidate[aiOrder[i]] = (i % 2) == 0;
+	}
+	return ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS && s_abCandidate[ePlayer];
+}
+
 bool CvPlayer::UsesNewAI() const
 {
 	if (!MOD_AI_AB_TEST || !isMajorCiv() || kABTestVersusBase)
@@ -33328,7 +33378,7 @@ bool CvPlayer::UsesCandidateAI() const
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
 		return true;
 
-	return kABTestVersusBase ? IsABTestOddSlot(GetID()) : UsesNewAI();
+	return kABTestVersusBase ? IsABTestCandidateSlot(GetID()) : UsesNewAI();
 }
 
 bool CvPlayer::IsABTestVersusBase()
@@ -33394,6 +33444,17 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
 		return OPENING_BOOK_WIDE;
 	return OPENING_BOOK_TALL;
+}
+
+/// AI_AB_TEST (candidate): a warmonger (warmonger trait or offense flavor 8+) plans a siege timing attack: the
+/// opening book researches Mathematics early and builds catapults (or the civ's own siege, ballista or siege tower,
+/// or the Huns' battering ram as spearman) before the attack is launched. Early attack armies otherwise filled their
+/// two siege slots with archers and couldn't take a city.
+bool CvPlayer::IsCandidateWarmonger() const
+{
+	if (!UsesCandidateAI() || !isMajorCiv() || isHuman())
+		return false;
+	return IsABTestWarmongerCiv(*this);
 }
 
 /// AI_AB_TEST (candidate): no room left to settle: no site at all, or one of our settlers has stood for 10+ turns
@@ -33467,6 +33528,13 @@ static const OpeningBookStep kOpeningWideCapitalLong[] = {
 	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
+// Candidate warmongers: a siege army after the second settler (catapult class, so the civ's own ballista or siege
+// tower; the spearman class gives the Huns' battering ram), three catapults so two are left for the attack
+static const OpeningBookStep kOpeningWarmongerCapital[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"},
+	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_CATAPULT"}, {true, "UNITCLASS_CATAPULT"}, {true, "UNITCLASS_SPEARMAN"},
+	{false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_CATAPULT"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningConquestCapital[] = {
 	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_ARCHER"},
 	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_ARCHER"}, {false, "BUILDINGCLASS_MONUMENT"} };
@@ -33500,6 +33568,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
 		break;
 	case OPENING_BOOK_WIDE:
+		if (bCapital && IsCandidateWarmonger())
+		{
+			pSteps = kOpeningWarmongerCapital;
+			iNumSteps = (int)(sizeof(kOpeningWarmongerCapital) / sizeof(OpeningBookStep));
+			break;
+		}
 		if (bCapital && UsesCandidateAI() && kCandidateLongWideOpening)
 		{
 			pSteps = kOpeningWideCapitalLong;
@@ -33620,11 +33694,18 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	static const char* const kTall[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY" };
 	static const char* const kWide[] = { "TECH_POTTERY", "TECH_MINING", "TECH_WRITING", "TECH_CURRENCY" };
 	static const char* const kConquest[] = { "TECH_ARCHERY", "TECH_BRONZE_WORKING", "TECH_WRITING", "TECH_CONSTRUCTION" };
+	// candidate warmongers: catapults (Mathematics needs only The Wheel) and the spearman class (hoplite, ram...)
+	static const char* const kWarmonger[] = { "TECH_POTTERY", "TECH_THE_WHEEL", "TECH_MATHEMATICS", "TECH_BRONZE_WORKING", "TECH_WRITING" };
 
 	const char* const* pTechs = kTall;
 	int iNumTechs = (int)(sizeof(kTall) / sizeof(kTall[0]));
 	OpeningBookType eBook = GetOpeningBook();
-	if (eBook == OPENING_BOOK_WIDE)
+	if (IsCandidateWarmonger())
+	{
+		pTechs = kWarmonger;
+		iNumTechs = (int)(sizeof(kWarmonger) / sizeof(kWarmonger[0]));
+	}
+	else if (eBook == OPENING_BOOK_WIDE)
 	{
 		pTechs = kWide;
 		iNumTechs = (int)(sizeof(kWide) / sizeof(kWide[0]));

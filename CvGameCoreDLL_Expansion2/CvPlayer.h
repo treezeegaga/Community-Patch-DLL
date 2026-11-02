@@ -1656,6 +1656,7 @@ public:
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
 	bool IsBoxedInForSettling() const;
+	bool IsCandidateWarmonger() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;

@@ -23310,16 +23310,16 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	if (!pPlayer->UsesCandidateAI() || pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
 		return NO_PLAYER;
 
-	FlavorTypes eOffense = (FlavorTypes)GC.getInfoTypeForString("FLAVOR_OFFENSE", true);
-	int iOffense = (eOffense != NO_FLAVOR) ? pPlayer->GetFlavorManager()->GetPersonalityIndividualFlavor(eOffense) : 0;
-	const bool bWarmonger = pPlayer->GetPlayerTraits()->IsWarmonger() || iOffense >= 8;
+	const bool bWarmonger = pPlayer->IsCandidateWarmonger();
 	const bool bExpansionist = !bWarmonger && pPlayer->GetOpeningBook() == OPENING_BOOK_WIDE;
 	if (!bWarmonger && !bExpansionist)
 		return NO_PLAYER;
 
 	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
 	const int iTurn = GC.getGame().getElapsedGameTurns();
-	if (bWarmonger && iTurn < 45 * iSpeed / 100)
+	// c4: the timing is the siege army (built by the warmonger opening book), not a turn: an attack at turn 45 had
+	// no siege and took no cities. Turn 90 (Standard) is the fallback if the siege never comes.
+	if (bWarmonger && iTurn < 90 * iSpeed / 100 && pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < 2)
 		return NO_PLAYER;
 	if (bExpansionist && !pPlayer->IsBoxedInForSettling())
 		return NO_PLAYER;
