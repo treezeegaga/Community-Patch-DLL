@@ -12844,7 +12844,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2j: batch2i plus saving gold for the next settler (no hurries, tile buys or city-state gold gifts meanwhile).
 /// batch2k: batch2j saving on while a settler is walking (the stash was spent the moment one appeared), and no
 /// conquest opening plan (warmongers use tall or wide).
-static const char* const AI_AB_TEST_BATCH = "batch2k";
+/// batch2l: batch2k plus an early shrine in the opening book (CP's AI founded 4 of 5 religions without it).
+static const char* const AI_AB_TEST_BATCH = "batch2l";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
