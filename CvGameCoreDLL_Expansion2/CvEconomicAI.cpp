@@ -3048,9 +3048,71 @@ void CvEconomicAI::LogPossibleHurries(CvWeightedVector<CvCityBuildable> const& m
 		}
 	}
 }
+/// AI_AB_TEST: strong players buy their early settlers with gold, so the capital keeps growing and building while
+/// the new city starts sooner. CP's AI never does (its hurry goes to whatever a city is building, often a scout).
+/// The new AI buys a settler while it wants to expand, has none on the map, has a site for one and can pay.
+static void BuyExpansionSettler(CvPlayer* pPlayer)
+{
+	static EconomicAIStrategyTypes eEarlyExpansion = (EconomicAIStrategyTypes)GC.getInfoTypeForString("ECONOMICAISTRATEGY_EARLY_EXPANSION");
+	bool bWantCities = pPlayer->IsOpeningBookActive() ||
+		(eEarlyExpansion != NO_ECONOMICAISTRATEGY && pPlayer->GetEconomicAI()->IsUsingStrategy(eEarlyExpansion));
+	if (!bWantCities || pPlayer->getNumCities() == 0 || pPlayer->IsEmpireUnhappy())
+		return;
+
+	// a settler on the map still has to get somewhere; don't stack them up
+	if (pPlayer->GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0)
+		return;
+
+	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->GetBestSettlePlot(NULL) == NULL)
+		return;
+
+	UnitClassTypes eSettlerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
+	if (eSettlerClass == NO_UNITCLASS)
+		return;
+	UnitTypes eSettler = pPlayer->GetSpecificUnitType(eSettlerClass);
+	if (eSettler == NO_UNIT)
+		return;
+
+	// a city already training a settler keeps that progress for the next one; otherwise the capital
+	CvCity* pBuyCity = NULL;
+	int iLoop = 0;
+	for (CvCity* pLoopCity = pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = pPlayer->nextCity(&iLoop))
+	{
+		if (pLoopCity->getProductionUnit() == eSettler && !pLoopCity->IsPuppet())
+		{
+			pBuyCity = pLoopCity;
+			break;
+		}
+	}
+	if (!pBuyCity)
+		pBuyCity = pPlayer->getCapitalCity();
+	if (!pBuyCity || pBuyCity->IsPuppet())
+		return;
+
+	int iCost = pBuyCity->GetPurchaseCost(eSettler);
+	if (iCost <= 0 || pPlayer->GetTreasury()->GetGold() < iCost)
+		return;
+	if (!pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eSettler, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
+		return;
+
+	if (pBuyCity->PurchaseUnit(eSettler, YIELD_GOLD))
+	{
+		pPlayer->GetMilitaryAI()->ResetNumberOfTimesSettlerBuildSkippedOver();
+		if (GC.getLogging() && GC.getAILogging())
+		{
+			CvString strLogString;
+			strLogString.Format("EXPANSION SETTLER - Bought in %s. Cost: %d", pBuyCity->getName().c_str(), iCost);
+			pPlayer->GetHomelandAI()->LogHomelandMessage(strLogString);
+		}
+	}
+}
+
 void CvEconomicAI::DoHurry()
 {
 	int iLoop = 0;
+
+	if (m_pPlayer->UsesNewAI())
+		BuyExpansionSettler(m_pPlayer);
 
 	//Let's give the AI a treasury cushion ...
 	int iTreasuryBuffer = /*50*/ GD_INT_GET(AI_GOLD_TREASURY_BUFFER);
@@ -3220,6 +3282,9 @@ void CvEconomicAI::DoHurry()
 		{
 			UnitTypes eUnitType = (UnitTypes)selection.m_iIndex;
 			CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnitType);
+			// AI_AB_TEST: CP's AI often spends its first 100 gold on a scout; the new AI saves it for a settler
+			if (pkUnitInfo && m_pPlayer->UsesNewAI() && pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE)
+				continue;
 			if (pkUnitInfo)
 			{
 				int iGoldCost = pSelectedCity->GetPurchaseCost(eUnitType);

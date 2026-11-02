@@ -33413,7 +33413,9 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	}
 
 	// Tall play grows the capital a bit before each settler
-	const int iMinSettlerPop = (eBook == OPENING_BOOK_TALL) ? 3 : 2;
+	// (A city doesn't grow while it trains a settler, so starting one at size 2 kept capitals small for 20+ turns;
+	// settlers bought with gold come on top of these, see BuyExpansionSettler.)
+	const int iMinSettlerPop = (eBook == OPENING_BOOK_TALL) ? 4 : 3;
 	const int iScoutTurnLimit = 20 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 
 	// How many of each unit class the steps so far ask for (a step for the 3rd settler means 3 settlers)
