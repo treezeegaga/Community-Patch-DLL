@@ -1876,10 +1876,17 @@ bool CvAIOperationCivilian::CheckTransitionToNextStage()
 		break;
 	case ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE:
 		{
-			// AI_AB_TEST: if no escort has turned up after a few turns and the trip now looks safe, go without one
-			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && pCivilian &&
-				GC.getGame().getGameTurn() - GetTurnStarted() >= 3 && pThisArmy->GetNumFormationEntries() > 1 &&
-				pThisArmy->GetSlotStatus(1)->IsFree() && SettlerTripLooksSafe(pCivilian, GetTargetPlot()))
+			// AI_AB_TEST: if no escort has turned up after a few turns and the trip now looks safe, go without one.
+			// The full safety test (no camp near the site, at most 5 turns) left a settler waiting 80 turns for an
+			// escort nobody built, so after 5 turns no visible danger at the settler or the site is enough, and
+			// after 15 it goes anyway.
+			int iTurnsWaited = GC.getGame().getGameTurn() - GetTurnStarted();
+			bool bGoAlone = pCivilian && GetTargetPlot() &&
+				((iTurnsWaited >= 3 && SettlerTripLooksSafe(pCivilian, GetTargetPlot())) ||
+				 (iTurnsWaited >= 5 && pCivilian->GetDanger() == 0 && pCivilian->GetDanger(GetTargetPlot()) == 0) ||
+				 iTurnsWaited >= 15);
+			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && bGoAlone &&
+				pThisArmy->GetNumFormationEntries() > 1 && pThisArmy->GetSlotStatus(1)->IsFree())
 			{
 				pThisArmy->GetSlotStatus(1)->Clear();
 				for (std::deque<OperationSlot>::iterator it = m_viListOfUnitsWeStillNeedToBuild.begin(); it != m_viListOfUnitsWeStillNeedToBuild.end(); ++it)

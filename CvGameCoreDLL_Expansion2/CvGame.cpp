@@ -12845,7 +12845,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2k: batch2j saving on while a settler is walking (the stash was spent the moment one appeared), and no
 /// conquest opening plan (warmongers use tall or wide).
 /// batch2l: batch2k plus an early shrine in the opening book (CP's AI founded 4 of 5 religions without it).
-static const char* const AI_AB_TEST_BATCH = "batch2l";
+/// batch2m: batch2l with settlers going without an escort after 5 turns if nothing dangerous is in sight (15 at most).
+static const char* const AI_AB_TEST_BATCH = "batch2m";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
