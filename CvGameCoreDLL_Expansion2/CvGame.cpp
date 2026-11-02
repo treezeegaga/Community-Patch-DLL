@@ -12793,14 +12793,20 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 }
 
 //	--------------------------------------------------------------------------------
-/// AI_AB_TEST: appends one row per major civ to AIABTest.csv in My Games\Sid Meier's Civilization 5
+/// AI_AB_TEST: appends one row per major civ to AIABTest_<batch>.csv in My Games\Sid Meier's Civilization 5
 /// (next to the cache folder). The file is never cleared, so rows from many test games collect in it;
-/// GameId tells the games apart. Called every 10 turns and once more when the game is won. Writing a
-/// local file doesn't touch synced game state.
+/// GameId tells the games apart. Each batch of AI changes writes its own file, so results from different
+/// builds never mix. Called every 10 turns and once more when the game is won. Writing a local file
+/// doesn't touch synced game state.
+/// Bump this when the set of changes gated on UsesNewAI() changes.
+static const char* const AI_AB_TEST_BATCH = "batch1";
+
 void CvGame::LogABTestResults(bool bFinal) const
 {
 	CvString strPath = gDLL->GetCacheFolderPath();
-	strPath += "..\\AIABTest.csv";
+	strPath += "..\\AIABTest_";
+	strPath += AI_AB_TEST_BATCH;
+	strPath += ".csv";
 	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
 	FILE* pFile = NULL;
 	if (_wfopen_s(&pFile, wstrPath.c_str(), L"ab") != 0 || pFile == NULL)

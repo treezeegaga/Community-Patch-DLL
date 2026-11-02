@@ -48,7 +48,7 @@
 #define MOD_MP_LEADERHEADS											gCustomMods.isMP_LEADERHEADS()
 
 // AI A/B test: splits the major civs into two groups, one running the changed AI code and one running
-// Community Patch's original, and appends each civ's standing to AIABTest.csv (see CvPlayer::UsesNewAI)
+// Community Patch's original, and appends each civ's standing to AIABTest_<batch>.csv (see CvPlayer::UsesNewAI)
 #define MOD_AI_AB_TEST												gCustomMods.isAI_AB_TEST()
 
 // FUNCTIONALITY NOT GUARANTEED
