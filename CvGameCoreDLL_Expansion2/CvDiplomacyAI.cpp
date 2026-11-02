@@ -23303,10 +23303,12 @@ int CvDiplomacyAI::ScoreDefensivePactChoice(PlayerTypes eChoice, bool bCoastal)
 ///   its weakest close neighbour, if that neighbour is weaker than us.
 /// Tall civs don't start wars here. One war at a time. (A first version attacked any "weaker" neighbour by current
 /// military alone and picked a fast-expanding civ that then crushed it.)
-/// AI_AB_TEST candidate (c7c): only fight battles we know we will win. Could our ranged units take the target's city
-/// nearest our capital (the likely first target) in about three turns of fire, with melee units to walk in? Summed over
-/// all our ranged land units (the attack army gathers them). In c4-c7 warmongers declared, then besieged a full-health
-/// city with too little damage, or never attacked at all, and lost the war.
+/// AI_AB_TEST candidate (c7c): only fight battles we know we will win. Can our ranged land units (the attack army
+/// gathers them) bring down the target's city nearest our capital, with melee units to walk in, and last long enough
+/// to do it? A turn-by-turn sketch of the siege: our ranged units fire, the city heals, and the city (with its
+/// garrison, counted as half again) shoots our most damaging unit, which drops out once it dies. How long the siege
+/// takes doesn't matter, only that the army outlasts the city. In c4-c7 warmongers declared, then besieged a
+/// full-health city while losing their siege units (the Ottomans' damage fell from 161 a turn to 65), and lost.
 static bool CanTakeNearestCity(CvPlayer* pPlayer, PlayerTypes eTarget)
 {
 	const CvCity* pCapital = pPlayer->getCapitalCity();
@@ -23329,7 +23331,7 @@ static bool CanTakeNearestCity(CvPlayer* pPlayer, PlayerTypes eTarget)
 		return false;
 
 	int iGarrisonMaxHP = (pTargetCity->HasGarrison() && pTargetCity->GetGarrisonedUnit()) ? pTargetCity->GetGarrisonedUnit()->GetMaxHitPoints() : 0;
-	int iDamagePerTurn = 0;
+	std::vector<int> viDamage, viHP, viHitTaken;
 	int iMelee = 0;
 	for (CvUnit* pUnit = pPlayer->firstUnit(&iLoop); pUnit != NULL; pUnit = pPlayer->nextUnit(&iLoop))
 	{
@@ -23338,16 +23340,40 @@ static bool CanTakeNearestCity(CvPlayer* pPlayer, PlayerTypes eTarget)
 		if (pUnit->IsCanAttackRanged())
 		{
 			int iGarrisonDamage = 0;
-			iDamagePerTurn += pUnit->GetRangeCombatDamage(NULL, pTargetCity, iGarrisonMaxHP, iGarrisonDamage, /*bIncludeRand*/ false, 0, 0, NULL, NULL, true, true);
+			viDamage.push_back(pUnit->GetRangeCombatDamage(NULL, pTargetCity, iGarrisonMaxHP, iGarrisonDamage, /*bIncludeRand*/ false, 0, 0, NULL, NULL, true, true));
+			viHP.push_back(pUnit->GetCurrHitPoints());
+			viHitTaken.push_back(pTargetCity->rangeCombatDamage(pUnit, /*bIncludeRand*/ false, NULL, /*bQuickAndDirty*/ true) * 3 / 2);
 		}
 		else
 			iMelee++;
 	}
+	if (iMelee < 2)
+		return false;
 
-	int iCityHP = pTargetCity->GetMaxHitPoints() - pTargetCity->getDamage();
-	// 40% of its hit points a turn: three turns, with some room for the city healing and our units getting hurt (the
-	// Ottomans' first siege started at 161 damage a turn on a 200 HP city and fell to 65 as units were hurt)
-	return iMelee >= 2 && iDamagePerTurn * 10 >= iCityHP * 4;
+	const int iMaxHP = pTargetCity->GetMaxHitPoints();
+	const int iHeal = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
+	int iCityHP = iMaxHP - pTargetCity->getDamage();
+	for (int iTurn = 0; iTurn < 20; iTurn++)
+	{
+		int iFire = 0;
+		int iTarget = -1;
+		for (size_t i = 0; i < viDamage.size(); i++)
+		{
+			if (viHP[i] <= 0)
+				continue;
+			iFire += viDamage[i];
+			if (iTarget < 0 || viDamage[i] > viDamage[iTarget])
+				iTarget = (int)i;
+		}
+		if (iFire <= 0)
+			return false;
+		iCityHP -= iFire;
+		if (iCityHP <= 0)
+			return true;
+		iCityHP = min(iMaxHP, iCityHP + iHeal);
+		viHP[iTarget] -= viHitTaken[iTarget];
+	}
+	return false;
 }
 
 PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
