@@ -707,6 +707,10 @@ public:
 	void ReadABTestSettings();
 	int GetABTestCandidateFixes() const { return m_iABTestCandidateFixes; }
 	int GetABTestScreenedFixes() const { return m_iABTestScreenedFixes; }
+	// AI_AB_TEST paired games: the second game of a pair replays the first one's map, civs and city-states with the
+	// groups swapped (Flip = 1 in AIABTest.ini)
+	bool IsABTestFlipped() const { return (m_iABTestFlags & 1) != 0; }
+	void WriteABTestReplayRecord() const;
 	void unitIsMoving() const;
 
 	void BuildProdModHelpText(CvString* toolTipSink, const char* strTextKey, int iMod, const char* strExtraKey = "", bool bShowIfZero = false) const;
@@ -942,6 +946,7 @@ protected:
 	// AI_AB_TEST (see ReadABTestSettings); saved only in test games
 	int m_iABTestCandidateFixes;
 	int m_iABTestScreenedFixes;
+	int m_iABTestFlags;
 
 	CvEnumMap<PlayerTypes, int> m_aiEndTurnMessagesReceived;
 	CvEnumMap<PlayerTypes, int> m_aiRankPlayer;		// Ordered by rank...

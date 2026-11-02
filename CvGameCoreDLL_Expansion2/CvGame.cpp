@@ -254,12 +254,15 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 ///     [ABTest]
 ///     Fixes = bundle      ; flags group c runs (see ParseABTestFixList); empty or no file = the bundle
 ///     Screen =            ; flags each on for a random half of the AI civs instead, for screening
+///     Flip = 0            ; 1 swaps the groups (c/b, new/cp, and the screened halves)
+///     MapSeed, SyncSeed, Player<i> = replay of an earlier game, from its AIABTest_lastgame.ini (paired games)
 /// Read once when the game starts and saved with it, so a reloaded game keeps its flags whatever the file says by then.
 /// Test games are single player only (AI decisions in multiplayer must not depend on a local file).
 void CvGame::ReadABTestSettings()
 {
 	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_iABTestScreenedFixes = 0;
+	m_iABTestFlags = 0;
 
 	CvString strFolder = gDLL->GetCacheFolderPath();
 	strFolder += "..\\";
@@ -284,6 +287,121 @@ void CvGame::ReadABTestSettings()
 		else
 			m_iABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
 	}
+
+	// Paired games (see WriteABTestReplayRecord): Flip = 1 swaps the groups, and the replay keys repeat the first
+	// game's seeds, civs, leaders and city-states. This runs before the random number generators are seeded (below, in
+	// init) and before InitPlayers and the map script (init2), so the map and the start come out the same.
+	if (GetPrivateProfileIntW(L"ABTest", L"Flip", 0, wstrPath.c_str()) != 0)
+		m_iABTestFlags |= 1;
+	GetPrivateProfileStringW(L"ABTest", L"MapSeed", L"", szBuffer, 1024, wstrPath.c_str());
+	if (szBuffer[0] != 0)
+		CvPreGame::setMapRandomSeed((unsigned int)wcstoul(szBuffer, NULL, 0));
+	GetPrivateProfileStringW(L"ABTest", L"SyncSeed", L"", szBuffer, 1024, wstrPath.c_str());
+	if (szBuffer[0] != 0)
+		CvPreGame::setSyncRandomSeed((unsigned int)wcstoul(szBuffer, NULL, 0));
+	for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		const PlayerTypes ePlayer = (PlayerTypes)iI;
+		wchar_t szKey[32];
+		swprintf_s(szKey, 32, L"Player%d", iI);
+		szBuffer[0] = 0;
+		GetPrivateProfileStringW(L"ABTest", szKey, L"", szBuffer, 1024, wstrPath.c_str());
+		std::string strValue;
+		for (const wchar_t* p = szBuffer; *p != 0 && *p != L';' && *p != L'#'; ++p)
+			strValue += (*p < 128) ? (char)*p : '?';
+		std::vector<std::string> vTypes;
+		size_t iPos = 0;
+		while (iPos < strValue.size())
+		{
+			size_t iEnd = strValue.find_first_of(", \t", iPos);
+			if (iEnd == std::string::npos)
+				iEnd = strValue.size();
+			if (iEnd > iPos)
+				vTypes.push_back(strValue.substr(iPos, iEnd - iPos));
+			iPos = iEnd + 1;
+		}
+		if (vTypes.empty())
+			continue;
+
+		bool bOK = false;
+		const SlotStatus eStatus = CvPreGame::slotStatus(ePlayer);
+		if (iI < MAX_MAJOR_CIVS)
+		{
+			// major civ: "CIVILIZATION_X LEADER_Y", only into a slot that is playing
+			if (vTypes.size() == 2 && (eStatus == SS_COMPUTER || eStatus == SS_TAKEN))
+			{
+				CivilizationTypes eCiv = (CivilizationTypes)GC.getInfoTypeForString(vTypes[0].c_str(), true);
+				LeaderHeadTypes eLeader = (LeaderHeadTypes)GC.getInfoTypeForString(vTypes[1].c_str(), true);
+				if (eCiv != NO_CIVILIZATION && eLeader != NO_LEADER)
+				{
+					CvPreGame::setCivilization(ePlayer, eCiv);
+					CvPreGame::setLeaderHead(ePlayer, eLeader);
+					bOK = (CvPreGame::civilization(ePlayer) == eCiv && CvPreGame::leaderHead(ePlayer) == eLeader);
+				}
+			}
+		}
+		else
+		{
+			// city-state: "MINOR_CIV_X", only into a slot that has one
+			if (vTypes.size() == 1 && CvPreGame::minorCivType(ePlayer) != NO_MINORCIV)
+			{
+				MinorCivTypes eMinor = (MinorCivTypes)GC.getInfoTypeForString(vTypes[0].c_str(), true);
+				if (eMinor != NO_MINORCIV)
+				{
+					CvPreGame::setMinorCivType(ePlayer, eMinor);
+					bOK = true;
+				}
+			}
+		}
+		if (!bOK)
+		{
+			FILE* pFile = NULL;
+			std::wstring wstrErrorPath = CvStringUtils::FromUTF8ToUTF16(strErrorPath);
+			if (_wfopen_s(&pFile, wstrErrorPath.c_str(), L"ab") == 0 && pFile != NULL)
+			{
+				fprintf(pFile, "AIABTest.ini: Player%d = %s doesn't fit this game's slot, ignored\r\n", iI, strValue.c_str());
+				fclose(pFile);
+			}
+		}
+	}
+}
+
+/// AI_AB_TEST paired games: writes what the second game of a pair needs to replay this one to AIABTest_lastgame.ini in
+/// My Games (the seeds, and each slot's civ and leader or city-state, in AIABTest.ini's format). Run-Games.ps1 copies
+/// these keys into AIABTest.ini, with Flip = 1, for the next game. Called once players are set up (init2).
+void CvGame::WriteABTestReplayRecord() const
+{
+	CvString strPath = gDLL->GetCacheFolderPath();
+	strPath += "..\\AIABTest_lastgame.ini";
+	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
+	FILE* pFile = NULL;
+	if (_wfopen_s(&pFile, wstrPath.c_str(), L"wb") != 0 || pFile == NULL)
+		return;
+
+	fprintf(pFile, "; written by the test game %08X%08X%s when it started\r\n[ABTest]\r\n", CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(), IsABTestFlipped() ? "F" : "");
+	fprintf(pFile, "MapSeed = %u\r\nSyncSeed = %u\r\n", CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed());
+	for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		const PlayerTypes ePlayer = (PlayerTypes)iI;
+		if (iI < MAX_MAJOR_CIVS)
+		{
+			const SlotStatus eStatus = CvPreGame::slotStatus(ePlayer);
+			if (eStatus != SS_COMPUTER && eStatus != SS_TAKEN)
+				continue;
+			CvCivilizationInfo* pkCiv = GC.getCivilizationInfo(CvPreGame::civilization(ePlayer));
+			CvLeaderHeadInfo* pkLeader = GC.getLeaderHeadInfo(CvPreGame::leaderHead(ePlayer));
+			if (pkCiv && pkLeader)
+				fprintf(pFile, "Player%d = %s %s\r\n", iI, pkCiv->GetType(), pkLeader->GetType());
+		}
+		else
+		{
+			const MinorCivTypes eMinor = CvPreGame::minorCivType(ePlayer);
+			CvMinorCivInfo* pkMinor = (eMinor != NO_MINORCIV) ? GC.getMinorCivInfo(eMinor) : NULL;
+			if (pkMinor)
+				fprintf(pFile, "Player%d = %s\r\n", iI, pkMinor->GetType());
+		}
+	}
+	fclose(pFile);
 }
 
 //	--------------------------------------------------------------------------------
@@ -543,6 +661,9 @@ void CvGame::init(HandicapTypes eHandicap)
 bool CvGame::init2()
 {
 	InitPlayers();
+
+	if (MOD_AI_AB_TEST)
+		WriteABTestReplayRecord();
 
 	updateGlobalMedians();
 
@@ -1370,6 +1491,7 @@ void CvGame::uninit()
 	m_intGameId = 0;
 	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_iABTestScreenedFixes = 0;
+	m_iABTestFlags = 0;
 	m_iEarliestBarbarianReleaseTurn = 0;
 
 	m_iLastMouseoverUnitID = 0;
@@ -11107,6 +11229,7 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	{
 		visitor(game.m_iABTestCandidateFixes);
 		visitor(game.m_iABTestScreenedFixes);
+		visitor(game.m_iABTestFlags);
 	}
 }
 
@@ -13007,8 +13130,9 @@ void CvGame::LogABTestResults(bool bFinal) const
 		int iCity4Turn = vFoundedTurns.size() > 3 ? vFoundedTurns[3] : -1;
 		OpeningBookType eBook = kPlayer.GetOpeningBook();
 
-		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d\r\n",
-			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(),
+		// a flipped game replays its pair's seeds, so its GameId gets an F to stay unique
+		fprintf(pFile, "%08X%08X%s,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d\r\n",
+			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(), IsABTestFlipped() ? "F" : "",
 			getElapsedGameTurns(),
 			bFinal ? 1 : 0,
 			(bFinal && getWinner() != NO_TEAM && getWinner() == kPlayer.getTeam()) ? 1 : 0,

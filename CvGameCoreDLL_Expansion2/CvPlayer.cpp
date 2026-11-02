@@ -33334,9 +33334,10 @@ int CvPlayer::GetCandidateFixBundle()
 	return kCandidateFixBundle;
 }
 
+/// AI_AB_TEST "new vs CP" split. Flip = 1 in AIABTest.ini (the second game of a pair) swaps it.
 static bool IsABTestOddSlot(PlayerTypes ePlayer)
 {
-	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(ePlayer)) & 1) != 0;
+	return (((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(ePlayer)) & 1) != 0) != GC.getGame().IsABTestFlipped();
 }
 
 static int GetOpeningBookFlavor(const CvPlayer& kPlayer, const char* szFlavor);
@@ -33358,17 +33359,21 @@ static bool IsABTestWarmongerCiv(const CvPlayer& kPlayer)
 /// gets half of them and group c gets the odd one. Test games with random civs often gave c no warmonger at all,
 /// and the conquest changes went untested. The order within each kind rotates with the map seed, so a slot still
 /// plays both sides over many games. Recomputed once per turn (traits and flavors are set when the game starts).
+/// Flip = 1 in AIABTest.ini (the second game of a pair) deals b first, so the pair's two games have the groups swapped.
 static bool IsABTestCandidateSlot(PlayerTypes ePlayer)
 {
 	static unsigned int s_uSeed = 0;
 	static int s_iTurn = -1;
+	static bool s_bFlip = false;
 	static bool s_abCandidate[MAX_MAJOR_CIVS];
 	const unsigned int uSeed = CvPreGame::mapRandomSeed();
 	const int iTurn = GC.getGame().getGameTurn();
-	if (uSeed != s_uSeed || iTurn != s_iTurn)
+	const bool bFlip = GC.getGame().IsABTestFlipped();
+	if (uSeed != s_uSeed || iTurn != s_iTurn || bFlip != s_bFlip)
 	{
 		s_uSeed = uSeed;
 		s_iTurn = iTurn;
+		s_bFlip = bFlip;
 		std::vector<int> aiOrder;
 		for (int iPass = 0; iPass < 2; iPass++)
 		{
@@ -33384,7 +33389,7 @@ static bool IsABTestCandidateSlot(PlayerTypes ePlayer)
 			}
 		}
 		for (size_t i = 0; i < aiOrder.size(); i++)
-			s_abCandidate[aiOrder[i]] = (i % 2) == 0;
+			s_abCandidate[aiOrder[i]] = (i % 2) == (bFlip ? 1u : 0u);
 	}
 	return ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS && s_abCandidate[ePlayer];
 }
@@ -33415,17 +33420,21 @@ static unsigned int ABTestHash(unsigned int a, unsigned int b, unsigned int c)
 /// separately for every flag from the map seed. Dealt like the c/b split, warmongers first (so warmonger-only flags get
 /// tried by half the warmongers), but in a random order per flag, so the flags are independent of each other and of
 /// the c/b split. The regression in Summarize-ABTest.ps1 then estimates every screened flag from the same games.
+/// The second game of a pair (Flip = 1) gives every screened flag to the other half.
 static bool IsABTestScreenSlot(PlayerTypes ePlayer, int iFix)
 {
 	static unsigned int s_uSeed = 0;
 	static int s_iTurn = -1;
+	static bool s_bFlip = false;
 	static bool s_abOn[NUM_CANDIDATE_FIXES][MAX_MAJOR_CIVS];
 	const unsigned int uSeed = CvPreGame::mapRandomSeed();
 	const int iTurn = GC.getGame().getGameTurn();
-	if (uSeed != s_uSeed || iTurn != s_iTurn)
+	const bool bFlip = GC.getGame().IsABTestFlipped();
+	if (uSeed != s_uSeed || iTurn != s_iTurn || bFlip != s_bFlip)
 	{
 		s_uSeed = uSeed;
 		s_iTurn = iTurn;
+		s_bFlip = bFlip;
 		for (int iLoopFix = 0; iLoopFix < NUM_CANDIDATE_FIXES; iLoopFix++)
 		{
 			std::vector<int> aiOrder;
@@ -33445,8 +33454,9 @@ static bool IsABTestScreenSlot(PlayerTypes ePlayer, int iFix)
 				for (size_t i = 0; i < aKind.size(); i++)
 					aiOrder.push_back(aKind[i].second);
 			}
-			// which of each pair gets the flag is random too, so an odd number of warmongers doesn't always favour "on"
-			const int iFirst = (int)(ABTestHash(uSeed, (unsigned int)iLoopFix, 0xFFFFu) & 1);
+			// which of each pair gets the flag is random too, so an odd number of warmongers doesn't always favour "on";
+			// a flipped game (the second of a pair) gives each flag to the other half
+			const int iFirst = (int)(ABTestHash(uSeed, (unsigned int)iLoopFix, 0xFFFFu) & 1) ^ (bFlip ? 1 : 0);
 			for (size_t i = 0; i < aiOrder.size(); i++)
 				s_abOn[iLoopFix][aiOrder[i]] = ((int)(i % 2) == iFirst);
 		}
