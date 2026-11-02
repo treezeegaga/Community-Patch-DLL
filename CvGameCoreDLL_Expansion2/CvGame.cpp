@@ -1643,6 +1643,20 @@ void CvGame::update()
 		}
 	}
 
+	// AI_AB_TEST: test games are AI only, so at the start of a single player test game hand the player's civ to the
+	// AI, the same as pressing Ctrl+Shift+O (CONTROL_TOGGLE_OBSERVER_MODE). Only on the first turn, so the player
+	// can still leave observer mode later.
+	if (MOD_AI_AB_TEST && !isNetworkMultiPlayer() && getGameState() == GAMESTATE_ON && getElapsedGameTurns() == 0 &&
+		getAIAutoPlay() == 0 && getObserverUIOverridePlayer() == NO_PLAYER)
+	{
+		PlayerTypes eActivePlayer = getActivePlayer();
+		if (eActivePlayer != NO_PLAYER && GET_PLAYER(eActivePlayer).isHuman() && !GET_PLAYER(eActivePlayer).isObserver() &&
+			GET_PLAYER(eActivePlayer).isTurnActive())
+		{
+			setAIAutoPlay(GD_INT_GET(MAX_TURNS_OBSERVER_MODE) > 0 ? GD_INT_GET(MAX_TURNS_OBSERVER_MODE) : INT_MAX, eActivePlayer);
+		}
+	}
+
 	// if the game is single player, it's ok to block all processing until
 	// the user selects an extended match or quits.
 	if(getGameState() == GAMESTATE_OVER && !CvPreGame::isNetworkMultiplayerGame())

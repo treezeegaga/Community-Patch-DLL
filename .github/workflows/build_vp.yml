@@ -693,4 +693,38 @@ jobs:
           name: VP_MSVC_Release_${{ needs.get-version.outputs.version }}
           path: 'BuildOutput/Release'
 
+  # AI A/B tests (fork only): publish the MSVC release DLL as a public GitHub release, so the test script in
+  # treezeegaga/Civ5-CP-AnimatedLeaders (tools/ab/Run-ABTest.ps1) can download it without a GitHub login.
+  publish-ab-test-dll:
+    name: Publish A/B test DLL
+    needs: [get-version, build-msvc]
+    if: always() && needs.build-msvc.result == 'success' && github.ref == 'refs/heads/claude/sleepy-hopper-x77moh'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download MSVC release DLL
+        uses: actions/download-artifact@v4
+        with:
+          name: VP_MSVC_Release_${{ needs.get-version.outputs.version }}
+          path: dll
 
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ls -la dll
+          test -f dll/CvGameCore_Expansion2.dll
+          SHA="${GITHUB_SHA:0:7}"
+          NOTES="AI A/B test DLL built from ${GITHUB_SHA} on ${GITHUB_REF_NAME}. Not for normal play: see tools/ab/README.md in treezeegaga/Civ5-CP-AnimatedLeaders."
+          # one release per commit, plus ab-latest pointing at the newest build
+          gh release delete "ab-${SHA}" --yes --cleanup-tag || true
+          gh release create "ab-${SHA}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease \
+            --title "AI A/B test DLL ${SHA}" --notes "${NOTES}"
+          gh release delete ab-latest --yes --cleanup-tag || true
+          gh release create ab-latest dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "AI A/B test DLL (latest: ${SHA})" --notes "${NOTES}"
