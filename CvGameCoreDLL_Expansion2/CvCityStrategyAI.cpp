@@ -909,13 +909,18 @@ void CvCityStrategyAI::ChooseProduction(BuildingTypes eIgnoreBldg, UnitTypes eIg
 				UnitTypes eUnitType = (UnitTypes) selection.m_iIndex;
 				bool bCitySameAsMuster = false;
 				OperationSlot thisOperationSlot = kPlayer.PeekAtNextUnitToBuildForOperationSlot(m_pCity, bCitySameAsMuster);
-				if (thisOperationSlot.IsValid() && bCitySameAsMuster)
+				bool bMusterCity = thisOperationSlot.IsValid() && bCitySameAsMuster;
+				// AI_AB_TEST: CP drops army units in every city but the muster city of the first operation needing
+				// units. The new AI also lets nearby cities build for recruiting armies while those are short.
+				bool bHelpingCity = !bMusterCity && selection.m_eBuildableType == CITY_BUILDABLE_UNIT_FOR_ARMY &&
+					kPlayer.UsesNewAI() && kPlayer.GetMilitaryAI()->ShouldCityHelpFillArmies(m_pCity);
+				if (bMusterCity || bHelpingCity)
 				{
 					int iNewWeight = GetUnitProductionAI()->CheckUnitBuildSanity(eUnitType, true, m_BuildablesPrecheck.GetWeight(iI), false, false);
 					if (iNewWeight > 0)
 					{
 						//hack, bump up the weight for our very first escort!
-						if (GET_PLAYER(m_pCity->getOwner()).IsEarlyExpansionPhase())
+						if (bMusterCity && GET_PLAYER(m_pCity->getOwner()).IsEarlyExpansionPhase())
 							iNewWeight *= 3;
 
 						selection.m_iValue = iNewWeight;

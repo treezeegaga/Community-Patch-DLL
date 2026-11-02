@@ -2808,15 +2808,71 @@ bool CvMilitaryAI::IsBuildingArmy(ArmyType eType) const
 	return false;
 }
 
+/// AI_AB_TEST: can a unit trained in this city join this army? Only armies still recruiting take new units, and they
+/// only pick up units that can reach the muster point in time, so the city must be close and able to get there.
+bool CvMilitaryAI::CanCityHelpFillArmy(const CvCity* pCity, const CvArmyAI* pArmy) const
+{
+	if (!pCity || !pArmy || pArmy->GetArmyAIState() != ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE)
+		return false;
+
+	const CvAIOperation* pOp = m_pPlayer->getAIOperation(pArmy->GetOperationID());
+	CvPlot* pMuster = pOp ? pOp->GetMusterPlot() : NULL;
+	if (!pMuster)
+		return false;
+
+	const int iMaxDistance = 8;
+	if (plotDistance(*pCity->plot(), *pMuster) > iMaxDistance)
+		return false;
+
+	return pCity->HasAccessToLandmassOrOcean(pMuster->getLandmass());
+}
+
+/// AI_AB_TEST: CP lets only the muster city of the first operation needing units build for an army, so an attack
+/// waits on one city's production. The new AI lets any nearby city help while the recruiting armies near it have
+/// more open slots than units already being trained in other cities.
+bool CvMilitaryAI::ShouldCityHelpFillArmies(const CvCity* pCity) const
+{
+	if (!pCity)
+		return false;
+
+	int iOpenSlots = 0;
+	int iLoop = 0;
+	for (CvArmyAI* pLoopArmyAI = m_pPlayer->firstArmyAI(&iLoop); pLoopArmyAI != NULL; pLoopArmyAI = m_pPlayer->nextArmyAI(&iLoop))
+	{
+		if (CanCityHelpFillArmy(pCity, pLoopArmyAI))
+			iOpenSlots += static_cast<int>(pLoopArmyAI->GetOpenSlots(true).size());
+	}
+	if (iOpenSlots == 0)
+		return false;
+
+	int iBeingTrained = 0;
+	for (const CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if (pLoopCity == pCity || !pLoopCity->isProductionUnit())
+			continue;
+
+		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(pLoopCity->getProductionUnit());
+		if (pkUnitInfo && (pkUnitInfo->GetCombat() > 0 || pkUnitInfo->GetRangedCombat() > 0))
+			iBeingTrained++;
+	}
+
+	return iBeingTrained < iOpenSlots;
+}
+
 /// Which unit should be built next for our army
 UnitTypes CvMilitaryAI::GetUnitTypeForArmy(CvCity* pCity) const
 {
 	UnitTypes eBestUnit = NO_UNIT;
 	size_t leastOpenSlots = INT_MAX;
+	bool bNewAI = m_pPlayer->UsesNewAI();
 
 	int iLoop = 0;
 	for (CvArmyAI* pLoopArmyAI = m_pPlayer->firstArmyAI(&iLoop); pLoopArmyAI != NULL; pLoopArmyAI = m_pPlayer->nextArmyAI(&iLoop))
 	{
+		// AI_AB_TEST: only suggest units for armies this city's units can actually join
+		if (bNewAI && !CanCityHelpFillArmy(pCity, pLoopArmyAI))
+			continue;
+
 		vector<size_t> vOpenSlots = pLoopArmyAI->GetOpenSlots(true);
 		for (size_t i = 0; i < vOpenSlots.size(); i++)
 		{

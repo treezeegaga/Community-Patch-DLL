@@ -12,6 +12,9 @@
 
 #include "CvEnumMap.h"
 
+class CvArmyAI;
+class CvCity;
+
 enum DefenseState
 {
     NO_DEFENSE_STATE = -1,
@@ -220,6 +223,8 @@ public:
 	CvUnit* FindUnitToScrap(DomainTypes eDomain, bool bCheckObsolete, int& iReturnedScore, bool bOverSupplyCap, bool bInDeficit);
 	bool IsBuildingArmy(ArmyType eType) const;
 	UnitTypes GetUnitTypeForArmy(CvCity* pCity) const;
+	bool CanCityHelpFillArmy(const CvCity* pCity, const CvArmyAI* pArmy) const;
+	bool ShouldCityHelpFillArmies(const CvCity* pCity) const;
 	int GetNumEnemyAirUnitsInRange(CvPlot* pCenterPlot, int iRange, bool bCountFighters, bool bCountBombers) const;
 	CvPlot *GetBestAirSweepTarget(CvUnit* pFighter) const;
 
