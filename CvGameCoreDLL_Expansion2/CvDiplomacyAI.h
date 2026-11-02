@@ -1905,6 +1905,7 @@ private:
 	PlayerTypes m_eDemandTargetPlayer;
 	PlayerTypes m_eCSWarTarget;
 	PlayerTypes m_eCSBullyTarget;
+	PlayerTypes m_eNewAIConquestTarget; // AI_AB_TEST: the committed target of GetNewAIConquestTarget, saved with the game
 
 	// Other Global Memory
 	bool m_bAvoidDeals; // Not serialized!

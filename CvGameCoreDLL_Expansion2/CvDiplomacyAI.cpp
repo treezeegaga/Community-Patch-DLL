@@ -102,6 +102,7 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 	m_eDemandTargetPlayer = NO_PLAYER;
 	m_eCSWarTarget = NO_PLAYER;
 	m_eCSBullyTarget = NO_PLAYER;
+	m_eNewAIConquestTarget = NO_PLAYER;
 
 	// Other Global Memory
 	m_bWasHumanLastUpdate = false;
@@ -697,6 +698,9 @@ void CvDiplomacyAI::Serialize(DiplomacyAI& diplomacyAI, Visitor& visitor)
 	visitor(diplomacyAI.m_abVassalTaxLowered);
 	visitor(diplomacyAI.m_aiVassalGoldPerTurnTaxedSinceVassalStarted);
 	visitor(diplomacyAI.m_aiVassalGoldPerTurnCollectedSinceVassalStarted);
+
+	// AI_AB_TEST (appended last, so the rest of the layout is unchanged)
+	visitor(diplomacyAI.m_eNewAIConquestTarget);
 }
 
 /// Serialization read
@@ -23431,10 +23435,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// Commit to a target once chosen: re-picking every turn (a test game had a civ switch between two targets and
 	// back) switches the approach away from WAR, which cancels the army being gathered, so the attack never came.
 	// A committed target is kept while it still passes the checks with one strength step of slack.
-	// (Not saved with the game; a reload just picks again.)
-	static int s_aiCommittedTarget[MAX_MAJOR_CIVS]; // target + 1, 0 = none
-	const int iMe = (int)pPlayer->GetID();
-	PlayerTypes eCommitted = (iMe >= 0 && iMe < MAX_MAJOR_CIVS) ? (PlayerTypes)(s_aiCommittedTarget[iMe] - 1) : NO_PLAYER;
+	// It's game state (m_eNewAIConquestTarget, saved): a static array survived into the next game in the same process
+	// and was lost on a reload, so a replayed or reloaded game could pick differently.
+	PlayerTypes eCommitted = m_eNewAIConquestTarget;
 
 	const CvCity* pCapital = pPlayer->getCapitalCity();
 	PlayerTypes eBest = NO_PLAYER;
@@ -23505,8 +23508,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		}
 	}
 
-	if (iMe >= 0 && iMe < MAX_MAJOR_CIVS)
-		s_aiCommittedTarget[iMe] = (int)eBest + 1;
+	m_eNewAIConquestTarget = eBest;
 	return eBest;
 }
 
