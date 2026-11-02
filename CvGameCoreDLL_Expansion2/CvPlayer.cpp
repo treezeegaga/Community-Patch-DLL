@@ -38,6 +38,7 @@
 #include "CvBarbarians.h"
 #include "CvGoodyHuts.h"
 #include "CvCityConnections.h"
+#include "CvStringUtils.h"
 #include "SqliteLoggerRegistrations.h"
 #include "CvNotifications.h"
 #include "CvEventLog.h"
