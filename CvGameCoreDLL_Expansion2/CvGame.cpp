@@ -12838,7 +12838,10 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2g: batch2f plus settlers bought with gold while expanding, no scout purchases, and opening-book
 /// settlers only when the city's next citizen is further away than the settler.
 /// batch2h: batch2g with opening-book settlers one at a time (none while another is on the map or in training).
-static const char* const AI_AB_TEST_BATCH = "batch2h";
+/// batch2i: batch2h plus found-city operations that start without a spare military unit (CP's precondition never
+/// counted the settler itself, so new-AI settlers with no warrior around stood idle all game), and the opening
+/// book letting the normal choice build a waiting settler's escort.
+static const char* const AI_AB_TEST_BATCH = "batch2i";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

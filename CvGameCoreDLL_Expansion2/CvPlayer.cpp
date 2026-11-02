@@ -33390,6 +33390,11 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	if (!pCity || pCity->IsPuppet() || pCity->isUnderSiege() || !IsOpeningBookActive())
 		return false;
 
+	// A settler waiting for its escort comes first: let the normal production choice build units for operations
+	CvAIOperation* pFoundCityOp = getFirstAIOperationOfType(AI_OPERATION_FOUND_CITY);
+	if (pFoundCityOp && pFoundCityOp->GetNumUnitsNeededToBeBuilt() > 0)
+		return false;
+
 	OpeningBookType eBook = GetOpeningBook();
 	const OpeningBookStep* pSteps = NULL;
 	int iNumSteps = 0;

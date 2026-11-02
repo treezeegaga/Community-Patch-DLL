@@ -1798,6 +1798,19 @@ bool CvAIOperationCivilian::SettlerTripLooksSafe(CvUnit* pSettler, CvPlot* pTarg
 	return true;
 }
 
+/// AI_AB_TEST: CP's check fills the formation from units on the map, but IsUnitSuitableForRecruitment skips settlers,
+/// so the settler never counts for its own operation and a found-city operation can only start if a spare military
+/// unit could be its escort. A player whose only units are a settler and explorers (the new AI's opening book builds
+/// no early military) had every operation thrown away silently, and its settlers stood idle all game. For the new AI
+/// the precondition is a free civilian; Init then decides about the escort (SettlerTripLooksSafe).
+bool CvAIOperationCivilian::PreconditionsAreMet(CvPlot* pMusterPlot, CvPlot* pTargetPlot, int iMaxMissingUnits)
+{
+	if (GET_PLAYER(m_eOwner).UsesNewAI())
+		return FindBestCivilian() != NULL;
+
+	return CvAIOperation::PreconditionsAreMet(pMusterPlot, pTargetPlot, iMaxMissingUnits);
+}
+
 /// Kick off this operation
 void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 {

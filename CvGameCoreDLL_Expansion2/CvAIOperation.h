@@ -488,6 +488,8 @@ public:
 
 	// AI_AB_TEST: true when a settler can safely go without an escort
 	static bool SettlerTripLooksSafe(CvUnit* pSettler, CvPlot* pTarget);
+	// AI_AB_TEST: the new AI only needs a free civilian; the escort is decided in Init
+	virtual bool PreconditionsAreMet(CvPlot* pMusterPlot, CvPlot* pTargetPlot, int iMaxMissingUnits);
 
 	virtual UnitAITypes GetCivilianType() const
 	{
