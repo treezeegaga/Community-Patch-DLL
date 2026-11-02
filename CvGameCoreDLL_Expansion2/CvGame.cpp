@@ -13152,7 +13152,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// StopTurn (from AIABTest.ini, 0 = unknown) and Build (the DLL's git describe).
 /// c7c_roles: c7c_settings with the bully and builders tests (Mode, Role) and diplomacy and war columns: WarsDeclared,
 /// WarsOnUs, CitiesCaptured, CitiesLost, Deals, WorkersStolen, WonderChops (running counts, ABTestCountTypes), and
-/// AtWar, AtWarAggressor, Pacts, Friends, Denouncing, Influential (the state at that turn). The AI is unchanged.
+/// AtWar, AtWarAggressor, Pacts, Friends, Denouncing, Influential (the state at that turn), and TurnSecs (real seconds
+/// per turn since the last logged row). The AI is unchanged.
 static const char* const AI_AB_TEST_BATCH = "c7c_roles";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
@@ -13196,9 +13197,24 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
+
+	// AI turn time (lead job 11): real seconds per game turn since the last logged row, the same in every row of a turn.
+	// Measured on this computer and not saved, so the first row after starting or loading a game shows 0.
+	static unsigned int s_uLastLogTime = 0;
+	static int s_iLastLogTurn = -1;
+	const unsigned int uNow = timeGetTime();
+	const int iNowTurn = getElapsedGameTurns();
+	double fTurnSecs = 0.0;
+	if (s_iLastLogTurn >= 0 && iNowTurn > s_iLastLogTurn && uNow > s_uLastLogTime)
+		fTurnSecs = (double)(uNow - s_uLastLogTime) / 1000.0 / (double)(iNowTurn - s_iLastLogTurn);
+	if (iNowTurn != s_iLastLogTurn)
+	{
+		s_uLastLogTime = uNow;
+		s_iLastLogTurn = iNowTurn;
+	}
 
 	// The game's settings, the same in every row (lead job 3: a setup change starts a new baseline)
 	CvString strMap = CvPreGame::mapScriptName();
@@ -13326,7 +13342,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 			if (kPlayer.GetDiplomacyAI()->IsDenouncedPlayer(eOther))
 				iDenouncing++;
 		}
-		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
+		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f\r\n",
 			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_BUILDERS) ? m_iABTestMode : 0],
 			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BUILDER) ? eRole : 0],
 			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
@@ -13334,7 +13350,8 @@ void CvGame::LogABTestResults(bool bFinal) const
 			GetABTestCount(ePlayer, AB_COUNT_DEALS), GetABTestCount(ePlayer, AB_COUNT_WORKERS_STOLEN),
 			GetABTestCount(ePlayer, AB_COUNT_WONDER_CHOPS),
 			iAtWar, iAtWarAggressor, iPacts, iFriends, iDenouncing,
-			kPlayer.isAlive() ? kPlayer.GetCulture()->GetNumCivsInfluentialOn() : 0);
+			kPlayer.isAlive() ? kPlayer.GetCulture()->GetNumCivsInfluentialOn() : 0,
+			fTurnSecs);
 	}
 
 	fclose(pFile);
