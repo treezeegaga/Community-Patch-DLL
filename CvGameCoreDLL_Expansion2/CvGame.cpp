@@ -12848,7 +12848,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// batch2m: batch2l with settlers going without an escort after 5 turns if nothing dangerous is in sight (15 at most).
 /// batch2n: batch2m with book settlers waiting only for growth due within 3 turns.
 /// batch2o: batch2n with the opening book's later buildings giving way to a wanted wonder in the best wonder city.
-static const char* const AI_AB_TEST_BATCH = "batch2o";
+/// batch2p: batch2o plus a warrior in the opening book before the first settler, to be its escort.
+static const char* const AI_AB_TEST_BATCH = "batch2p";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

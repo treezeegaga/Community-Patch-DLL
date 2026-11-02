@@ -33367,14 +33367,19 @@ struct OpeningBookStep
 
 // A shrine early: in test games CP's AI founded 4 of 5 religions because it builds shrines early and the book didn't,
 // and each belief is 20 points of score besides the faith itself
+// A warrior before the first settler: the found-city operation recruits its escort from units on the map, the
+// starting warrior is out exploring, and with nothing to recruit settlers waited in the capital 10-15 turns (CP's
+// settlers, escorted by the warriors CP builds early, left within 3-4). Two warrior steps, because the explorer
+// counts as the first.
 static const OpeningBookStep kOpeningTallCapital[] = {
-	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_SETTLER"},
-	{true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"},
-	{false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
+	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WARRIOR"},
+	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
 static const OpeningBookStep kOpeningTallCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCapital[] = {
-	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {false, "BUILDINGCLASS_SHRINE"},
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"},
+	{false, "BUILDINGCLASS_SHRINE"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCity[] = {
