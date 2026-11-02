@@ -142,6 +142,37 @@ void CvCityAI::AI_chooseProduction(bool bInterruptWonders, bool bInterruptBuildi
 		}
 	}
 
+	// AI_AB_TEST: the new AI follows its opening book early in the game (see CvPlayer::GetOpeningBookProduction)
+	if (!bBuildWonder)
+	{
+		OrderTypes eBookOrder = ORDER_TRAIN;
+		int iBookData = -1;
+		if (kOwner.GetOpeningBookProduction(this, eBookOrder, iBookData))
+		{
+			int iUnitAI = -1;
+			bool bSettler = false;
+			if (eBookOrder == ORDER_TRAIN)
+			{
+				CvUnitEntry* pkUnitInfo = GC.getUnitInfo((UnitTypes)iBookData);
+				iUnitAI = pkUnitInfo ? (int)pkUnitInfo->GetDefaultUnitAIType() : -1;
+				bSettler = pkUnitInfo && pkUnitInfo->IsFound();
+			}
+			pushOrder(eBookOrder, iBookData, iUnitAI, false, true, false, false);
+			if (bSettler)
+				kOwner.GetMilitaryAI()->ResetNumberOfTimesSettlerBuildSkippedOver();
+			AI_setChooseProductionDirty(false);
+
+			if (GC.getLogging() && GC.getAILogging())
+			{
+				CvString strOutBuf;
+				strOutBuf.Format("%s, OPENING BOOK - Started %s", getName().GetCString(),
+					eBookOrder == ORDER_TRAIN ? GC.getUnitInfo((UnitTypes)iBookData)->GetDescription() : GC.getBuildingInfo((BuildingTypes)iBookData)->GetDescription());
+				kOwner.GetCitySpecializationAI()->LogMsg(strOutBuf);
+			}
+			return;
+		}
+	}
+
 	if(bBuildWonder)
 	{
 		CvCityBuildable buildable;

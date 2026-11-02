@@ -126,6 +126,15 @@ struct SPlayerActiveEspionageEvent
 	int iAmount;
 };
 
+// AI_AB_TEST opening book: a scripted start for the new AI (see CvPlayer::GetOpeningBook)
+enum OpeningBookType
+{
+	OPENING_BOOK_NONE,
+	OPENING_BOOK_TALL,		// Tradition, 4 cities, Writing -> Philosophy, libraries and the National College
+	OPENING_BOOK_WIDE,		// Liberty, settler after settler up to 6 cities
+	OPENING_BOOK_CONQUEST,	// Honor, 3 cities, archers, Bronze Working -> Construction
+};
+
 class CvPlayer
 {
 	friend class CvPlayerPolicies;
@@ -1640,6 +1649,13 @@ public:
 	bool isMinorCiv() const;
 	bool isMajorCiv() const;
 	bool UsesNewAI() const;
+
+	// AI_AB_TEST opening book (new AI only; all state is derived from the game, nothing is saved)
+	OpeningBookType GetOpeningBook() const;
+	bool IsOpeningBookActive() const;
+	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
+	TechTypes GetOpeningBookTech() const;
+	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
 	bool IsVassalOfSomeone() const;
 	int GetNumVassals() const;

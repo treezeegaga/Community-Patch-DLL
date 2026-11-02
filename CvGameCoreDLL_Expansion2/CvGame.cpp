@@ -12799,7 +12799,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// builds never mix. Called every 10 turns and once more when the game is won. Writing a local file
 /// doesn't touch synced game state.
 /// Bump this when the set of changes gated on UsesNewAI() changes.
-static const char* const AI_AB_TEST_BATCH = "batch1";
+/// batch1: 11 bug fixes. batch2a: batch1 plus the opening book, and early-game milestone columns.
+static const char* const AI_AB_TEST_BATCH = "batch2a";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {
@@ -12814,7 +12815,10 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book\r\n", pFile);
+
+	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
+	const BuildingClassTypes eNationalCollege = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_NATIONAL_COLLEGE", true);
 
 	const char* szVictory = "";
 	if (bFinal && getVictory() != NO_VICTORY)
@@ -12830,7 +12834,25 @@ void CvGame::LogABTestResults(bool bFinal) const
 		if (!kPlayer.isEverAlive() || kPlayer.isObserver() || !kPlayer.isMajorCiv())
 			continue;
 
-		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
+		// Early-game milestones: when this player founded its 2nd-4th cities (-1 if not yet, or lost),
+		// and whether it has the National College
+		std::vector<int> vFoundedTurns;
+		bool bNationalCollege = false;
+		int iCityLoop = 0;
+		for (const CvCity* pLoopCity = kPlayer.firstCity(&iCityLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iCityLoop))
+		{
+			if (pLoopCity->getOriginalOwner() == (PlayerTypes)iI)
+				vFoundedTurns.push_back(pLoopCity->getGameTurnFounded() - getStartTurn());
+			if (eNationalCollege != NO_BUILDINGCLASS && pLoopCity->GetCityBuildings()->HasBuildingClass(eNationalCollege))
+				bNationalCollege = true;
+		}
+		std::sort(vFoundedTurns.begin(), vFoundedTurns.end());
+		int iCity2Turn = vFoundedTurns.size() > 1 ? vFoundedTurns[1] : -1;
+		int iCity3Turn = vFoundedTurns.size() > 2 ? vFoundedTurns[2] : -1;
+		int iCity4Turn = vFoundedTurns.size() > 3 ? vFoundedTurns[3] : -1;
+		OpeningBookType eBook = kPlayer.GetOpeningBook();
+
+		fprintf(pFile, "%08X%08X,%d,%d,%d,%s,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s\r\n",
 			CvPreGame::mapRandomSeed(), CvPreGame::syncRandomSeed(),
 			getElapsedGameTurns(),
 			bFinal ? 1 : 0,
@@ -12849,7 +12871,10 @@ void CvGame::LogABTestResults(bool bFinal) const
 			kPlayer.GetTreasury()->GetGold(),
 			kPlayer.getTotalLand(),
 			kPlayer.GetNumWonders(),
-			kPlayer.IsHasLostCapital() ? 1 : 0);
+			kPlayer.IsHasLostCapital() ? 1 : 0,
+			iCity2Turn, iCity3Turn, iCity4Turn,
+			bNationalCollege ? 1 : 0,
+			kBookNames[(eBook >= OPENING_BOOK_NONE && eBook <= OPENING_BOOK_CONQUEST) ? eBook : 0]);
 	}
 
 	fclose(pFile);

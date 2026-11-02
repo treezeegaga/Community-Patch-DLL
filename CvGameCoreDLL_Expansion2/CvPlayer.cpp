@@ -33306,6 +33306,246 @@ bool CvPlayer::UsesNewAI() const
 	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(GetID())) & 1) != 0;
 }
 
+//	--------------------------------------------------------------------------------
+// AI_AB_TEST opening book: a short scripted start for the new AI. The leader's personality picks one of
+// three plans, and the plan gives the capital and new cities a build order, a few target techs and the
+// first policy branch. Any step that can't be done right now (no settle site, city too small, not
+// unlocked yet) is skipped, so the start adapts to the map. The book ends at a turn limit or as soon as
+// the player is at war with a major civ, and the normal AI takes over. Nothing is stored: the next step
+// is worked out from the game state each time, so saves and multiplayer sync are unaffected.
+// Targets come from expert human play (CivFanatics): first settler around size 3-5, 4 cities by about
+// turn 50-60 for tall play, 6 or more by turn 100 for wide play, Writing -> Philosophy -> National
+// College, composite bowmen around turn 60 for an early war.
+
+static int GetOpeningBookFlavor(const CvPlayer& kPlayer, const char* szFlavor)
+{
+	FlavorTypes eFlavor = (FlavorTypes)GC.getInfoTypeForString(szFlavor, true);
+	if (eFlavor == NO_FLAVOR)
+		return 0;
+	return kPlayer.GetFlavorManager()->GetPersonalityIndividualFlavor(eFlavor);
+}
+
+OpeningBookType CvPlayer::GetOpeningBook() const
+{
+	if (!UsesNewAI() || !isMajorCiv() || isHuman() || isBarbarian())
+		return OPENING_BOOK_NONE;
+
+	const CvPlayerTraits* pTraits = GetPlayerTraits();
+	if (pTraits->IsWarmonger())
+		return OPENING_BOOK_CONQUEST;
+	if (pTraits->IsExpansionist())
+		return OPENING_BOOK_WIDE;
+	if (pTraits->IsNerd() || pTraits->IsTourism() || pTraits->IsSmaller())
+		return OPENING_BOOK_TALL;
+
+	int iOffense = GetOpeningBookFlavor(*this, "FLAVOR_OFFENSE");
+	int iExpansion = GetOpeningBookFlavor(*this, "FLAVOR_EXPANSION");
+	int iScience = GetOpeningBookFlavor(*this, "FLAVOR_SCIENCE");
+	int iCulture = GetOpeningBookFlavor(*this, "FLAVOR_CULTURE");
+	if (iOffense >= 8 && iOffense >= iExpansion)
+		return OPENING_BOOK_CONQUEST;
+	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
+		return OPENING_BOOK_WIDE;
+	return OPENING_BOOK_TALL;
+}
+
+bool CvPlayer::IsOpeningBookActive() const
+{
+	OpeningBookType eBook = GetOpeningBook();
+	if (eBook == OPENING_BOOK_NONE || getNumCities() == 0 || IsAtWarAnyMajor())
+		return false;
+
+	// Turn limits are for Standard speed
+	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? 100 : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
+	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
+}
+
+struct OpeningBookStep
+{
+	bool bUnit;
+	const char* szClass;
+};
+
+static const OpeningBookStep kOpeningTallCapital[] = {
+	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"},
+	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
+static const OpeningBookStep kOpeningTallCity[] = {
+	{false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_LIBRARY"} };
+static const OpeningBookStep kOpeningWideCapital[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_LIBRARY"} };
+static const OpeningBookStep kOpeningWideCity[] = {
+	{false, "BUILDINGCLASS_MONUMENT"} };
+static const OpeningBookStep kOpeningConquestCapital[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_ARCHER"},
+	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_ARCHER"}, {false, "BUILDINGCLASS_MONUMENT"} };
+static const OpeningBookStep kOpeningConquestCity[] = {
+	{false, "BUILDINGCLASS_MONUMENT"} };
+
+/// The next build the opening book wants in this city, if any
+bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData)
+{
+	if (!pCity || pCity->IsPuppet() || pCity->isUnderSiege() || !IsOpeningBookActive())
+		return false;
+
+	OpeningBookType eBook = GetOpeningBook();
+	const OpeningBookStep* pSteps = NULL;
+	int iNumSteps = 0;
+	bool bCapital = pCity->isCapital();
+	switch (eBook)
+	{
+	case OPENING_BOOK_TALL:
+		pSteps = bCapital ? kOpeningTallCapital : kOpeningTallCity;
+		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
+		break;
+	case OPENING_BOOK_WIDE:
+		pSteps = bCapital ? kOpeningWideCapital : kOpeningWideCity;
+		iNumSteps = bCapital ? (int)(sizeof(kOpeningWideCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningWideCity) / sizeof(OpeningBookStep));
+		break;
+	case OPENING_BOOK_CONQUEST:
+		pSteps = bCapital ? kOpeningConquestCapital : kOpeningConquestCity;
+		iNumSteps = bCapital ? (int)(sizeof(kOpeningConquestCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningConquestCity) / sizeof(OpeningBookStep));
+		break;
+	default:
+		return false;
+	}
+
+	// Tall play grows the capital a bit before each settler
+	const int iMinSettlerPop = (eBook == OPENING_BOOK_TALL) ? 3 : 2;
+	const int iScoutTurnLimit = 20 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+
+	// How many of each unit class the steps so far ask for (a step for the 3rd settler means 3 settlers)
+	std::map<int, int> unitsWanted;
+	for (int i = 0; i < iNumSteps; i++)
+	{
+		const OpeningBookStep& kStep = pSteps[i];
+		if (kStep.bUnit)
+		{
+			UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(kStep.szClass, true);
+			if (eClass == NO_UNITCLASS)
+				continue;
+			int iWanted = ++unitsWanted[eClass];
+
+			UnitTypes eUnit = GetSpecificUnitType(eClass);
+			CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+			if (!pkUnitInfo)
+				continue;
+
+			int iHave = getUnitClassCountPlusMaking(eClass);
+			bool bSettler = pkUnitInfo->IsFound();
+			if (bSettler)
+				iHave += getNumCities() - 1; // settlers that already became cities
+			if (iHave >= iWanted)
+				continue;
+
+			if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE && GC.getGame().getElapsedGameTurns() > iScoutTurnLimit)
+				continue;
+			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || GetBestSettlePlot(NULL) == NULL))
+				continue;
+			if (!pCity->canTrain(eUnit))
+				continue;
+
+			eOrder = ORDER_TRAIN;
+			iData = eUnit;
+			return true;
+		}
+		else
+		{
+			BuildingClassTypes eClass = (BuildingClassTypes)GC.getInfoTypeForString(kStep.szClass, true);
+			if (eClass == NO_BUILDINGCLASS || pCity->GetCityBuildings()->HasBuildingClass(eClass))
+				continue;
+
+			BuildingTypes eBuilding = GetSpecificBuildingType(kStep.szClass, true);
+			if (eBuilding == NO_BUILDING || !pCity->canConstruct(eBuilding))
+				continue;
+
+			eOrder = ORDER_CONSTRUCT;
+			iData = eBuilding;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/// A researchable tech on the way to eTech (eTech itself if it's researchable now)
+static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech, int iDepth)
+{
+	if (eTech == NO_TECH || kPlayer.HasTech(eTech) || iDepth > 10)
+		return NO_TECH;
+	if (kPlayer.GetPlayerTechs()->CanResearch(eTech))
+		return eTech;
+
+	CvTechEntry* pkTechInfo = GC.getTechInfo(eTech);
+	if (!pkTechInfo)
+		return NO_TECH;
+
+	for (int i = 0; i < /*6*/ GD_INT_GET(NUM_AND_TECH_PREREQS); i++)
+	{
+		TechTypes ePrereq = (TechTypes)pkTechInfo->GetPrereqAndTechs(i);
+		if (ePrereq == NO_TECH)
+			break;
+		TechTypes eStep = GetOpeningBookTechStep(kPlayer, ePrereq, iDepth + 1);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	return NO_TECH;
+}
+
+/// The next tech the opening book wants researched, if any
+TechTypes CvPlayer::GetOpeningBookTech() const
+{
+	if (!IsOpeningBookActive())
+		return NO_TECH;
+
+	static const char* const kTall[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY" };
+	static const char* const kWide[] = { "TECH_POTTERY", "TECH_MINING", "TECH_WRITING", "TECH_CURRENCY" };
+	static const char* const kConquest[] = { "TECH_ARCHERY", "TECH_BRONZE_WORKING", "TECH_WRITING", "TECH_CONSTRUCTION" };
+
+	const char* const* pTechs = kTall;
+	int iNumTechs = (int)(sizeof(kTall) / sizeof(kTall[0]));
+	OpeningBookType eBook = GetOpeningBook();
+	if (eBook == OPENING_BOOK_WIDE)
+	{
+		pTechs = kWide;
+		iNumTechs = (int)(sizeof(kWide) / sizeof(kWide[0]));
+	}
+	else if (eBook == OPENING_BOOK_CONQUEST)
+	{
+		pTechs = kConquest;
+		iNumTechs = (int)(sizeof(kConquest) / sizeof(kConquest[0]));
+	}
+
+	for (int i = 0; i < iNumTechs; i++)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString(pTechs[i], true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	return NO_TECH;
+}
+
+/// The first policy branch the opening book wants opened
+PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
+{
+	if (!IsOpeningBookActive())
+		return NO_POLICY_BRANCH_TYPE;
+
+	switch (GetOpeningBook())
+	{
+	case OPENING_BOOK_TALL:
+		return (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_TRADITION", true);
+	case OPENING_BOOK_WIDE:
+		return (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_LIBERTY", true);
+	case OPENING_BOOK_CONQUEST:
+		return (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_HONOR", true);
+	default:
+		return NO_POLICY_BRANCH_TYPE;
+	}
+}
+
 bool CvPlayer::IsVassalOfSomeone() const
 {
 	return GET_TEAM(getTeam()).IsVassalOfSomeone();

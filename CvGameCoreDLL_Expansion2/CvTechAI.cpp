@@ -131,6 +131,17 @@ TechTypes CvTechAI::ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech)
 	if (!pPlayer->isMajorCiv())
 		return NO_TECH;
 
+	// AI_AB_TEST: the new AI follows its opening book's tech path early in the game
+	if (!bFreeTech)
+	{
+		TechTypes eBookTech = pPlayer->GetOpeningBookTech();
+		if (eBookTech != NO_TECH)
+		{
+			LogResearchChoice(eBookTech);
+			return eBookTech;
+		}
+	}
+
 	TechTypes rtnValue = NO_TECH;
 
 	// Create a new vector holding only techs we can currently research

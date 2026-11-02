@@ -186,6 +186,17 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 		}
 	}
 
+	// AI_AB_TEST: the new AI opens the branch its opening book wants as its first branch
+	if (!bMustChooseTenet && !bNeedToFinish && m_pCurrentPolicies->GetNumPolicyBranchesUnlocked() == 0)
+	{
+		PolicyBranchTypes eBookBranch = pPlayer->GetOpeningBookPolicyBranch();
+		if (eBookBranch != NO_POLICY_BRANCH_TYPE && m_pCurrentPolicies->CanUnlockPolicyBranch(eBookBranch))
+		{
+			LogBranchChoice(eBookBranch);
+			return (int)eBookBranch;
+		}
+	}
+
 	// Loop though the branches adding each as another possibility
 	if (!bMustChooseTenet && !bNeedToFinish)
 	{
