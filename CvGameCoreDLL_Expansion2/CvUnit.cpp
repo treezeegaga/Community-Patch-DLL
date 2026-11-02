@@ -10817,6 +10817,13 @@ bool CvUnit::foundCity()
 	ReligionTypes eReligion = (MOD_GLOBAL_RELIGIOUS_SETTLERS && GetReligionData()->GetReligion() > RELIGION_PANTHEON) ? GetReligionData()->GetReligion() : NO_RELIGION;
 	kPlayer.foundCity(getX(), getY(), eReligion, false, this);
 
+	// AI_AB_TEST: settler statistics for the results file (not for the first city)
+	if (MOD_AI_AB_TEST && pPlot->getPlotCity() != NULL && pPlot->getPlotCity()->getOwner() == getOwner() && kPlayer.GetNumCitiesFounded() > 1)
+	{
+		kPlayer.ChangeABTestStat(AB_STAT_SETTLERS_FOUNDED, 1);
+		kPlayer.ChangeABTestStat(AB_STAT_SETTLER_TURNS, GC.getGame().getGameTurn() - getGameTurnCreated());
+	}
+
 	if (IsCanAttack() && plot()->getPlotCity() != NULL) 
 	{
 		CUSTOMLOG("  ... success!  They founded %s", plot()->getPlotCity()->getName().c_str());

@@ -102,7 +102,7 @@ void CvTechAI::AddFlavorWeights(FlavorTypes eFlavor, int iWeight, int iPropagati
 
 			// AI_AB_TEST: CP adds the three priorities below once per flavor (30-45 times per tech), which swamps
 			// the personality signal. The new AI adds them once per tech in AddPriorityWeights instead.
-			if (!m_pCurrentTechs->GetPlayer()->UsesNewAI())
+			if (!m_pCurrentTechs->GetPlayer()->UsesNewAI(AI_CHANGE_TECH_PRIORITIES))
 			{
 			// Multiply the weight by any special player-specific weighting (i.e. to prioritize civ unique bonuses)
 			iTechWeight += m_pCurrentTechs->GetPlayer()->GetPlayerTechs()->GetCivTechPriority(eTech);
@@ -357,7 +357,7 @@ void CvTechAI::PropagateWeights(int iTech, int iWeight, int iPropagationPercent,
 	//next level of recursion
 	//AI_AB_TEST: CP passes iPropagationLevel++, so the first prerequisite recurses at the same level (its chain
 	//is never cut off) and later ones start too deep. The new AI passes the next level to every prerequisite.
-	const bool bNewAI = m_pCurrentTechs->GetPlayer()->UsesNewAI();
+	const bool bNewAI = m_pCurrentTechs->GetPlayer()->UsesNewAI(AI_CHANGE_TECH_PROPAGATION);
 	for (int iI = 0; iI < /*6*/ GD_INT_GET(NUM_AND_TECH_PREREQS); iI++)
 	{
 		// Did we find a prereq?
@@ -440,7 +440,7 @@ void CvTechAI::ReweightByCost(CvPlayer *pPlayer, bool bWantsExpensive)
 			//reweight by turns left
 			//AI_AB_TEST: CP's 0.035 per turn left divides a 40-turn tech's weight by ~366, so the cheapest tech nearly
 			//always wins and research goes broad. The new AI uses 0.02 (divisor ~30 at 40 turns).
-			double fPerTurnLeft = pPlayer->UsesNewAI() ? 0.02 : /*0.035f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT);
+			double fPerTurnLeft = pPlayer->UsesNewAI(AI_CHANGE_TECH_COST) ? 0.02 : /*0.035f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT);
 			double fTotalCostFactor = /*0.2f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_BASE_MOD) + (iTurnsLeft * fPerTurnLeft);
 			double fWeightDivisor = pow((double)iTurnsLeft, fTotalCostFactor);
 			iNewWeight = int(double(m_ResearchableTechs.GetWeight(iI)) / fWeightDivisor);

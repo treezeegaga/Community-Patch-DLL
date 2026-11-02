@@ -872,7 +872,7 @@ void CvAIOperation::UnitWasRemoved(int iArmyID, int iSlotID)
 				// AI_AB_TEST: with integer division CP lets a 4-5 unit army march on with 2 units and arrive too weak to
 				// do anything. The new AI gives up below two thirds while still gathering or moving; once at the
 				// target it keeps CP's rule so it doesn't abandon a fight it's already in.
-				else if (GET_PLAYER(m_eOwner).UsesNewAI() && m_eCurrentState != AI_OPERATION_STATE_AT_TARGET &&
+				else if (GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_ARMY_ABORT) && m_eCurrentState != AI_OPERATION_STATE_AT_TARGET &&
 					pThisArmy->GetNumSlotsFilled() * 3 < iNumRequiredSlots * 2)
 				{
 					SetToAbort(AI_ABORT_HALF_STRENGTH);
@@ -1805,7 +1805,7 @@ bool CvAIOperationCivilian::SettlerTripLooksSafe(CvUnit* pSettler, CvPlot* pTarg
 /// the precondition is a free civilian; Init then decides about the escort (SettlerTripLooksSafe).
 bool CvAIOperationCivilian::PreconditionsAreMet(CvPlot* pMusterPlot, CvPlot* pTargetPlot, int iMaxMissingUnits)
 {
-	if (GET_PLAYER(m_eOwner).UsesNewAI())
+	if (GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_FOUND_CITY_START))
 		return FindBestCivilian() != NULL;
 
 	return CvAIOperation::PreconditionsAreMet(pMusterPlot, pTargetPlot, iMaxMissingUnits);
@@ -1830,7 +1830,7 @@ void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 
 	// AI_AB_TEST: CP always asks for an escort unless the site is reachable this turn, and a settler can wait up to
 	// 42 turns for one while the city builds it. The new AI sends the settler alone when the trip looks safe.
-	bool bSkipEscort = (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && SettlerTripLooksSafe(pOurCivilian, pTargetSite));
+	bool bSkipEscort = (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_SETTLER_ESCORT) && SettlerTripLooksSafe(pOurCivilian, pTargetSite));
 
 	//don't wait for the escort in the wild
 	CvPlot* pMusterPlot = pOurCivilian->plot();
@@ -1885,7 +1885,7 @@ bool CvAIOperationCivilian::CheckTransitionToNextStage()
 				((iTurnsWaited >= 3 && SettlerTripLooksSafe(pCivilian, GetTargetPlot())) ||
 				 (iTurnsWaited >= 5 && pCivilian->GetDanger() == 0 && pCivilian->GetDanger(GetTargetPlot()) == 0) ||
 				 iTurnsWaited >= 15);
-			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && bGoAlone &&
+			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI(AI_CHANGE_SETTLER_ESCORT) && bGoAlone &&
 				pThisArmy->GetNumFormationEntries() > 1 && pThisArmy->GetSlotStatus(1)->IsFree())
 			{
 				pThisArmy->GetSlotStatus(1)->Clear();

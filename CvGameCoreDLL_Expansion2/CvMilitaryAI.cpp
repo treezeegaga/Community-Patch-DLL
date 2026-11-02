@@ -847,7 +847,7 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 			//use a more liberal check here, never know what the enemy might do ... better safe than sorry!
 			//AI_AB_TEST: CP checks our approach to their city (target) instead of their approach to ours
 			//(reverseTarget), so a city is only counted as exposed when we can easily attack them.
-			if ((m_pPlayer->UsesNewAI() ? reverseTarget.m_iApproachScore : target.m_iApproachScore) > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
+			if ((m_pPlayer->UsesNewAI(AI_CHANGE_EXPOSED_CITY) ? reverseTarget.m_iApproachScore : target.m_iApproachScore) > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
 			{
 				//do not try any advanced scoring, just use a basic approach/distance score
 				int iScore = (reverseTarget.m_iApproachScore * 10) / sqrti(it->second.length());
@@ -880,7 +880,7 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 			//use a more liberal check here, never know what the enemy might do ... better safe than sorry!
 			//AI_AB_TEST: CP checks our approach to their city (target) instead of their approach to ours
 			//(reverseTarget), so a city is only counted as exposed when we can easily attack them.
-			if ((m_pPlayer->UsesNewAI() ? reverseTarget.m_iApproachScore : target.m_iApproachScore) > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
+			if ((m_pPlayer->UsesNewAI(AI_CHANGE_EXPOSED_CITY) ? reverseTarget.m_iApproachScore : target.m_iApproachScore) > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
 			{
 				//do not try any advanced scoring, just use a basic approach/distance score
 				int iScore = (reverseTarget.m_iApproachScore * 10) / sqrti(it->second.length());
@@ -899,7 +899,7 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 		//AI_AB_TEST: CP measures "preferred" against the best target among all players' cities, including civs we're at
 		//peace with, so a well-defended enemy may never count as preferred (and careful attacks skip it). The new AI
 		//compares each target against the best city of the same owner.
-		const bool bPerOwnerPreferred = m_pPlayer->UsesNewAI();
+		const bool bPerOwnerPreferred = m_pPlayer->UsesNewAI(AI_CHANGE_PREFERRED_TARGET);
 		std::map<int, int> bestScoreByOwner;
 		if (bPerOwnerPreferred)
 		{
@@ -1865,11 +1865,11 @@ void CvMilitaryAI::UpdateDefenseState()
 	// AI_AB_TEST: CP tests "below 100%" before "below 3/4", so NEEDED can never happen and a single missing
 	// unit means CRITICAL (emergency production). The new AI checks the lower threshold first, like the
 	// naval ladder below.
-	if (m_pPlayer->UsesNewAI() && m_iNumLandUnits < m_iRecLandUnits * 3 / 4)
+	if (m_pPlayer->UsesNewAI(AI_CHANGE_DEFENSE_LEVELS) && m_iNumLandUnits < m_iRecLandUnits * 3 / 4)
 	{
 		m_eLandDefenseState = DEFENSE_STATE_CRITICAL;
 	}
-	else if (m_pPlayer->UsesNewAI() && m_iNumLandUnits < m_iRecLandUnits)
+	else if (m_pPlayer->UsesNewAI(AI_CHANGE_DEFENSE_LEVELS) && m_iNumLandUnits < m_iRecLandUnits)
 	{
 		m_eLandDefenseState = DEFENSE_STATE_NEEDED;
 	}
@@ -2367,7 +2367,7 @@ void CvMilitaryAI::CheckLandDefenses(PlayerTypes eEnemy, CvCity* pThreatenedCity
 	{
 		// If we're winning, nothing to do
 		// AI_AB_TEST: the new AI still defends a threatened city when the war as a whole looks fine
-		if (!m_pPlayer->UsesNewAI())
+		if (!m_pPlayer->UsesNewAI(AI_CHANGE_DEFEND_CITY))
 			return;
 	}
 	else if (eWarState == WAR_STATE_DEFENSIVE)
@@ -2425,7 +2425,7 @@ void CvMilitaryAI::DoCityAttacks(PlayerTypes ePlayer)
 	//AI_AB_TEST: m_iRecLandUnits is never below our land unit count, so CP's first condition almost never holds and
 	//only one attack runs at a time across all enemies. The new AI may run a second one when its spare land units
 	//cover a garrison per city plus a small army.
-	if (!bCanStartAttack && m_pPlayer->UsesNewAI())
+	if (!bCanStartAttack && m_pPlayer->UsesNewAI(AI_CHANGE_SECOND_ATTACK))
 	{
 		int iLandReserves = m_iNumLandUnits - m_iNumLandUnitsInArmies;
 		bCanStartAttack = iNumOffensiveOps < 2 && iLandReserves >= m_pPlayer->getNumCities() + 4;
@@ -2864,7 +2864,7 @@ UnitTypes CvMilitaryAI::GetUnitTypeForArmy(CvCity* pCity) const
 {
 	UnitTypes eBestUnit = NO_UNIT;
 	size_t leastOpenSlots = INT_MAX;
-	bool bNewAI = m_pPlayer->UsesNewAI();
+	bool bNewAI = m_pPlayer->UsesNewAI(AI_CHANGE_ARMY_HELPERS);
 
 	int iLoop = 0;
 	for (CvArmyAI* pLoopArmyAI = m_pPlayer->firstArmyAI(&iLoop); pLoopArmyAI != NULL; pLoopArmyAI = m_pPlayer->nextArmyAI(&iLoop))

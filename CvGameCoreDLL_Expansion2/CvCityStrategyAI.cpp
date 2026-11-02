@@ -913,7 +913,7 @@ void CvCityStrategyAI::ChooseProduction(BuildingTypes eIgnoreBldg, UnitTypes eIg
 				// AI_AB_TEST: CP drops army units in every city but the muster city of the first operation needing
 				// units. The new AI also lets nearby cities build for recruiting armies while those are short.
 				bool bHelpingCity = !bMusterCity && selection.m_eBuildableType == CITY_BUILDABLE_UNIT_FOR_ARMY &&
-					kPlayer.UsesNewAI() && kPlayer.GetMilitaryAI()->ShouldCityHelpFillArmies(m_pCity);
+					kPlayer.UsesNewAI(AI_CHANGE_ARMY_HELPERS) && kPlayer.GetMilitaryAI()->ShouldCityHelpFillArmies(m_pCity);
 				if (bMusterCity || bHelpingCity)
 				{
 					int iNewWeight = GetUnitProductionAI()->CheckUnitBuildSanity(eUnitType, true, m_BuildablesPrecheck.GetWeight(iI), false, false);
@@ -1379,7 +1379,7 @@ CvCityBuildable CvCityStrategyAI::ChooseHurry(bool bUnitOnly, bool bFaithPurchas
 						//AI_AB_TEST: CP divides by the percent complete, so a building at 1% gets x101 and wins the gold
 						//purchase over everything else. The new AI gives partly built items a modest boost (up to x1.5).
 						iNewWeight *= (100 + AmountComplete);
-						iNewWeight /= GET_PLAYER(m_pCity->getOwner()).UsesNewAI() ? 100 : max(1, AmountComplete);
+						iNewWeight /= GET_PLAYER(m_pCity->getOwner()).UsesNewAI(AI_CHANGE_PURCHASE_WEIGHT) ? 100 : max(1, AmountComplete);
 					}
 				}
 				if(iNewWeight > 0)
@@ -4262,7 +4262,7 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 		//AI_AB_TEST: flat yields above are scored as a percent increase, but CP scores modifiers as the absolute gain,
 		//so a +50% University in a 15-science city scores ~8 against ~53 for a flat +8. The new AI scores modifiers
 		//as their percent increase too, in the same units as flat yields.
-		if (kPlayer.UsesNewAI())
+		if (kPlayer.UsesNewAI(AI_CHANGE_MODIFIER_SCORING))
 			iActualIncrease = iModifier;
 
 		iYieldValue += iActualIncrease;
@@ -4294,7 +4294,7 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 			{
 			//AI_AB_TEST: CP multiplies once per rival, so four rivals with rising influence give x16 (x81 near a culture
 			//win). The new AI applies the largest rival's multiplier once.
-			const bool bNewAI = kPlayer.UsesNewAI();
+			const bool bNewAI = kPlayer.UsesNewAI(AI_CHANGE_CULTURE_RIVALS);
 			int iMaxRivalMultiplier = 1;
 			for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 			{

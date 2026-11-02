@@ -135,6 +135,76 @@ enum OpeningBookType
 	OPENING_BOOK_CONQUEST,	// Honor, 3 cities, archers, Bronze Working -> Construction
 };
 
+// AI_AB_TEST: each change the new AI makes, so a test game can run any subset of them (see
+// CvPlayer::UsesNewAI(AIChangeTypes)). The numbers in the comments are AUDIT.md's item numbers. The names in
+// CvPlayer.cpp are what AIABSwitches.txt and the results file use. Append new changes at the end.
+enum AIChangeTypes
+{
+	// batch 1
+	AI_CHANGE_SETTLERS_FIRST,		// 1: settlers and workers exempt from the 2-building rule
+	AI_CHANGE_KILL_BONUS,			// 2: finish-off bonus uses city HP only for cities
+	AI_CHANGE_SKIP_FAILED_KILL,		// 3: skip a planned kill the re-check says will fail
+	AI_CHANGE_HP_FLOOR,				// 4: HP-floor table with its first entry
+	AI_CHANGE_GOLD_RESERVE,			// 5: gold reserve grows when income is negative
+	AI_CHANGE_TILE_SAVINGS,			// 6: tile savings request cancelled each turn
+	AI_CHANGE_SETTLE_AVOID_ENEMY,	// 7: settle search skips plots next to enemy cities
+	AI_CHANGE_TECH_PROPAGATION,		// 8: tech weights propagate at the right depth
+	AI_CHANGE_ARMY_SLOTS,			// 9: emptied army slots stay required
+	AI_CHANGE_DEFENSE_LEVELS,		// 10: defense level thresholds in the right order
+	AI_CHANGE_EXPOSED_CITY,			// 11: exposed-city check uses the enemy's route
+	// batch 2a: opening book
+	AI_CHANGE_BOOK_BUILDS,			// opening book build orders
+	AI_CHANGE_BOOK_TECHS,			// opening book techs
+	AI_CHANGE_BOOK_POLICY,			// opening book first policy branch
+	// batch 2b
+	AI_CHANGE_MODIFIER_SCORING,		// 12: % building modifiers scored as percent
+	AI_CHANGE_TINY_ARMY,			// 13: tiny-army building penalty 1 unit per city at peace
+	AI_CHANGE_EARLY_EXPANSION,		// 14: 4 cities guaranteed, stronger neighbour stops expansion only at war
+	AI_CHANGE_SECOND_ATTACK,		// 15: a second attack with enough spare units
+	AI_CHANGE_TECH_PRIORITIES,		// 16: civ/locale/grand strategy tech priorities once per tech
+	AI_CHANGE_TECH_COST,			// 16: tech cost weight 0.02 per turn left
+	AI_CHANGE_CITY_FOOD,			// 21: specialised cities aim for more food
+	AI_CHANGE_CULTURE_RIVALS,		// 22: culture building rival multiplier once
+	AI_CHANGE_PURCHASE_WEIGHT,		// 23: gold purchase boost for started items up to x1.5
+	AI_CHANGE_PREFERRED_TARGET,		// 24: preferred attack target judged per owner
+	AI_CHANGE_ARMY_ABORT,			// 26: armies abort below 2/3 strength while gathering or moving
+	AI_CHANGE_DEFEND_CITY,			// 27: defend a threatened city even when the war looks fine
+	AI_CHANGE_FOG_TACTICAL,			// fog cheat: tactical map counts only visible units
+	AI_CHANGE_FOG_DANGER,			// fog cheat: danger counts only visible units
+	// batch 2c
+	AI_CHANGE_SETTLER_ESCORT,		// 28: settlers skip escorts on safe trips
+	AI_CHANGE_SETTLE_TRAVEL,		// 28: settle sites discounted by travel time
+	// batch 2d
+	AI_CHANGE_ARMY_HELPERS,			// 25: nearby cities build units for gathering armies
+	// batch 2e
+	AI_CHANGE_TURN_END_SURVIVAL,	// 18: stricter hit points needed to end a turn in danger
+	AI_CHANGE_DANGER_WEIGHT,		// 18: danger penalty doubled
+	AI_CHANGE_ESCAPE_SCORE,			// 19: finite danger penalty so escape moves don't tie
+	AI_CHANGE_WIDER_SEARCH,			// 20: one more breadth-first search level in small battles
+	// batches 2g-2r (the opening book changes in them are under the book switches, the escort rework under
+	// SettlerEscort, the travel-time fix under SettleTravel)
+	AI_CHANGE_FOUND_CITY_START,		// 2i: found-city operations start without a spare military unit
+	AI_CHANGE_BUY_SETTLERS,			// 2g/2j/2k: save gold for the next settler and buy it
+	AI_CHANGE_NO_SCOUT_PURCHASE,	// 2g: no gold spent on scouts
+	NUM_AI_CHANGES
+};
+
+// AI_AB_TEST: running totals per player for the results file (saved with the game in test games only)
+enum ABTestStatTypes
+{
+	AB_STAT_SETTLERS_TRAINED,		// trained or bought
+	AB_STAT_SETTLERS_FOUNDED,		// founded a city (the first city doesn't count)
+	AB_STAT_SETTLER_TURNS,			// turns from training to founding, summed over the settlers that founded
+	AB_STAT_MILITARY_TRAINED,		// combat units trained or bought
+	AB_STAT_PRODUCTION_UNITS,		// production put into units, x100
+	AB_STAT_PRODUCTION_BUILDINGS,	// production put into buildings (national wonders too), x100
+	AB_STAT_PRODUCTION_WONDERS,		// production put into world wonders, x100
+	AB_STAT_GOLD_PURCHASES,			// gold spent buying units, buildings and projects
+	AB_STAT_GOLD_TILES,				// gold spent buying tiles
+	NUM_AB_TEST_STATS
+};
+
+
 class CvPlayer
 {
 	friend class CvPlayerPolicies;
@@ -1649,8 +1719,14 @@ public:
 	bool isMinorCiv() const;
 	bool isMajorCiv() const;
 	bool UsesNewAI() const;
+	bool UsesNewAI(AIChangeTypes eChange) const;
+	CvString GetAIChangesDescription() const;
+	static const char* GetAIChangeName(AIChangeTypes eChange);
+	int GetABTestStat(ABTestStatTypes eStat) const;
+	void ChangeABTestStat(ABTestStatTypes eStat, int iChange);
 
 	// AI_AB_TEST opening book (new AI only; all state is derived from the game, nothing is saved)
+	OpeningBookType GetOpeningBookPlan() const;
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
@@ -3475,6 +3551,10 @@ protected:
 	int m_iCityConnectionHappiness;
 	int m_iHolyCityID;
 	int m_iTurnsSinceSettledLastCity;
+	// AI_AB_TEST: which changes this player runs (filled from AIABSwitches.txt the first time it's needed, then
+	// saved with the game), and the running totals for the results file
+	mutable std::vector<int> m_aiAIChangesOn;
+	std::vector<int> m_aiABTestStats;
 	int m_iNumNaturalWondersDiscoveredInArea;
 	int m_iStrategicResourceMod;
 	int m_iGreatPeopleSpawnCounter;

@@ -7271,10 +7271,11 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 	//braveheart allows attacks for which you need luck to survive
 	//AI_AB_TEST: the table is indexed by eAggressionLevel, which starts at AL_NONE, so CP's version gives
 	//each level the next level's limit. The new AI gets the intended values.
-	const bool bNewAI = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI();
+	const bool bNewHpFloor = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI(AI_CHANGE_HP_FLOOR);
+	const bool bNewKillBonus = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI(AI_CHANGE_KILL_BONUS);
 	int hpLimitCP[5] = {70,40,20,-5};
 	int hpLimitNew[5] = {70,70,40,20,-5};
-	const int* hpLimit = bNewAI ? hpLimitNew : hpLimitCP;
+	const int* hpLimit = bNewHpFloor ? hpLimitNew : hpLimitCP;
 
 	if (tactPlot->isEnemyCity()) //a plot can be both a city and a unit - in that case we would attack the city
 	{
@@ -7655,11 +7656,11 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 		int iHpAfterAttack = iPrevUnitHitPoints > 0 ? iPrevUnitHitPoints - actualDamageDealt.GetValue(pEnemyUnit->GetID()) : -1;
 		//AI_AB_TEST: iPrevCityHitPoints is 0 when the target isn't a city, so CP's check sets the HP left to 0 for
 		//every unit target and gives each attack the full bonus. The new AI only compares against a real city.
-		bool bUseCityHp = bNewAI ? (iPrevCityHitPoints > 0 && (iHpAfterAttack == -1 || iHpAfterAttack > iPrevCityHitPoints - iActualCityDamageDealt))
+		bool bUseCityHp = bNewKillBonus ? (iPrevCityHitPoints > 0 && (iHpAfterAttack == -1 || iHpAfterAttack > iPrevCityHitPoints - iActualCityDamageDealt))
 			: (iHpAfterAttack == -1 || iHpAfterAttack > iPrevCityHitPoints - iActualCityDamageDealt);
 		if (bUseCityHp)
 			iHpAfterAttack = iPrevCityHitPoints - iActualCityDamageDealt;
-		if (bNewAI && iHpAfterAttack < 0)
+		if (bNewKillBonus && iHpAfterAttack < 0)
 			iHpAfterAttack = 0;
 		iBonusScore += min(max(30 - iHpAfterAttack, 0), iTotalActualDamageDealt);
 	}
@@ -7955,7 +7956,7 @@ int ScoreCombatUnitTurnEnd(const CvUnit* pUnit, eUnitAssignmentType eLastAssignm
 			//AI_AB_TEST: CP lets a full-health unit end its turn where the visible enemies could deal it 2.4x its
 			//hit points (4.3x after a kill). The new AI is a bit stricter. 50 keeps every plot that counts as
 			//"safe" (danger below current hit points) allowed for units above half health.
-			bool bNewAI = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI();
+			bool bNewAI = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI(AI_CHANGE_TURN_END_SURVIVAL);
 			int iMagicNumber = (isForKill || !couldFlee) ? (bNewAI ? 30 : 23) : (bNewAI ? 50 : 42);
 
 			//if this is the only enemy ...
@@ -7987,7 +7988,7 @@ int ScoreCombatUnitTurnEnd(const CvUnit* pUnit, eUnitAssignmentType eLastAssignm
 			//AI_AB_TEST: a full-health unit facing danger X loses about X points here, while each hit point of
 			//damage dealt is worth 10, so CP trades units for damage too cheaply. Danger is the worst case (every
 			//enemy in reach attacks this unit), so the new AI doubles it rather than matching damage dealt 1:1.
-			if (GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI())
+			if (GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI(AI_CHANGE_DANGER_WEIGHT))
 				iScaledDanger *= 2;
 
 			//penalty for high danger plots (should this be personality dependent?)
@@ -8270,7 +8271,7 @@ static STacticalAssignment* ScorePlotForCombatUnitMove(const SUnitStats& unit, c
 			//SHRT_MIN they all hit the SHRT_MAX cap and tie, so the unit can't tell a good escape from a bad one.
 			//Units with no safe plot also got the same score everywhere, however dangerous. The new AI uses a big
 			//but finite penalty that still grows with the danger.
-			if (GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI())
+			if (GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI(AI_CHANGE_ESCAPE_SCORE))
 				iDangerScore = -1000 - min(3000, (iDanger * 100) / max(1, iCurrentHealth));
 		}
 	}
@@ -12418,7 +12419,7 @@ vector<STacticalAssignment> TacticalAIHelpers::FindBestUnitAssignments(
 	//position per open branch and stops far short of the completed-positions budget. The new AI searches one level
 	//wider (5x more finished positions to pick from) unless the battle is big, where that would slow turns down.
 	int iBreadthFirstGenerations = TACTSIM_BREADTH_FIRST_GENERATIONS;
-	if (GET_PLAYER(ePlayer).UsesNewAI() && initialPosition->GetNumAvailableUnits() <= 9)
+	if (GET_PLAYER(ePlayer).UsesNewAI(AI_CHANGE_WIDER_SEARCH) && initialPosition->GetNumAvailableUnits() <= 9)
 		iBreadthFirstGenerations++;
 
 	cvStopWatch timer("tactsim", NULL, 0, true);
@@ -12676,7 +12677,7 @@ bool TacticalAIHelpers::ExecuteUnitAssignments(PlayerTypes ePlayer, const std::v
 			//AI_AB_TEST: CP attacks even when the check above says the kill (or city capture) won't happen anymore,
 			//leaving the unit stranded next to the target. The new AI skips the attack; a failed precondition
 			//makes the caller re-run the simulation with the remaining units.
-			if (bPrecondition && GET_PLAYER(ePlayer).UsesNewAI())
+			if (bPrecondition && GET_PLAYER(ePlayer).UsesNewAI(AI_CHANGE_SKIP_FAILED_KILL))
 			{
 				bool bStillKills = pToPlot->isEnemyCity(*pUnit) ? bCityKill : bUnitKill;
 				if (!bStillKills)
