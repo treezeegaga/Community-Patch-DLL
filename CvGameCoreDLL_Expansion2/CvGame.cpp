@@ -12842,7 +12842,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// counted the settler itself, so new-AI settlers with no warrior around stood idle all game), and the opening
 /// book letting the normal choice build a waiting settler's escort.
 /// batch2j: batch2i plus saving gold for the next settler (no hurries, tile buys or city-state gold gifts meanwhile).
-static const char* const AI_AB_TEST_BATCH = "batch2j";
+/// batch2k: batch2j saving on while a settler is walking (the stash was spent the moment one appeared), and no
+/// conquest opening plan (warmongers use tall or wide).
+static const char* const AI_AB_TEST_BATCH = "batch2k";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

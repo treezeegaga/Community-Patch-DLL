@@ -3051,8 +3051,9 @@ void CvEconomicAI::LogPossibleHurries(CvWeightedVector<CvCityBuildable> const& m
 /// AI_AB_TEST: strong players buy their early settlers with gold, so the capital keeps growing and building while
 /// the new city starts sooner. CP's AI never does (its hurry goes to whatever a city is building, often a scout).
 /// The new AI wants to buy a settler while it wants to expand, has none on the map, has a site for one and isn't
-/// losing money. This finds that settler, the city to buy it in and its price.
-static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, CvCity*& pBuyCity, int& iCost)
+/// losing money. This finds that settler, the city to buy it in and its price. Saving goes on while a settler is
+/// still walking (bForSaving), so the gold for the next one is there when it settles; buying waits for it.
+static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, CvCity*& pBuyCity, int& iCost, bool bForSaving)
 {
 	static EconomicAIStrategyTypes eEarlyExpansion = (EconomicAIStrategyTypes)GC.getInfoTypeForString("ECONOMICAISTRATEGY_EARLY_EXPANSION");
 	bool bWantCities = pPlayer->IsOpeningBookActive() ||
@@ -3061,7 +3062,7 @@ static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, Cv
 		return false;
 
 	// a settler on the map still has to get somewhere; don't stack them up
-	if (pPlayer->GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0)
+	if (!bForSaving && pPlayer->GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0)
 		return false;
 
 	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->GetBestSettlePlot(NULL) == NULL)
@@ -3106,7 +3107,7 @@ bool CvEconomicAI::IsSavingForExpansionSettler()
 	UnitTypes eSettler = NO_UNIT;
 	CvCity* pBuyCity = NULL;
 	int iCost = 0;
-	return GetWantedExpansionSettler(m_pPlayer, eSettler, pBuyCity, iCost) && m_pPlayer->GetTreasury()->GetGold() < iCost;
+	return GetWantedExpansionSettler(m_pPlayer, eSettler, pBuyCity, iCost, true) && m_pPlayer->GetTreasury()->GetGold() < iCost;
 }
 
 /// AI_AB_TEST: buys the wanted settler as soon as the new AI can pay for it
@@ -3115,8 +3116,15 @@ static void BuyExpansionSettler(CvPlayer* pPlayer)
 	UnitTypes eSettler = NO_UNIT;
 	CvCity* pBuyCity = NULL;
 	int iCost = 0;
-	if (!GetWantedExpansionSettler(pPlayer, eSettler, pBuyCity, iCost) || pPlayer->GetTreasury()->GetGold() < iCost)
+	if (!GetWantedExpansionSettler(pPlayer, eSettler, pBuyCity, iCost, false))
 		return;
+	if (pPlayer->GetTreasury()->GetGold() < iCost)
+	{
+		if (GC.getLogging() && GC.getAILogging())
+			pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("EXPANSION SETTLER - Saving: %d of %d gold",
+				pPlayer->GetTreasury()->GetGold(), iCost));
+		return;
+	}
 	if (!pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eSettler, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
 		return;
 

@@ -33330,20 +33330,18 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	if (!UsesNewAI() || !isMajorCiv() || isHuman() || isBarbarian())
 		return OPENING_BOOK_NONE;
 
+	// The conquest plan (fewer settlers, two archers, Honor, no planned attack) was the weakest of the three in test
+	// games: 10% of the score against 13.4% for tall. Warmongers use the other plans until there is a real timing
+	// attack plan for them.
 	const CvPlayerTraits* pTraits = GetPlayerTraits();
-	if (pTraits->IsWarmonger())
-		return OPENING_BOOK_CONQUEST;
 	if (pTraits->IsExpansionist())
 		return OPENING_BOOK_WIDE;
 	if (pTraits->IsNerd() || pTraits->IsTourism() || pTraits->IsSmaller())
 		return OPENING_BOOK_TALL;
 
-	int iOffense = GetOpeningBookFlavor(*this, "FLAVOR_OFFENSE");
 	int iExpansion = GetOpeningBookFlavor(*this, "FLAVOR_EXPANSION");
 	int iScience = GetOpeningBookFlavor(*this, "FLAVOR_SCIENCE");
 	int iCulture = GetOpeningBookFlavor(*this, "FLAVOR_CULTURE");
-	if (iOffense >= 8 && iOffense >= iExpansion)
-		return OPENING_BOOK_CONQUEST;
 	if (iExpansion >= 7 && iExpansion > max(iScience, iCulture))
 		return OPENING_BOOK_WIDE;
 	return OPENING_BOOK_TALL;
