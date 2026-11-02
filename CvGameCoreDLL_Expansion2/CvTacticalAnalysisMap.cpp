@@ -787,6 +787,9 @@ void CvTacticalAnalysisMap::CalculateMilitaryStrengths()
 	int iCenterRadius = 3; // close units are more important
 	int iUnitStrengthMultiplier = 1; //relative to cities
 
+	//AI_AB_TEST: the new AI only uses what it can actually see (no adjacent-plot visibility, no hidden units)
+	const bool bNoFogCheat = thisPlayer.UsesNewAI();
+
 	//performance optimization, create a visibility lookup table
 	int iGridSize = GC.getMap().numPlots();
 	vector<bool> visible(iGridSize, false);
@@ -800,7 +803,7 @@ void CvTacticalAnalysisMap::CalculateMilitaryStrengths()
 			//for our plots we know that all adjacent plots are visible anyway
 			//but for far-away plots we set adjacent plots visible as well
 			//a small AI cheat where a human can simple make an educated guess
-			if (pPlot->getTeam() != eTeam)
+			if (!bNoFogCheat && pPlot->getTeam() != eTeam)
 			{
 				CvPlot** aNeighbors = GC.getMap().getNeighborsUnchecked(pPlot);
 				for (int iI = 0; iI < NUM_DIRECTION_TYPES; iI++)
@@ -878,6 +881,10 @@ void CvTacticalAnalysisMap::CalculateMilitaryStrengths()
 					if ( GetDominanceZoneID(pLoopUnit->plot()->GetPlotIndex()) != pZone->GetZoneID() )
 						continue;
 				}
+
+				//AI_AB_TEST: other players' units the new AI can't see don't count at all
+				if (bNoFogCheat && kPlayer.getTeam() != eTeam && !visible[pPlot->GetPlotIndex()])
+					continue;
 
 				int iUnitStrength = pLoopUnit->GetMaxAttackStrength(NULL,NULL,NULL,true,true) * iUnitStrengthMultiplier;
 				int iRangedStrength = pLoopUnit->GetMaxRangedCombatStrength(NULL, /*pCity*/ NULL, true, NULL, NULL, true, true) * iUnitStrengthMultiplier;

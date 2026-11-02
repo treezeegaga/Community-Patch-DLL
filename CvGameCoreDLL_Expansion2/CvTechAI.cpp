@@ -100,6 +100,10 @@ void CvTechAI::AddFlavorWeights(FlavorTypes eFlavor, int iWeight, int iPropagati
 			// Set its weight by looking at tech's weight for this flavor and using iWeight multiplier passed in
 			int iTechWeight = entry->GetFlavorValue(eFlavor) * iWeight;
 
+			// AI_AB_TEST: CP adds the three priorities below once per flavor (30-45 times per tech), which swamps
+			// the personality signal. The new AI adds them once per tech in AddPriorityWeights instead.
+			if (!m_pCurrentTechs->GetPlayer()->UsesNewAI())
+			{
 			// Multiply the weight by any special player-specific weighting (i.e. to prioritize civ unique bonuses)
 			iTechWeight += m_pCurrentTechs->GetPlayer()->GetPlayerTechs()->GetCivTechPriority(eTech);
 
@@ -108,6 +112,7 @@ void CvTechAI::AddFlavorWeights(FlavorTypes eFlavor, int iWeight, int iPropagati
 
 			// Multiply the weight by any locale-specific weighting (i.e. to prioritize unlocking grand strategy stuff)
 			iTechWeight += m_pCurrentTechs->GetPlayer()->GetPlayerTechs()->GetGSTechPriority(eTech);
+			}
 
 			if(entry->IsAllowsEmbarking())
 			{
@@ -121,6 +126,32 @@ void CvTechAI::AddFlavorWeights(FlavorTypes eFlavor, int iWeight, int iPropagati
 			// Apply and propagate to prereqs
 			PropagateWeights(iTech, iTechWeight, iPropagationPercent, 0);
 		}
+	}
+}
+
+/// AI_AB_TEST: the new AI adds the civ (unique units/buildings), locale (nearby resources) and grand strategy
+/// priorities once per tech, scaled so a unique-unit tech (+25) is worth about one strong flavor and the grand
+/// strategy (+1 per matching flavor) counts noticeably. Tuning guesses, to be checked in test games.
+void CvTechAI::AddPriorityWeights(int iPropagationPercent)
+{
+	CvPlayer* pPlayer = m_pCurrentTechs->GetPlayer();
+	for (int iTech = 0; iTech < m_pCurrentTechs->GetTechs()->GetNumTechs(); iTech++)
+	{
+		const TechTypes eTech = static_cast<TechTypes>(iTech);
+		if (pPlayer->HasTech(eTech))
+			continue;
+
+		CvTechEntry* entry = m_pCurrentTechs->GetTechs()->GetEntry(iTech);
+		if (!entry || entry->GetEra() - pPlayer->GetCurrentEra() > GD_INT_GET(NUM_OR_TECH_PREREQS))
+			continue;
+
+		// all three default to 1, so subtract that to leave only real bonuses
+		int iCiv = max(0, pPlayer->GetPlayerTechs()->GetCivTechPriority(eTech) - 1);
+		int iLocale = max(0, pPlayer->GetPlayerTechs()->GetLocaleTechPriority(eTech) - 1);
+		int iGS = max(0, pPlayer->GetPlayerTechs()->GetGSTechPriority(eTech) - 1);
+		int iWeight = 10 * iCiv + 10 * iLocale + 30 * iGS;
+		if (iWeight > 0)
+			PropagateWeights(iTech, iWeight, iPropagationPercent, 0);
 	}
 }
 
@@ -407,7 +438,10 @@ void CvTechAI::ReweightByCost(CvPlayer *pPlayer, bool bWantsExpensive)
 		else
 		{
 			//reweight by turns left
-			double fTotalCostFactor = /*0.2f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_BASE_MOD) + (iTurnsLeft * /*0.035f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT));
+			//AI_AB_TEST: CP's 0.035 per turn left divides a 40-turn tech's weight by ~366, so the cheapest tech nearly
+			//always wins and research goes broad. The new AI uses 0.02 (divisor ~30 at 40 turns).
+			double fPerTurnLeft = pPlayer->UsesNewAI() ? 0.02 : /*0.035f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_MOD_PER_TURN_LEFT);
+			double fTotalCostFactor = /*0.2f*/ GD_FLOAT_GET(AI_RESEARCH_WEIGHT_BASE_MOD) + (iTurnsLeft * fPerTurnLeft);
 			double fWeightDivisor = pow((double)iTurnsLeft, fTotalCostFactor);
 			iNewWeight = int(double(m_ResearchableTechs.GetWeight(iI)) / fWeightDivisor);
 		}

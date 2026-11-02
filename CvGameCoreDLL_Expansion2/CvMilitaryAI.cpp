@@ -895,6 +895,21 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 		std::stable_sort(vAttackOptions.begin(), vAttackOptions.end());
 
 		int iBestScore = vAttackOptions.front().score;
+
+		//AI_AB_TEST: CP measures "preferred" against the best target among all players' cities, including civs we're at
+		//peace with, so a well-defended enemy may never count as preferred (and careful attacks skip it). The new AI
+		//compares each target against the best city of the same owner.
+		const bool bPerOwnerPreferred = m_pPlayer->UsesNewAI();
+		std::map<int, int> bestScoreByOwner;
+		if (bPerOwnerPreferred)
+		{
+			for (size_t i = 0; i < vAttackOptions.size(); i++)
+			{
+				int iOwner = vAttackOptions[i].option.GetTargetPlot()->getOwner();
+				bestScoreByOwner[iOwner] = max(bestScoreByOwner[iOwner], vAttackOptions[i].score);
+			}
+		}
+
 		for (size_t i = 0; i < vAttackOptions.size(); i++)
 		{
 			CvAttackTarget target = vAttackOptions[i].option;
@@ -903,7 +918,8 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 				continue;
 
 			//mark the best targets
-			target.m_bPreferred = (iScore > iBestScore / 3);
+			int iReferenceScore = bPerOwnerPreferred ? bestScoreByOwner[target.GetTargetPlot()->getOwner()] : iBestScore;
+			target.m_bPreferred = (iScore > iReferenceScore / 3);
 
 			//don't target a city twice with the same army type, only keep the best approach
 			if (IsPossibleAttackTarget(target.GetTargetPlot()->getPlotCity(),target.m_armyType))
@@ -2348,8 +2364,12 @@ void CvMilitaryAI::CheckLandDefenses(PlayerTypes eEnemy, CvCity* pThreatenedCity
 	WarStateTypes eWarState = GET_PLAYER(eEnemy).isMajorCiv() ? m_pPlayer->GetDiplomacyAI()->GetWarState(eEnemy) : WAR_STATE_OFFENSIVE;
 
 	if (eWarState >= WAR_STATE_STALEMATE)
+	{
 		// If we're winning, nothing to do
-		return;
+		// AI_AB_TEST: the new AI still defends a threatened city when the war as a whole looks fine
+		if (!m_pPlayer->UsesNewAI())
+			return;
+	}
 	else if (eWarState == WAR_STATE_DEFENSIVE)
 		// If we are losing, concentrate on defense against this player
 		m_pPlayer->StopAllLandOffensiveOperationsAgainstPlayer(eEnemy, AI_ABORT_WAR_STATE_CHANGE);
@@ -2400,7 +2420,17 @@ void CvMilitaryAI::DoCityAttacks(PlayerTypes ePlayer)
 {
 	//Not perfect, as some operations are mixed, but it will keep us from sending everyone to slaughter all at once.
 	int iReservesTotal = ((m_iNumLandUnits + m_iNumNavalUnits) - (m_iNumNavalUnitsInArmies + m_iNumLandUnitsInArmies));
-	if (iReservesTotal >= m_iRecLandUnits || (m_pPlayer->GetNumOffensiveOperations(DOMAIN_LAND)+m_pPlayer->GetNumOffensiveOperations(DOMAIN_SEA)) <= 0)
+	int iNumOffensiveOps = m_pPlayer->GetNumOffensiveOperations(DOMAIN_LAND) + m_pPlayer->GetNumOffensiveOperations(DOMAIN_SEA);
+	bool bCanStartAttack = (iReservesTotal >= m_iRecLandUnits || iNumOffensiveOps <= 0);
+	//AI_AB_TEST: m_iRecLandUnits is never below our land unit count, so CP's first condition almost never holds and
+	//only one attack runs at a time across all enemies. The new AI may run a second one when its spare land units
+	//cover a garrison per city plus a small army.
+	if (!bCanStartAttack && m_pPlayer->UsesNewAI())
+	{
+		int iLandReserves = m_iNumLandUnits - m_iNumLandUnitsInArmies;
+		bCanStartAttack = iNumOffensiveOps < 2 && iLandReserves >= m_pPlayer->getNumCities() + 4;
+	}
+	if (bCanStartAttack)
 	{
 		WarStateTypes eWarState = GET_PLAYER(ePlayer).isMajorCiv() ? m_pPlayer->GetDiplomacyAI()->GetWarState(ePlayer) : WAR_STATE_OFFENSIVE;
 		if (eWarState >= WAR_STATE_TROUBLED)

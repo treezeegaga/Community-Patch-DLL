@@ -12800,7 +12800,8 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// doesn't touch synced game state.
 /// Bump this when the set of changes gated on UsesNewAI() changes.
 /// batch1: 11 bug fixes. batch2a: batch1 plus the opening book, and early-game milestone columns.
-static const char* const AI_AB_TEST_BATCH = "batch2a";
+/// batch2b: batch2a plus fog cheats removed and 11 more fixes (see AUDIT.md in Civ5-CP-AnimatedLeaders).
+static const char* const AI_AB_TEST_BATCH = "batch2b";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

@@ -1930,7 +1930,12 @@ int CvCityCitizens::GetExcessFoodThreshold100() const
 
 		//default (other specializations)
 		int iMinFood = m_pCity->GetMinimumFood();
-		return (iMinFood > 0) ? iMinFood : 200;
+		int iThreshold = (iMinFood > 0) ? iMinFood : 200;
+		//AI_AB_TEST: +2 food makes specialised cities (half of them, plus every city during a gold deficit) stagnate.
+		//The new AI aims for half the unspecialised target instead (about +5 food at size 5).
+		if (GET_PLAYER(m_pCity->getOwner()).UsesNewAI())
+			iThreshold = max(iThreshold, (500 + 2 * m_pCity->getPopulation() * max(0, 70 - m_pCity->getPopulation())) / 2);
+		return iThreshold;
 	}
 }
 

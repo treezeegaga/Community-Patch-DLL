@@ -1371,8 +1371,10 @@ CvCityBuildable CvCityStrategyAI::ChooseHurry(bool bUnitOnly, bool bFaithPurchas
 					AmountComplete /= AmountNeeded;
 					if (AmountComplete < 50)
 					{
+						//AI_AB_TEST: CP divides by the percent complete, so a building at 1% gets x101 and wins the gold
+						//purchase over everything else. The new AI gives partly built items a modest boost (up to x1.5).
 						iNewWeight *= (100 + AmountComplete);
-						iNewWeight /= max(1, AmountComplete);
+						iNewWeight /= GET_PLAYER(m_pCity->getOwner()).UsesNewAI() ? 100 : max(1, AmountComplete);
 					}
 				}
 				if(iNewWeight > 0)
@@ -4252,6 +4254,12 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 		//We don't need to do this again as this shows us the actual bonus earned here.
 		int iActualIncrease = ((iModifier * iYieldRate) / 100);
 
+		//AI_AB_TEST: flat yields above are scored as a percent increase, but CP scores modifiers as the absolute gain,
+		//so a +50% University in a 15-science city scores ~8 against ~53 for a flat +8. The new AI scores modifiers
+		//as their percent increase too, in the same units as flat yields.
+		if (kPlayer.UsesNewAI())
+			iActualIncrease = iModifier;
+
 		iYieldValue += iActualIncrease;
 	}
 	
@@ -4278,25 +4286,39 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 			{
 				iYieldValue *= 2;
 			}
+			{
+			//AI_AB_TEST: CP multiplies once per rival, so four rivals with rising influence give x16 (x81 near a culture
+			//win). The new AI applies the largest rival's multiplier once.
+			const bool bNewAI = kPlayer.UsesNewAI();
+			int iMaxRivalMultiplier = 1;
 			for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 			{
 				PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
 
 				if (eLoopPlayer != NO_PLAYER && eLoopPlayer != kPlayer.GetID() && GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsPlayerValid(eLoopPlayer) && !GET_PLAYER(eLoopPlayer).isMinorCiv())
 				{
+					int iRivalMultiplier = 1;
 					if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsCloseToCultureVictory())
 					{
-						iYieldValue *= 3;
+						iRivalMultiplier = 3;
 					}
 					else if (GET_PLAYER(eLoopPlayer).GetCulture()->GetInfluenceTrend(kPlayer.GetID()) == INFLUENCE_TREND_RISING)
 					{
-						iYieldValue *= 2;
+						iRivalMultiplier = 2;
 					}
 					else if (GET_PLAYER(eLoopPlayer).GetCulture()->GetInfluenceLevel(kPlayer.GetID()) >= INFLUENCE_LEVEL_FAMILIAR)
 					{
-						iYieldValue *= 2;
+						iRivalMultiplier = 2;
 					}
+
+					if (bNewAI)
+						iMaxRivalMultiplier = max(iMaxRivalMultiplier, iRivalMultiplier);
+					else
+						iYieldValue *= iRivalMultiplier;
 				}
+			}
+			if (bNewAI)
+				iYieldValue *= iMaxRivalMultiplier;
 			}
 			break;
 		case YIELD_SCIENCE:

@@ -869,6 +869,14 @@ void CvAIOperation::UnitWasRemoved(int iArmyID, int iSlotID)
 				{
 					SetToAbort(AI_ABORT_HALF_STRENGTH);
 				}
+				// AI_AB_TEST: with integer division CP lets a 4-5 unit army march on with 2 units and arrive too weak to
+				// do anything. The new AI gives up below two thirds while still gathering or moving; once at the
+				// target it keeps CP's rule so it doesn't abandon a fight it's already in.
+				else if (GET_PLAYER(m_eOwner).UsesNewAI() && m_eCurrentState != AI_OPERATION_STATE_AT_TARGET &&
+					pThisArmy->GetNumSlotsFilled() * 3 < iNumRequiredSlots * 2)
+				{
+					SetToAbort(AI_ABORT_HALF_STRENGTH);
+				}
 
 				//special for escorted ops
 				if (pThisArmy->GetNumSlotsFilled() < 2 && iNumRequiredSlots == 2)

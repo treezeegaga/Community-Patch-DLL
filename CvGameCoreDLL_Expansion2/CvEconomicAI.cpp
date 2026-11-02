@@ -5076,8 +5076,13 @@ bool EconomicAIHelpers::IsTestStrategy_EarlyExpansion(EconomicAIStrategyTypes eS
 	if(pPlayer->IsEmpireUnhappy())
 		return false;
 
+	//AI_AB_TEST: CP guarantees 3 cities, then stops as soon as any stronger civ is a direct neighbour, before it
+	//even looks for free land, so many AIs stall at 3-4 cities. The new AI guarantees 4, and a stronger
+	//neighbour only stops it while at war with us; otherwise the free-land checks below decide.
+	const bool bNewAI = pPlayer->UsesNewAI();
+
 	//we do not want to lose time for building our settlers even if we haven't explored yet
-	if (pPlayer->GetNumCitiesFounded() < 3)
+	if (pPlayer->GetNumCitiesFounded() < (bNewAI ? 4 : 3))
 		return true;
 
 	//midgame depends on the map sitation ...
@@ -5086,6 +5091,8 @@ bool EconomicAIHelpers::IsTestStrategy_EarlyExpansion(EconomicAIStrategyTypes eS
 	{
 		CvPlayer& other = GET_PLAYER((PlayerTypes)i);
 		if (pPlayer->getTeam() == other.getTeam())
+			continue;
+		if (bNewAI && !GET_TEAM(pPlayer->getTeam()).isAtWar(other.getTeam()))
 			continue;
 		//continue expanding if our military is good enough
 		if (pPlayer->GetDiplomacyAI()->GetMilitaryStrengthComparedToUs(other.GetID()) <= STRENGTH_AVERAGE)
