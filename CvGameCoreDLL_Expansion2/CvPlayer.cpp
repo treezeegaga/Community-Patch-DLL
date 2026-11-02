@@ -47677,6 +47677,7 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 			continue;
 		}
 
+		bool bCloseToEnemyCity = false;
 		for (std::vector<PlayerTypes>::const_iterator it = m_playersWeAreAtWarWith.begin(); it != m_playersWeAreAtWarWith.end(); ++it)
 		{
 			if(pPlot->IsCloseToCity(*it))
@@ -47685,9 +47686,14 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 				if (bLogging)
 				dump << pPlot << ",1," << iDanger << "," << iFertility << ",-1" << ",-2" << std::endl;
 				//--------------
+				bCloseToEnemyCity = true;
 				continue;
 			}
 		}
+		// AI_AB_TEST: the continue above only moves to the next enemy, so CP never skipped these plots and sent
+		// settlers next to enemy cities during wars. The new AI skips them.
+		if (bCloseToEnemyCity && UsesNewAI())
+			continue;
 
 		if(pUnit && (!pUnit->canFoundCity(pPlot) || !pUnit->canMoveInto(*pPlot)))
 		{

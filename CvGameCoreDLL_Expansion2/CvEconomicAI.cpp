@@ -3067,7 +3067,9 @@ void CvEconomicAI::DoHurry()
 	// In debt? Be more careful
 	if (iGPT < 0)
 	{
-		iTreasuryBuffer += 10 * iGPT;
+		// AI_AB_TEST: adding a negative income shrank the cushion, so CP spent down to zero while losing
+		// money. The new AI keeps 10 turns of the deficit in reserve.
+		iTreasuryBuffer += (m_pPlayer->UsesNewAI() ? -10 : 10) * iGPT;
 	}
 	else
 	{
@@ -3373,6 +3375,12 @@ void CvEconomicAI::DoPlotPurchases()
 		return;
 	}
 
+	// AI_AB_TEST: CP never cancels a tile savings request, so after one unaffordable plot the amount stays
+	// reserved (and blocks hurrying) for the rest of the game. The new AI clears it here; the loop below
+	// renews it while a plot is still wanted and unaffordable.
+	if (m_pPlayer->UsesNewAI())
+		CancelSaveForPurchase(PURCHASE_TYPE_TILE);
+
 	// No plot buying when at war and losing
 	static MilitaryAIStrategyTypes eStrategyAtWar = (MilitaryAIStrategyTypes) GC.getInfoTypeForString("MILITARYAISTRATEGY_AT_WAR");
 	if (m_pPlayer->GetMilitaryAI()->IsUsingStrategy(eStrategyAtWar) && m_pPlayer->GetDiplomacyAI()->GetStateAllWars() == STATE_ALL_WARS_LOSING)
@@ -3394,7 +3402,8 @@ void CvEconomicAI::DoPlotPurchases()
 	// In debt? Be more careful
 	if (iGPT < 0)
 	{
-		iTreasuryBuffer += 10 * iGPT;
+		// AI_AB_TEST: same sign fix as in DoHurry
+		iTreasuryBuffer += (m_pPlayer->UsesNewAI() ? -10 : 10) * iGPT;
 	}
 	else
 	{

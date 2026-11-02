@@ -7269,7 +7269,12 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 
 	//AL_LOW, AL_MEDIUM, AL_HIGH, AL_BRAVEHEART
 	//braveheart allows attacks for which you need luck to survive
-	int hpLimit[5] = {70,40,20,-5};
+	//AI_AB_TEST: the table is indexed by eAggressionLevel, which starts at AL_NONE, so CP's version gives
+	//each level the next level's limit. The new AI gets the intended values.
+	const bool bNewAI = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI();
+	int hpLimitCP[5] = {70,40,20,-5};
+	int hpLimitNew[5] = {70,70,40,20,-5};
+	const int* hpLimit = bNewAI ? hpLimitNew : hpLimitCP;
 
 	if (tactPlot->isEnemyCity()) //a plot can be both a city and a unit - in that case we would attack the city
 	{
@@ -7648,8 +7653,14 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 	{
 		int iPrevUnitHitPoints = pEnemyUnit ? prevUnitHitPoints.GetValue(pEnemyUnit->GetID()) : 0;
 		int iHpAfterAttack = iPrevUnitHitPoints > 0 ? iPrevUnitHitPoints - actualDamageDealt.GetValue(pEnemyUnit->GetID()) : -1;
-		if (iHpAfterAttack == -1 || iHpAfterAttack > iPrevCityHitPoints - iActualCityDamageDealt)
+		//AI_AB_TEST: iPrevCityHitPoints is 0 when the target isn't a city, so CP's check sets the HP left to 0 for
+		//every unit target and gives each attack the full bonus. The new AI only compares against a real city.
+		bool bUseCityHp = bNewAI ? (iPrevCityHitPoints > 0 && (iHpAfterAttack == -1 || iHpAfterAttack > iPrevCityHitPoints - iActualCityDamageDealt))
+			: (iHpAfterAttack == -1 || iHpAfterAttack > iPrevCityHitPoints - iActualCityDamageDealt);
+		if (bUseCityHp)
 			iHpAfterAttack = iPrevCityHitPoints - iActualCityDamageDealt;
+		if (bNewAI && iHpAfterAttack < 0)
+			iHpAfterAttack = 0;
 		iBonusScore += min(max(30 - iHpAfterAttack, 0), iTotalActualDamageDealt);
 	}
 
@@ -12635,6 +12646,16 @@ bool TacticalAIHelpers::ExecuteUnitAssignments(PlayerTypes ePlayer, const std::v
 					if (iDamageDealt >= pEnemy->GetCurrHitPoints())
 						bUnitKill = true;
 				}
+			}
+
+			//AI_AB_TEST: CP attacks even when the check above says the kill (or city capture) won't happen anymore,
+			//leaving the unit stranded next to the target. The new AI skips the attack; a failed precondition
+			//makes the caller re-run the simulation with the remaining units.
+			if (bPrecondition && GET_PLAYER(ePlayer).UsesNewAI())
+			{
+				bool bStillKills = pToPlot->isEnemyCity(*pUnit) ? bCityKill : bUnitKill;
+				if (!bStillKills)
+					bPrecondition = false;
 			}
 
 			if (bPrecondition)

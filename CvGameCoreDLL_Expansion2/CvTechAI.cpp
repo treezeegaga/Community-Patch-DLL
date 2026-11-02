@@ -313,12 +313,20 @@ void CvTechAI::PropagateWeights(int iTech, int iWeight, int iPropagationPercent,
 		iPropagatedWeight /= iPrereqCount;
 
 	//next level of recursion
+	//AI_AB_TEST: CP passes iPropagationLevel++, so the first prerequisite recurses at the same level (its chain
+	//is never cut off) and later ones start too deep. The new AI passes the next level to every prerequisite.
+	const bool bNewAI = m_pCurrentTechs->GetPlayer()->UsesNewAI();
 	for (int iI = 0; iI < /*6*/ GD_INT_GET(NUM_AND_TECH_PREREQS); iI++)
 	{
 		// Did we find a prereq?
 		int iPrereq = pkTechInfo->GetPrereqAndTechs(iI);
 		if (iPrereq != NO_TECH)
-			PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel++);
+		{
+			if (bNewAI)
+				PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel + 1);
+			else
+				PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel++);
+		}
 	}
 }
 

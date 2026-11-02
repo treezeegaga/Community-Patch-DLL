@@ -845,7 +845,9 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 			MilitaryAIHelpers::SetBestTargetApproach(reverseTarget, eOtherPlayer);
 
 			//use a more liberal check here, never know what the enemy might do ... better safe than sorry!
-			if (target.m_iApproachScore > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
+			//AI_AB_TEST: CP checks our approach to their city (target) instead of their approach to ours
+			//(reverseTarget), so a city is only counted as exposed when we can easily attack them.
+			if ((m_pPlayer->UsesNewAI() ? reverseTarget.m_iApproachScore : target.m_iApproachScore) > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
 			{
 				//do not try any advanced scoring, just use a basic approach/distance score
 				int iScore = (reverseTarget.m_iApproachScore * 10) / sqrti(it->second.length());
@@ -876,7 +878,9 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 			MilitaryAIHelpers::SetBestTargetApproach(reverseTarget, eOtherPlayer);
 
 			//use a more liberal check here, never know what the enemy might do ... better safe than sorry!
-			if (target.m_iApproachScore > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
+			//AI_AB_TEST: CP checks our approach to their city (target) instead of their approach to ours
+			//(reverseTarget), so a city is only counted as exposed when we can easily attack them.
+			if ((m_pPlayer->UsesNewAI() ? reverseTarget.m_iApproachScore : target.m_iApproachScore) > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, eOtherPlayer, m_pPlayer->GetID(), 6))
 			{
 				//do not try any advanced scoring, just use a basic approach/distance score
 				int iScore = (reverseTarget.m_iApproachScore * 10) / sqrti(it->second.length());
@@ -1842,7 +1846,18 @@ void CvMilitaryAI::SetRecommendedArmyNavySize()
 /// Update how we're doing on defensive units
 void CvMilitaryAI::UpdateDefenseState()
 {
-	if(m_iNumLandUnits < m_iRecLandUnits)
+	// AI_AB_TEST: CP tests "below 100%" before "below 3/4", so NEEDED can never happen and a single missing
+	// unit means CRITICAL (emergency production). The new AI checks the lower threshold first, like the
+	// naval ladder below.
+	if (m_pPlayer->UsesNewAI() && m_iNumLandUnits < m_iRecLandUnits * 3 / 4)
+	{
+		m_eLandDefenseState = DEFENSE_STATE_CRITICAL;
+	}
+	else if (m_pPlayer->UsesNewAI() && m_iNumLandUnits < m_iRecLandUnits)
+	{
+		m_eLandDefenseState = DEFENSE_STATE_NEEDED;
+	}
+	else if(m_iNumLandUnits < m_iRecLandUnits)
 	{
 		m_eLandDefenseState = DEFENSE_STATE_CRITICAL;
 	}
