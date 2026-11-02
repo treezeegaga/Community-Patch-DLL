@@ -23304,7 +23304,7 @@ int CvDiplomacyAI::ScoreDefensivePactChoice(PlayerTypes eChoice, bool bCoastal)
 /// Tall civs don't start wars here. One war at a time. (A first version attacked any "weaker" neighbour by current
 /// military alone and picked a fast-expanding civ that then crushed it.)
 /// AI_AB_TEST candidate (c7c): only fight battles we know we will win. Could our ranged units take the target's city
-/// nearest our capital (the likely first target) in about two turns of fire, with melee units to walk in? Summed over
+/// nearest our capital (the likely first target) in about three turns of fire, with melee units to walk in? Summed over
 /// all our ranged land units (the attack army gathers them). In c4-c7 warmongers declared, then besieged a full-health
 /// city with too little damage, or never attacked at all, and lost the war.
 static bool CanTakeNearestCity(CvPlayer* pPlayer, PlayerTypes eTarget)
@@ -23345,7 +23345,9 @@ static bool CanTakeNearestCity(CvPlayer* pPlayer, PlayerTypes eTarget)
 	}
 
 	int iCityHP = pTargetCity->GetMaxHitPoints() - pTargetCity->getDamage();
-	return iMelee >= 2 && iDamagePerTurn * 10 >= iCityHP * 6;
+	// 40% of its hit points a turn: three turns, with some room for the city healing and our units getting hurt (the
+	// Ottomans' first siege started at 161 damage a turn on a 200 HP city and fell to 65 as units were hurt)
+	return iMelee >= 2 && iDamagePerTurn * 10 >= iCityHP * 4;
 }
 
 PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
