@@ -256,6 +256,8 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 ///     Screen =            ; flags each on for a random half of the AI civs instead, for screening
 ///     Flip = 0            ; 1 swaps the groups (c/b, new/cp, and the screened halves)
 ///     StopTurn = 150      ; where the runner stops the game, recorded in the results file
+///     Ruins = 0           ; 0 = no ancient ruins, 1 = ruins (missing = as set up)
+///     MapOption5 = 5      ; the map script's option 5 (Pangaea: resources; 5 = Strategic Balance)
 ///     MapSeed, SyncSeed, Player<i> = replay of an earlier game, from its AIABTest_lastgame.ini (paired games)
 /// Read once when the game starts and saved with it, so a reloaded game keeps its flags whatever the file says by then.
 /// Test games are single player only (AI decisions in multiplayer must not depend on a local file).
@@ -296,6 +298,22 @@ void CvGame::ReadABTestSettings()
 	if (GetPrivateProfileIntW(L"ABTest", L"Flip", 0, wstrPath.c_str()) != 0)
 		m_iABTestFlags |= 1;
 	m_iABTestStopTurn = (int)GetPrivateProfileIntW(L"ABTest", L"StopTurn", 0, wstrPath.c_str());
+
+	// The setup the runner can't click reliably (lead job 5): Civ forgets game options between games, and the map
+	// options sit in dropdowns. Set before the map script runs (init2): Ruins = 0 sets "no ancient ruins", which the
+	// map script's AddGoodies checks; MapOption<n> = v sets the map script's option n (the name Map.GetCustomOption(n)
+	// looks up), e.g. MapOption5 = 5 is Strategic Balance on Pangaea.
+	const int iRuins = (int)GetPrivateProfileIntW(L"ABTest", L"Ruins", -1, wstrPath.c_str());
+	if (iRuins == 0 || iRuins == 1)
+		CvPreGame::SetGameOption(GAMEOPTION_NO_GOODY_HUTS, iRuins == 0 ? 1 : 0);
+	for (int iOption = 1; iOption <= 16; iOption++)
+	{
+		wchar_t szKey[32];
+		swprintf_s(szKey, 32, L"MapOption%d", iOption);
+		const int iValue = (int)GetPrivateProfileIntW(L"ABTest", szKey, -1, wstrPath.c_str());
+		if (iValue >= 0)
+			CvPreGame::SetMapOption(CvString::format("%d", iOption).c_str(), iValue);
+	}
 	GetPrivateProfileStringW(L"ABTest", L"MapSeed", L"", szBuffer, 1024, wstrPath.c_str());
 	if (szBuffer[0] != 0)
 		CvPreGame::setMapRandomSeed((unsigned int)wcstoul(szBuffer, NULL, 0));
