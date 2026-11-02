@@ -12852,8 +12852,9 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// "B vs C" builds (CvPlayer.cpp kABTestVersusBase): batch2p beat CP consistently (52.0% +/- 0.7 strength share over
 /// 4 games) and is the base "b" every civ runs; half the civs ("c") also run candidate changes.
 /// c1: warmongers, aggressive and expansionist culture civs wide; wide opening to turn 130 (Standard) and 8 cities;
-/// a settler idle for 10+ turns means no land left.
-static const char* const AI_AB_TEST_BATCH = "c1";
+/// a settler idle for 10+ turns means no land left. Result: c 48.3% +/- 1.7 over 4 games, not better.
+/// c2: only the plan choices from c1 (warmongers, aggressive and expansionist culture civs wide).
+static const char* const AI_AB_TEST_BATCH = "c2";
 
 void CvGame::LogABTestResults(bool bFinal) const
 {

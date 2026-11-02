@@ -33303,6 +33303,13 @@ bool CvPlayer::isMajorCiv() const
 // false gives the earlier "new vs CP" split, with UsesCandidateAI() following UsesNewAI().
 static const bool kABTestVersusBase = true;
 
+// Candidate features that are off in the current candidate bundle. In c1 (4 games, c 48.3% +/- 1.7 against b) c's
+// tall civs ended with fewer cities than b's (3.7 vs 4.4): stopping settlers once one stood idle 10 turns ended
+// expansion that b's civs later completed, and the longer wide opening didn't give c's wide civs more cities. The
+// idle-settler rule comes back together with a conquest response.
+static const bool kCandidateBoxedInBySettlers = false;
+static const bool kCandidateLongWideOpening = false;
+
 static bool IsABTestOddSlot(PlayerTypes ePlayer)
 {
 	return ((CvPreGame::mapRandomSeed() + static_cast<unsigned int>(ePlayer)) & 1) != 0;
@@ -33400,7 +33407,7 @@ bool CvPlayer::IsBoxedInForSettling() const
 		return false;
 	if (GetBestSettlePlot(NULL) == NULL)
 		return true;
-	if (!UsesCandidateAI())
+	if (!UsesCandidateAI() || !kCandidateBoxedInBySettlers)
 		return false;
 
 	const int iStuckTurns = max(5, 10 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
@@ -33423,7 +33430,7 @@ bool CvPlayer::IsOpeningBookActive() const
 	// Turn limits are for Standard speed
 	// Candidate: wide civs keep settling longer. In test games they led CP by a city at turn 60 on Quick, then expanded
 	// no faster than CP once the book ended (turn 67), so the lead never grew.
-	int iWideLimit = UsesCandidateAI() ? 130 : 100;
+	int iWideLimit = (UsesCandidateAI() && kCandidateLongWideOpening) ? 130 : 100;
 	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : 80;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
@@ -33488,7 +33495,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
 		break;
 	case OPENING_BOOK_WIDE:
-		if (bCapital && UsesCandidateAI())
+		if (bCapital && UsesCandidateAI() && kCandidateLongWideOpening)
 		{
 			pSteps = kOpeningWideCapitalLong;
 			iNumSteps = (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
