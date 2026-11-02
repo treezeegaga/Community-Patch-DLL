@@ -7952,11 +7952,15 @@ int ScoreCombatUnitTurnEnd(const CvUnit* pUnit, eUnitAssignmentType eLastAssignm
 			//the minimum amount of hitpoint we want a standalone unit to have for the expected counterattacks
 			bool isForKill = (eLastAssignment == A_MELEEKILL || eLastAssignment == A_MELEEKILL_NO_ADVANCE || eLastAssignment == A_RANGEKILL);
 			bool couldFlee = (gSafePlotCount[pUnit->GetID()] > 0);
-			int iMagicNumber = (isForKill || !couldFlee)  ? 23 : 42;
+			//AI_AB_TEST: CP lets a full-health unit end its turn where the visible enemies could deal it 2.4x its
+			//hit points (4.3x after a kill). The new AI is a bit stricter. 50 keeps every plot that counts as
+			//"safe" (danger below current hit points) allowed for units above half health.
+			bool bNewAI = GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI();
+			int iMagicNumber = (isForKill || !couldFlee) ? (bNewAI ? 30 : 23) : (bNewAI ? 50 : 42);
 
 			//if this is the only enemy ...
 			if (assumedPosition.getNumEnemies() == 1 && isForKill)
-				iMagicNumber = 12;
+				iMagicNumber = bNewAI ? 15 : 12;
 
 			//if there is nothing we would cover or that covers us or we are low on health, don't do it
 			if (iCurrHitPoints * iCurrHitPoints < iMagicNumber * iDanger)
@@ -7978,6 +7982,12 @@ int ScoreCombatUnitTurnEnd(const CvUnit* pUnit, eUnitAssignmentType eLastAssignm
 
 			//no reason to run into the enemy alone
 			if (iNumAdjFriendlies == 0)
+				iScaledDanger *= 2;
+
+			//AI_AB_TEST: a full-health unit facing danger X loses about X points here, while each hit point of
+			//damage dealt is worth 10, so CP trades units for damage too cheaply. Danger is the worst case (every
+			//enemy in reach attacks this unit), so the new AI doubles it rather than matching damage dealt 1:1.
+			if (GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI())
 				iScaledDanger *= 2;
 
 			//penalty for high danger plots (should this be personality dependent?)
@@ -8254,6 +8264,14 @@ static STacticalAssignment* ScorePlotForCombatUnitMove(const SUnitStats& unit, c
 			//unit has no safe plots and must end turn somewhere (EM_FINAL)
 			//clamp the sentinel to worst-possible arithmetic-safe value
 			iDangerScore = SHRT_MIN;
+
+			//AI_AB_TEST: the starting plot is scored (EM_INITIAL) before the safe plots are counted, so a unit that
+			//starts in danger always lands here. Every later move is scored relative to the start, and against
+			//SHRT_MIN they all hit the SHRT_MAX cap and tie, so the unit can't tell a good escape from a bad one.
+			//Units with no safe plot also got the same score everywhere, however dangerous. The new AI uses a big
+			//but finite penalty that still grows with the danger.
+			if (GET_PLAYER(assumedPosition.getPlayer()).UsesNewAI())
+				iDangerScore = -1000 - min(3000, (iDanger * 100) / max(1, iCurrentHealth));
 		}
 	}
 	else
@@ -12396,6 +12414,13 @@ vector<STacticalAssignment> TacticalAIHelpers::FindBestUnitAssignments(
 	//initially we go breadth-first, later switch to depth-first
 	CvTacticalPosition::PrPositionSortHeapGeneration heapSort(false);
 
+	//AI_AB_TEST: after the breadth-first levels the search follows one move at a time, so it finishes about one
+	//position per open branch and stops far short of the completed-positions budget. The new AI searches one level
+	//wider (5x more finished positions to pick from) unless the battle is big, where that would slow turns down.
+	int iBreadthFirstGenerations = TACTSIM_BREADTH_FIRST_GENERATIONS;
+	if (GET_PLAYER(ePlayer).UsesNewAI() && initialPosition->GetNumAvailableUnits() <= 9)
+		iBreadthFirstGenerations++;
+
 	cvStopWatch timer("tactsim", NULL, 0, true);
 	timer.StartPerfTest();
 	while (!openPositionsHeap.empty())
@@ -12404,7 +12429,7 @@ vector<STacticalAssignment> TacticalAIHelpers::FindBestUnitAssignments(
 		CvTacticalPosition* current = openPositionsHeap.back();
 
 		//switch our strategy?
-		if (!heapSort.bDepthFirst && current->getGeneration() > TACTSIM_BREADTH_FIRST_GENERATIONS)
+		if (!heapSort.bDepthFirst && current->getGeneration() > iBreadthFirstGenerations)
 		{
 			heapSort.bDepthFirst = true;
 			make_heap(openPositionsHeap.begin(), openPositionsHeap.end(), heapSort);
