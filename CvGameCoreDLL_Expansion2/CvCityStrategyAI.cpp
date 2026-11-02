@@ -4300,7 +4300,10 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 			{
 				PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
 
-				if (eLoopPlayer != NO_PLAYER && eLoopPlayer != kPlayer.GetID() && GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsPlayerValid(eLoopPlayer) && !GET_PLAYER(eLoopPlayer).isMinorCiv())
+				// AI_AB_TEST candidate (CultureRivalValue): CP asks the rival whether it is valid to itself, which is always false
+				// (IsPlayerValid rejects one's own team), so no rival multiplier ever applied, in CP or B
+				CvDiplomacyAI* pValidator = kPlayer.UsesCandidateAI(FIX_CULTURE_RIVAL_VALUE) ? kPlayer.GetDiplomacyAI() : GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
+				if (eLoopPlayer != NO_PLAYER && eLoopPlayer != kPlayer.GetID() && pValidator->IsPlayerValid(eLoopPlayer) && !GET_PLAYER(eLoopPlayer).isMinorCiv())
 				{
 					int iRivalMultiplier = 1;
 					if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsCloseToCultureVictory())

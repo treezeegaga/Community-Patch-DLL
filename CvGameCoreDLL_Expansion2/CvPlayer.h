@@ -168,6 +168,7 @@ enum CandidateFixTypes
 	FIX_POLICY_PREREQ_DEPTH,	// Economy (CvPolicyAI audit P3): policy weight passed to prerequisites at the right depth. Not in the bundle
 	FIX_ESPIONAGE_POLICY_VALUE,	// Economy (CvPolicyAI audit P4): the passive espionage bonus is scored by its own value. Not in the bundle
 	FIX_LOSING_WAR_BUILDINGS,	// Economy (E1): a civ losing a war cuts non-defensive buildings further, as CP meant (dead loop). Not in the bundle
+	FIX_CULTURE_RIVAL_VALUE,	// Economy (E2): culture is valued more when a rival's tourism gains on us, as CP meant (dead loop). Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
