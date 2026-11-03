@@ -708,6 +708,7 @@ public:
 	unsigned long long GetABTestCandidateFixes() const { return m_uiABTestCandidateFixes; }	// ABTestFixMask
 	unsigned long long GetABTestScreenedFixes() const { return m_uiABTestScreenedFixes; }
 	unsigned long long GetABTestBaseFixes() const { return m_uiABTestBaseFixes; }
+	unsigned long long GetABTestRoleFixes() const { return m_uiABTestRoleFixes; }
 	// AI_AB_TEST paired games: the second game of a pair replays the first one's map, civs and city-states with the
 	// groups swapped (Flip = 1 in AIABTest.ini)
 	bool IsABTestFlipped() const { return (m_iABTestFlags & 1) != 0; }
@@ -955,6 +956,7 @@ protected:
 	unsigned long long m_uiABTestCandidateFixes;
 	unsigned long long m_uiABTestScreenedFixes;
 	unsigned long long m_uiABTestBaseFixes; // flags every major AI civ runs, both groups (AIABTest.ini Base =)
+	unsigned long long m_uiABTestRoleFixes; // bully test: flags the aggressor runs in the first game of a pair only (RoleFixes =)
 	int m_iABTestFlags;
 	int m_iABTestStopTurn;
 	int m_iABTestMode;
