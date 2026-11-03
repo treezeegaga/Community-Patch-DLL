@@ -2062,7 +2062,18 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 					if (pUnitZone->GetOverallDominanceFlag() != TACTICAL_DOMINANCE_FRIENDLY && pUnitZone->GetPosture() != TACTICAL_POSTURE_WITHDRAW)
 						if (!pPlot->isCity() || pPlot->getPlotCity()->isInDangerOfFalling() || pUnit->getDomainType() == DOMAIN_SEA)
 							if (!pUnit->isEmbarked()) //cannot fight if embarked, so we can take it!
-								continue;
+							{
+								//AI_AB_TEST (candidate, flag ArmyHandoff): a unit just delivered by an attack operation belongs to the attack,
+								//not to the zone it happens to stand in. Held back here, it gets no tactical move and the homeland AI sends
+								//it to a sentry point at home (a test game's army walked home the turn after declaring war).
+								bool bHandoff = m_pPlayer->UsesCandidateAI(FIX_ARMY_HANDOFF) && pUnit->IsRecentlyDeployedFromOperation() &&
+									pUnit->getDomainType() == DOMAIN_LAND && pZoneCity->getTeam() != m_pPlayer->getTeam();
+								if (GC.getLogging() && GC.getAILogging() && pUnit->IsRecentlyDeployedFromOperation())
+									LogTacticalMessage(CvString::format("ArmyHandoff: %s %d just deployed, %s for zone %d (%s)", pUnit->getName().c_str(), pUnit->GetID(),
+										bHandoff ? "sent to reinforce" : "held back from reinforcing", pTargetZone->GetZoneID(), pZoneCity->getNameNoSpace().c_str()));
+								if (!bHandoff)
+									continue;
+							}
 				}
 
 				// Skip ranged if we only need melee
