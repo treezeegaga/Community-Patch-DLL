@@ -13217,7 +13217,7 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c7c_proposals: c7c_roles with joint-war and sanction proposals, as running counts per proposer: CoopWarAsked,
 /// CoopWarAskedVsAggressor, CoopWarAgreed, CoopWarAgreedVsAggressor, SanctionsProposed, SanctionsProposedVsAggressor,
 /// SanctionsPassed, SanctionsPassedVsAggressor. The AI is unchanged.
-static const char* const AI_AB_TEST_BATCH = "c7c_research";
+static const char* const AI_AB_TEST_BATCH = "bullysiege2";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
 static CvString GetABTestFixListText(ABTestFixMask uMask)
