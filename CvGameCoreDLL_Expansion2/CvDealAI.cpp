@@ -432,6 +432,70 @@ DemandResponseTypes CvDealAI::DoHumanDemand(CvDeal* pDeal)
 }
 
 /// What is the AI's response to a demand?
+/// FIX_DEAL_EXPLOITS: could the army eAttacker has where eDefender can see it take one of eDefender's cities? For each of
+/// the defender's cities, the attacker's visible land combat units within 5 tiles are run through the same siege sketch
+/// as CanTakeNearestCity (CvDiplomacyAI.cpp): ranged units fire, the city heals 20 a turn and shoots back at the most
+/// damaging unit (half again for its garrison), and two melee units must be there to walk in. Only what the defender
+/// can see counts, so a threat has to be real and at hand, not guessed from the attacker's total strength.
+static bool IsVisibleSiegeThreat(PlayerTypes eAttacker, PlayerTypes eDefender)
+{
+	const TeamTypes eDefenderTeam = GET_PLAYER(eDefender).getTeam();
+	const int iRange = 5;
+	int iCityLoop = 0;
+	for (CvCity* pCity = GET_PLAYER(eDefender).firstCity(&iCityLoop); pCity != NULL; pCity = GET_PLAYER(eDefender).nextCity(&iCityLoop))
+	{
+		const int iGarrisonMaxHP = (pCity->HasGarrison() && pCity->GetGarrisonedUnit()) ? pCity->GetGarrisonedUnit()->GetMaxHitPoints() : 0;
+		std::vector<int> viDamage, viHP, viHitTaken;
+		int iMelee = 0;
+		int iUnitLoop = 0;
+		for (CvUnit* pUnit = GET_PLAYER(eAttacker).firstUnit(&iUnitLoop); pUnit != NULL; pUnit = GET_PLAYER(eAttacker).nextUnit(&iUnitLoop))
+		{
+			if (pUnit->getDomainType() != DOMAIN_LAND || !pUnit->IsCombatUnit() || pUnit->AI_getUnitAIType() == UNITAI_EXPLORE)
+				continue;
+			if (!pUnit->plot() || !pUnit->plot()->isVisible(eDefenderTeam) || pUnit->isInvisible(eDefenderTeam, false))
+				continue;
+			if (plotDistance(pUnit->getX(), pUnit->getY(), pCity->getX(), pCity->getY()) > iRange)
+				continue;
+			if (pUnit->IsCanAttackRanged())
+			{
+				int iGarrisonDamage = 0;
+				viDamage.push_back(pUnit->GetRangeCombatDamage(NULL, pCity, iGarrisonMaxHP, iGarrisonDamage, /*bIncludeRand*/ false, 0, 0, NULL, NULL, true, true));
+				viHP.push_back(pUnit->GetCurrHitPoints());
+				viHitTaken.push_back(pCity->rangeCombatDamage(pUnit, /*bIncludeRand*/ false, NULL, /*bQuickAndDirty*/ true) * 3 / 2);
+			}
+			else
+				iMelee++;
+		}
+		if (iMelee < 2 || viDamage.empty())
+			continue;
+
+		const int iMaxHP = pCity->GetMaxHitPoints();
+		const int iHeal = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
+		int iCityHP = iMaxHP - pCity->getDamage();
+		for (int iTurn = 0; iTurn < 20; iTurn++)
+		{
+			int iFire = 0;
+			int iTarget = -1;
+			for (size_t i = 0; i < viDamage.size(); i++)
+			{
+				if (viHP[i] <= 0)
+					continue;
+				iFire += viDamage[i];
+				if (iTarget < 0 || viDamage[i] > viDamage[iTarget])
+					iTarget = (int)i;
+			}
+			if (iFire <= 0)
+				break;
+			iCityHP -= iFire;
+			if (iCityHP <= 0)
+				return true;
+			iCityHP = min(iMaxHP, iCityHP + iHeal);
+			viHP[iTarget] -= viHitTaken[iTarget];
+		}
+	}
+	return false;
+}
+
 DemandResponseTypes CvDealAI::GetDemandResponse(CvDeal* pDeal) const
 {
 	// AI teammates of humans will never give in to a demand.
@@ -518,6 +582,9 @@ DemandResponseTypes CvDealAI::GetDemandResponse(CvDeal* pDeal) const
 	// Hostility check is run after the weakness check, because the AI doesn't benefit from prematurely disclosing that they wouldn't be willing to accept regardless.
 	else if (pDiploAI->GetBoldness() == 10)
 		return DEMAND_RESPONSE_REFUSE_HOSTILE;
+	// FIX_DEAL_EXPLOITS: a bluff? Give in only to an army we can see that could actually take one of our cities.
+	else if (GetPlayer()->UsesCandidateAI(FIX_DEAL_EXPLOITS) && !IsVisibleSiegeThreat(eFromPlayer, eMyPlayer))
+		return DEMAND_RESPONSE_REFUSE_WEAK;
 	// Deal valued as impossible? Never give in. This also catches any untradeable items.
 	else if (GetDealValue(pDeal) == INT_MAX)
 		return DEMAND_RESPONSE_REFUSE_TOO_MUCH;
@@ -876,7 +943,17 @@ int CvDealAI::GetDealValue(CvDeal* pDeal) const
 
 		if (iItemValue != INT_MAX)
 		{
-			iItemValue = GetTradeItemValue(it->m_eItemType, bFromMe, eOtherPlayer, it->m_iData1, it->m_iData2, it->m_iData3, it->m_bFlag1, it->m_iDuration, false, true);
+			int iDuration = it->m_iDuration;
+			// FIX_DEAL_EXPLOITS: in a peace deal the other side is only bound for the peace treaty's turns; after that it can
+			// declare war, which cancels the rest of its payments. Count those turns in full and the rest at half.
+			if (!bFromMe && (it->m_eItemType == TRADE_ITEM_GOLD_PER_TURN || it->m_eItemType == TRADE_ITEM_RESOURCES) &&
+				GetPlayer()->UsesCandidateAI(FIX_DEAL_EXPLOITS) && pDeal->IsPeaceTreatyTrade(eOtherPlayer))
+			{
+				const int iBound = GC.getGame().getGameSpeedInfo().getPeaceDealDuration();
+				if (iDuration > iBound)
+					iDuration = iBound + (iDuration - iBound) / 2;
+			}
+			iItemValue = GetTradeItemValue(it->m_eItemType, bFromMe, eOtherPlayer, it->m_iData1, it->m_iData2, it->m_iData3, it->m_bFlag1, iDuration, false, true);
 			it->m_iValue = iItemValue;
 		}
 

@@ -164,6 +164,8 @@ enum CandidateFixTypes
 	FIX_LUXURY_ASK,			// Diplomacy D9: when balancing a deal the AI may ask for the other side's luxuries
 	FIX_CITY_STATE_BUGS,	// Diplomacy D10+D11: city-state alliance handover; city-states roll separately against an aggressor.
 							// Game-wide: on when any major civ has it, so the bully test's pair measures it
+	FIX_DEAL_EXPLOITS,		// Diplomacy: per-turn items in a peace deal are valued for the turns the payer is bound plus half the
+							// rest; a demand is refused unless the demander's visible army could take one of our cities
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
