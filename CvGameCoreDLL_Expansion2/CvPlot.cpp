@@ -8127,8 +8127,11 @@ void CvPlot::setIsCity(bool bValue, int iCityID, int iWorkRange)
 		}
 		if(isMountain())
 		{
-			ImprovementTypes eMachuPichu = (ImprovementTypes)GC.getInfoTypeForString("IMPROVEMENT_MOUNTAIN_CITY");
-			setImprovementType(eMachuPichu);
+			// AI_AB_TEST (no effect on play): IMPROVEMENT_MOUNTAIN_CITY exists only with Vox Populi. With Community Patch alone
+			// the lookup raised an assertion dialog that halted unattended test games; look it up quietly and skip if absent.
+			ImprovementTypes eMachuPichu = (ImprovementTypes)GC.getInfoTypeForString("IMPROVEMENT_MOUNTAIN_CITY", true);
+			if (eMachuPichu != NO_IMPROVEMENT)
+				setImprovementType(eMachuPichu);
 		}
 		// Is a route is here?  If we already own this plot, then we were paying maintenance, now we don't have to.
 		if(getRouteType() != NO_ROUTE)
