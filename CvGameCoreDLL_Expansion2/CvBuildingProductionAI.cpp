@@ -182,6 +182,12 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		}
 	}
 
+	// AI_AB_TEST candidate (SettlersBeforeWonders): no world wonder in the capital while the opening book still has
+	// settlers to start (in the first logged King games every B capital started one at T34-T48 and settler 2 waited)
+	if (isWorldWonderClass(kBuildingClassInfo) && m_pCity->isCapital() && kPlayer.UsesCandidateAI(FIX_SETTLERS_BEFORE_WONDERS) &&
+		kPlayer.IsOpeningBookActive() && kPlayer.HasUnstartedBookSettlers())
+		return SR_STRATEGY;
+
 	if (isNationalWonderClass(kBuildingClassInfo) || isWorldWonderClass(kBuildingClassInfo))
 	{
 		if (isWorldWonderClass(kBuildingClassInfo))

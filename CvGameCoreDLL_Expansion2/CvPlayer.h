@@ -169,6 +169,8 @@ enum CandidateFixTypes
 	FIX_ESPIONAGE_POLICY_VALUE,	// Economy (CvPolicyAI audit P4): the passive espionage bonus is scored by its own value. Not in the bundle
 	FIX_LOSING_WAR_BUILDINGS,	// Economy (E1): a civ losing a war cuts non-defensive buildings further, as CP meant (dead loop). Not in the bundle
 	FIX_CULTURE_RIVAL_VALUE,	// Economy (E2): culture is valued more when a rival's tourism gains on us, as CP meant (dead loop). Not in the bundle
+	FIX_SETTLERS_BEFORE_WONDERS,	// Economy: no world wonder in the capital while the opening book still has settlers to start. Not in the bundle
+	FIX_BOOK_FINISHES_SETTLERS,	// Economy: the opening book stays active (to T100 Standard) until its settlers are started. Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
@@ -1740,6 +1742,7 @@ public:
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
 	bool IsBoxedInForSettling() const;
+	bool HasUnstartedBookSettlers() const;
 	bool IsCandidateWarmonger(CandidateFixTypes eFix) const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;

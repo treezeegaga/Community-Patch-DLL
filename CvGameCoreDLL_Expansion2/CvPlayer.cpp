@@ -33339,6 +33339,8 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"EspionagePolicyValue", false},
 	{"LosingWarBuildings", false},
 	{"CultureRivalValue", false},
+	{"SettlersBeforeWonders", false},
+	{"BookFinishesSettlers", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33739,7 +33741,17 @@ bool CvPlayer::IsOpeningBookActive() const
 	int iTallLimit = UsesCandidateAI(FIX_GREEDY_BOOK) ? 130 : 80;
 	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : iTallLimit;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
-	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
+	if (GC.getGame().getElapsedGameTurns() <= iTurnLimit)
+		return true;
+
+	// Economy candidate (BookFinishesSettlers): in the first logged King games none of the 5 tall B civs had started its
+	// 3rd book settler when the book ended at T53 (Quick), and the normal AI then took 10-50 turns more for each city.
+	// The book stays on, up to turn 100 (Standard), while one of its settlers is still to be started.
+	if (UsesCandidateAI(FIX_BOOK_FINISHES_SETTLERS) &&
+		GC.getGame().getElapsedGameTurns() <= 100 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100 &&
+		HasUnstartedBookSettlers())
+		return true;
+	return false;
 }
 
 struct OpeningBookStep
@@ -33817,6 +33829,79 @@ static const OpeningBookStep kOpeningConquestCapital[] = {
 	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_ARCHER"}, {false, "BUILDINGCLASS_MONUMENT"} };
 static const OpeningBookStep kOpeningConquestCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
+
+/// AI_AB_TEST: the capital's opening-book steps (NULL if the civ has no book)
+static const OpeningBookStep* GetOpeningBookCapitalSteps(const CvPlayer& kPlayer, int& iNumSteps)
+{
+	iNumSteps = 0;
+	OpeningBookType eBook = kPlayer.GetOpeningBook();
+	if (eBook == OPENING_BOOK_NONE)
+		return NULL;
+#define AB_BOOK_STEPS(a) { iNumSteps = (int)(sizeof(a) / sizeof(OpeningBookStep)); return a; }
+	if (kPlayer.IsCandidateWarmonger(FIX_SIEGE_BOOK))
+		AB_BOOK_STEPS(kOpeningWarmongerCapital)
+	const bool bSF = kPlayer.UsesCandidateAI(FIX_SETTLERS_FIRST);
+	if (eBook == OPENING_BOOK_TALL)
+	{
+		if (kPlayer.UsesCandidateAI(FIX_GREEDY_BOOK))
+		{
+			if (bSF)
+				AB_BOOK_STEPS(kOpeningTallCapitalGreedySF)
+			AB_BOOK_STEPS(kOpeningTallCapitalGreedy)
+		}
+		if (bSF)
+			AB_BOOK_STEPS(kOpeningTallCapitalSF)
+		AB_BOOK_STEPS(kOpeningTallCapital)
+	}
+	if (eBook == OPENING_BOOK_WIDE)
+	{
+		if (kPlayer.UsesCandidateAI(FIX_LONG_WIDE))
+		{
+			if (bSF)
+				AB_BOOK_STEPS(kOpeningWideCapitalLongSF)
+			AB_BOOK_STEPS(kOpeningWideCapitalLong)
+		}
+		if (bSF)
+			AB_BOOK_STEPS(kOpeningWideCapitalSF)
+		AB_BOOK_STEPS(kOpeningWideCapital)
+	}
+	if (eBook == OPENING_BOOK_CONQUEST)
+		AB_BOOK_STEPS(kOpeningConquestCapital)
+	return NULL;
+#undef AB_BOOK_STEPS
+}
+
+/// AI_AB_TEST: does the capital's opening book still have a settler step that hasn't been started (or bought)? Settlers
+/// that became cities count as started. False when no land is left.
+bool CvPlayer::HasUnstartedBookSettlers() const
+{
+	if (!isMajorCiv() || isHuman() || getNumCities() == 0)
+		return false;
+	int iNumSteps = 0;
+	const OpeningBookStep* pSteps = GetOpeningBookCapitalSteps(*this, iNumSteps);
+	if (!pSteps)
+		return false;
+
+	int iWanted = 0;
+	UnitClassTypes eSettlerClass = NO_UNITCLASS;
+	for (int i = 0; i < iNumSteps; i++)
+	{
+		if (!pSteps[i].bUnit)
+			continue;
+		UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pSteps[i].szClass, true);
+		UnitTypes eUnit = (eClass != NO_UNITCLASS) ? GetSpecificUnitType(eClass) : NO_UNIT;
+		CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (pkUnitInfo && pkUnitInfo->IsFound())
+		{
+			iWanted++;
+			eSettlerClass = eClass;
+		}
+	}
+	if (iWanted == 0 || eSettlerClass == NO_UNITCLASS)
+		return false;
+	int iHave = getUnitClassCountPlusMaking(eSettlerClass) + getNumCities() - 1;
+	return iHave < iWanted && !IsBoxedInForSettling();
+}
 
 /// AI_AB_TEST (logging only): why the book passed over a settler step in this city, and what it picked instead. The
 /// expansion-pace reading in RESULTS.md uses it to tell the book's own buildings from a held settler falling through.
