@@ -173,6 +173,8 @@ enum CandidateFixTypes
 	FIX_SANCTIONS,			// Diplomacy: World Congress sanctions weigh the target's warmonger threat whatever our approach to it
 	FIX_COALITION_PACT,		// Diplomacy: defensive pacts with civs that share a severe or critical warmonger threat, friends or not,
 							// scored higher for each threat shared
+	FIX_DEAL_REPUTATION,	// Diplomacy: a civ that declared war on us while it still owed us payments has its per-turn promises
+							// valued lower (in peace deals nothing after the peace lock)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

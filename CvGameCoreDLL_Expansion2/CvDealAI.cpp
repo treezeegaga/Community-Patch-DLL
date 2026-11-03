@@ -946,12 +946,19 @@ int CvDealAI::GetDealValue(CvDeal* pDeal) const
 			int iDuration = it->m_iDuration;
 			// FIX_DEAL_EXPLOITS: in a peace deal the other side is only bound for the peace treaty's turns; after that it can
 			// declare war, which cancels the rest of its payments. Count those turns in full and the rest at half.
-			if (!bFromMe && (it->m_eItemType == TRADE_ITEM_GOLD_PER_TURN || it->m_eItemType == TRADE_ITEM_RESOURCES) &&
-				GetPlayer()->UsesCandidateAI(FIX_DEAL_EXPLOITS) && pDeal->IsPeaceTreatyTrade(eOtherPlayer))
+			const bool bPerTurnToUs = !bFromMe && (it->m_eItemType == TRADE_ITEM_GOLD_PER_TURN || it->m_eItemType == TRADE_ITEM_RESOURCES);
+			// FIX_DEAL_REPUTATION: deals they ended by declaring war on us while owing us payments
+			const int iBroken = (bPerTurnToUs && GetPlayer()->UsesCandidateAI(FIX_DEAL_REPUTATION)) ? GetPlayer()->GetDiplomacyAI()->GetNumDealsBrokenByWar(eOtherPlayer) : 0;
+			if (bPerTurnToUs && GetPlayer()->UsesCandidateAI(FIX_DEAL_EXPLOITS) && pDeal->IsPeaceTreatyTrade(eOtherPlayer))
 			{
 				const int iBound = GC.getGame().getGameSpeedInfo().getPeaceDealDuration();
 				if (iDuration > iBound)
-					iDuration = iBound + (iDuration - iBound) / 2;
+					iDuration = iBound + (iBroken > 0 ? 0 : (iDuration - iBound) / 2); // a known deal-breaker: nothing after the lock
+			}
+			else if (iBroken > 0 && iDuration > 0)
+			{
+				// their promises are worth less: -25% per broken deal, at most -50%
+				iDuration = iDuration * max(50, 100 - 25 * iBroken) / 100;
 			}
 			iItemValue = GetTradeItemValue(it->m_eItemType, bFromMe, eOtherPlayer, it->m_iData1, it->m_iData2, it->m_iData3, it->m_bFlag1, iDuration, false, true);
 			it->m_iValue = iItemValue;

@@ -404,6 +404,7 @@ public:
 	void ChangeNumWarsFought(PlayerTypes ePlayer, int iChange);
 
 	int GetNumWarsDeclaredOnUs(PlayerTypes ePlayer) const;
+	int GetNumDealsBrokenByWar(PlayerTypes ePlayer) const; // AI_AB_TEST
 	void SetNumWarsDeclaredOnUs(PlayerTypes ePlayer, int iValue);
 	void ChangeNumWarsDeclaredOnUs(PlayerTypes ePlayer, int iChange);
 
@@ -1979,6 +1980,7 @@ private:
 	bool m_abAggressor[MAX_CIV_PLAYERS];
 	unsigned char m_aiNumWarsFought[MAX_CIV_PLAYERS];
 	unsigned char m_aiNumWarsDeclaredOnUs[MAX_MAJOR_CIVS];
+	unsigned char m_aiNumDealsBrokenByWar[MAX_MAJOR_CIVS]; // AI_AB_TEST: deals they ended by declaring war on us while owing us payments
 	unsigned short m_aiCivilianKillerValue[MAX_MAJOR_CIVS];
 	unsigned char m_aiNumCitiesCaptured[MAX_PLAYERS];
 	char m_aeWarState[MAX_CIV_PLAYERS];

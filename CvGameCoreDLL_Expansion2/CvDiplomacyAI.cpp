@@ -186,6 +186,7 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 
 			// War
 			m_aiNumWarsDeclaredOnUs[iI] = 0;
+			m_aiNumDealsBrokenByWar[iI] = 0;
 			m_aiCivilianKillerValue[iI] = 0;
 
 			// Peace
@@ -701,6 +702,7 @@ void CvDiplomacyAI::Serialize(DiplomacyAI& diplomacyAI, Visitor& visitor)
 
 	// AI_AB_TEST (appended last, so the rest of the layout is unchanged)
 	visitor(diplomacyAI.m_eNewAIConquestTarget);
+	visitor(diplomacyAI.m_aiNumDealsBrokenByWar);
 }
 
 /// Serialization read
@@ -4922,6 +4924,14 @@ void CvDiplomacyAI::ChangeNumWarsFought(PlayerTypes ePlayer, int iChange)
 }
 
 /// How many times has ePlayer declared war on us?
+/// AI_AB_TEST: how many deals ePlayer ended by declaring war on us while it still owed us per-turn payments
+int CvDiplomacyAI::GetNumDealsBrokenByWar(PlayerTypes ePlayer) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return 0;
+	return m_aiNumDealsBrokenByWar[ePlayer];
+}
+
 int CvDiplomacyAI::GetNumWarsDeclaredOnUs(PlayerTypes ePlayer) const
 {
 	PRECONDITION(ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS, "Player index out of bounds");
@@ -33308,6 +33318,34 @@ void CvDiplomacyAI::DoPlayerDeclaredWarOnSomeone(PlayerTypes ePlayer, TeamTypes 
 
 			if (!bDefensivePact)
 			{
+				// AI_AB_TEST (FIX_DEAL_REPUTATION reads it): did this war cut short a deal in which they still owed us
+				// per-turn payments? The war has just cancelled the deals (CvTeam::DoDeclareWar), so they're in the history,
+				// ending this turn.
+				if (ePlayer < MAX_MAJOR_CIVS)
+				{
+					const int iTurn = GC.getGame().getGameTurn();
+					CvGameDeals& kDeals = GC.getGame().GetGameDeals();
+					const uint uNumDeals = kDeals.GetNumHistoricDealsWithPlayer(eMyPlayer, ePlayer);
+					for (uint uDeal = 0; uDeal < uNumDeals; uDeal++)
+					{
+						CvDeal* pDeal = kDeals.GetHistoricDealWithPlayer(eMyPlayer, ePlayer, uDeal);
+						if (!pDeal || pDeal->m_iFinalTurn != iTurn)
+							continue;
+						bool bOwedUs = false;
+						for (TradedItemList::iterator itItem = pDeal->m_TradedItems.begin(); itItem != pDeal->m_TradedItems.end(); ++itItem)
+						{
+							if (itItem->m_eFromPlayer == ePlayer && (itItem->m_eItemType == TRADE_ITEM_GOLD_PER_TURN || itItem->m_eItemType == TRADE_ITEM_RESOURCES) &&
+								itItem->m_iDuration > 0 && pDeal->m_iStartTurn + itItem->m_iDuration > iTurn)
+							{
+								bOwedUs = true;
+								break;
+							}
+						}
+						if (bOwedUs && m_aiNumDealsBrokenByWar[ePlayer] < UCHAR_MAX)
+							m_aiNumDealsBrokenByWar[ePlayer]++;
+					}
+				}
+
 				bool bBackstabTimer = IsDoFBroken(ePlayer) && GetTurnsSinceDoFBroken(ePlayer) < /*10*/ GD_INT_GET(DOF_BROKEN_BACKSTAB_TIMER);
 
 				// WAS working with this player
