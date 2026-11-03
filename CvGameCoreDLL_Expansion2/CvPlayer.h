@@ -185,6 +185,11 @@ enum CandidateFixTypes
 							// scored higher for each threat shared
 	FIX_DEAL_REPUTATION,	// Diplomacy: a civ that declared war on us while it still owed us payments has its per-turn promises
 							// valued lower (in peace deals nothing after the peace lock)
+	FIX_SIEGE_STAY,			// War: units at a siege stay unless below a third of their HP (not at 20 damage). Off in the bundle
+	FIX_SIEGE_POSTURE,		// War: the attrition posture also bombards the city (safe shots only). Off in the bundle
+	FIX_DECLARE_AT_BORDER,	// War: a sneak attack counts as discovered only at the target's border. Off in the bundle
+	FIX_UPGRADE_SAVE_CANCEL,// War (bug H1): the stale gold request for unit upgrades is cancelled. Off in the bundle
+	FIX_AIR_REBASE_HEAL,	// War (bug H2): healing aircraft stay in the quietest base. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

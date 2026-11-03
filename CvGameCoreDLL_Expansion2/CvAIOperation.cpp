@@ -1534,6 +1534,23 @@ CvPlot* CvAIOperationMilitary::FindBestTarget(CvPlot ** ppMuster) const
 	return NULL;
 }
 
+/// AI_AB_TEST (candidate, flag DeclareAtBorder): is this plot in or next to the enemy's territory?
+bool CvAIOperationMilitary::IsNextToEnemyTerritory(const CvPlot* pPlot) const
+{
+	if (!pPlot || m_eEnemy == NO_PLAYER)
+		return false;
+	if (pPlot->getOwner() == m_eEnemy)
+		return true;
+
+	CvPlot** aNeighbors = GC.getMap().getNeighborsUnchecked(pPlot);
+	for (int iI = 0; iI < NUM_DIRECTION_TYPES; iI++)
+	{
+		if (aNeighbors[iI] && aNeighbors[iI]->getOwner() == m_eEnemy)
+			return true;
+	}
+	return false;
+}
+
 bool CvAIOperationMilitary::CheckTransitionToNextStage()
 {
 	//only a single army right now!
@@ -1628,6 +1645,14 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 						if (pUnit->plot()->IsKnownVisibleToTeam(GET_PLAYER(m_eEnemy).getTeam()))
 							nVisible++;
 					}
+
+					//AI_AB_TEST (candidate, flag DeclareAtBorder): CP counts the army as discovered wherever it is, even in our own
+					//land when an enemy scout sees it, and the war then starts with the army disbanded far from the target (its
+					//units can't join a new attack for 5 turns). At peace nobody can attack it, so keep marching until it's at
+					//their border or close to the target.
+					if (nVisible>2 && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_DECLARE_AT_BORDER) &&
+						plotDistance(*pCenterOfMass, *pTarget) > 2 * GetDeployRange() && !IsNextToEnemyTerritory(pCenterOfMass))
+						nVisible = 0;
 
 					//the jig is up - happens also if we run up against the enemy border
 					if (nVisible>2)
