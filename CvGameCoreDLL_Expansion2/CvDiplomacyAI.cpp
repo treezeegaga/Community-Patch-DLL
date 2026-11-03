@@ -102,6 +102,7 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 	m_eDemandTargetPlayer = NO_PLAYER;
 	m_eCSWarTarget = NO_PLAYER;
 	m_eCSBullyTarget = NO_PLAYER;
+	m_eNewAIConquestTarget = NO_PLAYER;
 
 	// Other Global Memory
 	m_bWasHumanLastUpdate = false;
@@ -185,6 +186,7 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 
 			// War
 			m_aiNumWarsDeclaredOnUs[iI] = 0;
+			m_aiNumDealsBrokenByWar[iI] = 0;
 			m_aiCivilianKillerValue[iI] = 0;
 
 			// Peace
@@ -697,6 +699,10 @@ void CvDiplomacyAI::Serialize(DiplomacyAI& diplomacyAI, Visitor& visitor)
 	visitor(diplomacyAI.m_abVassalTaxLowered);
 	visitor(diplomacyAI.m_aiVassalGoldPerTurnTaxedSinceVassalStarted);
 	visitor(diplomacyAI.m_aiVassalGoldPerTurnCollectedSinceVassalStarted);
+
+	// AI_AB_TEST (appended last, so the rest of the layout is unchanged)
+	visitor(diplomacyAI.m_eNewAIConquestTarget);
+	visitor(diplomacyAI.m_aiNumDealsBrokenByWar);
 }
 
 /// Serialization read
@@ -3020,7 +3026,10 @@ bool CvDiplomacyAI::IsGoingForSpaceshipVictory() const
 /// Are we extra aggressive towards this player because they're close to victory?
 bool CvDiplomacyAI::IsEndgameAggressiveTo(PlayerTypes ePlayer) const
 {
-	PRECONDITION(ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS, "Player index out of bounds");
+	// AI_AB_TEST: never endgame-aggressive to a city-state (or an invalid index). CP asserted here; with FIX_EASY_TARGET's
+	// D2 fix a city-state reached it through IsPhonyWar and halted test games. Return false rather than read out of bounds.
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return false;
 	return m_abEndgameAggressiveTo[ePlayer];
 }
 
@@ -4918,6 +4927,14 @@ void CvDiplomacyAI::ChangeNumWarsFought(PlayerTypes ePlayer, int iChange)
 }
 
 /// How many times has ePlayer declared war on us?
+/// AI_AB_TEST: how many deals ePlayer ended by declaring war on us while it still owed us per-turn payments
+int CvDiplomacyAI::GetNumDealsBrokenByWar(PlayerTypes ePlayer) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return 0;
+	return m_aiNumDealsBrokenByWar[ePlayer];
+}
+
 int CvDiplomacyAI::GetNumWarsDeclaredOnUs(PlayerTypes ePlayer) const
 {
 	PRECONDITION(ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS, "Player index out of bounds");
@@ -7608,7 +7625,8 @@ void CvDiplomacyAI::ChangeNumTimesTheyPlottedAgainstUs(PlayerTypes ePlayer, int 
 {
 	SetNumTimesTheyPlottedAgainstUs(ePlayer, GetNumTimesTheyPlottedAgainstUs(ePlayer) + iChange);
 	
-	if (iChange > 0 && GetRecentAssistValue(ePlayer) < 0)
+	// FIX_DIPLO_BUGS (D5): positive assist is goodwill; plotting against us should wipe that, not our grievances
+	if (iChange > 0 && (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? GetRecentAssistValue(ePlayer) > 0 : GetRecentAssistValue(ePlayer) < 0))
 	{
 		SetRecentAssistValue(ePlayer, 0);
 	}
@@ -11356,6 +11374,48 @@ void CvDiplomacyAI::DoUpdatePlayerStrengthEstimates()
 			iEnemyDefenseBonus += iThirdPartyDefenseValue;
 		}
 
+		// FIX_COALITION_STRENGTH: a conqueror isn't fought one against one. Against a civ whose warmongering is a severe
+		// or critical threat to us, also count the civs that are visibly against it: at war with it (in full; they keep
+		// its army busy) or denouncing it (at half; they would likely join). Not its friends, pact partners or team, and
+		// only civs that can reach it. Only public facts are used (wars and denouncements are announced). CP counted
+		// allies only once treaty-bound to us, so every civ judged a runaway alone, picked AFRAID, and nobody fought it.
+		if (GET_PLAYER(ePlayer).isMajorCiv() && GetWarmongerThreat(ePlayer) >= THREAT_SEVERE && GetPlayer()->UsesCandidateAI(FIX_COALITION_STRENGTH))
+		{
+			const TeamTypes eTheirTeam = GET_PLAYER(ePlayer).getTeam();
+			for (std::vector<PlayerTypes>::iterator it = vValidPlayers.begin(); it != vValidPlayers.end(); ++it)
+			{
+				PlayerTypes eLoopPlayer = *it;
+				CvPlayer& kLoopPlayer = GET_PLAYER(eLoopPlayer);
+				if (eLoopPlayer == ePlayer || !kLoopPlayer.isMajorCiv() || kLoopPlayer.getNumCities() <= 0 || kLoopPlayer.getTeam() == eOurTeam || kLoopPlayer.getTeam() == eTheirTeam)
+					continue;
+				if (std::find(vOurAllies.begin(), vOurAllies.end(), eLoopPlayer) != vOurAllies.end())
+					continue;
+				if (kLoopPlayer.IsInTerribleShapeForWar() || kLoopPlayer.IsVassalOfSomeone() || GET_PLAYER(ePlayer).IsVassalOfSomeone())
+					continue;
+				if (!kLoopPlayer.CanCrossOcean() && kLoopPlayer.GetProximityToPlayer(ePlayer) < PLAYER_PROXIMITY_CLOSE)
+					continue;
+
+				CvDiplomacyAI* pLoopDiplo = kLoopPlayer.GetDiplomacyAI();
+				if (pLoopDiplo->IsDoFAccepted(ePlayer) || pLoopDiplo->IsHasDefensivePact(ePlayer))
+					continue;
+
+				int iShare = 0;
+				if (GET_TEAM(kLoopPlayer.getTeam()).isAtWar(eTheirTeam))
+					iShare = 100;
+				else if (pLoopDiplo->IsDenouncedPlayer(ePlayer))
+					iShare = 50;
+				if (iShare == 0)
+					continue;
+
+				int iMemberMight = max(iBase + kLoopPlayer.GetMilitaryMight() - kLoopPlayer.GetNuclearMight(), 1);
+				iMemberMight = ComputeDynamicStrengthModifier(eLoopPlayer, ePlayer, iMemberMight);
+				iMemberMight = ComputeRatingStrengthAdjustment(eLoopPlayer, ePlayer, iMemberMight);
+				iMemberMight = iMemberMight * iShare / 100;
+				iAllyAttackBonus += iMemberMight;
+				iAllyDefenseBonus += iMemberMight;
+			}
+		}
+
 
 		// Calculate their overall ATTACK vs. our overall DEFENSE
 		int iTheirOverallAttack = iTheirMilitaryStrength + iEnemyAttackBonus;
@@ -12043,7 +12103,8 @@ void CvDiplomacyAI::DoUpdateEasyTargets()
 				continue;
 			}
 
-			if (eWarState < WAR_STATE_STALEMATE)
+			// FIX_EASY_TARGET (D1): at peace the war state is NO_WAR_STATE_TYPE (-1), so CP skipped every civ at peace here
+			if (eWarState < WAR_STATE_STALEMATE && !(GetPlayer()->UsesCandidateAI(FIX_EASY_TARGET) && eWarState == NO_WAR_STATE_TYPE))
 			{
 				SetEasyTarget(ePlayer, false);
 				continue;
@@ -12093,8 +12154,10 @@ void CvDiplomacyAI::DoUpdateEasyTargets()
 				// Don't look at the guy we're already thinking about
 				if (IsPlayerValid(eLoopPlayer) && ePlayer != eLoopPlayer && IsAtWar(eLoopPlayer))
 				{
-					// Ignore phony wars
-					if (IsPhonyWar(ePlayer))
+					// Ignore phony wars (FIX_EASY_TARGET, D2: the other war's, not the target's). Only wars with major civs
+					// can be phony: IsPhonyWar assumes a major (it reaches IsEndgameAggressiveTo), and this loop also
+					// meets city-states we're at war with.
+					if (GetPlayer()->UsesCandidateAI(FIX_EASY_TARGET) ? (GET_PLAYER(eLoopPlayer).isMajorCiv() && IsPhonyWar(eLoopPlayer)) : IsPhonyWar(ePlayer))
 					{
 						continue;
 					}
@@ -12422,6 +12485,7 @@ int CvDiplomacyAI::CountAggressiveMilitaryScore(PlayerTypes ePlayer, bool bHalve
 			continue;
 
 		// At war with someone? Because if this Unit is in the vicinity of another player he's already at war with, don't count this Unit as aggressive
+		bool bNearOtherWar = false; // FIX_DIPLO_BUGS (D8): CP's continue only left the inner loop, so every unit counted
 		if (bIsAtWarWithSomeone)
 		{
 			// Loop through all players...
@@ -12438,10 +12502,19 @@ int CvDiplomacyAI::CountAggressiveMilitaryScore(PlayerTypes ePlayer, bool bHalve
 
 					// Is the unit close to the other player?
 					if (!bAlly && pUnitPlot->IsCloseToCity(eLoopOtherPlayer))
+					{
+						if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS))
+						{
+							bNearOtherWar = true;
+							break;
+						}
 						continue;
+					}
 				}
 			}
 		}
+		if (bNearOtherWar)
+			continue;
 
 		// If the Unit is in the other team's territory, halve its "aggression value", since he may just be defending himself
 		if (bHalveDefenders && pUnitPlot->getOwner() != NO_PLAYER && GET_PLAYER(pUnitPlot->getOwner()).getTeam() == GET_PLAYER(ePlayer).getTeam())
@@ -12807,7 +12880,8 @@ void CvDiplomacyAI::DoUpdateLandDisputeLevels()
 			{
 				SetLandDisputeLevel(ePlayer, eDisputeLevel);
 
-				if (eCurrentDisputeLevel > eDisputeLevel)
+				// FIX_DIPLO_BUGS (D7): re-evaluate when the dispute rises, as the comment below says
+				if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? eDisputeLevel > eCurrentDisputeLevel : eCurrentDisputeLevel > eDisputeLevel)
 					vPlayersToReevaluate.push_back(ePlayer);
 
 				if (GC.getLogging() && GC.getAILogging())
@@ -18724,7 +18798,14 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 						{
 							bFriendUnderAttack = true;
 
-							if (eMilitaryStrength < STRENGTH_POWERFUL)
+							// FIX_DIPLO_BUGS (D6): the full weight against a weak attacker; CP's order made it unreachable
+							if (eMilitaryStrength < STRENGTH_AVERAGE && GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS))
+							{
+								vApproachScores[CIV_APPROACH_WAR] += vApproachBias[CIV_APPROACH_WAR] * GetLoyalty();
+								vApproachScores[CIV_APPROACH_HOSTILE] += vApproachBias[CIV_APPROACH_HOSTILE] * GetLoyalty();
+								bThinkingAboutDogpiling = true;
+							}
+							else if (eMilitaryStrength < STRENGTH_POWERFUL)
 							{
 								vApproachScores[CIV_APPROACH_WAR] += vApproachBias[CIV_APPROACH_WAR] * GetLoyalty() / 2;
 								vApproachScores[CIV_APPROACH_HOSTILE] += vApproachBias[CIV_APPROACH_HOSTILE] * GetLoyalty() / 2;
@@ -22286,7 +22367,7 @@ void CvDiplomacyAI::DoUpdatePlanningExchanges()
 				continue;
 			}
 			// Being nasty to us
-			if (GetNumTimesTheyPlottedAgainstUs(*it) > 0 || GetNumTimesPerformedCoupAgainstUs(*it) > 0 || GetCoopWarAgreementScore(*it) < -1 || GetRecentAssistValue(*it) > 75 || GetNumTimesCultureBombed(*it) > 0)
+			if (GetNumTimesTheyPlottedAgainstUs(*it) > 0 || GetNumTimesPerformedCoupAgainstUs(*it) > 0 || GetCoopWarAgreementScore(*it) < -1 || (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? GetRecentAssistValue(*it) < -75 : GetRecentAssistValue(*it) > 75) || GetNumTimesCultureBombed(*it) > 0)
 			{
 				continue;
 			}
@@ -22611,6 +22692,22 @@ void CvDiplomacyAI::DoUpdatePlanningExchanges()
 					if (IsGoodChoiceForDefensivePact(*it))
 					{
 						vAcceptableDefensePacts.push_back(*it);
+					}
+				}
+
+				// FIX_COALITION_PACT: civs that share a runaway warmonger threat with us, friends or not
+				if (GetPlayer()->UsesCandidateAI(FIX_COALITION_PACT))
+				{
+					for (std::vector<PlayerTypes>::iterator it = vValidPlayers.begin(); it != vValidPlayers.end(); ++it)
+					{
+						if (!GET_PLAYER(*it).isMajorCiv() || std::find(vAcceptableDefensePacts.begin(), vAcceptableDefensePacts.end(), *it) != vAcceptableDefensePacts.end())
+							continue;
+
+						if (GET_TEAM(GET_PLAYER(*it).getTeam()).getAliveCount() > iDefensePactLimit)
+							continue;
+
+						if (GetNumSharedWarmongerThreats(*it) > 0 && IsGoodChoiceForDefensivePact(*it))
+							vAcceptableDefensePacts.push_back(*it);
 					}
 				}
 			}
@@ -23261,6 +23358,10 @@ int CvDiplomacyAI::ScoreDefensivePactChoice(PlayerTypes eChoice, bool bCoastal)
 
 	iDPValue += GetCommonFoeScore(eChoice) / -2;
 
+	// FIX_COALITION_PACT: a pact against a common threat is worth more, up to two threats
+	if (GetPlayer()->UsesCandidateAI(FIX_COALITION_PACT))
+		iDPValue += 40 * min(2, GetNumSharedWarmongerThreats(eChoice));
+
 	// Have they liberated us?
 	if (WasResurrectedBy(eChoice))
 	{
@@ -23411,10 +23512,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// Commit to a target once chosen: re-picking every turn (a test game had a civ switch between two targets and
 	// back) switches the approach away from WAR, which cancels the army being gathered, so the attack never came.
 	// A committed target is kept while it still passes the checks with one strength step of slack.
-	// (Not saved with the game; a reload just picks again.)
-	static int s_aiCommittedTarget[MAX_MAJOR_CIVS]; // target + 1, 0 = none
-	const int iMe = (int)pPlayer->GetID();
-	PlayerTypes eCommitted = (iMe >= 0 && iMe < MAX_MAJOR_CIVS) ? (PlayerTypes)(s_aiCommittedTarget[iMe] - 1) : NO_PLAYER;
+	// It's game state (m_eNewAIConquestTarget, saved): a static array survived into the next game in the same process
+	// and was lost on a reload, so a replayed or reloaded game could pick differently.
+	PlayerTypes eCommitted = m_eNewAIConquestTarget;
 
 	const CvCity* pCapital = pPlayer->getCapitalCity();
 	PlayerTypes eBest = NO_PLAYER;
@@ -23485,8 +23585,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		}
 	}
 
-	if (iMe >= 0 && iMe < MAX_MAJOR_CIVS)
-		s_aiCommittedTarget[iMe] = (int)eBest + 1;
+	m_eNewAIConquestTarget = eBest;
 	return eBest;
 }
 
@@ -24211,6 +24310,12 @@ void CvDiplomacyAI::DoUpdateMinorCivApproaches()
 	}
 
 	// Now that we've set approaches, let's pick our war and bully targets (only one each).
+	// FIX_DIPLO_BUGS (D4): start from none, so a city-state we no longer want to fight or bully stops being the target
+	if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS))
+	{
+		SetCSWarTargetPlayer(NO_PLAYER);
+		SetCSBullyTargetPlayer(NO_PLAYER);
+	}
 	bool bBullySet = false;
 	bool bWarSet = false;
 	for (int iPlayerVectorIndex = 0; iPlayerVectorIndex < vePlayerApproachWeights.size(); iPlayerVectorIndex++)
@@ -25734,7 +25839,7 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 		bool bCapturedAnyCityWeWantToLiberate = false;
 		bool bWeAreInAnyDanger = false;
 		bool bAnySeriousDangerUs = false;
-		bool bAllWarsArePhony = false;
+		bool bAllWarsArePhony = GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS); // D3: CP started at false, so it never became true
 		bool bFailedAnyVassalagePrereq = false;
 		int iLowestWarScore = 0;
 		int iLowestTurnsSinceCityCapture = INT_MAX;
@@ -33218,6 +33323,34 @@ void CvDiplomacyAI::DoPlayerDeclaredWarOnSomeone(PlayerTypes ePlayer, TeamTypes 
 
 			if (!bDefensivePact)
 			{
+				// AI_AB_TEST (FIX_DEAL_REPUTATION reads it): did this war cut short a deal in which they still owed us
+				// per-turn payments? The war has just cancelled the deals (CvTeam::DoDeclareWar), so they're in the history,
+				// ending this turn.
+				if (ePlayer < MAX_MAJOR_CIVS)
+				{
+					const int iTurn = GC.getGame().getGameTurn();
+					CvGameDeals& kDeals = GC.getGame().GetGameDeals();
+					const uint uNumDeals = kDeals.GetNumHistoricDealsWithPlayer(eMyPlayer, ePlayer);
+					for (uint uDeal = 0; uDeal < uNumDeals; uDeal++)
+					{
+						CvDeal* pDeal = kDeals.GetHistoricDealWithPlayer(eMyPlayer, ePlayer, uDeal);
+						if (!pDeal || pDeal->m_iFinalTurn != iTurn)
+							continue;
+						bool bOwedUs = false;
+						for (TradedItemList::iterator itItem = pDeal->m_TradedItems.begin(); itItem != pDeal->m_TradedItems.end(); ++itItem)
+						{
+							if (itItem->m_eFromPlayer == ePlayer && (itItem->m_eItemType == TRADE_ITEM_GOLD_PER_TURN || itItem->m_eItemType == TRADE_ITEM_RESOURCES) &&
+								itItem->m_iDuration > 0 && pDeal->m_iStartTurn + itItem->m_iDuration > iTurn)
+							{
+								bOwedUs = true;
+								break;
+							}
+						}
+						if (bOwedUs && m_aiNumDealsBrokenByWar[ePlayer] < UCHAR_MAX)
+							m_aiNumDealsBrokenByWar[ePlayer]++;
+					}
+				}
+
 				bool bBackstabTimer = IsDoFBroken(ePlayer) && GetTurnsSinceDoFBroken(ePlayer) < /*10*/ GD_INT_GET(DOF_BROKEN_BACKSTAB_TIMER);
 
 				// WAS working with this player
@@ -33298,7 +33431,8 @@ void CvDiplomacyAI::DoPlayerDeclaredWarOnSomeone(PlayerTypes ePlayer, TeamTypes 
 				// Clear positive diplomatic values
 				SetCommonFoeValue(ePlayer, 0);
 				SetVassalProtectValue(ePlayer, 0);
-				if (GetRecentAssistValue(ePlayer) < 0)
+				// FIX_DIPLO_BUGS (D5): positive assist is the goodwill to clear; CP cleared the grievances instead
+				if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? GetRecentAssistValue(ePlayer) > 0 : GetRecentAssistValue(ePlayer) < 0)
 					SetRecentAssistValue(ePlayer, 0);
 			}
 		}
@@ -42223,11 +42357,52 @@ bool CvDiplomacyAI::IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarE
 	return true;
 }
 
+/// AI_AB_TEST FIX_COALITION_COOP: is eAllyPlayer a natural partner against eTargetPlayer, a warmonger that is a severe or
+/// critical threat to us? Judged from public facts only: eAllyPlayer has denounced it, or it has taken one of their cities.
+/// Not its friends or pact partners. Coalitions against a conqueror shouldn't need an existing friendship.
+bool CvDiplomacyAI::IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer) const
+{
+	return GetPlayer()->UsesCandidateAI(FIX_COALITION_COOP) && IsVisiblyAgainstWarmonger(eAllyPlayer, eTargetPlayer, false);
+}
+
+/// AI_AB_TEST: eTargetPlayer is a warmonger that is a severe or critical threat to us; is eAllyPlayer visibly against it?
+/// Public facts only: it has denounced it, or lost a city to it, or (bCountNeighbours, for defensive pacts) lives close to
+/// it and so is next in line. Never its friends, pact partners or team.
+bool CvDiplomacyAI::IsVisiblyAgainstWarmonger(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bCountNeighbours) const
+{
+	if (eAllyPlayer == NO_PLAYER || eTargetPlayer == NO_PLAYER || eAllyPlayer == eTargetPlayer || eAllyPlayer == GetID() || eTargetPlayer == GetID())
+		return false;
+	if (!GET_PLAYER(eTargetPlayer).isMajorCiv() || !GET_PLAYER(eTargetPlayer).isAlive() || GetWarmongerThreat(eTargetPlayer) < THREAT_SEVERE)
+		return false;
+	const CvPlayer& kAlly = GET_PLAYER(eAllyPlayer);
+	if (!kAlly.isAlive() || !kAlly.isMajorCiv() || kAlly.getNumCities() <= 0 || kAlly.getTeam() == GET_PLAYER(eTargetPlayer).getTeam())
+		return false;
+	const CvDiplomacyAI* pAllyDiplo = kAlly.GetDiplomacyAI();
+	if (pAllyDiplo->IsDoFAccepted(eTargetPlayer) || pAllyDiplo->IsHasDefensivePact(eTargetPlayer))
+		return false;
+	if (pAllyDiplo->IsDenouncedPlayer(eTargetPlayer) || pAllyDiplo->GetNumCitiesCapturedBy(eTargetPlayer) > 0)
+		return true;
+	return bCountNeighbours && kAlly.GetProximityToPlayer(eTargetPlayer) >= PLAYER_PROXIMITY_CLOSE;
+}
+
+/// AI_AB_TEST FIX_COALITION_PACT: how many warmongers that threaten us (severe or critical) is eAllyPlayer also against?
+int CvDiplomacyAI::GetNumSharedWarmongerThreats(PlayerTypes eAllyPlayer) const
+{
+	int iCount = 0;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		if (IsVisiblyAgainstWarmonger(eAllyPlayer, (PlayerTypes)iPlayerLoop, true))
+			iCount++;
+	}
+	return iCount;
+}
+
 /// Are we able to request a coop war with eAllyPlayer against eTargetPlayer?
 bool CvDiplomacyAI::CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer)
 {
 	// Must be teammates or have a Declaration of Friendship with eAllyPlayer to start any coop wars
-	if (!IsTeammate(eAllyPlayer) && !IsDoFAccepted(eAllyPlayer))
+	// (FIX_COALITION_COOP: or be natural partners against a runaway warmonger)
+	if (!IsTeammate(eAllyPlayer) && !IsDoFAccepted(eAllyPlayer) && !IsCoalitionPartnerAgainst(eAllyPlayer, eTargetPlayer))
 		return false;
 
 	// Do we already have a coop war planned?
@@ -42240,8 +42415,10 @@ bool CvDiplomacyAI::CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTarg
 /// Do we want to declare war on anyone with ePlayer?
 bool CvDiplomacyAI::DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eChosenTargetPlayer)
 {
-	// We can only ask our friends.
-	if (!IsDoFAccepted(eAllyPlayer))
+	// We can only ask our friends. (FIX_COALITION_COOP: and, against a runaway warmonger, civs visibly against it; the
+	// target loop below checks which.)
+	const bool bFriend = IsDoFAccepted(eAllyPlayer);
+	if (!bFriend && !GetPlayer()->UsesCandidateAI(FIX_COALITION_COOP))
 		return false;
 
 	// Don't start a war if our empire is in bad shape for it
@@ -42280,8 +42457,14 @@ bool CvDiplomacyAI::DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eC
 		if (!CanRequestCoopWar(eAllyPlayer, eTarget))
 			continue;
 
+		// FIX_COALITION_COOP: a non-friend only against a runaway warmonger it's visibly against
+		const bool bCoalition = IsCoalitionPartnerAgainst(eAllyPlayer, eTarget);
+		if (!bFriend && !bCoalition)
+			continue;
+
 		// Only ask if we're sufficiently upset with the target
-		if (GetBiggestCompetitor() != eTarget && GetCivApproach(eTarget) > CIV_APPROACH_DECEPTIVE)
+		// (FIX_COALITION_COOP: or it's a runaway warmonger; being wary or afraid of it alone is no reason not to ask)
+		if (GetBiggestCompetitor() != eTarget && GetCivApproach(eTarget) > CIV_APPROACH_DECEPTIVE && !bCoalition)
 			continue;
 
 		int iScore = GetCoopWarDesireScore(eAllyPlayer, eTarget, false);
@@ -57894,6 +58077,13 @@ void CvDiplomacyAI::DoHelpRequestMade(PlayerTypes ePlayer, DemandResponseTypes e
 		int iNumTurns = /*20*/ GD_INT_GET(HELP_REQUEST_TURN_LIMIT_MIN);
 		iNumTurns += GC.getGame().randRangeInclusive(0, /*10*/ GD_INT_GET(HELP_REQUEST_TURN_LIMIT_RAND), CvSeeder::fromRaw(0xd1c5ae34).mix(GetID()).mix(GET_PLAYER(ePlayer).GetID()));
 		SetHelpRequestTooSoonNumTurns(ePlayer, iNumTurns);
+	}
+	// FIX_DIPLO_BUGS (D13): a refusal also starts a (shorter) wait, so a human can't re-roll the answer the same turn.
+	// This runs on every machine (FROM_UI_DIPLO_EVENT_HUMAN_REQUEST), so it's multiplayer-safe.
+	else if (eResponse != DEMAND_RESPONSE_GIFT_REFUSE_TOO_SOON && GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS))
+	{
+		SetHelpRequestAcceptedTurn(ePlayer, GC.getGame().getGameTurn());
+		SetHelpRequestTooSoonNumTurns(ePlayer, max(1, /*20*/ GD_INT_GET(HELP_REQUEST_TURN_LIMIT_MIN) / 2));
 	}
 }
 

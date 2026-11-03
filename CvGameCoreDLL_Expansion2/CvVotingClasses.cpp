@@ -12541,14 +12541,20 @@ int CvLeagueAI::ScoreVoteChoiceYesNo(CvProposal* pProposal, int iChoice, bool bE
 		{
 			if (bForSelf)
 			{
+				// FIX_SANCTIONS: a warmonger's threat counts whatever our approach. CP only counted it when we were already
+				// hostile, so civs wary or afraid of a conqueror (the usual case) never voted to sanction it.
+				const bool bSanctionWarmongers = GetPlayer()->UsesCandidateAI(FIX_SANCTIONS);
 				if (GetPlayer()->GetDiplomacyAI()->GetCivApproach(eTargetPlayer) < CIV_APPROACH_GUARDED)
 				{
 					if (GetPlayer()->GetDiplomacyAI()->GetRawTargetValue(eTargetPlayer) > TARGET_VALUE_AVERAGE)
 					{
 						iExtra += (GetPlayer()->GetDiplomacyAI()->GetRawTargetValue(eTargetPlayer) - TARGET_VALUE_AVERAGE) * 100;
 					}
-					iExtra += GetPlayer()->GetDiplomacyAI()->GetWarmongerThreat(eTargetPlayer) * 150;
+					if (!bSanctionWarmongers)
+						iExtra += GetPlayer()->GetDiplomacyAI()->GetWarmongerThreat(eTargetPlayer) * 150;
 				}
+				if (bSanctionWarmongers)
+					iExtra += GetPlayer()->GetDiplomacyAI()->GetWarmongerThreat(eTargetPlayer) * 150;
 
 				if (GetPlayer()->IsAtWarWith(eTargetPlayer))
 				{
@@ -14103,13 +14109,13 @@ void CvLeagueAI::AllocateProposals(CvLeague* pLeague)
 						{
 							for (EnactProposalList::iterator it = pLeague->m_vLastTurnEnactProposals.begin(); it != pLeague->m_vLastTurnEnactProposals.end(); ++it)
 							{
-								if (it->GetID() == pkInfo->GetID())
+								if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 									iScore /= 2;
 							}
 
 							for (RepealProposalList::iterator it = pLeague->m_vLastTurnRepealProposals.begin(); it != pLeague->m_vLastTurnRepealProposals.end(); ++it)
 							{
-								if (it->GetID() == pkInfo->GetID())
+								if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 									iScore /= 2;
 							}
 
@@ -14133,13 +14139,13 @@ void CvLeagueAI::AllocateProposals(CvLeague* pLeague)
 							{
 								for (EnactProposalList::iterator it = pLeague->m_vLastTurnEnactProposals.begin(); it != pLeague->m_vLastTurnEnactProposals.end(); ++it)
 								{
-									if (it->GetID() == pkInfo->GetID())
+									if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 										iScore /= 2;
 								}
 
 								for (RepealProposalList::iterator it = pLeague->m_vLastTurnRepealProposals.begin(); it != pLeague->m_vLastTurnRepealProposals.end(); ++it)
 								{
-									if (it->GetID() == pkInfo->GetID())
+									if (GetPlayer()->UsesCandidateAI(FIX_DIPLO_BUGS) ? it->GetType() == eResolution : it->GetID() == pkInfo->GetID()) // D12: CP compared a proposal's running ID with the resolution type
 										iScore /= 2;
 								}
 

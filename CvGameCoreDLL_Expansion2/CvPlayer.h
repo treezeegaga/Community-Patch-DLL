@@ -175,6 +175,22 @@ enum CandidateFixTypes
 	FIX_SETTLER_SITE_PATH_FLAGS,	// Economy (found-city bug B): an unescorted settler's site is checked with the path flags it will move with
 	FIX_SETTLER_PATH_CHECK,	// Economy (found-city bug C): LostPath only when there is really no path to the (new) target
 	FIX_NO_FOREIGN_MISSIONARIES,	// Economy: a civ without its own religion doesn't faith-buy missionaries (inquisitors unchanged)
+	FIX_EASY_TARGET,		// Diplomacy D1+D2: civs at peace can be rated easy targets (CP skipped them all)
+	FIX_DIPLO_BUGS,			// Diplomacy D3-D8, D12, D13: confirmed diplomacy bugs (AUDIT.md, "Diplomacy audit")
+	FIX_LUXURY_ASK,			// Diplomacy D9: when balancing a deal the AI may ask for the other side's luxuries
+	FIX_CITY_STATE_BUGS,	// Diplomacy D10+D11: city-state alliance handover; city-states roll separately against an aggressor.
+							// Game-wide: on when any major civ has it, so the bully test's pair measures it
+	FIX_DEAL_EXPLOITS,		// Diplomacy: per-turn items in a peace deal are valued for the turns the payer is bound plus half the
+							// rest; a demand is refused unless the demander's visible army could take one of our cities
+	FIX_COALITION_STRENGTH,	// Diplomacy: a severe or critical warmonger is judged against the coalition visibly against it (civs at
+							// war with it count in full, civs denouncing it at half), not against us alone
+	FIX_COALITION_COOP,		// Diplomacy: joint wars against a severe or critical warmonger can be asked of any civ visibly against it
+							// (denouncing it, or it took one of their cities), not only of friends, even while we're wary of it
+	FIX_SANCTIONS,			// Diplomacy: World Congress sanctions weigh the target's warmonger threat whatever our approach to it
+	FIX_COALITION_PACT,		// Diplomacy: defensive pacts with civs that share a severe or critical warmonger threat, friends or not,
+							// scored higher for each threat shared
+	FIX_DEAL_REPUTATION,	// Diplomacy: a civ that declared war on us while it still owed us payments has its per-turn promises
+							// valued lower (in peace deals nothing after the peace lock)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
