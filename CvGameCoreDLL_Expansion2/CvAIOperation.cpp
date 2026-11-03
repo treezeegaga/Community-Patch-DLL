@@ -550,8 +550,9 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 
 	std::stable_sort(choices.begin(),choices.end());
 
-	//AI_AB_TEST (candidate, flag SiegeArmy)
-	const bool bAskForOptionalSlots = IsArmyTooWeakForTarget(pArmy);
+	//AI_AB_TEST (candidate, flag SiegeArmy). Not on the turn the operation is created: CvPlayer::addAIOperation aborts a
+	//new operation that needs more units built than it was allowed (NoUnits), which killed every waiting attack at once
+	const bool bAskForOptionalSlots = GC.getGame().getGameTurn() > GetTurnStarted() && IsArmyTooWeakForTarget(pArmy);
 
 	//rebuild the list
 	int iCount = 0;
