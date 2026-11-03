@@ -267,6 +267,7 @@ void CvGame::ReadABTestSettings()
 {
 	m_uiABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_uiABTestScreenedFixes = 0;
+	m_uiABTestBaseFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -281,8 +282,10 @@ void CvGame::ReadABTestSettings()
 	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
 
 	wchar_t szBuffer[1024];
-	const wchar_t* const aszKeys[2] = { L"Fixes", L"Screen" };
-	for (int iKey = 0; iKey < 2; iKey++)
+	// Base = flags every major AI civ runs, both groups: tests a change on top of earlier ones (e.g. a siege package plus
+	// one more flag against the package alone)
+	const wchar_t* const aszKeys[3] = { L"Fixes", L"Screen", L"Base" };
+	for (int iKey = 0; iKey < 3; iKey++)
 	{
 		szBuffer[0] = 0;
 		GetPrivateProfileStringW(L"ABTest", aszKeys[iKey], L"", szBuffer, 1024, wstrPath.c_str());
@@ -294,8 +297,10 @@ void CvGame::ReadABTestSettings()
 			continue;
 		if (iKey == 0)
 			m_uiABTestCandidateFixes = ParseABTestFixList(strList, strErrorPath);
-		else
+		else if (iKey == 1)
 			m_uiABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
+		else
+			m_uiABTestBaseFixes = ParseABTestFixList(strList, strErrorPath);
 	}
 
 	// Paired games (see WriteABTestReplayRecord): Flip = 1 swaps the groups, and the replay keys repeat the first
@@ -318,6 +323,40 @@ void CvGame::ReadABTestSettings()
 	{
 		m_iABTestHeadStartProduction = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartProduction", 0, wstrPath.c_str());
 		m_iABTestHeadStartGold = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartGold", 0, wstrPath.c_str());
+	}
+
+	// Difficulty = HANDICAP_KING: Civ's setup screen remembers the last difficulty picked, and editing config.ini doesn't
+	// change it (2026-11-03: a Prince game after the c7c runs, caught only by the runner's turn-10 check). Set here,
+	// before InitPlayers, for the game and for every human slot, so the start, the handicap bonuses and the results
+	// all use it. An unknown name is reported in AIABTest_errors.txt and the screen's difficulty stays.
+	GetPrivateProfileStringW(L"ABTest", L"Difficulty", L"", szBuffer, 1024, wstrPath.c_str());
+	{
+		std::string strHandicap;
+		for (const wchar_t* p = szBuffer; *p != 0 && *p != L';' && *p != L'#' && *p != L' ' && *p != L'\t'; ++p)
+			strHandicap += (*p < 128) ? (char)*p : '?';
+		if (!strHandicap.empty())
+		{
+			const HandicapTypes eHandicap = (HandicapTypes)GC.getInfoTypeForString(strHandicap.c_str(), true);
+			if (eHandicap != NO_HANDICAP && GC.getHandicapInfo(eHandicap) != NULL)
+			{
+				setHandicapType(eHandicap);
+				for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+				{
+					if (CvPreGame::slotStatus((PlayerTypes)iI) == SS_TAKEN)
+						CvPreGame::setHandicap((PlayerTypes)iI, eHandicap);
+				}
+			}
+			else
+			{
+				FILE* pFile = NULL;
+				std::wstring wstrErrorPath = CvStringUtils::FromUTF8ToUTF16(strErrorPath);
+				if (_wfopen_s(&pFile, wstrErrorPath.c_str(), L"ab") == 0 && pFile != NULL)
+				{
+					fprintf(pFile, "AIABTest.ini: no difficulty called \"%s\", ignored\r\n", strHandicap.c_str());
+					fclose(pFile);
+				}
+			}
+		}
 	}
 
 	// The setup the runner can't click reliably (lead job 5): Civ forgets game options between games, and the map
@@ -1562,6 +1601,7 @@ void CvGame::uninit()
 	m_intGameId = 0;
 	m_uiABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_uiABTestScreenedFixes = 0;
+	m_uiABTestBaseFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -11305,6 +11345,7 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	{
 		visitor(game.m_uiABTestCandidateFixes);
 		visitor(game.m_uiABTestScreenedFixes);
+		visitor(game.m_uiABTestBaseFixes);
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
 		visitor(game.m_iABTestMode);
@@ -13169,7 +13210,7 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c7c_proposals: c7c_roles with joint-war and sanction proposals, as running counts per proposer: CoopWarAsked,
 /// CoopWarAskedVsAggressor, CoopWarAgreed, CoopWarAgreedVsAggressor, SanctionsProposed, SanctionsProposedVsAggressor,
 /// SanctionsPassed, SanctionsPassedVsAggressor. The AI is unchanged.
-static const char* const AI_AB_TEST_BATCH = "c7c_proposals";
+static const char* const AI_AB_TEST_BATCH = "c7c_research";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
 static CvString GetABTestFixListText(ABTestFixMask uMask)
@@ -13212,7 +13253,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor,ResearchSpent,Faith,FaithPerTurn\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 
@@ -13357,7 +13398,18 @@ void CvGame::LogABTestResults(bool bFinal) const
 			if (kPlayer.GetDiplomacyAI()->IsDenouncedPlayer(eOther))
 				iDenouncing++;
 		}
-		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
+		// ResearchSpent (the user, 2026-11-03): the summed research cost of every tech the team knows, so a later tech
+		// counts for its cost rather than as one (the base cost: no per-city modifier)
+		long long llResearchSpent = 0;
+		{
+			CvTeamTechs* pTeamTechs = GET_TEAM(kPlayer.getTeam()).GetTeamTechs();
+			for (int iTech = 0; iTech < GC.getNumTechInfos(); iTech++)
+			{
+				if (pTeamTechs->HasTech((TechTypes)iTech))
+					llResearchSpent += pTeamTechs->GetResearchCost((TechTypes)iTech);
+			}
+		}
+		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%d,%d\r\n",
 			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_BUILDERS) ? m_iABTestMode : 0],
 			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BUILDER) ? eRole : 0],
 			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
@@ -13370,7 +13422,10 @@ void CvGame::LogABTestResults(bool bFinal) const
 			GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_ASKED), GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_ASKED_VS_AGGRESSOR),
 			GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_AGREED), GetABTestCount(ePlayer, AB_COUNT_COOP_WAR_AGREED_VS_AGGRESSOR),
 			GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PROPOSED), GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PROPOSED_VS_AGGRESSOR),
-			GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED), GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR));
+			GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED), GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR),
+			llResearchSpent,
+			// Faith (stored) and FaithPerTurn (Economy's religion check, 2026-11-03): is faith spent or left to pile up?
+			kPlayer.isAlive() ? kPlayer.GetFaithTimes100() / 100 : 0, kPlayer.isAlive() ? kPlayer.GetTotalFaithPerTurnTimes100() / 100 : 0);
 	}
 
 	fclose(pFile);

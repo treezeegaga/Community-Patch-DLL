@@ -33614,6 +33614,8 @@ bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
 		return (GetCandidateFixBundle() & uBit) != 0;
 
 	const CvGame& kGame = GC.getGame();
+	if (kGame.GetABTestBaseFixes() & uBit)
+		return !isHuman();
 	if (kGame.GetABTestScreenedFixes() & uBit)
 		return !isHuman() && IsABTestScreenSlot(GetID(), (int)eFix);
 	return (kGame.GetABTestCandidateFixes() & uBit) != 0 && IsInCandidateGroup();
