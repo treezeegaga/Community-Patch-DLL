@@ -42294,11 +42294,32 @@ bool CvDiplomacyAI::IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarE
 	return true;
 }
 
+/// AI_AB_TEST FIX_COALITION_COOP: is eAllyPlayer a natural partner against eTargetPlayer, a warmonger that is a severe or
+/// critical threat to us? Judged from public facts only: eAllyPlayer has denounced it, or it has taken one of their cities.
+/// Not its friends or pact partners. Coalitions against a conqueror shouldn't need an existing friendship.
+bool CvDiplomacyAI::IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer) const
+{
+	if (!GetPlayer()->UsesCandidateAI(FIX_COALITION_COOP))
+		return false;
+	if (eAllyPlayer == NO_PLAYER || eTargetPlayer == NO_PLAYER || eAllyPlayer == eTargetPlayer || eAllyPlayer == GetID())
+		return false;
+	if (!GET_PLAYER(eTargetPlayer).isMajorCiv() || GetWarmongerThreat(eTargetPlayer) < THREAT_SEVERE)
+		return false;
+	const CvPlayer& kAlly = GET_PLAYER(eAllyPlayer);
+	if (!kAlly.isAlive() || !kAlly.isMajorCiv() || kAlly.getNumCities() <= 0 || kAlly.getTeam() == GET_PLAYER(eTargetPlayer).getTeam())
+		return false;
+	const CvDiplomacyAI* pAllyDiplo = kAlly.GetDiplomacyAI();
+	if (pAllyDiplo->IsDoFAccepted(eTargetPlayer) || pAllyDiplo->IsHasDefensivePact(eTargetPlayer))
+		return false;
+	return pAllyDiplo->IsDenouncedPlayer(eTargetPlayer) || pAllyDiplo->GetNumCitiesCapturedBy(eTargetPlayer) > 0;
+}
+
 /// Are we able to request a coop war with eAllyPlayer against eTargetPlayer?
 bool CvDiplomacyAI::CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer)
 {
 	// Must be teammates or have a Declaration of Friendship with eAllyPlayer to start any coop wars
-	if (!IsTeammate(eAllyPlayer) && !IsDoFAccepted(eAllyPlayer))
+	// (FIX_COALITION_COOP: or be natural partners against a runaway warmonger)
+	if (!IsTeammate(eAllyPlayer) && !IsDoFAccepted(eAllyPlayer) && !IsCoalitionPartnerAgainst(eAllyPlayer, eTargetPlayer))
 		return false;
 
 	// Do we already have a coop war planned?
@@ -42311,8 +42332,10 @@ bool CvDiplomacyAI::CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTarg
 /// Do we want to declare war on anyone with ePlayer?
 bool CvDiplomacyAI::DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eChosenTargetPlayer)
 {
-	// We can only ask our friends.
-	if (!IsDoFAccepted(eAllyPlayer))
+	// We can only ask our friends. (FIX_COALITION_COOP: and, against a runaway warmonger, civs visibly against it; the
+	// target loop below checks which.)
+	const bool bFriend = IsDoFAccepted(eAllyPlayer);
+	if (!bFriend && !GetPlayer()->UsesCandidateAI(FIX_COALITION_COOP))
 		return false;
 
 	// Don't start a war if our empire is in bad shape for it
@@ -42351,8 +42374,14 @@ bool CvDiplomacyAI::DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eC
 		if (!CanRequestCoopWar(eAllyPlayer, eTarget))
 			continue;
 
+		// FIX_COALITION_COOP: a non-friend only against a runaway warmonger it's visibly against
+		const bool bCoalition = IsCoalitionPartnerAgainst(eAllyPlayer, eTarget);
+		if (!bFriend && !bCoalition)
+			continue;
+
 		// Only ask if we're sufficiently upset with the target
-		if (GetBiggestCompetitor() != eTarget && GetCivApproach(eTarget) > CIV_APPROACH_DECEPTIVE)
+		// (FIX_COALITION_COOP: or it's a runaway warmonger; being wary or afraid of it alone is no reason not to ask)
+		if (GetBiggestCompetitor() != eTarget && GetCivApproach(eTarget) > CIV_APPROACH_DECEPTIVE && !bCoalition)
 			continue;
 
 		int iScore = GetCoopWarDesireScore(eAllyPlayer, eTarget, false);

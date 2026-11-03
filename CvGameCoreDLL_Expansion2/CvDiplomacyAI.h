@@ -1490,6 +1490,7 @@ public:
 	// Coop Wars
 	bool IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarException);
 	bool CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer);
+	bool IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer) const; // AI_AB_TEST FIX_COALITION_COOP
 
 	bool DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eChosenTargetPlayer);
 	int GetCoopWarDesireScore(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bAllyRequest);
