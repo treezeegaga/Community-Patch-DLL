@@ -1491,6 +1491,8 @@ public:
 	bool IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarException);
 	bool CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer);
 	bool IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer) const; // AI_AB_TEST FIX_COALITION_COOP
+	bool IsVisiblyAgainstWarmonger(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bCountNeighbours) const; // AI_AB_TEST
+	int GetNumSharedWarmongerThreats(PlayerTypes eAllyPlayer) const; // AI_AB_TEST FIX_COALITION_PACT
 
 	bool DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eChosenTargetPlayer);
 	int GetCoopWarDesireScore(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bAllyRequest);

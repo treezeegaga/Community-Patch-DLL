@@ -171,6 +171,8 @@ enum CandidateFixTypes
 	FIX_COALITION_COOP,		// Diplomacy: joint wars against a severe or critical warmonger can be asked of any civ visibly against it
 							// (denouncing it, or it took one of their cities), not only of friends, even while we're wary of it
 	FIX_SANCTIONS,			// Diplomacy: World Congress sanctions weigh the target's warmonger threat whatever our approach to it
+	FIX_COALITION_PACT,		// Diplomacy: defensive pacts with civs that share a severe or critical warmonger threat, friends or not,
+							// scored higher for each threat shared
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

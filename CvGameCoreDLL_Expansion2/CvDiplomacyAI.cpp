@@ -22679,6 +22679,22 @@ void CvDiplomacyAI::DoUpdatePlanningExchanges()
 						vAcceptableDefensePacts.push_back(*it);
 					}
 				}
+
+				// FIX_COALITION_PACT: civs that share a runaway warmonger threat with us, friends or not
+				if (GetPlayer()->UsesCandidateAI(FIX_COALITION_PACT))
+				{
+					for (std::vector<PlayerTypes>::iterator it = vValidPlayers.begin(); it != vValidPlayers.end(); ++it)
+					{
+						if (!GET_PLAYER(*it).isMajorCiv() || std::find(vAcceptableDefensePacts.begin(), vAcceptableDefensePacts.end(), *it) != vAcceptableDefensePacts.end())
+							continue;
+
+						if (GET_TEAM(GET_PLAYER(*it).getTeam()).getAliveCount() > iDefensePactLimit)
+							continue;
+
+						if (GetNumSharedWarmongerThreats(*it) > 0 && IsGoodChoiceForDefensivePact(*it))
+							vAcceptableDefensePacts.push_back(*it);
+					}
+				}
 			}
 
 			// First we see if there's any Defensive Pacts we want to end!
@@ -23326,6 +23342,10 @@ int CvDiplomacyAI::ScoreDefensivePactChoice(PlayerTypes eChoice, bool bCoastal)
 	}
 
 	iDPValue += GetCommonFoeScore(eChoice) / -2;
+
+	// FIX_COALITION_PACT: a pact against a common threat is worth more, up to two threats
+	if (GetPlayer()->UsesCandidateAI(FIX_COALITION_PACT))
+		iDPValue += 40 * min(2, GetNumSharedWarmongerThreats(eChoice));
 
 	// Have they liberated us?
 	if (WasResurrectedBy(eChoice))
@@ -42299,11 +42319,17 @@ bool CvDiplomacyAI::IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarE
 /// Not its friends or pact partners. Coalitions against a conqueror shouldn't need an existing friendship.
 bool CvDiplomacyAI::IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer) const
 {
-	if (!GetPlayer()->UsesCandidateAI(FIX_COALITION_COOP))
+	return GetPlayer()->UsesCandidateAI(FIX_COALITION_COOP) && IsVisiblyAgainstWarmonger(eAllyPlayer, eTargetPlayer, false);
+}
+
+/// AI_AB_TEST: eTargetPlayer is a warmonger that is a severe or critical threat to us; is eAllyPlayer visibly against it?
+/// Public facts only: it has denounced it, or lost a city to it, or (bCountNeighbours, for defensive pacts) lives close to
+/// it and so is next in line. Never its friends, pact partners or team.
+bool CvDiplomacyAI::IsVisiblyAgainstWarmonger(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bCountNeighbours) const
+{
+	if (eAllyPlayer == NO_PLAYER || eTargetPlayer == NO_PLAYER || eAllyPlayer == eTargetPlayer || eAllyPlayer == GetID() || eTargetPlayer == GetID())
 		return false;
-	if (eAllyPlayer == NO_PLAYER || eTargetPlayer == NO_PLAYER || eAllyPlayer == eTargetPlayer || eAllyPlayer == GetID())
-		return false;
-	if (!GET_PLAYER(eTargetPlayer).isMajorCiv() || GetWarmongerThreat(eTargetPlayer) < THREAT_SEVERE)
+	if (!GET_PLAYER(eTargetPlayer).isMajorCiv() || !GET_PLAYER(eTargetPlayer).isAlive() || GetWarmongerThreat(eTargetPlayer) < THREAT_SEVERE)
 		return false;
 	const CvPlayer& kAlly = GET_PLAYER(eAllyPlayer);
 	if (!kAlly.isAlive() || !kAlly.isMajorCiv() || kAlly.getNumCities() <= 0 || kAlly.getTeam() == GET_PLAYER(eTargetPlayer).getTeam())
@@ -42311,7 +42337,21 @@ bool CvDiplomacyAI::IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTyp
 	const CvDiplomacyAI* pAllyDiplo = kAlly.GetDiplomacyAI();
 	if (pAllyDiplo->IsDoFAccepted(eTargetPlayer) || pAllyDiplo->IsHasDefensivePact(eTargetPlayer))
 		return false;
-	return pAllyDiplo->IsDenouncedPlayer(eTargetPlayer) || pAllyDiplo->GetNumCitiesCapturedBy(eTargetPlayer) > 0;
+	if (pAllyDiplo->IsDenouncedPlayer(eTargetPlayer) || pAllyDiplo->GetNumCitiesCapturedBy(eTargetPlayer) > 0)
+		return true;
+	return bCountNeighbours && kAlly.GetProximityToPlayer(eTargetPlayer) >= PLAYER_PROXIMITY_CLOSE;
+}
+
+/// AI_AB_TEST FIX_COALITION_PACT: how many warmongers that threaten us (severe or critical) is eAllyPlayer also against?
+int CvDiplomacyAI::GetNumSharedWarmongerThreats(PlayerTypes eAllyPlayer) const
+{
+	int iCount = 0;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		if (IsVisiblyAgainstWarmonger(eAllyPlayer, (PlayerTypes)iPlayerLoop, true))
+			iCount++;
+	}
+	return iCount;
 }
 
 /// Are we able to request a coop war with eAllyPlayer against eTargetPlayer?
