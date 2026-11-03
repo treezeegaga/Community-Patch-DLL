@@ -166,6 +166,8 @@ enum CandidateFixTypes
 							// Game-wide: on when any major civ has it, so the bully test's pair measures it
 	FIX_DEAL_EXPLOITS,		// Diplomacy: per-turn items in a peace deal are valued for the turns the payer is bound plus half the
 							// rest; a demand is refused unless the demander's visible army could take one of our cities
+	FIX_COALITION_STRENGTH,	// Diplomacy: a severe or critical warmonger is judged against the coalition visibly against it (civs at
+							// war with it count in full, civs denouncing it at half), not against us alone
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

@@ -11361,6 +11361,48 @@ void CvDiplomacyAI::DoUpdatePlayerStrengthEstimates()
 			iEnemyDefenseBonus += iThirdPartyDefenseValue;
 		}
 
+		// FIX_COALITION_STRENGTH: a conqueror isn't fought one against one. Against a civ whose warmongering is a severe
+		// or critical threat to us, also count the civs that are visibly against it: at war with it (in full; they keep
+		// its army busy) or denouncing it (at half; they would likely join). Not its friends, pact partners or team, and
+		// only civs that can reach it. Only public facts are used (wars and denouncements are announced). CP counted
+		// allies only once treaty-bound to us, so every civ judged a runaway alone, picked AFRAID, and nobody fought it.
+		if (GET_PLAYER(ePlayer).isMajorCiv() && GetWarmongerThreat(ePlayer) >= THREAT_SEVERE && GetPlayer()->UsesCandidateAI(FIX_COALITION_STRENGTH))
+		{
+			const TeamTypes eTheirTeam = GET_PLAYER(ePlayer).getTeam();
+			for (std::vector<PlayerTypes>::iterator it = vValidPlayers.begin(); it != vValidPlayers.end(); ++it)
+			{
+				PlayerTypes eLoopPlayer = *it;
+				CvPlayer& kLoopPlayer = GET_PLAYER(eLoopPlayer);
+				if (eLoopPlayer == ePlayer || !kLoopPlayer.isMajorCiv() || kLoopPlayer.getNumCities() <= 0 || kLoopPlayer.getTeam() == eOurTeam || kLoopPlayer.getTeam() == eTheirTeam)
+					continue;
+				if (std::find(vOurAllies.begin(), vOurAllies.end(), eLoopPlayer) != vOurAllies.end())
+					continue;
+				if (kLoopPlayer.IsInTerribleShapeForWar() || kLoopPlayer.IsVassalOfSomeone() || GET_PLAYER(ePlayer).IsVassalOfSomeone())
+					continue;
+				if (!kLoopPlayer.CanCrossOcean() && kLoopPlayer.GetProximityToPlayer(ePlayer) < PLAYER_PROXIMITY_CLOSE)
+					continue;
+
+				CvDiplomacyAI* pLoopDiplo = kLoopPlayer.GetDiplomacyAI();
+				if (pLoopDiplo->IsDoFAccepted(ePlayer) || pLoopDiplo->IsHasDefensivePact(ePlayer))
+					continue;
+
+				int iShare = 0;
+				if (GET_TEAM(kLoopPlayer.getTeam()).isAtWar(eTheirTeam))
+					iShare = 100;
+				else if (pLoopDiplo->IsDenouncedPlayer(ePlayer))
+					iShare = 50;
+				if (iShare == 0)
+					continue;
+
+				int iMemberMight = max(iBase + kLoopPlayer.GetMilitaryMight() - kLoopPlayer.GetNuclearMight(), 1);
+				iMemberMight = ComputeDynamicStrengthModifier(eLoopPlayer, ePlayer, iMemberMight);
+				iMemberMight = ComputeRatingStrengthAdjustment(eLoopPlayer, ePlayer, iMemberMight);
+				iMemberMight = iMemberMight * iShare / 100;
+				iAllyAttackBonus += iMemberMight;
+				iAllyDefenseBonus += iMemberMight;
+			}
+		}
+
 
 		// Calculate their overall ATTACK vs. our overall DEFENSE
 		int iTheirOverallAttack = iTheirMilitaryStrength + iEnemyAttackBonus;
