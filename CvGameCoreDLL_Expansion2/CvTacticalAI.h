@@ -387,7 +387,7 @@ private:
 	void AssignBarbarianMoves();
 
 	// Routines to manage identifying and implementing tactical moves
-	void ExecuteCaptureCityMoves();
+	void ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl = AL_HIGH);
 	void PlotGrabGoodyMoves();
 	void PlotMovesToSafety(bool bCombatUnits);
 	void PlotOperationalArmyMoves();
@@ -397,6 +397,7 @@ private:
 	void PlotCivilianAttackMoves();
 	void ExecuteCivilianAttackMoves(AITacticalTargetType eTargetType);
 	void PlotHealMoves(bool bFirstPass);
+	bool IsUnitNeededAtSiege(const CvUnit* pUnit) const;
 	void PlotBarbarianAttacks();
 	void PlotBarbarianCampDefense();
 	void PlotBarbarianRoaming();

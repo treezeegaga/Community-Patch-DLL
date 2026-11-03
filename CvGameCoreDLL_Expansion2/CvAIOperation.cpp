@@ -442,6 +442,49 @@ bool CvAIOperation::RecruitUnit(CvUnit* pUnit)
 	return false;
 }
 
+/// AI_AB_TEST (candidate, flag SiegeArmy): the damage a turn this army's units would do to its target city
+int CvAIOperation::GetArmyExpectedCityDamage(CvArmyAI* pArmy) const
+{
+	CvCity* pCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
+	if (!pArmy || !pCity)
+		return 0;
+
+	int iTotal = 0;
+	for (CvUnit* pUnit = pArmy->GetFirstUnit(); pUnit; pUnit = pArmy->GetNextUnit(pUnit))
+	{
+		int iSelfDamage = 0, iGarrisonDamage = 0;
+		int iDamage = TacticalAIHelpers::GetSimulatedDamageFromAttackOnCity(pCity, pUnit, pUnit->plot(), iSelfDamage, iGarrisonDamage, true, 0, 0, 0, true);
+		//melee units only count if the attack isn't close to suicide (as in CvTacticalAI::ComputeTotalExpectedDamage)
+		if (pUnit->IsCanAttackRanged() || iDamage + iGarrisonDamage > iSelfDamage)
+			iTotal += iDamage;
+	}
+	return iTotal;
+}
+
+/// AI_AB_TEST (candidate, flag SiegeArmy): should this land city attack wait for more units? It should while its expected
+/// damage a turn is below the city's healing plus a fifth of its full HP (about 60 a turn for a 200 HP city, 80 with
+/// walls), for at most 20 turns after the operation started.
+bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog) const
+{
+	if (m_eType != AI_OPERATION_CITY_ATTACK_LAND || !GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_ARMY))
+		return false;
+	CvCity* pCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
+	if (!pArmy || !pCity || GC.getGame().getGameTurn() - GetTurnStarted() >= 20)
+		return false;
+
+	//AI_AB_TEST (candidate, flag SiegeBar): a third of the city's HP instead of a fifth. In a test pair the fifth was met at
+	//the muster point, but at the city the siege peaked at 92 of 200 a turn and the city held
+	const int iHPDivisor = GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_BAR) ? 3 : 5;
+	int iNeeded = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) + pCity->GetMaxHitPoints() / iHPDivisor;
+	int iExpected = GetArmyExpectedCityDamage(pArmy);
+	if (iExpected >= iNeeded)
+		return false;
+
+	if (bLog && GC.getLogging() && GC.getAILogging())
+		LogOperationSpecialMessage(CvString::format("SiegeArmy: waiting for more units, expected damage %d a turn, %s needs %d", iExpected, pCity->getNameNoSpace().c_str(), iNeeded));
+	return true;
+}
+
 //negative return: error; otherwise number of additionally recruited units
 int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTargetPlot, CvArmyAI* pArmy)
 {
@@ -510,6 +553,10 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 
 	std::stable_sort(choices.begin(),choices.end());
 
+	//AI_AB_TEST (candidate, flag SiegeArmy). Not on the turn the operation is created: CvPlayer::addAIOperation aborts a
+	//new operation that needs more units built than it was allowed (NoUnits), which killed every waiting attack at once
+	const bool bAskForOptionalSlots = GC.getGame().getGameTurn() > GetTurnStarted() && IsArmyTooWeakForTarget(pArmy);
+
 	//rebuild the list
 	int iCount = 0;
 	m_viListOfUnitsWeStillNeedToBuild.clear();
@@ -525,7 +572,9 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 				iCount++;
 			else
 			{
-				if (pArmy->GetSlotInfo(iI).m_requiredSlot)
+				//AI_AB_TEST (candidate, flag SiegeArmy): while the army is too weak to take its city, ask for units for the
+				//optional slots as well, otherwise only spare units already in the field could ever fill them
+				if (pArmy->GetSlotInfo(iI).m_requiredSlot || (bAskForOptionalSlots && pArmy->GetArmyAIState() == ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE))
 					m_viListOfUnitsWeStillNeedToBuild.push_back(opSlot);
 			}
 		}
@@ -1534,6 +1583,23 @@ CvPlot* CvAIOperationMilitary::FindBestTarget(CvPlot ** ppMuster) const
 	return NULL;
 }
 
+/// AI_AB_TEST (candidate, flag DeclareAtBorder): is this plot in or next to the enemy's territory?
+bool CvAIOperationMilitary::IsNextToEnemyTerritory(const CvPlot* pPlot) const
+{
+	if (!pPlot || m_eEnemy == NO_PLAYER)
+		return false;
+	if (pPlot->getOwner() == m_eEnemy)
+		return true;
+
+	CvPlot** aNeighbors = GC.getMap().getNeighborsUnchecked(pPlot);
+	for (int iI = 0; iI < NUM_DIRECTION_TYPES; iI++)
+	{
+		if (aNeighbors[iI] && aNeighbors[iI]->getOwner() == m_eEnemy)
+			return true;
+	}
+	return false;
+}
+
 bool CvAIOperationMilitary::CheckTransitionToNextStage()
 {
 	//only a single army right now!
@@ -1549,7 +1615,9 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 		break;
 	case ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE:
 		{
-			if(OperationalAIHelpers::HaveEnoughUnits(pThisArmy->GetSlotStatus(),0))
+			//AI_AB_TEST (candidate, flag SiegeArmy): the required slots alone make a 4-5 unit army, which in test games never
+			//brought a quarter of the damage needed to take a city. Keep recruiting until it can, for up to 20 turns.
+			if(OperationalAIHelpers::HaveEnoughUnits(pThisArmy->GetSlotStatus(),0) && !IsArmyTooWeakForTarget(pThisArmy, true))
 			{
 				pThisArmy->SetArmyAIState(ARMYAISTATE_WAITING_FOR_UNITS_TO_CATCH_UP);
 				m_eCurrentState = AI_OPERATION_STATE_GATHERING_FORCES;
@@ -1628,6 +1696,14 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 						if (pUnit->plot()->IsKnownVisibleToTeam(GET_PLAYER(m_eEnemy).getTeam()))
 							nVisible++;
 					}
+
+					//AI_AB_TEST (candidate, flag DeclareAtBorder): CP counts the army as discovered wherever it is, even in our own
+					//land when an enemy scout sees it, and the war then starts with the army disbanded far from the target (its
+					//units can't join a new attack for 5 turns). At peace nobody can attack it, so keep marching until it's at
+					//their border or close to the target.
+					if (nVisible>2 && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_DECLARE_AT_BORDER) &&
+						plotDistance(*pCenterOfMass, *pTarget) > 2 * GetDeployRange() && !IsNextToEnemyTerritory(pCenterOfMass))
+						nVisible = 0;
 
 					//the jig is up - happens also if we run up against the enemy border
 					if (nVisible>2)

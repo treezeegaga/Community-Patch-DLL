@@ -205,6 +205,8 @@ public:
 
 	virtual bool RecruitUnit(CvUnit* pUnit);
 	virtual int GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTargetPlot, CvArmyAI* pArmy = NULL);
+	int GetArmyExpectedCityDamage(CvArmyAI* pArmy) const;
+	bool IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog = false) const;
 	virtual void UnitWasRemoved(int iArmyID, int iSlotID);
 	virtual CvPlot* ComputeTargetPlotForThisTurn(CvArmyAI* pArmy) const;
 
@@ -290,6 +292,7 @@ public:
 
 	virtual bool CheckTransitionToNextStage();
 	virtual void OnSuccess() const;
+	bool IsNextToEnemyTerritory(const CvPlot* pPlot) const;
 
 protected:
 	//default version does nothing

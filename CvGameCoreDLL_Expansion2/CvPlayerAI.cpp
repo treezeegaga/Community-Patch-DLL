@@ -1325,7 +1325,9 @@ OperationSlot CvPlayerAI::PeekAtNextUnitToBuildForOperationSlot(CvCity* pCity, b
 			if (!pThisArmy || !pThisArmy->GetSlotStatus(thisSlot.m_iSlotID)->IsFree())
 				continue;
 
-			if (OperationalAIHelpers::IsSlotRequired(GetID(), thisSlot))
+			//AI_AB_TEST (candidate, flag SiegeArmy): an attack SiegeArmy holds back as too weak also gets its optional slots
+			//built; otherwise its requests are dropped here and the army never grows (a test game: 21 turns at 16 of 86 a turn)
+			if (OperationalAIHelpers::IsSlotRequired(GetID(), thisSlot) || pThisOperation->IsArmyTooWeakForTarget(pThisArmy))
 			{
 				bestSlot = thisSlot;
 				break;

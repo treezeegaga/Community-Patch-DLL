@@ -872,13 +872,13 @@ void CvTacticalAI::AssignBarbarianMoves()
 }
 
 /// Assign a group of units to take down each city we can capture
-void CvTacticalAI::ExecuteCaptureCityMoves()
+void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 {
 	// See how many moves of this type we can execute
-	for (CvTacticalTarget* pTarget = GetFirstZoneTarget(AI_TACTICAL_TARGET_ENEMY_CITY, AL_HIGH); pTarget!=NULL; pTarget = GetNextZoneTarget(AL_HIGH))
+	for (CvTacticalTarget* pTarget = GetFirstZoneTarget(AI_TACTICAL_TARGET_ENEMY_CITY, eMaxAggLvl); pTarget!=NULL; pTarget = GetNextZoneTarget(eMaxAggLvl))
 	{
 		//mark the target whether the attack happened or not - we won't have a better chance this turn
-		pTarget->SetLastAggLevel(AL_HIGH);
+		pTarget->SetLastAggLevel(eMaxAggLvl);
 
 		// See what units we have who can reach target this turn
 		CvPlot* pPlot = GC.getMap().plot(pTarget->GetTargetX(), pTarget->GetTargetY());
@@ -975,7 +975,8 @@ void CvTacticalAI::ExecuteCaptureCityMoves()
 				}
 
 				//finally do the attack. be a bit more careful if we have few melee units
-				ExecuteAttackWithUnits(pPlot, iMeleeCount>2 ? AL_HIGH : AL_MEDIUM);
+				//AI_AB_TEST: eMaxAggLvl is AL_HIGH except for the SiegePosture flag's safe-shots-only call
+				ExecuteAttackWithUnits(pPlot, eMaxAggLvl < AL_HIGH ? eMaxAggLvl : (iMeleeCount>2 ? AL_HIGH : AL_MEDIUM));
 
 				// Did it work?  If so, don't need a temporary dominance zone if had one here
 				if (pPlot->getOwner() == m_pPlayer->GetID())
@@ -1394,11 +1395,47 @@ void CvTacticalAI::PlotHealMoves(bool bFirstPass)
 			continue;
 
 		if (pUnit->shouldHeal(bFirstPass))
+		{
+			// AI_AB_TEST (candidate, flag SiegeStay): a unit at a siege leaves at 20 damage when it isn't adjacent to an enemy
+			// (CvUnit::shouldHeal), so catapults and archers firing from 2 tiles drift home after one city shot and the
+			// damage per turn falls below the city's healing (a test siege went from 161 to 65 a turn). Stay instead.
+			if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_STAY) && IsUnitNeededAtSiege(pUnit))
+				continue;
+
 			m_CurrentMoveUnits.push_back(CvTacticalUnit(pUnit->GetID()));
+		}
 	}
 
 	if(m_CurrentMoveUnits.size() > 0)
 		ExecuteHeals(bFirstPass);
+}
+
+/// AI_AB_TEST (candidate, flag SiegeStay): is this unit part of a siege that is under way? It is if it's close
+/// enough to fire at (ranged) or attack (melee) a visible enemy city that is already damaged, and it isn't so hurt
+/// that it would die or be useless: at least a third of its HP and not projected to die next turn.
+bool CvTacticalAI::IsUnitNeededAtSiege(const CvUnit* pUnit) const
+{
+	if (!pUnit || !pUnit->IsCombatUnit() || pUnit->getDomainType() != DOMAIN_LAND)
+		return false;
+	if (pUnit->GetCurrHitPoints() * 3 < pUnit->GetMaxHitPoints() || pUnit->isProjectedToDieNextTurn())
+		return false;
+
+	const int iRange = pUnit->IsCanAttackRanged() ? max(2, pUnit->GetRange()) + 1 : 2;
+	for (size_t i = 0; i < m_AllTargets.size(); i++)
+	{
+		if (m_AllTargets[i].GetTargetType() != AI_TACTICAL_TARGET_ENEMY_CITY)
+			continue;
+
+		CvPlot* pCityPlot = GC.getMap().plot(m_AllTargets[i].GetTargetX(), m_AllTargets[i].GetTargetY());
+		if (!pCityPlot || !pCityPlot->isVisible(m_pPlayer->getTeam()) || plotDistance(*pUnit->plot(), *pCityPlot) > iRange)
+			continue;
+
+		CvCity* pCity = pCityPlot->getPlotCity();
+		if (pCity && pCity->getDamage() > 0)
+			return true;
+	}
+
+	return false;
 }
 
 /// Assigns a barbarian to go protect an undefended camp
@@ -1845,6 +1882,12 @@ void CvTacticalAI::PlotAttritionAttacks(CvTacticalDominanceZone* pZone)
 		ExecuteDestroyEnemyUnits(*pTarget,AL_LOW);
 
 	//don't expose our units for city attacks here; if we are likely to succeed we don't call PlotAttritionAttacks
+	//AI_AB_TEST (candidate, flag SiegePosture): attrition is what a siege army of ranged units facing a stronger melee
+	//garrison gets, and without this it never fires at the city, so the army stands next to it for many turns. Run
+	//the city attack at the lowest aggression: the combat simulation then only takes safe shots (bombardment, or a
+	//capture that can't go wrong), and ExecuteCaptureCityMoves keeps its own checks (enemy-dominated zone, healing).
+	if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_POSTURE))
+		ExecuteCaptureCityMoves(AL_LOW);
 }
 
 /// Defeat enemy units by using our advantage in numbers
@@ -2019,7 +2062,18 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 					if (pUnitZone->GetOverallDominanceFlag() != TACTICAL_DOMINANCE_FRIENDLY && pUnitZone->GetPosture() != TACTICAL_POSTURE_WITHDRAW)
 						if (!pPlot->isCity() || pPlot->getPlotCity()->isInDangerOfFalling() || pUnit->getDomainType() == DOMAIN_SEA)
 							if (!pUnit->isEmbarked()) //cannot fight if embarked, so we can take it!
-								continue;
+							{
+								//AI_AB_TEST (candidate, flag ArmyHandoff): a unit just delivered by an attack operation belongs to the attack,
+								//not to the zone it happens to stand in. Held back here, it gets no tactical move and the homeland AI sends
+								//it to a sentry point at home (a test game's army walked home the turn after declaring war).
+								bool bHandoff = m_pPlayer->UsesCandidateAI(FIX_ARMY_HANDOFF) && pUnit->IsRecentlyDeployedFromOperation() &&
+									pUnit->getDomainType() == DOMAIN_LAND && pZoneCity->getTeam() != m_pPlayer->getTeam();
+								if (GC.getLogging() && GC.getAILogging() && pUnit->IsRecentlyDeployedFromOperation())
+									LogTacticalMessage(CvString::format("ArmyHandoff: %s %d just deployed, %s for zone %d (%s)", pUnit->getName().c_str(), pUnit->GetID(),
+										bHandoff ? "sent to reinforce" : "held back from reinforcing", pTargetZone->GetZoneID(), pZoneCity->getNameNoSpace().c_str()));
+								if (!bHandoff)
+									continue;
+							}
 				}
 
 				// Skip ranged if we only need melee
