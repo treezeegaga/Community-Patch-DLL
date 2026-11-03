@@ -166,6 +166,7 @@ enum CandidateFixTypes
 	FIX_AIR_REBASE_HEAL,	// War (bug H2): healing aircraft stay in the quietest base. Off in the bundle
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
+	FIX_SIEGE_BAR,			// War: SiegeArmy waits for healing + a third of the city's HP a turn (not a fifth). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
