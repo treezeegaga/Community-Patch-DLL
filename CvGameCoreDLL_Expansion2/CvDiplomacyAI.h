@@ -404,6 +404,7 @@ public:
 	void ChangeNumWarsFought(PlayerTypes ePlayer, int iChange);
 
 	int GetNumWarsDeclaredOnUs(PlayerTypes ePlayer) const;
+	int GetNumDealsBrokenByWar(PlayerTypes ePlayer) const; // AI_AB_TEST
 	void SetNumWarsDeclaredOnUs(PlayerTypes ePlayer, int iValue);
 	void ChangeNumWarsDeclaredOnUs(PlayerTypes ePlayer, int iChange);
 
@@ -1490,6 +1491,9 @@ public:
 	// Coop Wars
 	bool IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarException);
 	bool CanRequestCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer);
+	bool IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer) const; // AI_AB_TEST FIX_COALITION_COOP
+	bool IsVisiblyAgainstWarmonger(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bCountNeighbours) const; // AI_AB_TEST
+	int GetNumSharedWarmongerThreats(PlayerTypes eAllyPlayer) const; // AI_AB_TEST FIX_COALITION_PACT
 
 	bool DoTestCoopWarDesire(PlayerTypes eAllyPlayer, PlayerTypes& eChosenTargetPlayer);
 	int GetCoopWarDesireScore(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bAllyRequest);
@@ -1905,6 +1909,7 @@ private:
 	PlayerTypes m_eDemandTargetPlayer;
 	PlayerTypes m_eCSWarTarget;
 	PlayerTypes m_eCSBullyTarget;
+	PlayerTypes m_eNewAIConquestTarget; // AI_AB_TEST: the committed target of GetNewAIConquestTarget, saved with the game
 
 	// Other Global Memory
 	bool m_bAvoidDeals; // Not serialized!
@@ -1975,6 +1980,7 @@ private:
 	bool m_abAggressor[MAX_CIV_PLAYERS];
 	unsigned char m_aiNumWarsFought[MAX_CIV_PLAYERS];
 	unsigned char m_aiNumWarsDeclaredOnUs[MAX_MAJOR_CIVS];
+	unsigned char m_aiNumDealsBrokenByWar[MAX_MAJOR_CIVS]; // AI_AB_TEST: deals they ended by declaring war on us while owing us payments
 	unsigned short m_aiCivilianKillerValue[MAX_MAJOR_CIVS];
 	unsigned char m_aiNumCitiesCaptured[MAX_PLAYERS];
 	char m_aeWarState[MAX_CIV_PLAYERS];
