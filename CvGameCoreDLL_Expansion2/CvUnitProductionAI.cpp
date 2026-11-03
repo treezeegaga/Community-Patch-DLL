@@ -280,7 +280,8 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		MilitaryAIStrategyTypes eCritical = (MilitaryAIStrategyTypes)GC.getInfoTypeForString("MILITARYAISTRATEGY_EMPIRE_DEFENSE_CRITICAL");
 		bool bThreatened = (eDefense != NO_MILITARYAISTRATEGY && kPlayer.GetMilitaryAI()->IsUsingStrategy(eDefense)) ||
 			(eCritical != NO_MILITARYAISTRATEGY && kPlayer.GetMilitaryAI()->IsUsingStrategy(eCritical));
-		if (!bThreatened)
+		// GreedyAlarm: a neighbour's army near our cities lifts the cap
+		if (!bThreatened && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
 			return SR_STRATEGY;
 	}
 
@@ -1447,6 +1448,14 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			if (pkUnitEntry->GetRangedCombat() > 0)
 			{
 				iBonus += pkUnitEntry->GetRangedCombat();
+			}
+
+			// AI_AB_TEST candidate (GreedyAlarm): archers behind the walls, up to one ranged land unit per city plus one
+			if (eDomain == DOMAIN_LAND && pkUnitEntry->GetRangedCombat() > 0 && pkUnitEntry->GetDefaultUnitAIType() == UNITAI_RANGED &&
+				CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) != NO_PLAYER &&
+				kPlayer.GetNumUnitsWithUnitAI(UNITAI_RANGED, true) <= kPlayer.getNumCities())
+			{
+				iBonus += 1000;
 			}
 
 			if (kPlayer.IsUnderrepresentedUnitType(pkUnitEntry->GetDefaultUnitAIType()))

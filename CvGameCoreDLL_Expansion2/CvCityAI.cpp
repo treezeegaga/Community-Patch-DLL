@@ -153,7 +153,10 @@ void CvCityAI::AI_chooseProduction(bool bInterruptWonders, bool bInterruptBuildi
 		// The book's later buildings (library and on) give way to the wonder this city is best placed for: over 7
 		// test games the new AI had a fifth of CP's wonders at turn 50, and CP's runaway civs were built on them.
 		// Monuments, shrines and units (settlers) keep priority.
-		if (bBookPick && eBookOrder == ORDER_CONSTRUCT && eNextWonder != NO_BUILDING && !bAlreadyBuilt)
+		// Economy candidate (SettlersBeforeWonders): not while the book still has settlers to start. In the first logged King
+		// games every B capital started Stonehenge or the Great Library at T34-T48 with book settlers still to come
+		const bool bSettlersFirst = kOwner.UsesCandidateAI(FIX_SETTLERS_BEFORE_WONDERS) && isCapital() && kOwner.HasUnstartedBookSettlers();
+		if (bBookPick && eBookOrder == ORDER_CONSTRUCT && eNextWonder != NO_BUILDING && !bAlreadyBuilt && !bSettlersFirst)
 		{
 			static const BuildingClassTypes eMonumentClass = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_MONUMENT", true);
 			static const BuildingClassTypes eShrineClass = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_SHRINE", true);

@@ -33331,6 +33331,20 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"WidePlans", true}, {"BoxedIn", true}, {"LongWide", false}, {"BoxedInWar", true}, {"TimingAttack", true},
 	{"SiegeTechs", true}, {"SiegeBook", true}, {"DeclareTiming", true}, {"GrowthTech", true}, {"AqueductValue", true},
 	{"GreedyArmyCap", false}, {"GreedyBook", true}, {"GreedyTarget", true}, {"CanWin", true}, {"ClosedBorders", true},
+	{"SettlersFirst", false}, {"SettlerOverlap", false},
+	{"DiploPolicyValue", false},
+	{"GreedyAlarm", false},
+	{"IdeologyPick", false},
+	{"PolicyPrereqDepth", false},
+	{"EspionagePolicyValue", false},
+	{"LosingWarBuildings", false},
+	{"CultureRivalValue", false},
+	{"SettlersBeforeWonders", false},
+	{"BookFinishesSettlers", false},
+	{"SettlerEscortSafe", false},
+	{"SettlerSitePathFlags", false},
+	{"SettlerPathCheck", false},
+	{"NoForeignMissionaries", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33735,7 +33749,17 @@ bool CvPlayer::IsOpeningBookActive() const
 	int iTallLimit = UsesCandidateAI(FIX_GREEDY_BOOK) ? 130 : 80;
 	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : iTallLimit;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
-	return GC.getGame().getElapsedGameTurns() <= iTurnLimit;
+	if (GC.getGame().getElapsedGameTurns() <= iTurnLimit)
+		return true;
+
+	// Economy candidate (BookFinishesSettlers): in the first logged King games none of the 5 tall B civs had started its
+	// 3rd book settler when the book ended at T53 (Quick), and the normal AI then took 10-50 turns more for each city.
+	// The book stays on, up to turn 100 (Standard), while one of its settlers is still to be started.
+	if (UsesCandidateAI(FIX_BOOK_FINISHES_SETTLERS) &&
+		GC.getGame().getElapsedGameTurns() <= 100 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100 &&
+		HasUnstartedBookSettlers())
+		return true;
+	return false;
 }
 
 struct OpeningBookStep
@@ -33761,6 +33785,18 @@ static const OpeningBookStep kOpeningTallCapitalGreedy[] = {
 	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"}, {false, "BUILDINGCLASS_AQUEDUCT"},
 	{false, "BUILDINGCLASS_UNIVERSITY"} };
+// Economy candidate (SettlersFirst): the same steps with the settlers ahead of the monument, shrine and worker. In B
+// the 2nd city came at T35-45 on Quick for tall civs and the 3rd at T55-75 for both plans, against T33-40 for a good
+// human's 4th: each settler waited behind 15-25 turns of buildings (a monument or shrine is 8-10 turns, a worker 8)
+static const OpeningBookStep kOpeningTallCapitalSF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WORKER"},
+	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
+static const OpeningBookStep kOpeningTallCapitalGreedySF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WORKER"},
+	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"},
+	{false, "BUILDINGCLASS_AQUEDUCT"}, {false, "BUILDINGCLASS_UNIVERSITY"} };
 static const OpeningBookStep kOpeningTallCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCapital[] = {
@@ -33774,6 +33810,16 @@ static const OpeningBookStep kOpeningWideCapitalLong[] = {
 	{false, "BUILDINGCLASS_SHRINE"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
+// Economy candidate (SettlersFirst): two settlers before the worker, the shrine and monument after the third
+static const OpeningBookStep kOpeningWideCapitalSF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"} };
+static const OpeningBookStep kOpeningWideCapitalLongSF[] = {
+	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
+	{false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
 // Candidate warmongers: a siege army after the second settler (catapult class, so the civ's own ballista or siege
@@ -33791,6 +33837,91 @@ static const OpeningBookStep kOpeningConquestCapital[] = {
 	{true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_ARCHER"}, {false, "BUILDINGCLASS_MONUMENT"} };
 static const OpeningBookStep kOpeningConquestCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"} };
+
+/// AI_AB_TEST: the capital's opening-book steps (NULL if the civ has no book)
+static const OpeningBookStep* GetOpeningBookCapitalSteps(const CvPlayer& kPlayer, int& iNumSteps)
+{
+	iNumSteps = 0;
+	OpeningBookType eBook = kPlayer.GetOpeningBook();
+	if (eBook == OPENING_BOOK_NONE)
+		return NULL;
+#define AB_BOOK_STEPS(a) { iNumSteps = (int)(sizeof(a) / sizeof(OpeningBookStep)); return a; }
+	if (kPlayer.IsCandidateWarmonger(FIX_SIEGE_BOOK))
+		AB_BOOK_STEPS(kOpeningWarmongerCapital)
+	const bool bSF = kPlayer.UsesCandidateAI(FIX_SETTLERS_FIRST);
+	if (eBook == OPENING_BOOK_TALL)
+	{
+		if (kPlayer.UsesCandidateAI(FIX_GREEDY_BOOK))
+		{
+			if (bSF)
+				AB_BOOK_STEPS(kOpeningTallCapitalGreedySF)
+			AB_BOOK_STEPS(kOpeningTallCapitalGreedy)
+		}
+		if (bSF)
+			AB_BOOK_STEPS(kOpeningTallCapitalSF)
+		AB_BOOK_STEPS(kOpeningTallCapital)
+	}
+	if (eBook == OPENING_BOOK_WIDE)
+	{
+		if (kPlayer.UsesCandidateAI(FIX_LONG_WIDE))
+		{
+			if (bSF)
+				AB_BOOK_STEPS(kOpeningWideCapitalLongSF)
+			AB_BOOK_STEPS(kOpeningWideCapitalLong)
+		}
+		if (bSF)
+			AB_BOOK_STEPS(kOpeningWideCapitalSF)
+		AB_BOOK_STEPS(kOpeningWideCapital)
+	}
+	if (eBook == OPENING_BOOK_CONQUEST)
+		AB_BOOK_STEPS(kOpeningConquestCapital)
+	return NULL;
+#undef AB_BOOK_STEPS
+}
+
+/// AI_AB_TEST: does the capital's opening book still have a settler step that hasn't been started (or bought)? Settlers
+/// that became cities count as started. False when no land is left.
+bool CvPlayer::HasUnstartedBookSettlers() const
+{
+	if (!isMajorCiv() || isHuman() || getNumCities() == 0)
+		return false;
+	int iNumSteps = 0;
+	const OpeningBookStep* pSteps = GetOpeningBookCapitalSteps(*this, iNumSteps);
+	if (!pSteps)
+		return false;
+
+	int iWanted = 0;
+	UnitClassTypes eSettlerClass = NO_UNITCLASS;
+	for (int i = 0; i < iNumSteps; i++)
+	{
+		if (!pSteps[i].bUnit)
+			continue;
+		UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pSteps[i].szClass, true);
+		UnitTypes eUnit = (eClass != NO_UNITCLASS) ? GetSpecificUnitType(eClass) : NO_UNIT;
+		CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (pkUnitInfo && pkUnitInfo->IsFound())
+		{
+			iWanted++;
+			eSettlerClass = eClass;
+		}
+	}
+	if (iWanted == 0 || eSettlerClass == NO_UNITCLASS)
+		return false;
+	int iHave = getUnitClassCountPlusMaking(eSettlerClass) + getNumCities() - 1;
+	return iHave < iWanted && !IsBoxedInForSettling();
+}
+
+/// AI_AB_TEST (logging only): why the book passed over a settler step in this city, and what it picked instead. The
+/// expansion-pace reading in RESULTS.md uses it to tell the book's own buildings from a held settler falling through.
+static void LogOpeningBookSettlerHeld(CvPlayer& kPlayer, CvCity* pCity, const char* szHeld, const char* szNext)
+{
+	if (!szHeld || !(GC.getLogging() && GC.getAILogging()))
+		return;
+	CvString strOutBuf;
+	strOutBuf.Format("%s, OPENING BOOK - Settler held (%s), size %d, next %s", pCity->getName().GetCString(), szHeld,
+		pCity->getPopulation(), szNext);
+	kPlayer.GetCitySpecializationAI()->LogMsg(strOutBuf);
+}
 
 /// The next build the opening book wants in this city, if any
 bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData)
@@ -33823,8 +33954,15 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	case OPENING_BOOK_TALL:
 		if (bCapital && UsesCandidateAI(FIX_GREEDY_BOOK))
 		{
-			pSteps = kOpeningTallCapitalGreedy;
-			iNumSteps = (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
+			bool bSF = UsesCandidateAI(FIX_SETTLERS_FIRST);
+			pSteps = bSF ? kOpeningTallCapitalGreedySF : kOpeningTallCapitalGreedy;
+			iNumSteps = bSF ? (int)(sizeof(kOpeningTallCapitalGreedySF) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
+			break;
+		}
+		if (bCapital && UsesCandidateAI(FIX_SETTLERS_FIRST))
+		{
+			pSteps = kOpeningTallCapitalSF;
+			iNumSteps = (int)(sizeof(kOpeningTallCapitalSF) / sizeof(OpeningBookStep));
 			break;
 		}
 		pSteps = bCapital ? kOpeningTallCapital : kOpeningTallCity;
@@ -33833,8 +33971,15 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	case OPENING_BOOK_WIDE:
 		if (bCapital && UsesCandidateAI(FIX_LONG_WIDE))
 		{
-			pSteps = kOpeningWideCapitalLong;
-			iNumSteps = (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
+			bool bSF = UsesCandidateAI(FIX_SETTLERS_FIRST);
+			pSteps = bSF ? kOpeningWideCapitalLongSF : kOpeningWideCapitalLong;
+			iNumSteps = bSF ? (int)(sizeof(kOpeningWideCapitalLongSF) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningWideCapitalLong) / sizeof(OpeningBookStep));
+			break;
+		}
+		if (bCapital && UsesCandidateAI(FIX_SETTLERS_FIRST))
+		{
+			pSteps = kOpeningWideCapitalSF;
+			iNumSteps = (int)(sizeof(kOpeningWideCapitalSF) / sizeof(OpeningBookStep));
 			break;
 		}
 		pSteps = bCapital ? kOpeningWideCapital : kOpeningWideCity;
@@ -33857,6 +34002,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 
 	// How many of each unit class the steps so far ask for (a step for the 3rd settler means 3 settlers)
 	std::map<int, int> unitsWanted;
+	const char* szSettlerHeld = NULL;	// logging only: the first reason a settler step was passed over
 	for (int i = 0; i < iNumSteps; i++)
 	{
 		const OpeningBookStep& kStep = pSteps[i];
@@ -33882,21 +34028,48 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE && GC.getGame().getElapsedGameTurns() > iScoutTurnLimit)
 				continue;
 			if (bSettler && (pCity->getPopulation() < iMinSettlerPop || IsEmpireUnhappy() || IsBoxedInForSettling()))
+			{
+				if (!szSettlerHeld)
+					szSettlerHeld = pCity->getPopulation() < iMinSettlerPop ? "size 1" : IsEmpireUnhappy() ? "unhappy" : "boxed in";
 				continue;
+			}
 			// only wait for growth that is imminent: a fast-growing capital always has its next citizen closer than the
 			// settler, and waiting for that kept one capital from starting a settler until turn 37
 			if (bSettler && pCity->getYieldRateTimes100(YIELD_FOOD) > 0 && pCity->getFoodTurnsLeft() <= 3 &&
 				pCity->getFoodTurnsLeft() < pCity->getProductionTurnsLeft(eUnit, 0))
+			{
+				if (!szSettlerHeld)
+					szSettlerHeld = "growth due";
 				continue;
+			}
 			// One settler at a time: a second one only waits around while the first walks, and with two idle
 			// settlers the found-city operation can take the one that can't reach a site and abort every turn
-			if (bSettler && GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) > 0)
+			// Economy candidate (SettlerOverlap): only settlers in training count against it. A settler takes 10+ turns
+			// to train and 3-4 to walk to its site, so the next one starts while the last one walks, instead of the
+			// capital falling through to the book's next building (a monument or library, 8-20 turns) and the next
+			// settler waiting for it. At most one is on the map unless training finishes before the walk does.
+			if (bSettler && UsesCandidateAI(FIX_SETTLER_OVERLAP))
+			{
+				if (GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) - GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 0 ||
+					GetNumUnitsWithUnitAI(UNITAI_SETTLE, false) > 1)
+				{
+					if (!szSettlerHeld)
+						szSettlerHeld = "one at a time";
+					continue;
+				}
+			}
+			else if (bSettler && GetNumUnitsWithUnitAI(UNITAI_SETTLE, true) > 0)
+			{
+				if (!szSettlerHeld)
+					szSettlerHeld = "one at a time";
 				continue;
+			}
 			if (!pCity->canTrain(eUnit))
 				continue;
 
 			eOrder = ORDER_TRAIN;
 			iData = eUnit;
+			LogOpeningBookSettlerHeld(*this, pCity, szSettlerHeld, pkUnitInfo->GetDescription());
 			return true;
 		}
 		else
@@ -33911,10 +34084,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 
 			eOrder = ORDER_CONSTRUCT;
 			iData = eBuilding;
+			LogOpeningBookSettlerHeld(*this, pCity, szSettlerHeld, GC.getBuildingInfo(eBuilding)->GetDescription());
 			return true;
 		}
 	}
 
+	LogOpeningBookSettlerHeld(*this, pCity, szSettlerHeld, "the normal AI choice");
 	return false;
 }
 
@@ -48519,6 +48694,13 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 	//order by increasing score
 	std::stable_sort( vSettlePlots.begin(), vSettlePlots.end() );
 	int iFlags = CvUnit::MOVEFLAG_NO_ENEMY_TERRITORY | CvUnit::MOVEFLAG_PRETEND_ALL_REVEALED;
+	// AI_AB_TEST candidate (SettlerSitePathFlags): a found-city operation whose settler has no escort moves with
+	// MOVEFLAG_AI_ABORT_IN_DANGER (CvAIOperationCivilianFoundCity::VerifyOrAdjustTarget), so check sites the same way.
+	// Otherwise the best site can be one behind danger the settler can't walk to, re-picked every turn (a test game:
+	// "no path to city site" for 20 turns, and the civ ended with one city).
+	if (pUnit && pOpToIgnore && pOpToIgnore->GetOperationType() == AI_OPERATION_FOUND_CITY && UsesCandidateAI(FIX_SETTLER_SITE_PATH_FLAGS) &&
+		!static_cast<CvAIOperationCivilian*>(pOpToIgnore)->IsEscorted())
+		iFlags |= CvUnit::MOVEFLAG_AI_ABORT_IN_DANGER;
 
 	if (!pUnit)
 		return vSettlePlots.back().pPlot;

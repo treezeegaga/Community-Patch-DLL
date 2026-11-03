@@ -159,6 +159,22 @@ enum CandidateFixTypes
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
 	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
+	FIX_SETTLERS_FIRST,		// Economy: the capital's opening-book settlers come before its monument, shrine and worker. Not in the bundle
+	FIX_SETTLER_OVERLAP,	// Economy: the next book settler may start training while the last one walks to its site. Not in the bundle
+	FIX_DIPLO_POLICY_VALUE,	// Economy (CvPolicyAI audit P1): diplomacy-flavoured policies lose their value only when hostile to a city-state. Not in the bundle
+	FIX_GREEDY_ALARM,		// Economy (c8): a tall civ that sees a neighbour's army near its cities builds walls and ranged units (and lifts
+							// GreedyArmyCap). Not in the bundle
+	FIX_IDEOLOGY_PICK,		// Economy (CvPolicyAI audit P2): a ruled-out ideology can't win the pick when the others score below 0. Not in the bundle
+	FIX_POLICY_PREREQ_DEPTH,	// Economy (CvPolicyAI audit P3): policy weight passed to prerequisites at the right depth. Not in the bundle
+	FIX_ESPIONAGE_POLICY_VALUE,	// Economy (CvPolicyAI audit P4): the passive espionage bonus is scored by its own value. Not in the bundle
+	FIX_LOSING_WAR_BUILDINGS,	// Economy (E1): a civ losing a war cuts non-defensive buildings further, as CP meant (dead loop). Not in the bundle
+	FIX_CULTURE_RIVAL_VALUE,	// Economy (E2): culture is valued more when a rival's tourism gains on us, as CP meant (dead loop). Not in the bundle
+	FIX_SETTLERS_BEFORE_WONDERS,	// Economy: no world wonder in the capital while the opening book still has settlers to start. Not in the bundle
+	FIX_BOOK_FINISHES_SETTLERS,	// Economy: the opening book stays active (to T100 Standard) until its settlers are started. Not in the bundle
+	FIX_SETTLER_ESCORT_SAFE,	// Economy (found-city bug A): a settler that can reach its site this turn goes alone only if the trip looks safe
+	FIX_SETTLER_SITE_PATH_FLAGS,	// Economy (found-city bug B): an unescorted settler's site is checked with the path flags it will move with
+	FIX_SETTLER_PATH_CHECK,	// Economy (found-city bug C): LostPath only when there is really no path to the (new) target
+	FIX_NO_FOREIGN_MISSIONARIES,	// Economy: a civ without its own religion doesn't faith-buy missionaries (inquisitors unchanged)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
@@ -1730,6 +1746,7 @@ public:
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
 	bool IsBoxedInForSettling() const;
+	bool HasUnstartedBookSettlers() const;
 	bool IsCandidateWarmonger(CandidateFixTypes eFix) const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;

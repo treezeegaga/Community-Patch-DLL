@@ -420,6 +420,11 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	
 	// We will score each ideology in this vector
 	std::vector<int> vIdeologyPriorities(vIdeologyBranches.size(), 1);
+	// AI_AB_TEST candidate (IdeologyPick): CP marks a ruled-out ideology by setting its score to 0, but the relations
+	// step below can push the others to 0 or below, and the final pick is a plain maximum, so a ruled-out ideology
+	// could win (and an ideology that lands exactly on 0 skipped the later steps). The candidate tracks them apart.
+	const bool bTrackRuledOut = pPlayer->UsesCandidateAI(FIX_IDEOLOGY_PICK);
+	std::vector<bool> vRuledOut(vIdeologyBranches.size(), false);
 	int iGrandTotal = 0;
 	int iPriorityToDivide = /*1000*/ GD_INT_GET(IDEOLOGY_SCORE_GRAND_STRATS);
 	int iHappinessModifier = /*10*/ GD_INT_GET(IDEOLOGY_SCORE_HAPPINESS);
@@ -467,13 +472,19 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 			{
 				CvPlayerPolicies* pPolicies = pPlayer->GetPlayerPolicies();
 				if (!pPolicies->CanAdoptIdeology(eBranch))
+				{
 					vIdeologyPriorities[i] = 0;
+					vRuledOut[i] = true;
+				}
 			}
 			
 			// Rule out one ideology if we are clearly (at least X% more priority) going for a victory this ideology doesn't support
 			int iClearPrefPercent = /*25*/ GD_INT_GET(IDEOLOGY_PERCENT_CLEAR_VICTORY_PREF);
 			if (iMaxUnsupported > (iMaxSupported * (100 + iClearPrefPercent) / 100))
+			{
 				vIdeologyPriorities[i] = 0;
+				vRuledOut[i] = true;
+			}
 		}
 	}
 
@@ -486,7 +497,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	for (size_t i = 0; i < vIdeologyPriorities.size(); i++)
 	{
 		// if we've ruled it out, move on to the next item in the loop
-		if (vIdeologyPriorities[i] == 0)
+		if (bTrackRuledOut ? (bool)vRuledOut[i] : (vIdeologyPriorities[i] == 0))
 			continue;
 
 		// normalize
@@ -566,7 +577,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	for (size_t i = 0; i < vIdeologyPriorities.size(); i++)
 	{
 		// if we've ruled it out, move on to the next item in the loop
-		if (vIdeologyPriorities[i] == 0)
+		if (bTrackRuledOut ? (bool)vRuledOut[i] : (vIdeologyPriorities[i] == 0))
 			continue;
 
 		PolicyBranchTypes eBranch = vIdeologyBranches[i];
@@ -589,7 +600,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	for (size_t i = 0; i < vIdeologyPriorities.size(); i++)
 	{
 		// if we've ruled it out, move on to the next item in the loop
-		if (vIdeologyPriorities[i] == 0)
+		if (bTrackRuledOut ? (bool)vRuledOut[i] : (vIdeologyPriorities[i] == 0))
 			continue;
 
 		// now actually look at the policies in the branch and see how much we like them!
@@ -606,6 +617,18 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	{
 	    if (vIdeologyPriorities[i] > vIdeologyPriorities[iBestBranchIdx])
 	        iBestBranchIdx = i;
+	}
+	// candidate: the best of those not ruled out (if all were ruled out, CP's pick stands)
+	if (bTrackRuledOut)
+	{
+		int iBestOpen = -1;
+		for (size_t i = 0; i < vIdeologyPriorities.size(); ++i)
+		{
+			if (!vRuledOut[i] && (iBestOpen < 0 || vIdeologyPriorities[i] > vIdeologyPriorities[iBestOpen]))
+				iBestOpen = (int)i;
+		}
+		if (iBestOpen >= 0)
+			iBestBranchIdx = iBestOpen;
 	}
 	PolicyBranchTypes eChosenBranch = vIdeologyBranches[iBestBranchIdx];
 	
@@ -1023,7 +1046,12 @@ void CvPolicyAI::PropagateWeights(int iPolicy, int iWeight, int iPropagationPerc
 				// Recurse to its prereqs (assuming we have any weight left)
 				if(iPropagatedWeight > 0)
 				{
-					PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel++);
+					// AI_AB_TEST candidate (PolicyPrereqDepth): CP passes iPropagationLevel++ (AUDIT.md item 8's bug, in the
+					// policy copy): the first prerequisite recurses at the same depth and later ones a level deeper each
+					if (m_pCurrentPolicies->GetPlayer()->UsesCandidateAI(FIX_POLICY_PREREQ_DEPTH))
+						PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel + 1);
+					else
+						PropagateWeights(iPrereq, iPropagatedWeight, iPropagationPercent, iPropagationLevel++);
 				}
 			}
 			else
@@ -2322,7 +2350,11 @@ Firaxis::Array< int, NUM_YIELD_TYPES > CvPolicyAI::WeightPolicyAttributes(CvPlay
 	}
 	if (PolicyInfo->GetPassiveEspionageBonusModifier() != 0)
 	{
-		yield[YIELD_SCIENCE] += PolicyInfo->GetRigElectionInfluenceModifier() / 10;
+		// AI_AB_TEST candidate (EspionagePolicyValue): CP scores this with the rig-election value (copy-paste)
+		if (pPlayer->UsesCandidateAI(FIX_ESPIONAGE_POLICY_VALUE))
+			yield[YIELD_SCIENCE] += PolicyInfo->GetPassiveEspionageBonusModifier() / 10;
+		else
+			yield[YIELD_SCIENCE] += PolicyInfo->GetRigElectionInfluenceModifier() / 10;
 	}
 	if (PolicyInfo->GetMilitaryUnitGiftExtraInfluence() != 0)
 	{
@@ -4805,7 +4837,13 @@ int CvPolicyAI::WeighPolicy(CvPlayer* pPlayer, PolicyTypes ePolicy)
 						// Loop through all minors - if we're itching to conquer, bail out on diplo policies.
 						if (GET_PLAYER(eMinor).isMinorCiv() && GET_PLAYER(eMinor).isAlive())
 						{
-							if (pPlayer->GetDiplomacyAI()->GetCivApproach(eMinor) >= CIV_APPROACH_HOSTILE)
+							// AI_AB_TEST candidate (DiploPolicyValue): ">= HOSTILE" is true for every approach but WAR
+							// (WAR < HOSTILE < ... < FRIENDLY), so the diplomacy value was dropped for nearly every civ and
+							// kept only by those planning war on a city-state: the opposite of the comment above
+							bool bHostileToMinor = pPlayer->UsesCandidateAI(FIX_DIPLO_POLICY_VALUE) ?
+								pPlayer->GetDiplomacyAI()->GetCivApproach(eMinor) <= CIV_APPROACH_HOSTILE :
+								pPlayer->GetDiplomacyAI()->GetCivApproach(eMinor) >= CIV_APPROACH_HOSTILE;
+							if (bHostileToMinor)
 							{
 								iDiploValue -= iFlavorValue;
 								break;

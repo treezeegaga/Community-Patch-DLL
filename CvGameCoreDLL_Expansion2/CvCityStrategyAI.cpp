@@ -4300,7 +4300,10 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 			{
 				PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
 
-				if (eLoopPlayer != NO_PLAYER && eLoopPlayer != kPlayer.GetID() && GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsPlayerValid(eLoopPlayer) && !GET_PLAYER(eLoopPlayer).isMinorCiv())
+				// AI_AB_TEST candidate (CultureRivalValue): CP asks the rival whether it is valid to itself, which is always false
+				// (IsPlayerValid rejects one's own team), so no rival multiplier ever applied, in CP or B
+				CvDiplomacyAI* pValidator = kPlayer.UsesCandidateAI(FIX_CULTURE_RIVAL_VALUE) ? kPlayer.GetDiplomacyAI() : GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
+				if (eLoopPlayer != NO_PLAYER && eLoopPlayer != kPlayer.GetID() && pValidator->IsPlayerValid(eLoopPlayer) && !GET_PLAYER(eLoopPlayer).isMinorCiv())
 				{
 					int iRivalMultiplier = 1;
 					if (GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsCloseToCultureVictory())
@@ -5585,4 +5588,33 @@ int  CityStrategyAIHelpers::GetBuildingTraitValue(CvCity *pCity, YieldTypes eYie
 	}
 
 	return iBonus;
+}
+
+/// AI_AB_TEST candidate (GreedyAlarm, the c8 idea in RESULTS.md): greedy tall civs that kept a small army drew wars
+/// (c6, 0-3). A good greedy player keeps the economy but watches the border: when a neighbour's army shows up near its
+/// cities it walls up and adds archers before the war starts. The signal is CP's military aggressive posture, which
+/// counts only units we can see near our cities (CountAggressiveMilitaryScore: 2 per unit outside their own land, 1
+/// inside it, MEDIUM from 6), so it uses nothing a human couldn't see. Not at war: war has its own production rules.
+PlayerTypes CityStrategyAIHelpers::GetGreedyAlarmThreat(const CvPlayer& kPlayer)
+{
+	if (!kPlayer.isMajorCiv() || kPlayer.isHuman() || !kPlayer.UsesCandidateAI(FIX_GREEDY_ALARM))
+		return NO_PLAYER;
+	if (kPlayer.GetOpeningBook() != OPENING_BOOK_TALL || kPlayer.IsAtWarAnyMajor())
+		return NO_PLAYER;
+
+	PlayerTypes eWorst = NO_PLAYER;
+	int iWorst = AGGRESSIVE_POSTURE_LOW;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (eLoopPlayer == kPlayer.GetID() || !kPlayer.GetDiplomacyAI()->IsPlayerValid(eLoopPlayer))
+			continue;
+		int iPosture = (int)kPlayer.GetDiplomacyAI()->GetMilitaryAggressivePosture(eLoopPlayer);
+		if (iPosture > iWorst)
+		{
+			iWorst = iPosture;
+			eWorst = eLoopPlayer;
+		}
+	}
+	return eWorst;
 }

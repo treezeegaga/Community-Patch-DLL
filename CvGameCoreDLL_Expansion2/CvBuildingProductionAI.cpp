@@ -182,6 +182,12 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		}
 	}
 
+	// AI_AB_TEST candidate (SettlersBeforeWonders): no world wonder in the capital while the opening book still has
+	// settlers to start (in the first logged King games every B capital started one at T34-T48 and settler 2 waited)
+	if (isWorldWonderClass(kBuildingClassInfo) && m_pCity->isCapital() && kPlayer.UsesCandidateAI(FIX_SETTLERS_BEFORE_WONDERS) &&
+		kPlayer.IsOpeningBookActive() && kPlayer.HasUnstartedBookSettlers())
+		return SR_STRATEGY;
+
 	if (isNationalWonderClass(kBuildingClassInfo) || isWorldWonderClass(kBuildingClassInfo))
 	{
 		if (isWorldWonderClass(kBuildingClassInfo))
@@ -783,6 +789,10 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	else if (kPlayer.IsAtWarAnyMajor())
 		iDefenseMod += 150;
 
+	// AI_AB_TEST candidate (GreedyAlarm): a neighbour's army is at the border; wall up as if at war
+	if (!bIgnoreSituational && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) != NO_PLAYER)
+		iDefenseMod += m_pCity->isBorderCity() ? 1000 : 300;
+
 	bool bDanger = !bIgnoreSituational && m_pCity->isUnderSiege();
 	if (bDanger)
 	{
@@ -1343,7 +1353,10 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			{
 				PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
 
-				if (eLoopPlayer != kPlayer.GetID() && GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsPlayerValid(eLoopPlayer) && GET_TEAM(kPlayer.getTeam()).isAtWar(GET_PLAYER(eLoopPlayer).getTeam()))
+				// AI_AB_TEST candidate (LosingWarBuildings): CP asks the enemy whether it is valid to itself, which is always
+				// false (IsPlayerValid rejects one's own team), so this loop never added anything
+				CvDiplomacyAI* pValidator = kPlayer.UsesCandidateAI(FIX_LOSING_WAR_BUILDINGS) ? kPlayer.GetDiplomacyAI() : GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
+				if (eLoopPlayer != kPlayer.GetID() && pValidator->IsPlayerValid(eLoopPlayer) && GET_TEAM(kPlayer.getTeam()).isAtWar(GET_PLAYER(eLoopPlayer).getTeam()))
 				{
 					if (kPlayer.GetDiplomacyAI()->GetWarState(eLoopPlayer) < WAR_STATE_STALEMATE)
 					{
