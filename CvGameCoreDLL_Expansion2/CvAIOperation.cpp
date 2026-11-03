@@ -1854,7 +1854,13 @@ void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 	pArmy->AddUnit(pOurCivilian->GetID(),0,true);
 
 	//a little hack - set the escort slot to not required if we can reach the target this turn
-	if (bSkipEscort || pOurCivilian->TurnsToReachTarget(pTargetSite, CvUnit::MOVEFLAG_TURN_END_IS_NEXT_TURN, 1) < 1)
+	bool bReachableNow = pOurCivilian->TurnsToReachTarget(pTargetSite, CvUnit::MOVEFLAG_TURN_END_IS_NEXT_TURN, 1) < 1;
+	// AI_AB_TEST candidate (SettlerEscortSafe): CP drops the escort for a short trip even next to danger, which bypasses
+	// SettlerTripLooksSafe; then the lone settler can't path past the danger (MOVEFLAG_AI_ABORT_IN_DANGER) and waits
+	// beside it (a test game: one tile from its site for 16 turns, then killed)
+	if (bReachableNow && m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SETTLER_ESCORT_SAFE))
+		bReachableNow = SettlerTripLooksSafe(pOurCivilian, pTargetSite);
+	if (bSkipEscort || bReachableNow)
 		pArmy->GetSlotStatus(1)->Clear();
 
 	SetUpArmy(pArmy,pMusterPlot,pTargetSite,NULL);
@@ -2095,6 +2101,29 @@ AIOperationAbortReason CvAIOperationCivilianFoundCity::VerifyOrAdjustTarget(CvAr
 		{
 			LogOperationSpecialMessage( CvString::format("no valid city site target found (%s)!", IsEscorted() ? "with escort" : "no escort").c_str() );
 			return AI_ABORT_NO_TARGET;
+		}
+
+		// AI_AB_TEST candidate (SettlerPathCheck): CP switches without checking the new target's path and then aborts with
+		// LostPath when the path has no step this turn, which also happens to a good path when the settler has no moves
+		// left (an escorted settler's operation died the turn it started, nine turns running). The candidate switches
+		// only to a target it has a path to, and judges by the path itself.
+		if (GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SETTLER_PATH_CHECK))
+		{
+			if (pBetterTarget != GetTargetPlot())
+			{
+				if (pSettler->GeneratePath(pBetterTarget, iFlags))
+				{
+					SetTargetPlot(pBetterTarget);
+					pArmy->SetGoalPlot(pBetterTarget);
+				}
+				else
+				{
+					LogOperationSpecialMessage(CvString::format("no path to better site (%d:%d), keeping (%d:%d)",
+						pBetterTarget->getX(), pBetterTarget->getY(), m_iTargetX, m_iTargetY).c_str());
+					pSettler->GeneratePath(GetTargetPlot(), iFlags); // the current target's path (it has one, see above)
+				}
+			}
+			return NO_ABORT_REASON;
 		}
 
 		// switch if we have a better target

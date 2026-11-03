@@ -33341,6 +33341,9 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"CultureRivalValue", false},
 	{"SettlersBeforeWonders", false},
 	{"BookFinishesSettlers", false},
+	{"SettlerEscortSafe", false},
+	{"SettlerSitePathFlags", false},
+	{"SettlerPathCheck", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -48686,6 +48689,13 @@ CvPlot* CvPlayer::GetBestSettlePlot(CvUnit* pUnit, CvAIOperation* pOpToIgnore, b
 	//order by increasing score
 	std::stable_sort( vSettlePlots.begin(), vSettlePlots.end() );
 	int iFlags = CvUnit::MOVEFLAG_NO_ENEMY_TERRITORY | CvUnit::MOVEFLAG_PRETEND_ALL_REVEALED;
+	// AI_AB_TEST candidate (SettlerSitePathFlags): a found-city operation whose settler has no escort moves with
+	// MOVEFLAG_AI_ABORT_IN_DANGER (CvAIOperationCivilianFoundCity::VerifyOrAdjustTarget), so check sites the same way.
+	// Otherwise the best site can be one behind danger the settler can't walk to, re-picked every turn (a test game:
+	// "no path to city site" for 20 turns, and the civ ended with one city).
+	if (pUnit && pOpToIgnore && pOpToIgnore->GetOperationType() == AI_OPERATION_FOUND_CITY && UsesCandidateAI(FIX_SETTLER_SITE_PATH_FLAGS) &&
+		!static_cast<CvAIOperationCivilian*>(pOpToIgnore)->IsEscorted())
+		iFlags |= CvUnit::MOVEFLAG_AI_ABORT_IN_DANGER;
 
 	if (!pUnit)
 		return vSettlePlots.back().pPlot;
