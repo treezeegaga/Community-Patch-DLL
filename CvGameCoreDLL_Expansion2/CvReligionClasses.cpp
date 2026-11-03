@@ -7390,6 +7390,12 @@ bool CvReligionAI::BuyMissionaryOrInquisitor(ReligionTypes eReligion)
 /// Pick the right city to purchase a missionary in
 bool CvReligionAI::BuyMissionary(ReligionTypes eReligion)
 {
+	// AI_AB_TEST candidate (NoForeignMissionaries): in the logged King games civs with no religion of their own bought 1-4
+	// missionaries each, spreading another civ's religion with their faith. Only missionaries, and only for those civs:
+	// a founder's own missionaries and all inquisitors are unchanged.
+	if (m_pPlayer->GetReligions()->GetOwnedReligion() == NO_RELIGION && m_pPlayer->UsesCandidateAI(FIX_NO_FOREIGN_MISSIONARIES))
+		return false;
+
 	UnitTypes eMissionary = m_pPlayer->GetSpecificUnitType("UNITCLASS_MISSIONARY");
 
 	CvCity *pCapital = m_pPlayer->getCapitalCity();

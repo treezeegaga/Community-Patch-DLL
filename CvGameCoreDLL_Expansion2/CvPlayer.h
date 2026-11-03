@@ -174,6 +174,7 @@ enum CandidateFixTypes
 	FIX_SETTLER_ESCORT_SAFE,	// Economy (found-city bug A): a settler that can reach its site this turn goes alone only if the trip looks safe
 	FIX_SETTLER_SITE_PATH_FLAGS,	// Economy (found-city bug B): an unescorted settler's site is checked with the path flags it will move with
 	FIX_SETTLER_PATH_CHECK,	// Economy (found-city bug C): LostPath only when there is really no path to the (new) target
+	FIX_NO_FOREIGN_MISSIONARIES,	// Economy: a civ without its own religion doesn't faith-buy missionaries (inquisitors unchanged)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
