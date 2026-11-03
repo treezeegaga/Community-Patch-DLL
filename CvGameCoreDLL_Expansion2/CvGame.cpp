@@ -320,6 +320,40 @@ void CvGame::ReadABTestSettings()
 		m_iABTestHeadStartGold = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartGold", 0, wstrPath.c_str());
 	}
 
+	// Difficulty = HANDICAP_KING: Civ's setup screen remembers the last difficulty picked, and editing config.ini doesn't
+	// change it (2026-11-03: a Prince game after the c7c runs, caught only by the runner's turn-10 check). Set here,
+	// before InitPlayers, for the game and for every human slot, so the start, the handicap bonuses and the results
+	// all use it. An unknown name is reported in AIABTest_errors.txt and the screen's difficulty stays.
+	GetPrivateProfileStringW(L"ABTest", L"Difficulty", L"", szBuffer, 1024, wstrPath.c_str());
+	{
+		std::string strHandicap;
+		for (const wchar_t* p = szBuffer; *p != 0 && *p != L';' && *p != L'#' && *p != L' ' && *p != L'\t'; ++p)
+			strHandicap += (*p < 128) ? (char)*p : '?';
+		if (!strHandicap.empty())
+		{
+			const HandicapTypes eHandicap = (HandicapTypes)GC.getInfoTypeForString(strHandicap.c_str(), true);
+			if (eHandicap != NO_HANDICAP && GC.getHandicapInfo(eHandicap) != NULL)
+			{
+				setHandicapType(eHandicap);
+				for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+				{
+					if (CvPreGame::slotStatus((PlayerTypes)iI) == SS_TAKEN)
+						CvPreGame::setHandicap((PlayerTypes)iI, eHandicap);
+				}
+			}
+			else
+			{
+				FILE* pFile = NULL;
+				std::wstring wstrErrorPath = CvStringUtils::FromUTF8ToUTF16(strErrorPath);
+				if (_wfopen_s(&pFile, wstrErrorPath.c_str(), L"ab") == 0 && pFile != NULL)
+				{
+					fprintf(pFile, "AIABTest.ini: no difficulty called \"%s\", ignored\r\n", strHandicap.c_str());
+					fclose(pFile);
+				}
+			}
+		}
+	}
+
 	// The setup the runner can't click reliably (lead job 5): Civ forgets game options between games, and the map
 	// options sit in dropdowns. Set before the map script runs (init2): Ruins = 0 sets "no ancient ruins", which the
 	// map script's AddGoodies checks; MapOption<n> = v sets the map script's option n (the name Map.GetCustomOption(n)
