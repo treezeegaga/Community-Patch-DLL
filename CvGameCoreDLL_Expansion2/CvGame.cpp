@@ -267,6 +267,7 @@ void CvGame::ReadABTestSettings()
 {
 	m_uiABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_uiABTestScreenedFixes = 0;
+	m_uiABTestBaseFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -281,8 +282,10 @@ void CvGame::ReadABTestSettings()
 	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
 
 	wchar_t szBuffer[1024];
-	const wchar_t* const aszKeys[2] = { L"Fixes", L"Screen" };
-	for (int iKey = 0; iKey < 2; iKey++)
+	// Base = flags every major AI civ runs, both groups: tests a change on top of earlier ones (e.g. a siege package plus
+	// one more flag against the package alone)
+	const wchar_t* const aszKeys[3] = { L"Fixes", L"Screen", L"Base" };
+	for (int iKey = 0; iKey < 3; iKey++)
 	{
 		szBuffer[0] = 0;
 		GetPrivateProfileStringW(L"ABTest", aszKeys[iKey], L"", szBuffer, 1024, wstrPath.c_str());
@@ -294,8 +297,10 @@ void CvGame::ReadABTestSettings()
 			continue;
 		if (iKey == 0)
 			m_uiABTestCandidateFixes = ParseABTestFixList(strList, strErrorPath);
-		else
+		else if (iKey == 1)
 			m_uiABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
+		else
+			m_uiABTestBaseFixes = ParseABTestFixList(strList, strErrorPath);
 	}
 
 	// Paired games (see WriteABTestReplayRecord): Flip = 1 swaps the groups, and the replay keys repeat the first
@@ -1596,6 +1601,7 @@ void CvGame::uninit()
 	m_intGameId = 0;
 	m_uiABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
 	m_uiABTestScreenedFixes = 0;
+	m_uiABTestBaseFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -11339,6 +11345,7 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	{
 		visitor(game.m_uiABTestCandidateFixes);
 		visitor(game.m_uiABTestScreenedFixes);
+		visitor(game.m_uiABTestBaseFixes);
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
 		visitor(game.m_iABTestMode);
