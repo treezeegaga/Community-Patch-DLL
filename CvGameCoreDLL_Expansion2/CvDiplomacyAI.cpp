@@ -3026,7 +3026,10 @@ bool CvDiplomacyAI::IsGoingForSpaceshipVictory() const
 /// Are we extra aggressive towards this player because they're close to victory?
 bool CvDiplomacyAI::IsEndgameAggressiveTo(PlayerTypes ePlayer) const
 {
-	PRECONDITION(ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS, "Player index out of bounds");
+	// AI_AB_TEST: never endgame-aggressive to a city-state (or an invalid index). CP asserted here; with FIX_EASY_TARGET's
+	// D2 fix a city-state reached it through IsPhonyWar and halted test games. Return false rather than read out of bounds.
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+		return false;
 	return m_abEndgameAggressiveTo[ePlayer];
 }
 
@@ -12151,8 +12154,10 @@ void CvDiplomacyAI::DoUpdateEasyTargets()
 				// Don't look at the guy we're already thinking about
 				if (IsPlayerValid(eLoopPlayer) && ePlayer != eLoopPlayer && IsAtWar(eLoopPlayer))
 				{
-					// Ignore phony wars (FIX_EASY_TARGET, D2: the other war's, not the target's)
-					if (IsPhonyWar(GetPlayer()->UsesCandidateAI(FIX_EASY_TARGET) ? eLoopPlayer : ePlayer))
+					// Ignore phony wars (FIX_EASY_TARGET, D2: the other war's, not the target's). Only wars with major civs
+					// can be phony: IsPhonyWar assumes a major (it reaches IsEndgameAggressiveTo), and this loop also
+					// meets city-states we're at war with.
+					if (GetPlayer()->UsesCandidateAI(FIX_EASY_TARGET) ? (GET_PLAYER(eLoopPlayer).isMajorCiv() && IsPhonyWar(eLoopPlayer)) : IsPhonyWar(ePlayer))
 					{
 						continue;
 					}
