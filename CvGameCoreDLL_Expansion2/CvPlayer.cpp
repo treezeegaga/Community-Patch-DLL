@@ -33317,19 +33317,33 @@ bool CvPlayer::isMajorCiv() const
 // false gives the earlier "new vs CP" split, with group c following UsesNewAI().
 static const bool kABTestVersusBase = true;
 
-// AI_AB_TEST candidate flags (see CandidateFixTypes in CvPlayer.h). These names go in AIABTest.ini and the results file.
-static const char* const kCandidateFixNames[NUM_CANDIDATE_FIXES] = {
-	"WidePlans", "BoxedIn", "LongWide", "BoxedInWar", "TimingAttack", "SiegeTechs", "SiegeBook", "DeclareTiming",
-	"GrowthTech", "AqueductValue", "GreedyArmyCap", "GreedyBook", "GreedyTarget", "CanWin", "ClosedBorders" };
+// AI_AB_TEST candidate flags (see CandidateFixTypes in CvPlayer.h): one line per flag, in the enum's order. The name goes
+// in AIABTest.ini and the results file; "in the bundle" means group c runs it with no AIABTest.ini, and every civ runs it
+// outside a test game. The bundle is what group c ran in the last C build (c7c). Off in it: LongWide (c1: c's wide civs
+// got no more cities from the longer opening, and stopping settlers ended expansion that b completed), GreedyArmyCap
+// (c6, 0-3: the greedy tall civs drew wars), and every flag added after c7c until it passes.
+struct CandidateFixInfo
+{
+	const char* szName;
+	bool bInBundle;
+};
+static const CandidateFixInfo kCandidateFixes[] = {
+	{"WidePlans", true}, {"BoxedIn", true}, {"LongWide", false}, {"BoxedInWar", true}, {"TimingAttack", true},
+	{"SiegeTechs", true}, {"SiegeBook", true}, {"DeclareTiming", true}, {"GrowthTech", true}, {"AqueductValue", true},
+	{"GreedyArmyCap", false}, {"GreedyBook", true}, {"GreedyTarget", true}, {"CanWin", true}, {"ClosedBorders", true},
+};
+// one line per flag, and room in the 64-bit masks
+typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
+typedef char ABTestFixesFitMask[(NUM_CANDIDATE_FIXES <= 64) ? 1 : -1];
 
-// The bundle: what group c ran in the last C build (c7c), and what every civ runs outside a test game. Off in it:
-// LongWide (c1: c's wide civs got no more cities from the longer opening, and stopping settlers ended expansion that b
-// completed) and GreedyArmyCap (c6, 0-3: the greedy tall civs drew wars).
-static const int kCandidateFixBundle = ~((1 << FIX_LONG_WIDE) | (1 << FIX_GREEDY_ARMY_CAP)) & ((1 << NUM_CANDIDATE_FIXES) - 1);
+ABTestFixMask CvPlayer::GetABTestFixBit(int iFix)
+{
+	return (iFix >= 0 && iFix < NUM_CANDIDATE_FIXES) ? ((ABTestFixMask)1 << iFix) : 0;
+}
 
 const char* CvPlayer::GetCandidateFixName(int iFix)
 {
-	return (iFix >= 0 && iFix < NUM_CANDIDATE_FIXES) ? kCandidateFixNames[iFix] : "";
+	return (iFix >= 0 && iFix < NUM_CANDIDATE_FIXES) ? kCandidateFixes[iFix].szName : "";
 }
 
 /// The flag with this name (any case), or -1
@@ -33337,15 +33351,26 @@ int CvPlayer::GetCandidateFixByName(const char* szName)
 {
 	for (int i = 0; i < NUM_CANDIDATE_FIXES; i++)
 	{
-		if (_stricmp(szName, kCandidateFixNames[i]) == 0)
+		if (_stricmp(szName, kCandidateFixes[i].szName) == 0)
 			return i;
 	}
 	return -1;
 }
 
-int CvPlayer::GetCandidateFixBundle()
+ABTestFixMask CvPlayer::GetCandidateFixBundle()
 {
-	return kCandidateFixBundle;
+	static ABTestFixMask s_uBundle = 0;
+	static bool s_bDone = false;
+	if (!s_bDone)
+	{
+		for (int i = 0; i < NUM_CANDIDATE_FIXES; i++)
+		{
+			if (kCandidateFixes[i].bInBundle)
+				s_uBundle |= GetABTestFixBit(i);
+		}
+		s_bDone = true;
+	}
+	return s_uBundle;
 }
 
 /// AI_AB_TEST "new vs CP" split. Flip = 1 in AIABTest.ini (the second game of a pair) swaps it.
@@ -33570,14 +33595,14 @@ bool CvPlayer::IsInCandidateGroup() const
 ///   (IsABTestScreenSlot). Otherwise it's on for group c when Fixes= lists it (the bundle if there's no ini file).
 bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
 {
-	const int iBit = 1 << (int)eFix;
+	const ABTestFixMask uBit = GetABTestFixBit((int)eFix);
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
-		return (kCandidateFixBundle & iBit) != 0;
+		return (GetCandidateFixBundle() & uBit) != 0;
 
 	const CvGame& kGame = GC.getGame();
-	if (kGame.GetABTestScreenedFixes() & iBit)
+	if (kGame.GetABTestScreenedFixes() & uBit)
 		return !isHuman() && IsABTestScreenSlot(GetID(), (int)eFix);
-	return (kGame.GetABTestCandidateFixes() & iBit) != 0 && IsInCandidateGroup();
+	return (kGame.GetABTestCandidateFixes() & uBit) != 0 && IsInCandidateGroup();
 }
 
 /// AI_AB_TEST: counts as a warmonger for the c/b split and the warmonger candidate changes (IsABTestWarmongerCiv)

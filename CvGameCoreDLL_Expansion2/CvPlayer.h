@@ -137,9 +137,10 @@ enum OpeningBookType
 
 // AI_AB_TEST: one flag per candidate idea (the C changes on branch claude/ab-c1), so each can be tested on its own or
 // screened together. Gate every candidate change on CvPlayer::UsesCandidateAI(FIX_xx). Which flags are on comes from
-// AIABTest.ini in My Games, read when a test game starts and saved with it (see CvGame::ReadABTestSettings). The names
-// in CvPlayer.cpp (kCandidateFixNames) are what the ini file and the results file use. Append new flags at the end;
-// a flag's number is its bit in the saved masks.
+// AIABTest.ini in My Games, read when a test game starts and saved with it (see CvGame::ReadABTestSettings).
+// To add a flag: append it here, and append one line to kCandidateFixes in CvPlayer.cpp (its name, as the ini file
+// and the results file use it, and whether it's in the bundle: new flags are not, until they pass). A flag's number
+// is its bit in the 64-bit masks (ABTestFixMask), so up to 64 flags.
 enum CandidateFixTypes
 {
 	FIX_WIDE_PLANS,			// c1/c2 (2q, 2r): warmongers, aggressive and expansionist culture civs play the wide plan
@@ -160,6 +161,8 @@ enum CandidateFixTypes
 	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
 	NUM_CANDIDATE_FIXES
 };
+// AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
+typedef unsigned long long ABTestFixMask;
 
 // AI_AB_TEST game modes (Mode = in AIABTest.ini; lead job 10). AB_MODE_SPLIT is the usual c/b split. In the bully and
 // builders tests a few civs play fixed roles (ABTestRoleTypes) and group c is every other AI civ; the second game of
@@ -1705,6 +1708,7 @@ public:
 	bool isMajorCiv() const;
 	bool UsesNewAI() const;
 	bool UsesCandidateAI(CandidateFixTypes eFix) const;
+	static ABTestFixMask GetABTestFixBit(int iFix);
 	bool IsInCandidateGroup() const;
 	bool IsABTestWarmonger() const;
 	ABTestRoleTypes GetABTestRole() const;
@@ -1712,7 +1716,7 @@ public:
 	static bool IsABTestVersusBase();
 	static const char* GetCandidateFixName(int iFix);
 	static int GetCandidateFixByName(const char* szName);
-	static int GetCandidateFixBundle();
+	static ABTestFixMask GetCandidateFixBundle();
 
 	// AI_AB_TEST opening book (new AI only; all state is derived from the game, nothing is saved)
 	OpeningBookType GetOpeningBook() const;

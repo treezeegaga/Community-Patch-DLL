@@ -205,9 +205,9 @@ static void ApplyABTestLoggingSettings()
 /// AI_AB_TEST: a list of candidate flags from AIABTest.ini: names (CandidateFixTypes, any case) separated by commas or
 /// spaces; "bundle" adds the bundle, "all" every flag, "none" nothing, and "-Name" takes a flag out again. So
 /// "CanWin" is that flag alone and "bundle, -CanWin" the bundle without it. Unknown names go to AIABTest_errors.txt.
-static int ParseABTestFixList(const std::string& strList, const CvString& strErrorPath)
+static ABTestFixMask ParseABTestFixList(const std::string& strList, const CvString& strErrorPath)
 {
-	int iMask = 0;
+	ABTestFixMask uMask = 0;
 	size_t iPos = 0;
 	while (iPos < strList.size())
 	{
@@ -222,13 +222,14 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 		bool bRemove = (strName[0] == '-');
 		if (bRemove)
 			strName = strName.substr(1);
-		int iBits = 0;
+		ABTestFixMask uBits = 0;
 		if (_stricmp(strName.c_str(), "bundle") == 0)
-			iBits = CvPlayer::GetCandidateFixBundle();
+			uBits = CvPlayer::GetCandidateFixBundle();
 		else if (_stricmp(strName.c_str(), "all") == 0)
-			iBits = (1 << NUM_CANDIDATE_FIXES) - 1;
+			for (int iAll = 0; iAll < NUM_CANDIDATE_FIXES; iAll++)
+				uBits |= CvPlayer::GetABTestFixBit(iAll);
 		else if (_stricmp(strName.c_str(), "none") == 0)
-			iBits = 0;
+			uBits = 0;
 		else
 		{
 			int iFix = CvPlayer::GetCandidateFixByName(strName.c_str());
@@ -243,11 +244,11 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 				}
 				continue;
 			}
-			iBits = 1 << iFix;
+			uBits = CvPlayer::GetABTestFixBit(iFix);
 		}
-		iMask = bRemove ? (iMask & ~iBits) : (iMask | iBits);
+		uMask = bRemove ? (uMask & ~uBits) : (uMask | uBits);
 	}
-	return iMask;
+	return uMask;
 }
 
 /// AI_AB_TEST: which candidate flags this test game runs, from AIABTest.ini in My Games\Sid Meier's Civilization 5:
@@ -264,8 +265,8 @@ static int ParseABTestFixList(const std::string& strList, const CvString& strErr
 /// Test games are single player only (AI decisions in multiplayer must not depend on a local file).
 void CvGame::ReadABTestSettings()
 {
-	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
-	m_iABTestScreenedFixes = 0;
+	m_uiABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
+	m_uiABTestScreenedFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -292,9 +293,9 @@ void CvGame::ReadABTestSettings()
 		if (strList.find_first_not_of(" \t") == std::string::npos)
 			continue;
 		if (iKey == 0)
-			m_iABTestCandidateFixes = ParseABTestFixList(strList, strErrorPath);
+			m_uiABTestCandidateFixes = ParseABTestFixList(strList, strErrorPath);
 		else
-			m_iABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
+			m_uiABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
 	}
 
 	// Paired games (see WriteABTestReplayRecord): Flip = 1 swaps the groups, and the replay keys repeat the first
@@ -1548,8 +1549,8 @@ void CvGame::uninit()
 	m_strScriptData = "";
 	m_strGameId = "";
 	m_intGameId = 0;
-	m_iABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
-	m_iABTestScreenedFixes = 0;
+	m_uiABTestCandidateFixes = CvPlayer::GetCandidateFixBundle();
+	m_uiABTestScreenedFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -11291,8 +11292,8 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	// AI_AB_TEST: the test pack's saves only, so the normal pack's save format is unchanged
 	if (MOD_AI_AB_TEST)
 	{
-		visitor(game.m_iABTestCandidateFixes);
-		visitor(game.m_iABTestScreenedFixes);
+		visitor(game.m_uiABTestCandidateFixes);
+		visitor(game.m_uiABTestScreenedFixes);
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
 		visitor(game.m_iABTestMode);
@@ -13157,12 +13158,12 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 static const char* const AI_AB_TEST_BATCH = "c7c_roles";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
-static CvString GetABTestFixListText(int iMask)
+static CvString GetABTestFixListText(ABTestFixMask uMask)
 {
 	CvString strList;
 	for (int i = 0; i < NUM_CANDIDATE_FIXES; i++)
 	{
-		if (iMask & (1 << i))
+		if (uMask & CvPlayer::GetABTestFixBit(i))
 		{
 			if (!strList.empty())
 				strList += "+";
@@ -13235,7 +13236,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 	CvHandicapInfo* pkHandicap = GC.getHandicapInfo(getHandicapType());
 	// everything after Flip and Fixes (Fixes is per civ)
 	const CvString strSettings = CvString::format("%s,%s,%s,%d,%d,%s,%s,%s,%d,%s",
-		GetABTestFixListText(m_iABTestScreenedFixes).c_str(),
+		GetABTestFixListText(m_uiABTestScreenedFixes).c_str(),
 		GetABTestCsvText(strMap.c_str()).c_str(),
 		GetABTestCsvText(strMapOptions.c_str()).c_str(),
 		isOption(GAMEOPTION_NO_GOODY_HUTS) ? 0 : 1,
@@ -13307,13 +13308,13 @@ void CvGame::LogABTestResults(bool bFinal) const
 			kPlayer.IsABTestWarmonger() ? 1 : 0);
 
 		// the settings columns, with this civ's flags in Fixes
-		int iFixes = 0;
+		ABTestFixMask uFixes = 0;
 		for (int iFix = 0; iFix < NUM_CANDIDATE_FIXES; iFix++)
 		{
 			if (kPlayer.UsesCandidateAI((CandidateFixTypes)iFix))
-				iFixes |= 1 << iFix;
+				uFixes |= CvPlayer::GetABTestFixBit(iFix);
 		}
-		fprintf(pFile, ",%d,%s,%s", IsABTestFlipped() ? 1 : 0, GetABTestFixListText(iFixes).c_str(), strSettings.c_str());
+		fprintf(pFile, ",%d,%s,%s", IsABTestFlipped() ? 1 : 0, GetABTestFixListText(uFixes).c_str(), strSettings.c_str());
 
 		// the bully and builders tests, and diplomacy (lead job 10): running counts, then this turn's state toward
 		// the other major civs
