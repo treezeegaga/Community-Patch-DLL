@@ -190,6 +190,8 @@ enum CandidateFixTypes
 	FIX_DECLARE_AT_BORDER,	// War: a sneak attack counts as discovered only at the target's border. Off in the bundle
 	FIX_UPGRADE_SAVE_CANCEL,// War (bug H1): the stale gold request for unit upgrades is cancelled. Off in the bundle
 	FIX_AIR_REBASE_HEAL,	// War (bug H2): healing aircraft stay in the quietest base. Off in the bundle
+	FIX_SETTLERS_BEFORE_WONDERS,	// Economy: no world wonder in the capital while the opening book still has settlers to start. Not in the bundle
+	FIX_BOOK_FINISHES_SETTLERS,	// Economy: the opening book stays active (to T100 Standard) until its settlers are started. Not in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
@@ -1761,6 +1763,7 @@ public:
 	OpeningBookType GetOpeningBook() const;
 	bool IsOpeningBookActive() const;
 	bool IsBoxedInForSettling() const;
+	bool HasUnstartedBookSettlers() const;
 	bool IsCandidateWarmonger(CandidateFixTypes eFix) const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
