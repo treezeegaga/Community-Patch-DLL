@@ -1654,7 +1654,24 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 
 			//AI_AB_TEST (candidate, flag SiegeArmy): the required slots alone make a 4-5 unit army, which in test games never
 			//brought a quarter of the damage needed to take a city. Keep recruiting until it can, for up to 20 turns.
-			if(OperationalAIHelpers::HaveEnoughUnits(pThisArmy->GetSlotStatus(),0) && !IsArmyTooWeakForTarget(pThisArmy, true))
+			bool bReadyToMove = OperationalAIHelpers::HaveEnoughUnits(pThisArmy->GetSlotStatus(),0) && !IsArmyTooWeakForTarget(pThisArmy, true);
+
+			//AI_AB_TEST (candidate, flag SiegeRoll): an attack mustering next to its target, in a war we're already in, moves
+			//with what it has. In a test war the attack after a capture mustered in the captured city, 3 tiles from the next
+			//one, and waited 20 turns for a required slot; army units are hidden from the tactical AI, so the next city was
+			//"too early" all that time. The required slots and SiegeArmy's bar are there to stop a weak army marching across
+			//the map; next to the front the tactical AI's own siege check decides whether to attack.
+			if (!bReadyToMove && m_eType == AI_OPERATION_CITY_ATTACK_LAND && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_ROLL) &&
+				GetMusterPlot() && GetTargetPlot() && plotDistance(*GetMusterPlot(), *GetTargetPlot()) <= 5 &&
+				m_eEnemy != NO_PLAYER && GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).isAtWar(GET_PLAYER(m_eEnemy).getTeam()) &&
+				pThisArmy->GetNumSlotsFilled() >= 3)
+			{
+				bReadyToMove = true;
+				LogOperationSpecialMessage(CvString::format("SiegeRoll: target %d tiles from the muster point, moving with %d units",
+					plotDistance(*GetMusterPlot(), *GetTargetPlot()), (int)pThisArmy->GetNumSlotsFilled()));
+			}
+
+			if(bReadyToMove)
 			{
 				pThisArmy->SetArmyAIState(ARMYAISTATE_WAITING_FOR_UNITS_TO_CATCH_UP);
 				m_eCurrentState = AI_OPERATION_STATE_GATHERING_FORCES;

@@ -225,6 +225,7 @@ enum CandidateFixTypes
 	FIX_CS_CONQUEST,		// War: a warmonger in the conquest role goes to war on a weak, nearby, unguarded city-state. Off in the bundle
 	FIX_CONQUEST_TRAIT_TARGETS,// War: a warmonger's conquest bonus shapes its targets (Assyria, Songhai, Mongolia; Austria and Venice skip city-states). Off in the bundle
 	FIX_SIEGE_EXPOSURE,		// War: in a city attack, a unit that attacked is judged at turn end by the planner's danger (/ aggression level). Off in the bundle
+	FIX_SIEGE_ROLL,			// War: a city attack mustering within 5 tiles of its target (already at war) moves with 3+ units, no wait for slots or the bar. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
