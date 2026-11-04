@@ -12,6 +12,52 @@
 
 #include "CvDiplomacyAI.h"
 
+// AI_AB_TEST (Personality): the strategy profile (pack repo tools/ab/RESULTS.md, "The strategy profile: spec").
+// A flavour archetype (a distinctive way to play) and a position on the meta spectrum from greedy (-100) through
+// balanced (0) to aggressive (+100), plus victory weights, risk appetite and expansion style. Worked out from game
+// data only (traits, leader personality, CP's victory pursuit pick), so every computer gets the same profile.
+enum StrategyArchetypeTypes
+{
+	NO_STRATEGY_ARCHETYPE = -1,
+	STRATEGY_ARCHETYPE_CONQUEROR,		// repeated wars all game
+	STRATEGY_ARCHETYPE_OPPORTUNIST,		// builds, joins wars against weakened, isolated or runaway neighbours
+	STRATEGY_ARCHETYPE_EXPANSIONIST,	// settles every free spot, fights only whoever blocks its land
+	STRATEGY_ARCHETYPE_ZEALOT,			// founds early, spreads its faith everywhere
+	STRATEGY_ARCHETYPE_DIPLOMAT,		// city-states, World Congress, organises coalitions
+	STRATEGY_ARCHETYPE_TOURISM,			// wonders, great works, tourism
+	STRATEGY_ARCHETYPE_SCIENTIST,		// tall science
+	NUM_STRATEGY_ARCHETYPES
+};
+enum StrategyVictoryWeightTypes
+{
+	STRATEGY_VICTORY_DOMINATION,
+	STRATEGY_VICTORY_SCIENCE,
+	STRATEGY_VICTORY_CULTURE,
+	STRATEGY_VICTORY_DIPLOMACY,
+	NUM_STRATEGY_VICTORY_WEIGHTS
+};
+enum StrategyRiskTypes
+{
+	STRATEGY_RISK_LOW,
+	STRATEGY_RISK_MEDIUM,
+	STRATEGY_RISK_HIGH
+};
+enum StrategyExpansionTypes
+{
+	STRATEGY_EXPANSION_TALL,
+	STRATEGY_EXPANSION_MEDIUM,
+	STRATEGY_EXPANSION_WIDE,
+	STRATEGY_EXPANSION_CONQUEST
+};
+struct CvStrategyProfile
+{
+	StrategyArchetypeTypes eArchetype;
+	int iHomeMeta;	// -100 greedy, 0 balanced, +100 aggressive
+	int aiVictoryWeight[NUM_STRATEGY_VICTORY_WEIGHTS];	// adds up to 100
+	StrategyRiskTypes eRisk;
+	StrategyExpansionTypes eExpansion;
+};
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //  CLASS:      CvGrandStrategyAI
 //!  \brief		Information about the Grand Strategy of a single AI player
@@ -57,6 +103,10 @@ public:
 	void ChangeGrandStrategyPriority(AIGrandStrategyTypes eGrandStrategy, int iChange);
 	int GetPersonalityAndGrandStrategy(FlavorTypes eFlavorType, bool bBoostGSMainFlavor = false);
 
+	// AI_AB_TEST (Personality): the strategy profile; nothing reads it yet (logged only)
+	CvStrategyProfile GetStrategyProfile() const;
+	static const char* GetStrategyArchetypeName(StrategyArchetypeTypes eArchetype);
+
 	// **********
 	// Stuff relating to guessing what other Players are up to
 	// **********
@@ -86,6 +136,7 @@ private:
 
 	void LogGrandStrategies(const vector<int>& vGrandStrategyPriorities);
 	void LogGuessOtherPlayerGrandStrategy(const vector<int>& vGrandStrategyPriorities, PlayerTypes ePlayer);
+	void LogStrategyProfile();
 
 	CvPlayer* m_pPlayer;
 	CvAIGrandStrategyXMLEntries* m_pAIGrandStrategies;
