@@ -981,7 +981,33 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 				//cities to about 130 of 200 and never went in, and the city healed back)
 				if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_FINISH) && eMaxAggLvl == AL_HIGH && iMeleeCount > 0 && iRequiredDamage * 3 <= pCity->GetMaxHitPoints())
 					eAggLvl = AL_HIGH;
+				//AI_AB_TEST (logging only): what the attack actually did, next to what was expected (a test siege logged 70
+				//expected damage a turn for 8 turns while the city never lost HP)
+				int iHPBefore = pCity->GetMaxHitPoints() - pCity->getDamage();
+				CvString strCityName = pCity->getNameNoSpace(); //pCity may be gone after a capture
+				int iMovedBefore = 0;
+				for (unsigned int iU = 0; iU < m_CurrentMoveUnits.size(); iU++)
+				{
+					CvUnit* pU = m_pPlayer->getUnit(m_CurrentMoveUnits[iU].GetID());
+					if (pU && pU->TurnProcessed())
+						iMovedBefore++;
+				}
 				ExecuteAttackWithUnits(pPlot, eAggLvl);
+				if (GC.getLogging() && GC.getAILogging())
+				{
+					int iUsed = -iMovedBefore;
+					for (unsigned int iU = 0; iU < m_CurrentMoveUnits.size(); iU++)
+					{
+						CvUnit* pU = m_pPlayer->getUnit(m_CurrentMoveUnits[iU].GetID());
+						if (pU && pU->TurnProcessed())
+							iUsed++;
+					}
+					CvCity* pCityAfter = pPlot->getPlotCity();
+					int iHPAfter = pCityAfter ? pCityAfter->GetMaxHitPoints() - pCityAfter->getDamage() : 0;
+					LogTacticalMessage(CvString::format("Zone %d, capture attempt on %s done: city HP %d -> %d, %d of %d units used, agg %d%s",
+						pZone ? pZone->GetZoneID() : -1, strCityName.c_str(), iHPBefore, iHPAfter, iUsed, (int)m_CurrentMoveUnits.size(), (int)eAggLvl,
+						pPlot->getOwner() == m_pPlayer->GetID() ? ", CAPTURED" : ""));
+				}
 
 				// Did it work?  If so, don't need a temporary dominance zone if had one here
 				if (pPlot->getOwner() == m_pPlayer->GetID())
