@@ -219,6 +219,8 @@ enum CandidateFixTypes
 	FIX_SIEGE_FORMATION,	// War: classical-medieval land city attacks use the formation with 5 siege/ranged slots (not 2). Off in the bundle
 	FIX_STALE_WAR_PEACE,	// Diplomacy: a war with no city changing hands for 20 turns and no attack under way is stale: reason to
 							// consider peace, no "they're in danger, hold out" term, progress penalty doubled. Off in the bundle
+	FIX_WAR_APPETITE,		// Diplomacy (Personality's profile): the WAR approach weight follows the meta position M: x0.5 at -100
+							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

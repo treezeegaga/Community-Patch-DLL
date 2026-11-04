@@ -21049,6 +21049,16 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 		vApproachScores[CIV_APPROACH_NEUTRAL] = ApplyPercentageModifier(vApproachScores[CIV_APPROACH_NEUTRAL], 100 + iNeutralMod);
 	}
 
+	// FIX_WAR_APPETITE (Personality's strategy profile, "What M sets"): war appetite follows the meta position M, from
+	// x0.5 for a greedy civ (M -100) through x1 (balanced, 0) to x2 for an aggressive one (+100). After opinion, so a
+	// conqueror still prefers its friends, but less overwhelmingly than CP's personality weights alone allowed.
+	if (GetPlayer()->UsesCandidateAI(FIX_WAR_APPETITE) && GetPlayer()->isMajorCiv())
+	{
+		const int iMeta = range(GetPlayer()->GetGrandStrategyAI()->GetMetaPosition(), -100, 100);
+		const int iWarPercent = iMeta >= 0 ? 100 + iMeta : 100 + iMeta / 2;
+		vApproachScores[CIV_APPROACH_WAR] = vApproachScores[CIV_APPROACH_WAR] * iWarPercent / 100;
+	}
+
 	//--------------------------------//
 	// [PART 14: THE APPROACH CURVE]  //
 	//--------------------------------//
