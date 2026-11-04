@@ -286,6 +286,10 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		kPlayer.IsOpeningBookActive() && kPlayer.HasUnstartedBookSettlers())
 		return SR_STRATEGY;
 
+	// AI_AB_TEST candidate (WondersForVictory): only wonders that suit our target victory, or help any
+	if (!CityStrategyAIHelpers::IsWonderForOurVictory(kPlayer, eBuilding))
+		return SR_STRATEGY;
+
 	if (isNationalWonderClass(kBuildingClassInfo) || isWorldWonderClass(kBuildingClassInfo))
 	{
 		if (isWorldWonderClass(kBuildingClassInfo))

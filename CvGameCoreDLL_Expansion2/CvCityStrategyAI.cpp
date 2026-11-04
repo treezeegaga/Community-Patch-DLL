@@ -5622,3 +5622,55 @@ PlayerTypes CityStrategyAIHelpers::GetGreedyAlarmThreat(const CvPlayer& kPlayer)
 	}
 	return eWorst;
 }
+
+/// AI_AB_TEST candidate (WondersForVictory, the user's design): a world wonder is started only if it suits the civ's
+/// target victory (its current victory pursuit) or is an economy wonder that helps any victory. The wonder's leaning
+/// comes from its own flavours: science/spaceship, culture/great people, diplomacy, military. It counts as an economy
+/// wonder when its growth, production, gold, happiness, infrastructure, expansion and religion flavours together
+/// outweigh its strongest victory flavour. Always true without the flag and for anything that isn't a world wonder.
+bool CityStrategyAIHelpers::IsWonderForOurVictory(const CvPlayer& kPlayer, BuildingTypes eBuilding)
+{
+	if (!kPlayer.UsesCandidateAI(FIX_WONDERS_FOR_VICTORY) || !kPlayer.isMajorCiv() || kPlayer.isHuman())
+		return true;
+	CvBuildingEntry* pkBuildingInfo = GC.getBuildingInfo(eBuilding);
+	if (!pkBuildingInfo || !::isWorldWonderClass(pkBuildingInfo->GetBuildingClassInfo()))
+		return true;
+
+	int iScience = 0, iCulture = 0, iDiplo = 0, iConquest = 0, iEconomy = 0;
+	for (int iFlavor = 0; iFlavor < GC.getNumFlavorTypes(); iFlavor++)
+	{
+		int iValue = pkBuildingInfo->GetFlavorValue(iFlavor);
+		if (iValue <= 0)
+			continue;
+		const CvString& strFlavor = GC.getFlavorTypes((FlavorTypes)iFlavor);
+		if (strFlavor == "FLAVOR_SCIENCE" || strFlavor == "FLAVOR_SPACESHIP")
+			iScience += iValue;
+		else if (strFlavor == "FLAVOR_CULTURE" || strFlavor == "FLAVOR_GREAT_PEOPLE")
+			iCulture += iValue;
+		else if (strFlavor == "FLAVOR_DIPLOMACY")
+			iDiplo += iValue;
+		else if (strFlavor == "FLAVOR_OFFENSE" || strFlavor == "FLAVOR_DEFENSE" || strFlavor == "FLAVOR_MILITARY_TRAINING" ||
+			strFlavor == "FLAVOR_CITY_DEFENSE" || strFlavor == "FLAVOR_RANGED" || strFlavor == "FLAVOR_MOBILE" ||
+			strFlavor == "FLAVOR_NAVAL" || strFlavor == "FLAVOR_AIR")
+			iConquest += iValue;
+		else if (strFlavor == "FLAVOR_GROWTH" || strFlavor == "FLAVOR_PRODUCTION" || strFlavor == "FLAVOR_GOLD" ||
+			strFlavor == "FLAVOR_HAPPINESS" || strFlavor == "FLAVOR_INFRASTRUCTURE" || strFlavor == "FLAVOR_EXPANSION" ||
+			strFlavor == "FLAVOR_RELIGION")
+			iEconomy += iValue;
+	}
+	int iBestVictory = max(max(iScience, iCulture), max(iDiplo, iConquest));
+	if (iBestVictory <= 0 || iEconomy >= iBestVictory)
+		return true; // an economy wonder (or no leaning): good for any plan
+
+	int iOurs = 0;
+	switch (kPlayer.GetDiplomacyAI()->GetCurrentVictoryPursuit())
+	{
+	case VICTORY_PURSUIT_SCIENCE:    iOurs = iScience; break;
+	case VICTORY_PURSUIT_CULTURE:    iOurs = iCulture; break;
+	case VICTORY_PURSUIT_DIPLOMACY:  iOurs = iDiplo; break;
+	case VICTORY_PURSUIT_DOMINATION: iOurs = iConquest; break;
+	default:                         return true;
+	}
+	return iOurs >= iBestVictory;
+}
+

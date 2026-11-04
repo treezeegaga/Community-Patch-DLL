@@ -130,6 +130,10 @@ void CvCityAI::AI_chooseProduction(bool bInterruptWonders, bool bInterruptBuildi
 		kOwner.GetCitySpecializationAI()->SetSpecializationsDirty(SPECIALIZATION_UPDATE_WONDER_BUILT_BY_RIVAL);
 	}
 
+	// AI_AB_TEST candidate (WondersForVictory): the city's desired wonder must suit our target victory, or help any
+	if (eNextWonder != NO_BUILDING && !CityStrategyAIHelpers::IsWonderForOurVictory(kOwner, eNextWonder))
+		eNextWonder = NO_BUILDING;
+
 	if (!bAlreadyBuildingWonder && bInterruptWonders && eNextWonder != NO_BUILDING)
 	{		
 		CvBuildingEntry* pkBuilding = GC.getBuildingInfo(eNextWonder);
