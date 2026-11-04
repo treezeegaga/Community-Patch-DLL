@@ -233,6 +233,8 @@ enum CandidateFixTypes
 	FIX_AGGRESSIVE_WALLS,	// Personality (aggressive style): walls and castles only in threatened border cities (under siege, near an enemy's
 							// city at war, or near a neighbour with a visible army at our border). Off in the bundle
 	FIX_TRUE_GOLD_RATE,		// Economy: the gold rate used for bankruptcy checks is the net rate (CP adds the average of positive income only). Off in the bundle
+	FIX_TRUE_GOLD_RATE,		// Economy: the gold rate used for bankruptcy checks is the net rate (CP adds the average of positive income only). Off in the bundle
+	FIX_WAR_CHEST,			// Economy: a timing attacker saves for its build-up, buys it, and keeps gold per turn >= 0 while the army stands. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

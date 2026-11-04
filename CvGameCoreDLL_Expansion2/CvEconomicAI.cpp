@@ -3144,9 +3144,64 @@ static void BuyExpansionSettler(CvPlayer* pPlayer)
 	}
 }
 
+/// AI_AB_TEST candidate (WarChest): a timing attacker (War's TimingBuildup) saves gold while its attack is planned and
+/// buys the missing units once the 15-turn window opens, so the build-up is bought rather than run into bankruptcy
+/// (13% of bully-test aggressors sat at 0 gold, and CP's deficit rule gifted their armies away). Target, agreed with
+/// War: the price of the units still wanted, capped at 15 turns of net income, at least 2 siege units' price.
+static void DoWarChest(CvPlayer* pPlayer)
+{
+	if (!pPlayer->UsesCandidateAI(FIX_WAR_CHEST) || pPlayer->isHuman() || !pPlayer->isMajorCiv())
+		return;
+
+	CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
+	CvEconomicAI* pEconomic = pPlayer->GetEconomicAI();
+	const CvMilitaryAI::TimingBuildupPhase ePhase = pMilitary->GetTimingBuildupPhase();
+	const bool bSaving = (ePhase == CvMilitaryAI::TIMING_BUILDUP_PLANNED || ePhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW);
+	CvCity* pCapital = pPlayer->getCapitalCity();
+	if (!bSaving || !pCapital)
+	{
+		pEconomic->CancelSaveForPurchase(PURCHASE_TYPE_UNIT);
+		return;
+	}
+
+	const int iWanted = max(0, pMilitary->GetTimingBuildupUnitsWanted());
+	UnitTypes eSiege = pMilitary->GetTimingBuildupUnitType(true);
+	UnitTypes eAttack = pMilitary->GetTimingBuildupUnitType(false);
+	int iSiegeCost = (eSiege != NO_UNIT) ? pCapital->GetPurchaseCost(eSiege) : 0;
+	int iUnitCost = (eAttack != NO_UNIT) ? pCapital->GetPurchaseCost(eAttack) : iSiegeCost;
+	int iTarget = iWanted * iUnitCost;
+	const int iNet = pPlayer->GetTreasury()->CalculateBaseNetGold();
+	iTarget = min(iTarget, 15 * max(0, iNet));
+	iTarget = max(iTarget, 2 * iSiegeCost);
+	if (iTarget > 0)
+		pEconomic->StartSaveForPurchase(PURCHASE_TYPE_UNIT, iTarget, 400);
+
+	// in the window: buy one missing unit a turn in the city nearest the target
+	if (ePhase != CvMilitaryAI::TIMING_BUILDUP_WINDOW || iWanted <= 0)
+		return;
+	PlayerTypes eTarget = pMilitary->GetTimingBuildupTarget();
+	CvCity* pTheirCity = (eTarget != NO_PLAYER) ? pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
+	CvCity* pBuyCity = pTheirCity ? pPlayer->GetClosestCityByPathLength(pTheirCity->plot()) : pCapital;
+	if (!pBuyCity || pBuyCity->IsPuppet())
+		return;
+	const bool bNeedSiege = pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < 2;
+	UnitTypes eType = bNeedSiege ? eSiege : eAttack;
+	if (eType == NO_UNIT || !pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eType, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
+		return;
+	const int iCost = pBuyCity->GetPurchaseCost(eType);
+	if (!pEconomic->CanWithdrawMoneyForPurchase(PURCHASE_TYPE_UNIT, iCost, 400))
+		return;
+	CvUnit* pUnit = pBuyCity->PurchaseUnit(eType, YIELD_GOLD);
+	if (pUnit && GC.getLogging() && GC.getAILogging())
+		pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("WAR CHEST - Bought %s in %s for %d gold",
+			pUnit->getUnitInfo().GetDescription(), pBuyCity->getName().c_str(), iCost));
+}
+
 void CvEconomicAI::DoHurry()
 {
 	int iLoop = 0;
+
+	DoWarChest(m_pPlayer);
 
 	if (m_pPlayer->UsesNewAI())
 	{

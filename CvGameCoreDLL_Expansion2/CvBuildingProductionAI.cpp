@@ -246,6 +246,13 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		}
 	}
 
+	// AI_AB_TEST candidate (WarChest): while a timing attacker's army stands (window, marching, war) and gold per turn is
+	// negative, buildings that make gold come first, so the army can be paid for instead of gifted away
+	if (kPlayer.UsesCandidateAI(FIX_WAR_CHEST) && kPlayer.GetTreasury()->CalculateBaseNetGold() < 0 &&
+		kPlayer.GetMilitaryAI()->GetTimingBuildupPhase() >= CvMilitaryAI::TIMING_BUILDUP_WINDOW &&
+		(pkBuildingInfo->GetYieldChange(YIELD_GOLD) > 0 || pkBuildingInfo->GetYieldModifier(YIELD_GOLD) > 0))
+		iBonus += 500;
+
 	// AI_AB_TEST candidate (SettlersBeforeWonders): no world wonder in the capital while the opening book still has
 	// settlers to start (in the first logged King games every B capital started one at T34-T48 and settler 2 waited)
 	if (isWorldWonderClass(kBuildingClassInfo) && m_pCity->isCapital() && kPlayer.UsesCandidateAI(FIX_SETTLERS_BEFORE_WONDERS) &&

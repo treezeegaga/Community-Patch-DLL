@@ -33380,6 +33380,8 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"TimingBuildup", false},
 	{"AggressiveWalls", false},
 	{"TrueGoldRate", false},
+	{"TrueGoldRate", false},
+	{"WarChest", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
