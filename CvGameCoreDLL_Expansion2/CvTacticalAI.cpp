@@ -8338,6 +8338,18 @@ static STacticalAssignment* ScorePlotForCombatUnitMove(const SUnitStats& unit, c
 	{
 		result->eAssignmentType = evalMode == EM_FINAL ? A_FINISH : A_INITIAL;
 
+		//AI_AB_TEST (candidate, flag SiegeExposure): the planner keeps an attack that ends a unit's turn if the unit can
+		//"probably" stay there, with the danger divided by the aggression level (canProbablyEndTurnAfterAssignment), but
+		//this final check used the full danger. Next to a defended city that threw out every plan in which catapults and
+		//archers shot the city (test sieges: 70 expected damage a turn, the city at full HP every turn). In a city attack,
+		//a unit that attacked this turn is now judged by the planner's danger.
+		if (evalMode == EM_FINAL && iDanger > 0 && assumedPosition.getAggressionLevel() > AL_LOW &&
+			(unit.eLastAssignment == A_RANGEATTACK || unit.eLastAssignment == A_MELEEATTACK || unit.eLastAssignment == A_RANGEKILL ||
+			 unit.eLastAssignment == A_MELEEKILL || unit.eLastAssignment == A_MELEEKILL_NO_ADVANCE) &&
+			assumedPosition.getTarget() && assumedPosition.getTarget()->isEnemyCity(*pUnit) &&
+			GET_PLAYER(assumedPosition.getPlayer()).UsesCandidateAI(FIX_SIEGE_EXPOSURE))
+			iDanger /= max(1, (int)assumedPosition.getAggressionLevel());
+
 		iDangerScore = ScoreCombatUnitTurnEnd(pUnit, unit.eLastAssignment, testPlot, iDanger,
 			eRelevantDomain, unit.iSelfDamage + iSelfDamage, assumedPosition, evalMode, false, false);
 
