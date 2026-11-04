@@ -244,6 +244,8 @@ enum CandidateFixTypes
 							// as fast as happiness allows, then grows its cities. Off in the bundle
 	FIX_GREEDY_TALL,		// Personality (the user's design): a greedy leader of the tall kind plays Tradition, at most 4 cities, and rushes
 							// tech and policies (culture buildings valued x1.5). Off in the bundle
+	FIX_GREEDY_WIDE_DEALS,	// Diplomacy (Personality's request): a greedy wide civ out of room seeks trade deals: luxury, open
+							// borders and research agreement offers twice as often, and it wants open borders and RAs widely. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
