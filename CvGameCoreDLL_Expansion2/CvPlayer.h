@@ -201,6 +201,7 @@ enum CandidateFixTypes
 	FIX_SIEGE_BAR,			// War: SiegeArmy waits for healing + a third of the city's HP a turn (not a fifth). Off in the bundle
 	FIX_TRADE_OPINION,		// Diplomacy: the trade-partner opinion comes from deals running now in which they supply us (what a war
 							// would cost us), gone when they expire, back when renewed, capped below Favorable. Off in the bundle
+	FIX_SIEGE_ABORT,		// War: an attack still too weak after SiegeArmy's 20 turns is called off, not sent. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
