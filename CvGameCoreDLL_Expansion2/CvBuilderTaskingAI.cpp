@@ -16,6 +16,7 @@
 #include "CvCityConnections.h"
 #include "CvEconomicAI.h"
 #include "CvDiplomacyAI.h"
+#include "CvMilitaryAI.h"
 #include "CvGameCoreEnumSerialization.h" //toString(const YieldTypes& v)
 #include "CvTypes.h"
 
@@ -1703,6 +1704,7 @@ void CvBuilderTaskingAI::UpdateRoutePlots(void)
 				}
 			}
 		}
+
 	}
 }
 
@@ -3197,6 +3199,17 @@ int CvBuilderTaskingAI::GetResourceWeight(ResourceTypes eResource, int iQuantity
 	{
 		// measure quantity
 		int iValue = (iQuantity + 1) * 250;
+
+		// AI_AB_TEST candidate (WarEconomy): a timing attack being prepared needs iron or horses it doesn't have yet
+		if (m_pPlayer->UsesCandidateAI(FIX_WAR_ECONOMY) && m_pPlayer->getNumResourceTotal(eResource) == 0)
+		{
+			static const ResourceTypes eIron = (ResourceTypes)GC.getInfoTypeForString("RESOURCE_IRON", true);
+			static const ResourceTypes eHorse = (ResourceTypes)GC.getInfoTypeForString("RESOURCE_HORSE", true);
+			const CvMilitaryAI::TimingBuildupPhase ePhase = m_pPlayer->GetMilitaryAI()->GetTimingBuildupPhase();
+			if ((eResource == eIron || eResource == eHorse) &&
+				(ePhase == CvMilitaryAI::TIMING_BUILDUP_PLANNED || ePhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW))
+				iValue *= 4;
+		}
 
 		// big bonus for late game resources
 		TechTypes eRevealTech = (TechTypes)pkResource->getTechReveal();
