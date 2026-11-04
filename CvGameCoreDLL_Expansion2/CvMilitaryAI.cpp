@@ -1061,7 +1061,12 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 		}
 
 		//if we're being careless, just use whatever units we have and do not wait for new ones
-		if (m_pPlayer->addAIOperation(opType, bCareful ? iNumUnitsWillingToBuild : 0, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)
+		//AI_AB_TEST (candidate, flag TimingBuildup): a timing attacker in its window or attack phase may leave units to be
+		//built, as a careful request can: the operation forms and its own build requests fill the slots (a test aggressor
+		//made 302 requests that all failed "for lack of units", since every required slot needed a free unit up front)
+		const TimingBuildupPhase eTimingPhase = GetTimingBuildupPhase();
+		const bool bTimingAttack = eTimingPhase == TIMING_BUILDUP_WINDOW || eTimingPhase == TIMING_BUILDUP_ATTACK;
+		if (m_pPlayer->addAIOperation(opType, (bCareful || bTimingAttack) ? iNumUnitsWillingToBuild : 0, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)
 			return true;
 		else
 		{
