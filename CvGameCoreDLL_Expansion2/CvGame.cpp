@@ -13217,7 +13217,7 @@ static void ComputeWorldStateLogCounts(WorldStateLogCounts& kCounts)
 /// c7c_proposals: c7c_roles with joint-war and sanction proposals, as running counts per proposer: CoopWarAsked,
 /// CoopWarAskedVsAggressor, CoopWarAgreed, CoopWarAgreedVsAggressor, SanctionsProposed, SanctionsProposedVsAggressor,
 /// SanctionsPassed, SanctionsPassedVsAggressor. The AI is unchanged.
-static const char* const AI_AB_TEST_BATCH = "c8";
+static const char* const AI_AB_TEST_BATCH = "c8d";
 
 /// AI_AB_TEST: flag names joined with '+' ("none" if there are none), for a results column
 static CvString GetABTestFixListText(ABTestFixMask uMask)
@@ -13260,7 +13260,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor,ResearchSpent,Faith,FaithPerTurn\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor,ResearchSpent,Faith,FaithPerTurn,WalledCities,CityStrength,LandUnits\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 
@@ -13310,6 +13310,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 		GetABTestCsvText(CURRENT_GAMECORE_VERSION).c_str());
 
 	const BuildingClassTypes eNationalCollege = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_NATIONAL_COLLEGE", true);
+	const BuildingClassTypes eWalls = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_WALLS", true);
 
 	const char* szVictory = "";
 	if (bFinal && getVictory() != NO_VICTORY)
@@ -13405,6 +13406,26 @@ void CvGame::LogABTestResults(bool bFinal) const
 			if (kPlayer.GetDiplomacyAI()->IsDenouncedPlayer(eOther))
 				iDenouncing++;
 		}
+		// Defence (the user, 2026-11-03: how much an attacker should take depends on how well its victims defend):
+		// WalledCities, the cities with Walls; CityStrength, the summed defensive strength of its cities (CP's city
+		// strength: buildings, population, techs, garrison); LandUnits, its land combat units. Measurement only.
+		int iWalledCities = 0, iCityStrength = 0, iLandUnits = 0;
+		if (kPlayer.isAlive())
+		{
+			int iDefCityLoop = 0;
+			for (const CvCity* pLoopCity = kPlayer.firstCity(&iDefCityLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iDefCityLoop))
+			{
+				if (eWalls != NO_BUILDINGCLASS && pLoopCity->GetCityBuildings()->HasBuildingClass(eWalls))
+					iWalledCities++;
+				iCityStrength += pLoopCity->getStrengthValue() / 100;
+			}
+			int iUnitLoop = 0;
+			for (const CvUnit* pLoopUnit = kPlayer.firstUnit(&iUnitLoop); pLoopUnit != NULL; pLoopUnit = kPlayer.nextUnit(&iUnitLoop))
+			{
+				if (pLoopUnit->IsCombatUnit() && pLoopUnit->getDomainType() == DOMAIN_LAND)
+					iLandUnits++;
+			}
+		}
 		// ResearchSpent (the user, 2026-11-03): the summed research cost of every tech the team knows, so a later tech
 		// counts for its cost rather than as one (the base cost: no per-city modifier)
 		long long llResearchSpent = 0;
@@ -13416,7 +13437,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 					llResearchSpent += pTeamTechs->GetResearchCost((TechTypes)iTech);
 			}
 		}
-		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%d,%d\r\n",
+		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%d,%d,%d,%d,%d\r\n",
 			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_BUILDERS) ? m_iABTestMode : 0],
 			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BUILDER) ? eRole : 0],
 			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
@@ -13432,7 +13453,8 @@ void CvGame::LogABTestResults(bool bFinal) const
 			GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED), GetABTestCount(ePlayer, AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR),
 			llResearchSpent,
 			// Faith (stored) and FaithPerTurn (Economy's religion check, 2026-11-03): is faith spent or left to pile up?
-			kPlayer.isAlive() ? kPlayer.GetFaithTimes100() / 100 : 0, kPlayer.isAlive() ? kPlayer.GetTotalFaithPerTurnTimes100() / 100 : 0);
+			kPlayer.isAlive() ? kPlayer.GetFaithTimes100() / 100 : 0, kPlayer.isAlive() ? kPlayer.GetTotalFaithPerTurnTimes100() / 100 : 0,
+			iWalledCities, iCityStrength, iLandUnits);
 	}
 
 	fclose(pFile);
