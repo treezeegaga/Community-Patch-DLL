@@ -888,6 +888,11 @@ void CvHomelandAI::PlotHealMoves(bool bConservative)
 			if (bConservative && pUnit->AI_getUnitAIType() == UNITAI_EXPLORE)
 				continue;
 
+			//AI_AB_TEST (candidate, flag SiegeStay): units the tactical AI didn't use this turn fall through to here, and a test
+			//siege lost its army this way (117 expected damage a turn, then units walked home to heal and the city recovered)
+			if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_STAY) && m_pPlayer->GetTacticalAI()->IsUnitNeededAtSiege(pUnit))
+				continue;
+
 			int iDamageThreshold = 25;
 			if (pUnit->AI_getUnitAIType() == UNITAI_EXPLORE_SEA && pUnit->ActualHealRate(pUnit->plot(), false) == 0)
 				iDamageThreshold = pUnit->GetMaxHitPoints() - 50;

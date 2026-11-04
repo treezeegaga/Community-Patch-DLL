@@ -365,6 +365,7 @@ public:
 
 	// Other people want to know this too
 	const vector<CvTacticalTarget>& GetTacticalTargets() const { return m_AllTargets; }
+	bool IsUnitNeededAtSiege(const CvUnit* pUnit) const; //AI_AB_TEST flag SiegeStay, also used by the homeland AI
 	CvTacticalAnalysisMap* GetTacticalAnalysisMap() { return &m_tacticalMap; }
 
 	// Operational AI support functions
@@ -397,7 +398,6 @@ private:
 	void PlotCivilianAttackMoves();
 	void ExecuteCivilianAttackMoves(AITacticalTargetType eTargetType);
 	void PlotHealMoves(bool bFirstPass);
-	bool IsUnitNeededAtSiege(const CvUnit* pUnit) const;
 	void PlotBarbarianAttacks();
 	void PlotBarbarianCampDefense();
 	void PlotBarbarianRoaming();
