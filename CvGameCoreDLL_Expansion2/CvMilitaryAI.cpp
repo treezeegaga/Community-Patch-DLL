@@ -2004,10 +2004,17 @@ void CvMilitaryAI::DoTimingBuildup()
 		m_iTimingBuildupStartTurn = -1;
 	}
 
+	// Economy's WarChest owns the gold when it's on (savings and window purchases, CvEconomicAI::DoWarChest); looked up by
+	// name so this builds before WarChest is merged
+	static const int iWarChestFix = CvPlayer::GetCandidateFixByName("WarChest");
+	const bool bWarChest = iWarChestFix >= 0 && m_pPlayer->UsesCandidateAI((CandidateFixTypes)iWarChestFix);
+
 	// gold saved ahead: the price of 2 siege units at the capital, from turn 30 (Standard) until the window is spent
 	CvCity* pCapital = m_pPlayer->getCapitalCity();
 	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
-	if (pCapital && (m_iTimingBuildupStartTurn < 0 || IsInTimingBuildupWindow()) && iTurn >= 30 * iSpeed / 100)
+	if (bWarChest)
+		m_bTimingBuildupSaving = false; // WarChest's bucket now: don't start or cancel it
+	else if (pCapital && (m_iTimingBuildupStartTurn < 0 || IsInTimingBuildupWindow()) && iTurn >= 30 * iSpeed / 100)
 	{
 		UnitTypes eSiege = pCapital->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(UNITAI_CITY_BOMBARD, true);
 		int iGoldTarget = (eSiege != NO_UNIT) ? 2 * pCapital->GetPurchaseCost(eSiege) : 0;
@@ -2024,7 +2031,7 @@ void CvMilitaryAI::DoTimingBuildup()
 	}
 
 	// in the window: buy one siege or attack unit a turn in the city nearest the target, while the gold allows
-	if (IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
+	if (!bWarChest && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
 	{
 		CvCity* pTheirCity = m_eTimingBuildupTarget != NO_PLAYER ? m_pPlayer->GetClosestCityToUsByPlots(m_eTimingBuildupTarget) : NULL;
 		CvCity* pBuyCity = pTheirCity ? m_pPlayer->GetClosestCityByPathLength(pTheirCity->plot()) : pCapital;
