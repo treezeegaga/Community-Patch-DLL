@@ -250,6 +250,8 @@ void CvGrandStrategyAI::DoTurn()
 
 	// AI_AB_TEST (Personality): the strategy profile, logged only
 	LogStrategyProfile();
+	// AI_AB_TEST (Personality, GreedyFewUnits and MetaDial's greedy side): refuse city-state unit gifts at the cap
+	DoGreedyCityStateUnitGifts();
 
 	int iGrandStrategiesLoop = 0;
 	AIGrandStrategyTypes eGrandStrategy;
@@ -1828,6 +1830,42 @@ int CvGrandStrategyAI::GetMetaPosition() const
 		m_iCachedMetaTurn = iTurn;
 	}
 	return m_iCachedMetaPosition;
+}
+
+/// AI_AB_TEST (Personality, GreedyFewUnits and MetaDial's greedy side): militaristic city-states give each friend a
+/// land unit every ~19 turns, and a city-state can gift one on first contact. In bully pair 0B09BFE1 these took greedy
+/// civs well past their cap at peace (Siam: 3 land units built, 8 owned). A human can switch the gifts off in the
+/// city-state screen; a greedy AI does that while it is at its cap and switches them back on below it. Unit gifts are
+/// the only thing the switch stops (CvMinorCivAI::DoSpawnUnit, IsUnitSpawningAllowed).
+void CvGrandStrategyAI::DoGreedyCityStateUnitGifts()
+{
+	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman() || !m_pPlayer->isAlive())
+		return;
+	const bool bGreedyFlag = m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS);
+	if (!bGreedyFlag && !m_pPlayer->IsMetaDialGreedy())
+		return;
+
+	bool bRefuse = false;
+	if (CityStrategyAIHelpers::GetGreedyAlarmThreat(*m_pPlayer) == NO_PLAYER)
+	{
+		const int iCities = max(1, m_pPlayer->getNumCities());
+		int iCap = 0;
+		if (m_pPlayer->IsAtWarAnyMajor())
+			iCap = iCities * 2;
+		else
+			iCap = bGreedyFlag ? iCities : iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10;
+		const int iLand = m_pPlayer->getNumMilitaryLandUnits() - m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_EXPLORE, false, true);
+		bRefuse = iLand >= iCap;
+	}
+
+	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
+	{
+		CvPlayer& kMinor = GET_PLAYER((PlayerTypes)iMinorLoop);
+		if (!kMinor.isEverAlive() || !kMinor.isMinorCiv())
+			continue;
+		if (kMinor.GetMinorCivAI()->IsUnitSpawningDisabled(m_pPlayer->GetID()) != bRefuse)
+			kMinor.GetMinorCivAI()->SetUnitSpawningDisabled(m_pPlayer->GetID(), bRefuse);
+	}
 }
 
 /// AI_AB_TEST (Personality): the profile in StrategyProfile_Log.csv (logged games only), at turns 1, 50, 100, 150...
