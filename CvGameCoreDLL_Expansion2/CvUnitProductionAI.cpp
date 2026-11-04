@@ -1212,6 +1212,17 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		if (m_pCity->GetCityStrategyAI()->IsUsingCityStrategy(eEnoughSettlers))
 			return SR_BALANCE;
 
+		// AI_AB_TEST candidate (Personality, GreedyTall; the user, 2026-11-04): the tall kind of greedy keeps to 4 cities.
+		// Settlers we have or are training count (this city's own current settler doesn't).
+		if (kPlayer.IsGreedyTall())
+		{
+			int iSettlers = kPlayer.GetNumUnitsWithUnitAI(UNITAI_SETTLE, true);
+			if (m_pCity->getProductionUnit() == eUnit && !bForPurchase)
+				iSettlers--;
+			if (kPlayer.getNumCities() + iSettlers >= 4)
+				return SR_STRATEGY;
+		}
+
 		if (m_pCity->plot()->getNumUnitsOfAIType(UNITAI_SETTLE, m_pCity->getOwner()) > 0)
 		{
 			return SR_USELESS;

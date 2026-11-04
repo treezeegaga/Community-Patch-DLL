@@ -1548,6 +1548,30 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	if (iBonus < 1)
 		return SR_UNKNOWN;
 
+	// AI_AB_TEST candidates (Personality, GreedyTall and GreedyWide; the user, 2026-11-04): the tall kind of greedy rushes
+	// the policy tree as well as the tech tree: buildings that add culture are worth 50% more. The wide kind, once it has
+	// no room left to settle, grows its cities vertically: buildings that add food, keep food on growth or add happiness
+	// are worth twice as much. (GreedyBuilds' food and science bonus below comes on top, for the greedy style set.)
+	if (!bFreeBuilding && kPlayer.isMajorCiv() && !kPlayer.isHuman())
+	{
+		int iKindPercent = 0;
+		if (kPlayer.IsGreedyTall())
+		{
+			if (pkBuildingInfo->GetYieldChange(YIELD_CULTURE) > 0 || pkBuildingInfo->GetYieldChangePerPop(YIELD_CULTURE) > 0 ||
+				pkBuildingInfo->GetYieldModifier(YIELD_CULTURE) > 0)
+				iKindPercent = 50;
+		}
+		else if (kPlayer.IsGreedyWide() && kPlayer.GetGrandStrategyAI()->IsGreedyWideOutOfRoom())
+		{
+			if (pkBuildingInfo->GetYieldChange(YIELD_FOOD) > 0 || pkBuildingInfo->GetYieldChangePerPop(YIELD_FOOD) > 0 ||
+				pkBuildingInfo->GetYieldModifier(YIELD_FOOD) > 0 || pkBuildingInfo->GetFoodKept() > 0 ||
+				pkBuildingInfo->GetHappiness() > 0 || pkBuildingInfo->GetUnmoddedHappiness() > 0)
+				iKindPercent = 100;
+		}
+		if (iKindPercent > 0)
+			iBonus = (iValue + iBonus) * (100 + iKindPercent) / 100 - iValue;
+	}
+
 	// AI_AB_TEST candidate (Personality, GreedyBuilds): the greedy style puts its production into growth, science and
 	// wonders: world wonders and buildings that add food, keep food on growth or add science are worth 50% more.
 	// MetaDial: below meta position 0, worth up to 50% more (+50% at -100)

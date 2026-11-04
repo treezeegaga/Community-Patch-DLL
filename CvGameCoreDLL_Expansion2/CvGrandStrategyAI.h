@@ -50,6 +50,13 @@ enum StrategyExpansionTypes
 	STRATEGY_EXPANSION_WIDE,
 	STRATEGY_EXPANSION_CONQUEST
 };
+// AI_AB_TEST (Personality, GreedyWide/GreedyTall): the two kinds of greedy (the user, 2026-11-04)
+enum StrategyGreedyKindTypes
+{
+	STRATEGY_GREEDY_TALL,	// Tradition, 3-4 cities, a tech and policy rush
+	STRATEGY_GREEDY_WIDE,	// Liberty, settles as fast as happiness and growth allow; out of room, grows tall and trades
+	NUM_STRATEGY_GREEDY_KINDS
+};
 struct CvStrategyProfile
 {
 	StrategyArchetypeTypes eArchetype;
@@ -57,6 +64,7 @@ struct CvStrategyProfile
 	int aiVictoryWeight[NUM_STRATEGY_VICTORY_WEIGHTS];	// adds up to 100
 	StrategyRiskTypes eRisk;
 	StrategyExpansionTypes eExpansion;
+	StrategyGreedyKindTypes eGreedyKind;	// which kind of greedy this leader plays when it plays greedy
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -108,6 +116,8 @@ public:
 	CvStrategyProfile GetStrategyProfile() const;
 	static const char* GetStrategyArchetypeName(StrategyArchetypeTypes eArchetype);
 	int GetMetaPosition() const;
+	StrategyGreedyKindTypes GetGreedyKind() const;
+	bool IsGreedyWideOutOfRoom() const;
 	int GetWarDefenceLandUnitCap() const;
 
 	// **********
@@ -172,6 +182,9 @@ private:
 	// AI_AB_TEST (Personality, MetaDial): not saved, worked out again from the game data
 	mutable int m_iCachedMetaPosition;
 	mutable int m_iCachedMetaTurn;
+	mutable int m_iCachedGreedyKind;	// GreedyWide/GreedyTall: worked out with the meta position, once per turn
+	mutable int m_iCachedOutOfRoom;	// GreedyWide: -1 not worked out this turn, else 0 or 1
+	mutable int m_iCachedOutOfRoomTurn;
 	// AI_AB_TEST (Personality, GreedyWarArmy): not saved, worked out again from the game state
 	mutable int m_iCachedWarDefenceCap;
 	mutable int m_iCachedWarDefenceTurn;
