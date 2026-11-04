@@ -226,6 +226,10 @@ enum CandidateFixTypes
 	FIX_CONQUEST_TRAIT_TARGETS,// War: a warmonger's conquest bonus shapes its targets (Assyria, Songhai, Mongolia; Austria and Venice skip city-states). Off in the bundle
 	FIX_SIEGE_EXPOSURE,		// War: in a city attack, a unit that attacked is judged at turn end by the planner's danger (/ aggression level). Off in the bundle
 	FIX_SIEGE_ROLL,			// War: a city attack mustering within 5 tiles of its target (already at war) moves with 3+ units, no wait for slots or the bar. Off in the bundle
+	FIX_DECLARE_WHEN_GATHERED,// War: a sneak attack at the target's border declares once gathered (units within 2 tiles of its centre) or stalled 3 turns. Off in the bundle
+	FIX_SIEGE_CONCENTRATE,	// War: SiegeRoll's wave moves only when it plus our units at the siege fill the formation's required slots. Off in the bundle
+	FIX_SIEGE_KEEP,			// War: at war with a major, units fresh from an attack or in an enemy city's zone don't go after barbarian camps. Off in the bundle
+	FIX_TIMING_BUILDUP,		// War (the user's design): a warmonger keeps garrisons at peace, builds up for 15 turns once it has a target, then attacks. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1811,6 +1815,7 @@ public:
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;
+	TechTypes GetTimingBuildupTech() const; // AI_AB_TEST War, flag TimingBuildup
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
 	bool IsVassalOfSomeone() const;

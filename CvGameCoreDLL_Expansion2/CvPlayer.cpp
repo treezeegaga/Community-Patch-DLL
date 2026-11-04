@@ -33367,6 +33367,8 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"ConquestTraitTargets", false},
 	{"SiegeExposure", false},
 	{"SiegeRoll", false},
+	{"DeclareWhenGathered", false}, {"SiegeConcentrate", false}, {"SiegeKeep", false},
+	{"TimingBuildup", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33782,15 +33784,22 @@ bool CvPlayer::IsGreedyUpgradeBlocked() const
 /// aggressive side keep their big army only in this window or at war. The window is open when:
 /// - we are at war with a major civ; or
 /// - our approach to a major civ is WAR (CP's own war preparation, and TimingAttack's committed target); or
-/// - interim, until War's TimingBuildup defines the window: we are a timing attacker (TimingAttack) within 20 turns
-///   (Standard speed) of DeclareTiming's fallback declaration turn (90), i.e. from turn 70. DeclareTiming waits for
-///   the army before it picks a target, so the window has to open before the target exists.
+/// - without TimingBuildup: we are a timing attacker (TimingAttack) within 20 turns (Standard speed) of DeclareTiming's
+///   fallback declaration turn (90), i.e. from turn 70. DeclareTiming waits for the army before it picks a target, so
+///   the window has to open before the target exists.
+/// With War's TimingBuildup on, its phases decide instead (CvMilitaryAI::GetTimingBuildupPhase).
 bool CvPlayer::IsInWarBuildup() const
 {
 	if (!isMajorCiv() || isHuman())
 		return false;
 	if (IsAtWarAnyMajor())
 		return true;
+	// War's TimingBuildup, when it's on, defines the window: the big army in its build-up window and while the attack is
+	// under way (WINDOW, ATTACK), garrisons in peace and while the target is only planned (PEACE, PLANNED)
+	const CvMilitaryAI::TimingBuildupPhase ePhase = GetMilitaryAI()->GetTimingBuildupPhase();
+	if (ePhase != CvMilitaryAI::TIMING_BUILDUP_NONE)
+		return ePhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW || ePhase == CvMilitaryAI::TIMING_BUILDUP_ATTACK ||
+			ePhase == CvMilitaryAI::TIMING_BUILDUP_WAR;
 	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 	{
 		const PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
@@ -34125,6 +34134,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			if (!pkUnitInfo)
 				continue;
 
+			// AI_AB_TEST (candidate, flag TimingBuildup, War): the warmonger book's army (catapults, spearmen, archers after the
+			// warriors) is built in the build-up window before the attack instead of 40+ turns ahead
+			if (pSteps == kOpeningWarmongerCapital && i > 2 && (pkUnitInfo->GetCombat() > 0 || pkUnitInfo->GetRangedCombat() > 0) &&
+				GetMilitaryAI()->IsTimingBuildupPlayer())
+				continue;
+
 			int iHave = getUnitClassCountPlusMaking(eClass);
 			bool bSettler = pkUnitInfo->IsFound();
 			if (bSettler)
@@ -34237,6 +34252,62 @@ TechTypes CvPlayer::GetCandidateGrowthTech() const
 	if (!pCapital || pCapital->getPopulation() < 6)
 		return NO_TECH;
 	return GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_ENGINEERING", true), 0);
+}
+
+/// AI_AB_TEST (candidate, flag TimingBuildup, War): while a timing attack is planned (or before it), after the opening book,
+/// research toward the attack's units: catapults (Mathematics), the spearman line (Bronze Working), and Iron Working or
+/// Horseback Riding when iron or horses lie in our lands (resources the army can then use). Each only once.
+TechTypes CvPlayer::GetTimingBuildupTech() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv() || isHuman() || IsOpeningBookActive() || IsAtWarAnyMajor())
+		return NO_TECH;
+	CvMilitaryAI* pMilitary = GetMilitaryAI();
+	if (!pMilitary || !pMilitary->IsTimingBuildupPlayer())
+		return NO_TECH;
+	CvMilitaryAI::TimingBuildupPhase ePhase = pMilitary->GetTimingBuildupPhase();
+	if (ePhase != CvMilitaryAI::TIMING_BUILDUP_PEACE && ePhase != CvMilitaryAI::TIMING_BUILDUP_PLANNED)
+		return NO_TECH;
+
+	static const char* const kAlways[] = { "TECH_MATHEMATICS", "TECH_BRONZE_WORKING" };
+	for (int i = 0; i < 2; i++)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString(kAlways[i], true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+
+	// strategic resources in our lands
+	const ResourceTypes eIron = (ResourceTypes)GC.getInfoTypeForString("RESOURCE_IRON", true);
+	const ResourceTypes eHorse = (ResourceTypes)GC.getInfoTypeForString("RESOURCE_HORSE", true);
+	bool bIron = false, bHorse = false;
+	int iLoop = 0;
+	for (const CvCity* pCity = firstCity(&iLoop); pCity != NULL && !(bIron && bHorse); pCity = nextCity(&iLoop))
+	{
+		for (int i = 0; i < RING3_PLOTS; i++)
+		{
+			CvPlot* pPlot = iterateRingPlots(pCity->plot(), i);
+			if (!pPlot || pPlot->getOwner() != GetID())
+				continue;
+			ResourceTypes eRes = pPlot->getResourceType(getTeam());
+			if (eRes != NO_RESOURCE && eRes == eIron)
+				bIron = true;
+			if (eRes != NO_RESOURCE && eRes == eHorse)
+				bHorse = true;
+		}
+	}
+	if (bIron)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_IRON_WORKING", true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	if (bHorse)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_HORSEBACK_RIDING", true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	return NO_TECH;
 }
 
 /// The next tech the opening book wants researched, if any

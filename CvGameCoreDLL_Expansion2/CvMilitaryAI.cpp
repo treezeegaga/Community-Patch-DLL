@@ -315,6 +315,9 @@ void CvMilitaryAI::Reset()
 	m_iRecLandUnits = 0;
 	m_iRecNavalUnits = 0;
 	m_iRecExplorerUnits = 0;
+	m_iTimingBuildupStartTurn = -1;
+	m_eTimingBuildupTarget = NO_PLAYER;
+	m_bTimingBuildupSaving = false;
 	m_eLandDefenseState = NO_DEFENSE_STATE;
 	m_eNavalDefenseState = NO_DEFENSE_STATE;
 	m_iNumberOfTimesOpsBuildSkippedOver = 0;
@@ -367,6 +370,9 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iVisibleBarbarianCount);
 	visitor(militaryAI.m_iRecLandUnits);
 	visitor(militaryAI.m_iRecExplorerUnits);
+	visitor(militaryAI.m_iTimingBuildupStartTurn);
+	visitor(militaryAI.m_eTimingBuildupTarget);
+	visitor(militaryAI.m_bTimingBuildupSaving);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -504,6 +510,8 @@ void CvMilitaryAI::DoTurn()
 		{
 			MakeEmergencyPurchases();
 		}
+		if (IsTimingBuildupPlayer())
+			DoTimingBuildup();
 		DisbandObsoleteUnits();
 	}
 
@@ -1855,6 +1863,249 @@ void CvMilitaryAI::SetRecommendedArmyNavySize()
 		int iDiff = iNumNavalUnits - m_iRecNavalUnits;
 		m_iRecNavalUnits += iDiff;
 		m_iRecLandUnits -= iDiff;
+	}
+
+	//AI_AB_TEST (candidate, flag TimingBuildup): at peace a timing attacker wants its garrisons (and its siege train, up
+	//to 3); in the build-up window it wants garrisons plus a 6-unit field army, which makes CP's production build units
+	if (IsTimingBuildupPlayer() && !m_pPlayer->IsAtWarAnyMajor())
+	{
+		const int iCities = max(1, m_pPlayer->getNumCities());
+		const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+		if (IsInTimingBuildupWindow())
+			m_iRecLandUnits = max(m_iRecLandUnits, iCities + 6);
+		else if (IsTimingBuildupPeace())
+			m_iRecLandUnits = min(m_iRecLandUnits, GetTimingBuildupPeaceCap() + min(3, iSiege));
+	}
+}
+
+/// AI_AB_TEST (candidate, flag TimingBuildup, the user's design): a timing attacker doesn't keep a big army all game. It
+/// keeps garrisons and an escort at peace (no upkeep for an idle army), builds up fast for 15 turns once it has a target
+/// (production, gold saved ahead, purchases), attacks while the army is fresh, and lets the extras go after the peace.
+bool CvMilitaryAI::IsTimingBuildupPlayer() const
+{
+	return m_pPlayer->IsCandidateWarmonger(FIX_TIMING_BUILDUP);
+}
+
+static int TimingBuildupWindowTurns()
+{
+	return max(1, 15 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
+}
+
+/// peace phase: no war with a major and no build-up window or attack under way
+bool CvMilitaryAI::IsTimingBuildupPeace() const
+{
+	return IsTimingBuildupPlayer() && !m_pPlayer->IsAtWarAnyMajor() && m_iTimingBuildupStartTurn < 0;
+}
+
+bool CvMilitaryAI::IsInTimingBuildupWindow() const
+{
+	return m_iTimingBuildupStartTurn >= 0 && GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn < TimingBuildupWindowTurns();
+}
+
+bool CvMilitaryAI::HasTimingBuildupWindowEnded() const
+{
+	return m_iTimingBuildupStartTurn >= 0 && GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn >= TimingBuildupWindowTurns();
+}
+
+/// ready to attack: 2 siege units and 4 field units on top of a garrison per city (DeclareTiming's army)
+bool CvMilitaryAI::IsTimingBuildupArmyReady() const
+{
+	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+	return iSiege >= 2 && iLand - iSiege >= max(1, m_pPlayer->getNumCities()) + 4;
+}
+
+/// non-siege land combat units at peace: a garrison per city and one escort
+int CvMilitaryAI::GetTimingBuildupPeaceCap() const
+{
+	return max(1, m_pPlayer->getNumCities()) + 1;
+}
+
+/// the plan's phase: NONE (not a timing attacker), PEACE (no target), PLANNED (target chosen, at peace, no window yet),
+/// WINDOW (building up), ATTACK (built up or window over, not yet at war), WAR (at war with a major)
+CvMilitaryAI::TimingBuildupPhase CvMilitaryAI::GetTimingBuildupPhase() const
+{
+	if (!IsTimingBuildupPlayer())
+		return TIMING_BUILDUP_NONE;
+	if (m_pPlayer->IsAtWarAnyMajor())
+		return TIMING_BUILDUP_WAR;
+	if (IsInTimingBuildupWindow())
+		return TIMING_BUILDUP_WINDOW;
+	if (m_iTimingBuildupStartTurn >= 0)
+		return TIMING_BUILDUP_ATTACK;
+	if (m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget() != NO_PLAYER)
+		return TIMING_BUILDUP_PLANNED;
+	return TIMING_BUILDUP_PEACE;
+}
+
+/// the attack's target: the window's, or the committed one while planned
+PlayerTypes CvMilitaryAI::GetTimingBuildupTarget() const
+{
+	if (!IsTimingBuildupPlayer())
+		return NO_PLAYER;
+	if (m_iTimingBuildupStartTurn >= 0 && m_eTimingBuildupTarget != NO_PLAYER)
+		return m_eTimingBuildupTarget;
+	return m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
+}
+
+/// land units still missing for the attack army (2 siege units and cities + 4 others)
+int CvMilitaryAI::GetTimingBuildupUnitsWanted() const
+{
+	if (!IsTimingBuildupPlayer())
+		return 0;
+	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+	return max(0, 2 - iSiege) + max(0, max(1, m_pPlayer->getNumCities()) + 4 - (iLand - iSiege));
+}
+
+/// the unit the build-up would build or buy now (at the capital): siege or attack
+UnitTypes CvMilitaryAI::GetTimingBuildupUnitType(bool bSiege) const
+{
+	CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (!IsTimingBuildupPlayer() || !pCapital)
+		return NO_UNIT;
+	return pCapital->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(bSiege ? UNITAI_CITY_BOMBARD : UNITAI_ATTACK, true);
+}
+
+void CvMilitaryAI::StartTimingBuildup(PlayerTypes eTarget)
+{
+	if (m_iTimingBuildupStartTurn >= 0)
+		return;
+	m_iTimingBuildupStartTurn = GC.getGame().getGameTurn();
+	m_eTimingBuildupTarget = eTarget;
+	if (GC.getLogging() && GC.getAILogging())
+		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("TimingBuildup: window opens for %d turns against %s",
+			TimingBuildupWindowTurns(), eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "?"));
+}
+
+void CvMilitaryAI::DoTimingBuildup()
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	CvTacticalAI* pTactical = m_pPlayer->GetTacticalAI();
+	const bool bLog = GC.getLogging() && GC.getAILogging();
+
+	// at war: the window has done its job; savings go back to the economy
+	if (m_pPlayer->IsAtWarAnyMajor())
+	{
+		if (m_iTimingBuildupStartTurn >= 0 && bLog)
+			pTactical->LogTacticalMessage(CvString::format("TimingBuildup: at war, window closed after %d turns", iTurn - m_iTimingBuildupStartTurn));
+		m_iTimingBuildupStartTurn = -1;
+		if (m_bTimingBuildupSaving)
+			m_pPlayer->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_UNIT);
+		m_bTimingBuildupSaving = false;
+		return;
+	}
+
+	// the attack never came: back to peace
+	if (m_iTimingBuildupStartTurn >= 0 && iTurn - m_iTimingBuildupStartTurn > 3 * TimingBuildupWindowTurns())
+	{
+		if (bLog)
+			pTactical->LogTacticalMessage("TimingBuildup: no war 3 windows after the build-up, back to the peace army");
+		m_iTimingBuildupStartTurn = -1;
+	}
+
+	// Economy's WarChest owns the gold when it's on (savings and window purchases, CvEconomicAI::DoWarChest); looked up by
+	// name so this builds before WarChest is merged
+	static const int iWarChestFix = CvPlayer::GetCandidateFixByName("WarChest");
+	const bool bWarChest = iWarChestFix >= 0 && m_pPlayer->UsesCandidateAI((CandidateFixTypes)iWarChestFix);
+
+	// gold saved ahead: the price of 2 siege units at the capital, from turn 30 (Standard) until the window is spent
+	CvCity* pCapital = m_pPlayer->getCapitalCity();
+	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
+	if (bWarChest)
+		m_bTimingBuildupSaving = false; // WarChest's bucket now: don't start or cancel it
+	else if (pCapital && (m_iTimingBuildupStartTurn < 0 || IsInTimingBuildupWindow()) && iTurn >= 30 * iSpeed / 100)
+	{
+		UnitTypes eSiege = pCapital->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(UNITAI_CITY_BOMBARD, true);
+		int iGoldTarget = (eSiege != NO_UNIT) ? 2 * pCapital->GetPurchaseCost(eSiege) : 0;
+		if (iGoldTarget > 0)
+		{
+			m_pPlayer->GetEconomicAI()->StartSaveForPurchase(PURCHASE_TYPE_UNIT, iGoldTarget, 400);
+			m_bTimingBuildupSaving = true;
+		}
+	}
+	else if (m_bTimingBuildupSaving)
+	{
+		m_pPlayer->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_UNIT);
+		m_bTimingBuildupSaving = false;
+	}
+
+	// in the window: buy one siege or attack unit a turn in the city nearest the target, while the gold allows
+	if (!bWarChest && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
+	{
+		CvCity* pTheirCity = m_eTimingBuildupTarget != NO_PLAYER ? m_pPlayer->GetClosestCityToUsByPlots(m_eTimingBuildupTarget) : NULL;
+		CvCity* pBuyCity = pTheirCity ? m_pPlayer->GetClosestCityByPathLength(pTheirCity->plot()) : pCapital;
+		if (pBuyCity && !pBuyCity->IsPuppet())
+		{
+			const bool bNeedSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < 2;
+			UnitTypes eType = pBuyCity->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(bNeedSiege ? UNITAI_CITY_BOMBARD : UNITAI_ATTACK, true);
+			if (eType != NO_UNIT && pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eType, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
+			{
+				const int iCost = pBuyCity->GetPurchaseCost(eType);
+				if (m_pPlayer->GetEconomicAI()->CanWithdrawMoneyForPurchase(PURCHASE_TYPE_UNIT, iCost, 400))
+				{
+					CvUnit* pUnit = pBuyCity->PurchaseUnit(eType, YIELD_GOLD);
+					if (pUnit)
+					{
+						if (!pUnit->isHuman(ISHUMAN_AI_UNIT_PROMOTIONS))
+							pUnit->AI_promote();
+						if (bLog)
+							pTactical->LogTacticalMessage(CvString::format("TimingBuildup: bought %s in %s for %d gold",
+								pUnit->getUnitInfo().GetDescription(), pBuyCity->getNameNoSpace().c_str(), iCost));
+					}
+				}
+			}
+		}
+	}
+
+	// peace: let one extra land unit go each turn once more than 2 over the cap (siege units stay for the next window),
+	// not in the 10 turns after a peace treaty
+	if (IsTimingBuildupPeace())
+	{
+		for (int iTeamLoop = 0; iTeamLoop < MAX_MAJOR_CIVS; iTeamLoop++)
+		{
+			const TeamTypes eLoopTeam = (TeamTypes)iTeamLoop;
+			if (eLoopTeam == m_pPlayer->getTeam())
+				continue;
+			const int iPeaceTurn = GET_TEAM(m_pPlayer->getTeam()).GetTurnMadePeaceTreatyWithTeam(eLoopTeam);
+			if (iPeaceTurn >= 0 && iTurn - iPeaceTurn < 10)
+				return;
+		}
+
+		int iNonSiege = 0;
+		CvUnit* pWeakest = NULL;
+		int iWeakestScore = INT_MAX;
+		int iLoop = 0;
+		for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+		{
+			if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->isDelayedDeath())
+				continue;
+			if (pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD)
+				continue;
+			iNonSiege++;
+			if (pLoopUnit->getArmyID() != -1 || !pLoopUnit->canScrap())
+				continue;
+			int iScore = pLoopUnit->GetPower() * pLoopUnit->getUnitInfo().GetProductionCost() + pLoopUnit->getLevel();
+			if (pLoopUnit->plot()->isCity())
+				iScore *= 2; // prefer one that isn't a garrison
+			if (iScore < iWeakestScore)
+			{
+				iWeakestScore = iScore;
+				pWeakest = pLoopUnit;
+			}
+		}
+
+		if (pWeakest && iNonSiege > GetTimingBuildupPeaceCap() + 2)
+		{
+			if (bLog)
+				pTactical->LogTacticalMessage(CvString::format("TimingBuildup: peace, %d land units over a cap of %d, letting %s go",
+					iNonSiege, GetTimingBuildupPeaceCap(), pWeakest->getUnitInfo().GetDescription()));
+			PlayerTypes eMinor = m_pPlayer->GetBestGiftTarget(DOMAIN_LAND);
+			if (eMinor != NO_PLAYER)
+				GET_PLAYER(eMinor).AddIncomingUnit(m_pPlayer->GetID(), pWeakest);
+			else
+				pWeakest->scrap();
+		}
 	}
 }
 

@@ -209,6 +209,21 @@ public:
 	// Accessors to provide military data to other AI subsystems
 	bool ShouldFightBarbarians() const;
 	int GetNumberCivsAtWarWith(bool bIncludeMinor = true) const;
+	// AI_AB_TEST (candidate, flag TimingBuildup): peace with garrisons only, a build-up window once a target is found, then the attack
+	bool IsTimingBuildupPlayer() const;
+	bool IsTimingBuildupPeace() const;
+	bool IsInTimingBuildupWindow() const;
+	bool HasTimingBuildupWindowEnded() const;
+	bool IsTimingBuildupArmyReady() const;
+	int GetTimingBuildupPeaceCap() const;
+	void StartTimingBuildup(PlayerTypes eTarget);
+	// read-only plan for other subsystems (Economy's WarChest and WarEconomy)
+	enum TimingBuildupPhase { TIMING_BUILDUP_NONE, TIMING_BUILDUP_PEACE, TIMING_BUILDUP_PLANNED, TIMING_BUILDUP_WINDOW, TIMING_BUILDUP_ATTACK, TIMING_BUILDUP_WAR };
+	TimingBuildupPhase GetTimingBuildupPhase() const;
+	PlayerTypes GetTimingBuildupTarget() const;
+	int GetTimingBuildupUnitsWanted() const;
+	UnitTypes GetTimingBuildupUnitType(bool bSiege) const;
+
 	int GetRecommendedMilitarySize() const
 	{
 		return m_iRecLandUnits + m_iRecNavalUnits + m_iRecExplorerUnits;
@@ -349,6 +364,10 @@ private:
 	int m_iVisibleBarbarianCount;
 	int m_iRecLandUnits;
 	int m_iRecExplorerUnits;
+	int m_iTimingBuildupStartTurn;		// AI_AB_TEST TimingBuildup: -1 when no window
+	PlayerTypes m_eTimingBuildupTarget;
+	bool m_bTimingBuildupSaving;
+	void DoTimingBuildup();
 	int m_iNumFreeCarriers;
 
 	//new unit counters

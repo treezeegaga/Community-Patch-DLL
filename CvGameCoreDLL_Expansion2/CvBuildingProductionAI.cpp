@@ -1385,8 +1385,9 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//per city aggressive (CP's own number) and 2 balanced; buildings wait until the army is there
 		if (iNumWar == 0 && kPlayer.isMajorCiv() && !kPlayer.isHuman())
 		{
+			// a small army until the build-up window (CvPlayer::IsInWarBuildup, which follows TimingBuildup's phases when it's on)
 			if (kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
-				iTinyArmyUnitsPerCity = kPlayer.IsInWarBuildup() ? 3 : 1;	// a small army until the build-up window
+				iTinyArmyUnitsPerCity = kPlayer.IsInWarBuildup() ? 3 : 1;
 			else if (kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
 				iTinyArmyUnitsPerCity = 2;
 		}
