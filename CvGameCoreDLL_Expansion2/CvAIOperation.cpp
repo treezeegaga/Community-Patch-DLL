@@ -1667,8 +1667,34 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 				pThisArmy->GetNumSlotsFilled() >= 3)
 			{
 				bReadyToMove = true;
-				LogOperationSpecialMessage(CvString::format("SiegeRoll: target %d tiles from the muster point, moving with %d units",
-					plotDistance(*GetMusterPlot(), *GetTargetPlot()), (int)pThisArmy->GetNumSlotsFilled()));
+
+				//AI_AB_TEST (candidate, flag SiegeConcentrate): SiegeRoll sent 4-6 unit waves that each reached the walls alone
+				//(a test war: four waves at one city, "too early" every time). Move only when this army plus our units still at
+				//the siege make one army the size of the formation's required slots; units back from healing join meanwhile.
+				int iAtSiege = 0;
+				if (GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_CONCENTRATE))
+				{
+					int iUnitLoop = 0;
+					for (CvUnit* pLoopUnit = GET_PLAYER(m_eOwner).firstUnit(&iUnitLoop); pLoopUnit != NULL; pLoopUnit = GET_PLAYER(m_eOwner).nextUnit(&iUnitLoop))
+					{
+						if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->getArmyID() != -1 || pLoopUnit->isDelayedDeath())
+							continue;
+						if (pLoopUnit->GetCurrHitPoints() * 2 < pLoopUnit->GetMaxHitPoints())
+							continue;
+						if (plotDistance(*pLoopUnit->plot(), *GetTargetPlot()) <= 4)
+							iAtSiege++;
+					}
+					CvMultiUnitFormationInfo* pFormation = GC.getMultiUnitFormationInfo(GetFormationType());
+					int iWanted = pFormation ? (int)pFormation->getNumFormationSlotEntriesRequired() : 6;
+					if ((int)pThisArmy->GetNumSlotsFilled() + iAtSiege < iWanted)
+						bReadyToMove = false;
+					LogOperationSpecialMessage(CvString::format("SiegeConcentrate: %d in the army, %d at the siege, %d wanted%s",
+						(int)pThisArmy->GetNumSlotsFilled(), iAtSiege, iWanted, bReadyToMove ? "" : ", waiting"));
+				}
+
+				if (bReadyToMove)
+					LogOperationSpecialMessage(CvString::format("SiegeRoll: target %d tiles from the muster point, moving with %d units",
+						plotDistance(*GetMusterPlot(), *GetTargetPlot()), (int)pThisArmy->GetNumSlotsFilled()));
 			}
 
 			if(bReadyToMove)
@@ -1764,6 +1790,28 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 					{
 						LogOperationSpecialMessage("Discovered by enemy");
 						bInPlace = true;
+					}
+
+					//AI_AB_TEST (candidate, flag DeclareWhenGathered): at peace the army can't cross their border, and DeclareAtBorder
+					//then waited to be seen (a test attack sat at the border 7 turns and declared with units 3-7 tiles out). At the
+					//border, declare once the army is together, or once it has stopped moving for 3 turns.
+					if (!bInPlace && m_eType == AI_OPERATION_CITY_ATTACK_LAND_SNEAKY && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_DECLARE_WHEN_GATHERED))
+					{
+						bool bAtBorder = IsNextToEnemyTerritory(pCenterOfMass);
+						for (CvUnit* pUnit = pThisArmy->GetFirstUnit(); pUnit && !bAtBorder; pUnit = pThisArmy->GetNextUnit(pUnit))
+							bAtBorder = IsNextToEnemyTerritory(pUnit->plot());
+
+						if (bAtBorder)
+						{
+							bool bGathered = pThisArmy->GetFurthestUnitDistance(pCenterOfMass) <= 2;
+							bool bStalled = m_progressToTarget.size() >= 3 && m_progressToTarget[0] <= m_progressToTarget[2];
+							if (bGathered || bStalled)
+							{
+								LogOperationSpecialMessage(CvString::format("DeclareWhenGathered: at their border, %s, furthest unit %d tiles from the centre",
+									bGathered ? "gathered" : "stalled 3 turns", pThisArmy->GetFurthestUnitDistance(pCenterOfMass)));
+								bInPlace = true;
+							}
+						}
 					}
 				}
 

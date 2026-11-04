@@ -1061,6 +1061,30 @@ void CvTacticalAI::PlotGrabGoodyMoves()
 		CvPlot* pPlot = GC.getMap().plot(pTarget->GetTargetX(), pTarget->GetTargetY());
 		if (FindUnitsForHarassing(pPlot,iRange,-1,-1,DOMAIN_LAND,false,true,3))
 		{
+			//AI_AB_TEST (candidate, flag SiegeKeep): in a test war the units handed off at the enemy capital went back to clear
+			//barbarian camps and the siege never had units in reach. At war with a major, units fresh from an attack or in an
+			//enemy city's zone leave the camps for later.
+			if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_KEEP) && m_pPlayer->IsAtWarAnyMajor())
+			{
+				for (size_t i = m_CurrentMoveUnits.size(); i > 0; i--)
+				{
+					CvUnit* pUnit = m_pPlayer->getUnit(m_CurrentMoveUnits[i-1].GetID());
+					if (!pUnit)
+						continue;
+					bool bAtFront = pUnit->IsRecentlyDeployedFromOperation();
+					if (!bAtFront)
+					{
+						CvTacticalDominanceZone* pZone = GetTacticalAnalysisMap()->GetZoneByPlot(pUnit->plot());
+						CvCity* pZoneCity = pZone ? pZone->GetZoneCity() : NULL;
+						bAtFront = pZoneCity && GET_PLAYER(pZoneCity->getOwner()).isMajorCiv() && m_pPlayer->IsAtWarWith(pZoneCity->getOwner());
+					}
+					if (bAtFront)
+						m_CurrentMoveUnits.erase(m_CurrentMoveUnits.begin() + (i-1));
+				}
+				if (m_CurrentMoveUnits.size() == 0)
+					continue;
+			}
+
 			ExecuteBarbarianCampMove(pPlot);
 			if( GC.getLogging() && GC.getAILogging() )
 			{
