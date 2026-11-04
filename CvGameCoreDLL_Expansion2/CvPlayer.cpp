@@ -33368,6 +33368,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeExposure", false},
 	{"SiegeRoll", false},
 	{"DeclareWhenGathered", false}, {"SiegeConcentrate", false}, {"SiegeKeep", false},
+	{"TimingBuildup", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -34093,6 +34094,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			UnitTypes eUnit = GetSpecificUnitType(eClass);
 			CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
 			if (!pkUnitInfo)
+				continue;
+
+			// AI_AB_TEST (candidate, flag TimingBuildup, War): the warmonger book's army (catapults, spearmen, archers after the
+			// warriors) is built in the build-up window before the attack instead of 40+ turns ahead
+			if (pSteps == kOpeningWarmongerCapital && i > 2 && (pkUnitInfo->GetCombat() > 0 || pkUnitInfo->GetRangedCombat() > 0) &&
+				GetMilitaryAI()->IsTimingBuildupPlayer())
 				continue;
 
 			int iHave = getUnitClassCountPlusMaking(eClass);

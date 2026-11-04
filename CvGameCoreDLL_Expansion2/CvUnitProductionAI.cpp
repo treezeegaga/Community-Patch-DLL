@@ -330,12 +330,28 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			return SR_STRATEGY;
 	}
 
+	// AI_AB_TEST (candidate, flag TimingBuildup, War): at peace a timing attacker keeps a garrison per city and one escort
+	// (operations +2) and at most 3 siege units; the army is built in the window before the attack (CvMilitaryAI)
+	const bool bTimingPeace = bCombat && !bFree && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
+		kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.GetMilitaryAI()->IsTimingBuildupPeace();
+	if (bTimingPeace && !bDesperate)
+	{
+		const int iSiegeOwned = kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true);
+		if (pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)
+		{
+			if (iSiegeOwned >= 3)
+				return SR_STRATEGY;
+		}
+		else if (iNumLandUnits - iSiegeOwned >= kPlayer.GetMilitaryAI()->GetTimingBuildupPeaceCap() + (bForOperation ? 2 : 0))
+			return SR_STRATEGY;
+	}
+
 	// AI_AB_TEST candidates (Personality, the balanced and aggressive styles): land army size per city at peace.
 	// BalancedArmy keeps at least 2 and at most 3 (operations +2), AggressiveArmy at least 3 and up to 4. The upper
 	// number also lifts CP's recommended army size when that is lower, as long as the units stay within supply.
 	const bool bStyleLandUnit = bCombat && !bFree && pkUnitEntry->GetDomainType() == DOMAIN_LAND &&
 		pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && kPlayer.isMajorCiv() && !kPlayer.isHuman();
-	const bool bAggressiveArmy = bStyleLandUnit && kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY);
+	const bool bAggressiveArmy = bStyleLandUnit && kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY) && !bTimingPeace; //TimingBuildup: only outside the peace phase
 	const bool bBalancedArmy = bStyleLandUnit && !bAggressiveArmy && kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY);
 	const int iStyleCities = max(1, kPlayer.getNumCities());
 	if (bBalancedArmy && !bDesperate && !kPlayer.IsAtWarAnyMajor() && iNumLandUnits >= iStyleCities * 3 + (bForOperation ? 2 : 0))

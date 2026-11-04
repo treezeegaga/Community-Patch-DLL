@@ -1385,7 +1385,7 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//per city aggressive (CP's own number) and 2 balanced; buildings wait until the army is there
 		if (iNumWar == 0 && kPlayer.isMajorCiv() && !kPlayer.isHuman())
 		{
-			if (kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
+			if (kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY) && !kPlayer.GetMilitaryAI()->IsTimingBuildupPeace()) //TimingBuildup: no floor at peace
 				iTinyArmyUnitsPerCity = 3;
 			else if (kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
 				iTinyArmyUnitsPerCity = 2;

@@ -23507,7 +23507,12 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// c5: and an army around them (2 siege + 4 other land units): c4's war came with the siege but an army too thin to
 	// take a city
 	// Flag DeclareTiming; without it a warmonger attacks from turn 45 (Standard), as in c3
-	if (bWarmonger && pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 90 * iSpeed / 100)
+	// AI_AB_TEST (candidate, flag TimingBuildup): the army is built in a window after the target is found (below), so
+	// DeclareTiming's "army first" gate doesn't apply; the window doesn't open before turn 40 (Standard)
+	const bool bTimingBuildup = bWarmonger && pPlayer->GetMilitaryAI()->IsTimingBuildupPlayer();
+	if (bTimingBuildup && iTurn < 40 * iSpeed / 100)
+		return NO_PLAYER;
+	if (bWarmonger && !bTimingBuildup && pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 90 * iSpeed / 100)
 	{
 		int iSiege = pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 		int iLand = pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
@@ -23615,6 +23620,18 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	}
 
 	m_eNewAIConquestTarget = eBest;
+
+	// AI_AB_TEST (candidate, flag TimingBuildup): a target opens the build-up window; the attack goes ahead once the army is
+	// ready or the window is over
+	if (bTimingBuildup && eBest != NO_PLAYER)
+	{
+		CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
+		if (!pMilitary->IsTimingBuildupArmyReady() && !pMilitary->HasTimingBuildupWindowEnded())
+		{
+			pMilitary->StartTimingBuildup(eBest);
+			return NO_PLAYER;
+		}
+	}
 	return eBest;
 }
 
