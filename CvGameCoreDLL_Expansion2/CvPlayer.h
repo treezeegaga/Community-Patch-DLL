@@ -225,6 +225,7 @@ enum CandidateFixTypes
 	FIX_GIFTS_NEED_PATRONAGE,// Diplomacy (user's rule): no gold gifts to city-states without Patronage, except city-state traits,
 							// a diplomatic victory with the World Congress in session, an ally supplying a resource we'd lack, and
 							// an active gold or invest quest. In the bundle (the user ruled it obvious)
+	FIX_CS_CONQUEST,		// War: a warmonger in the conquest role goes to war on a weak, nearby, unguarded city-state. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

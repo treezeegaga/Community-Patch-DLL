@@ -25448,6 +25448,44 @@ void CvDiplomacyAI::SelectBestApproachTowardsMinorCiv(PlayerTypes ePlayer)
 		vApproachScores[CIV_APPROACH_HOSTILE] *= 2;
 	}
 
+	////////////////////////////////////
+	// AI_AB_TEST (candidate, flag CSConquest): a warmonger in the conquest role takes weak, nearby city-states that no one
+	// it fears is guarding. CP's own weights almost never choose war on a city-state (a test bully picked CONQUEST once in
+	// 959 city-state updates), and GetNewAIConquestTarget only looks at major civs.
+	////////////////////////////////////
+	if (GetPlayer()->UsesCandidateAI(FIX_CS_CONQUEST) && GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) && !GetPlayer()->IsAtWarAnyMajor() &&
+		GetPlayer()->GetProximityToPlayer(ePlayer) >= PLAYER_PROXIMITY_CLOSE &&
+		GET_TEAM(GetTeam()).canDeclareWar(eTeam, eMyPlayer) && GetPlayer()->GetMilitaryAI()->HavePossibleAttackTarget(ePlayer) &&
+		(int)GetMilitaryStrengthComparedToUs(ePlayer) <= (int)STRENGTH_POOR)
+	{
+		PlayerTypes eCSAlly = GET_PLAYER(ePlayer).GetMinorCivAI()->GetAlly();
+		bool bOk = eCSAlly == NO_PLAYER || IsAtWar(eCSAlly);
+
+		// no recent peace with it
+		int iPeaceTurn = GET_TEAM(GetTeam()).GetTurnMadePeaceTreatyWithTeam(eTeam);
+		if (iPeaceTurn > -1 && GC.getGame().getElapsedGameTurns() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns())
+			bOk = false;
+
+		// no protector we'd rather not fight: a major that pledged to protect it and is stronger than average against us
+		for (int iMajor = 0; bOk && iMajor < MAX_MAJOR_CIVS; iMajor++)
+		{
+			PlayerTypes eMajor = (PlayerTypes)iMajor;
+			if (eMajor == eMyPlayer || !GET_PLAYER(eMajor).isAlive() || IsAtWar(eMajor))
+				continue;
+			if (GET_PLAYER(ePlayer).GetMinorCivAI()->IsProtectedByMajor(eMajor) && (int)GetMilitaryStrengthComparedToUs(eMajor) > (int)STRENGTH_AVERAGE)
+				bOk = false;
+		}
+
+		if (bOk)
+		{
+			int iHighest = 0;
+			for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
+				iHighest = max(iHighest, vApproachScores[iApproachLoop]);
+			vApproachScores[CIV_APPROACH_WAR] = iHighest + 1000;
+			bPotentialWarTarget = true;
+		}
+	}
+
 	// Negative approach weights - cap at zero!
 	bool bAllZero = true;
 	for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
