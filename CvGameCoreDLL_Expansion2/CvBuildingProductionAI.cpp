@@ -174,6 +174,24 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	int iBonus = 0;
 
 	const CvBuildingClassInfo& kBuildingClassInfo = pkBuildingInfo->GetBuildingClassInfo();
+
+	// AI_AB_TEST candidate (Personality, GreedyNoWalls): the greedy style builds no walls or castles and no barracks-type
+	// buildings: anything that adds city defence, city HP or unit experience, wonders excepted. GreedyAlarm (a neighbour's
+	// army at the border) lifts it.
+	const bool bAnyWonder = isWorldWonderClass(kBuildingClassInfo) || isTeamWonderClass(kBuildingClassInfo) ||
+		isNationalWonderClass(kBuildingClassInfo) || isLimitedWonderClass(kBuildingClassInfo);
+	if (!bAnyWonder && !bFreeBuilding && kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_NO_WALLS))
+	{
+		bool bMilitary = pkBuildingInfo->GetDefenseModifier() > 0 || pkBuildingInfo->GetExtraCityHitPoints() > 0 ||
+			pkBuildingInfo->GetFreeExperience() > 0;
+		for (int iDomain = 0; iDomain < NUM_DOMAIN_TYPES && !bMilitary; iDomain++)
+			bMilitary = pkBuildingInfo->GetDomainFreeExperience(iDomain) > 0;
+		for (int iCombat = 0; iCombat < GC.getNumUnitCombatClassInfos() && !bMilitary; iCombat++)
+			bMilitary = pkBuildingInfo->GetUnitCombatFreeExperience(iCombat) > 0;
+		if (bMilitary && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+			return SR_STRATEGY;
+	}
+
 	if (m_pCity->getPopulation() <= 6 && !m_pCity->isCapital())
 	{
 		if(isWorldWonderClass(kBuildingClassInfo) || isTeamWonderClass(kBuildingClassInfo) || isNationalWonderClass(kBuildingClassInfo) || isLimitedWonderClass(kBuildingClassInfo))
@@ -1341,7 +1359,11 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//building's value by 75% and keeps building units. The new AI uses 3 per city only at war, and at peace
 		//only reacts to a truly tiny army (1 per city).
 		int iTinyArmyUnitsPerCity = (kPlayer.UsesNewAI() && iNumWar == 0) ? 1 : 3;
-		if (kPlayer.getNumMilitaryUnits() <= (kPlayer.getNumCities() * iTinyArmyUnitsPerCity))
+		//AI_AB_TEST candidate (Personality, GreedyFewUnits): a small army is the greedy style's plan, and the unit cap
+		//blocks the units this penalty asks for, so it would only push production into gold and research processes
+		const bool bGreedyFewUnits = kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) &&
+			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER;
+		if (!bGreedyFewUnits && kPlayer.getNumMilitaryUnits() <= (kPlayer.getNumCities() * iTinyArmyUnitsPerCity))
 		{
 			WarPenalty += 75;
 		}
@@ -1410,6 +1432,21 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	//////
 	if (iBonus < 1)
 		return SR_UNKNOWN;
+
+	// AI_AB_TEST candidate (Personality, GreedyBuilds): the greedy style puts its production into growth, science and
+	// wonders: world wonders and buildings that add food, keep food on growth or add science are worth 50% more
+	if (!bFreeBuilding && kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_BUILDS))
+	{
+		bool bGreedy = isWorldWonderClass(kBuildingClassInfo) || pkBuildingInfo->GetFoodKept() > 0;
+		const YieldTypes aeYields[2] = { YIELD_FOOD, YIELD_SCIENCE };
+		for (int i = 0; i < 2 && !bGreedy; i++)
+		{
+			bGreedy = pkBuildingInfo->GetYieldChange(aeYields[i]) > 0 || pkBuildingInfo->GetYieldChangePerPop(aeYields[i]) > 0 ||
+				pkBuildingInfo->GetYieldModifier(aeYields[i]) > 0;
+		}
+		if (bGreedy)
+			return max(1, (iValue + iBonus) * 3 / 2);
+	}
 
 	//iValue is the compunded value of the items.
 	return max(1,iValue + iBonus);
