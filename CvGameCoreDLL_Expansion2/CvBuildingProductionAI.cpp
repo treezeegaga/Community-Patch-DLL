@@ -1390,9 +1390,11 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			iTinyArmyTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(false);
 		//AI_AB_TEST candidate (Personality, GreedyFewUnits): a small army is the greedy style's plan, and the unit cap
 		//blocks the units this penalty asks for, so it would only push production into gold and research processes
-		//(MetaDial: the same on the greedy side of the dial)
+		//(MetaDial: the same on the greedy side of the dial, in peace only. GreedyWarArmy, and MetaDial always: at war the
+		//cut applies again, so a greedy civ at war builds its army like anyone else)
 		const bool bGreedyFewUnits = kPlayer.isMajorCiv() && !kPlayer.isHuman() &&
-			(kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) || kPlayer.IsMetaDialGreedy()) &&
+			((kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) && !(iNumWar > 0 && kPlayer.UsesCandidateAI(FIX_GREEDY_WAR_ARMY))) ||
+			(kPlayer.IsMetaDialGreedy() && iNumWar == 0)) &&
 			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER;
 		if (!bGreedyFewUnits && kPlayer.getNumMilitaryUnits() * 10 <= (kPlayer.getNumCities() * iTinyArmyTimes10))
 		{

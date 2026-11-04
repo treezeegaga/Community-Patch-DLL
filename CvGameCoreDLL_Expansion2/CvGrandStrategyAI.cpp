@@ -1837,11 +1837,11 @@ int CvGrandStrategyAI::GetMetaPosition() const
 /// cap at peace (Siam: 3 land units built, 8 owned). A human can switch the gifts off in the city-state screen; a civ
 /// with a unit cap does that while it is at its cap and switches them back on below it. The caps are the production
 /// caps (CvUnitProductionAI::CheckUnitBuildSanity):
-/// - GreedyFewUnits: 1 land unit per city in peace, 2 at war;
+/// - GreedyFewUnits: 1 land unit per city in peace, 2 at war (none with GreedyWarArmy);
 /// - BalancedArmy: 3 per city in peace, none at war;
 /// - AggressiveArmy: none (it wants every unit it can get);
 /// - MetaDial (when no style army flag is on): the peace ceiling up to meta position 0 (above it, the aggressive side
-///   keeps its gifts); at war 2 per city on the greedy side (-50 or below), none above.
+///   keeps its gifts); none at war (a greedy civ arms up once a war comes).
 /// GreedyAlarm (a neighbour's army near our cities) lifts the cap. Unit gifts are the only thing the switch stops
 /// (CvMinorCivAI::DoSpawnUnit, IsUnitSpawningAllowed).
 void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
@@ -1853,7 +1853,7 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 	const bool bWar = m_pPlayer->IsAtWarAnyMajor();
 	int iCap = -1;	// -1: no cap
 	if (m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
-		iCap = iCities * (bWar ? 2 : 1);
+		iCap = !bWar ? iCities : (m_pPlayer->UsesCandidateAI(FIX_GREEDY_WAR_ARMY) ? -1 : iCities * 2);
 	else if (m_pPlayer->UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
 		iCap = -1;
 	else if (m_pPlayer->UsesCandidateAI(FIX_BALANCED_ARMY))
@@ -1861,10 +1861,7 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 	else if (m_pPlayer->UsesMetaDial())
 	{
 		const int iMeta = m_pPlayer->GetMetaDialPosition();
-		if (!bWar)
-			iCap = (iMeta <= 0) ? iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10 : -1;
-		else
-			iCap = (iMeta <= -50) ? iCities * 2 : -1;
+		iCap = (!bWar && iMeta <= 0) ? iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10 : -1;
 	}
 	else
 		return;	// no style: the switch stays as it is (off)
