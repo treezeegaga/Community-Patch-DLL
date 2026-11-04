@@ -1842,7 +1842,9 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 						pThisArmy->GetClosestUnitDistance(pTarget), pThisArmy->GetFurthestUnitDistance(pTarget)));
 					bInPlace = false;
 				}
+				//(stalled at war: the turns waiting at the border at peace don't count, else it fires on the first turn of the war)
 				if (bMarchOn && !bInPlace && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy) && plotDistance(*pCenterOfMass, *pTarget) <= 2*GetDeployRange() &&
+					GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).GetNumTurnsAtWar(GET_PLAYER(m_eEnemy).getTeam()) >= 3 &&
 					m_progressToTarget.size() >= 3 && m_progressToTarget[0] <= m_progressToTarget[2])
 				{
 					LogOperationSpecialMessage("MarchOn: stalled near the target at war, handing over");
