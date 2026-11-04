@@ -1841,9 +1841,12 @@ int CvGrandStrategyAI::GetMetaPosition() const
 /// under (the user, 2026-11-04): an enemy on the other side of the world, or one with a weak army, changes nothing,
 /// and the civ keeps its peace plan. Returns the land units it needs to defend, or 0 when no war is a credible threat:
 /// - enemy land combat units we can see within 5 plots of our cities: 3/4 of their number (only what a human could see);
-/// - an enemy at war with us that is close (CLOSE or NEIGHBORS) and whose army is at least AVERAGE compared to ours
-///   (CP's diplomacy estimate, roughly what the demographics screen shows a human): 2 land units per city.
-/// The larger of the two. Enemies: major civs at war with us. Worked out once per turn.
+/// - a credible war: 2 land units per city. Credible means one of our cities is under siege, or an enemy at war with us
+///   is close (CLOSE or NEIGHBORS) and has a large army: military might at or above the average of the living major
+///   civs (the demographics screen shows a human the average and the best). Not compared with our own army: a greedy
+///   civ's army is small, so nearly everyone would look strong next to it.
+/// The larger of the two (the user, 2026-11-04: "if they are under siege or their neighbour with a large army has
+/// declared war, they should prepare accordingly"). Enemies: major civs at war with us. Worked out once per turn.
 int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 {
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
@@ -1855,6 +1858,28 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 	const TeamTypes eTeam = m_pPlayer->getTeam();
 	int iEnemiesNear = 0;
 	bool bCredibleEnemy = false;
+
+	// a city under siege is a credible war on its own
+	int iSiegeLoop = 0;
+	for (const CvCity* pCity = m_pPlayer->firstCity(&iSiegeLoop); pCity != NULL && !bCredibleEnemy; pCity = m_pPlayer->nextCity(&iSiegeLoop))
+	{
+		if (pCity->isUnderSiege())
+			bCredibleEnemy = true;
+	}
+
+	// the average military might of the living major civs: a large army is at or above it
+	long long llMightSum = 0;
+	int iMajors = 0;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayerLoop);
+		if (kLoop.isAlive() && kLoop.isMajorCiv())
+		{
+			llMightSum += kLoop.GetMilitaryMight();
+			iMajors++;
+		}
+	}
+	const long long llAverageMight = (iMajors > 0) ? llMightSum / iMajors : 0;
 	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 	{
 		const PlayerTypes eEnemy = (PlayerTypes)iPlayerLoop;
@@ -1862,8 +1887,7 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 		if (!kEnemy.isAlive() || kEnemy.getTeam() == eTeam || !GET_TEAM(eTeam).isAtWar(kEnemy.getTeam()))
 			continue;
 
-		if (m_pPlayer->GetProximityToPlayer(eEnemy) >= PLAYER_PROXIMITY_CLOSE &&
-			m_pPlayer->GetDiplomacyAI()->GetMilitaryStrengthComparedToUs(eEnemy) >= STRENGTH_AVERAGE)
+		if (m_pPlayer->GetProximityToPlayer(eEnemy) >= PLAYER_PROXIMITY_CLOSE && (long long)kEnemy.GetMilitaryMight() >= llAverageMight)
 			bCredibleEnemy = true;
 
 		int iUnitLoop = 0;

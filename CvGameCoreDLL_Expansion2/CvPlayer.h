@@ -222,7 +222,7 @@ enum CandidateFixTypes
 	FIX_WAR_APPETITE,		// Diplomacy (Personality's profile): the WAR approach weight follows the meta position M: x0.5 at -100
 							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
 	FIX_GREEDY_WAR_ARMY,	// Personality (greedy style): at war a greedy civ judges the threat. A far or weak enemy changes nothing; a credible
-							// one (close with an average army, or units seen near its cities) gets enough defenders, no siege. Off in the bundle
+							// one (a city under siege, a close enemy with a large army, units in sight) gets defenders and border walls. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
