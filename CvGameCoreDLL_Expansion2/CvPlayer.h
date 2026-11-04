@@ -199,6 +199,12 @@ enum CandidateFixTypes
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
 	FIX_SIEGE_BAR,			// War: SiegeArmy waits for healing + a third of the city's HP a turn (not a fifth). Off in the bundle
+	FIX_GREEDY_FEW_UNITS,	// Personality (greedy style): at most 1 land combat unit per city at peace, 2 at war with a major civ; no
+							// tiny-army building penalty at peace. Lifted while GreedyAlarm fires. Off in the bundle
+	FIX_GREEDY_NO_WALLS,	// Personality (greedy style): no walls, castles or other defence and unit-XP buildings (wonders excepted),
+							// unless GreedyAlarm fires. Off in the bundle
+	FIX_GREEDY_NO_UPGRADES,	// Personality (greedy style): no unit upgrades and no gold saved for them unless at war with a major civ. Off in the bundle
+	FIX_GREEDY_BUILDS,		// Personality (greedy style): food, growth and science buildings and world wonders valued x1.5. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

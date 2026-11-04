@@ -14026,6 +14026,12 @@ bool CvUnit::CanUpgradeRightNow(bool bOnlyTestVisible) const
 	if(!isReadyForUpgrade())
 		return false;
 
+	// AI_AB_TEST candidate (Personality, GreedyNoUpgrades): the greedy style spends no gold upgrading units unless it is
+	// at war with a major civ. AI players only; every AI upgrade path (homeland, tactical, armies) asks this first.
+	const CvPlayer& kUpgradeOwner = GET_PLAYER(getOwner());
+	if (kUpgradeOwner.isMajorCiv() && !kUpgradeOwner.isHuman() && kUpgradeOwner.UsesCandidateAI(FIX_GREEDY_NO_UPGRADES) && !kUpgradeOwner.IsAtWarAnyMajor())
+		return false;
+
 	return CanUpgradeTo(GetUpgradeUnitType(), bOnlyTestVisible);
 }
 

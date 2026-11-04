@@ -306,6 +306,19 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 
 	iNumLandUnits -= iNumExplorers;
 
+	// AI_AB_TEST candidate (Personality, GreedyFewUnits): the greedy style keeps a garrison and little else, whatever its
+	// opening book: at most 1 land combat unit per city at peace and 2 at war with a major civ (units in production count,
+	// this city's current one doesn't). Operations (settler escorts) may go 2 above the cap. A city under siege may still
+	// build defenders, and GreedyAlarm lifts the cap.
+	if (bCombat && !bFree && !bDesperate && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
+		kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
+	{
+		const int iUnitsPerCity = kPlayer.IsAtWarAnyMajor() ? 2 : 1;
+		const int iCap = max(1, kPlayer.getNumCities()) * iUnitsPerCity + (bForOperation ? 2 : 0);
+		if (iNumLandUnits >= iCap && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+			return SR_STRATEGY;
+	}
+
 	if (bNeedsSupply)
 	{
 		if (pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && iNumLandUnits >= kPlayer.GetMilitaryAI()->GetRecommendLandArmySize())
