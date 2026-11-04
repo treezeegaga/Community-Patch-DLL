@@ -26387,10 +26387,8 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 				iPeaceScore += iWarScore / 5;
 			}
 
-			// FIX_STALE_WAR_PEACE: no city changed hands for 20 turns and no attack under way
+			// FIX_STALE_WAR_PEACE: we don't intend to take their cities (the user's rule)
 			const bool bStaleWar = IsStaleWar(ePlayer, iWarDuration);
-			if (bStaleWar)
-				iPeaceScore += max(0, iDurationPenalty); // lack of progress counts twice (again below)
 
 			// Lack of progress in war increases desire for peace (moreso if far away).
 			if (iWarDuration > iTooLongWarThreshold)
@@ -26699,6 +26697,10 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 					iPeaceScore = AdjustConditionalModifier(iPeaceScore, GetMeanness(), true);
 				}
 			}
+
+			// FIX_STALE_WAR_PEACE: no intent to take their cities, so accept or offer a fair peace
+			if (bStaleWar)
+				iPeaceScore = max(iPeaceScore, /*20*/ GD_INT_GET(REQUEST_PEACE_TURN_THRESHOLD));
 
 			if (iWarScore > 0)
 			{
@@ -32730,20 +32732,28 @@ bool CvDiplomacyAI::IsGoldGiftAllowed(PlayerTypes eMinor)
 	return false;
 }
 
-/// AI_AB_TEST FIX_STALE_WAR_PEACE: a war going nowhere. 20+ turns of war, no city changed hands between us in either
-/// direction for 20 turns, and we have no attack under way against them. Holding out for concessions only pays if we
-/// press; a winner that doesn't attack (bully pair 0879B791: the Netherlands, Calm for 35 turns, refusing every peace
-/// the beaten Celts offered) just keeps both sides at war.
-bool CvDiplomacyAI::IsStaleWar(PlayerTypes ePlayer, int iWarDuration) const
+/// AI_AB_TEST FIX_STALE_WAR_PEACE, the user's rule: at war, the question isn't whether the enemy is in danger but whether
+/// we intend to take their cities. If we do (an attack operation against them, they're our committed conquest target,
+/// or our approach is WAR and the military AI has a target among their cities), going on with the war makes sense. If
+/// we don't, accept or offer a fair peace. Returns true when there's NO such intent (the war should end).
+/// (Bully pair 0879B791: the Netherlands, Calm for 35 turns, refused every peace the beaten Celts offered, but never
+/// attacked them.) iWarDuration is unused: the decision depends on intent, not on time.
+bool CvDiplomacyAI::IsStaleWar(PlayerTypes ePlayer, int /*iWarDuration*/) const
 {
-	if (!GetPlayer()->UsesCandidateAI(FIX_STALE_WAR_PEACE) || ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || !IsAtWar(ePlayer))
+	if (!GetPlayer()->UsesCandidateAI(FIX_STALE_WAR_PEACE) || !GetPlayer()->isMajorCiv())
 		return false;
-	const int iStaleTurns = 20;
-	if (iWarDuration < iStaleTurns)
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || !GET_PLAYER(ePlayer).isMajorCiv() || !IsAtWar(ePlayer))
 		return false;
-	if (GetPlayer()->GetNumTurnsSinceCityCapture(ePlayer) < iStaleTurns || GET_PLAYER(ePlayer).GetNumTurnsSinceCityCapture(GetID()) < iStaleTurns)
+
+	// Do we intend to take their cities?
+	if (m_pPlayer->HasAnyOffensiveOperationsAgainstPlayer(ePlayer))
 		return false;
-	return !m_pPlayer->HasAnyOffensiveOperationsAgainstPlayer(ePlayer);
+	if (m_eNewAIConquestTarget == ePlayer)
+		return false;
+	if (GetCivApproach(ePlayer) == CIV_APPROACH_WAR && GetPlayer()->GetMilitaryAI()->HavePreferredAttackTarget(ePlayer))
+		return false;
+
+	return true;
 }
 
 bool CvDiplomacyAI::IsPhonyWar(PlayerTypes ePlayer, bool bIgnoreCurrentApproach /* = false */) const

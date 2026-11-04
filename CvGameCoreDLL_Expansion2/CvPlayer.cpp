@@ -33359,7 +33359,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"GreedyFewUnits", false}, {"GreedyNoWalls", false}, {"GreedyNoUpgrades", false}, {"GreedyBuilds", false},
 	{"AggressivePlan", false}, {"AggressiveArmy", false}, {"BalancedArmy", false}, {"BalancedWalls", false},
 	{"MetaDial", false}, {"SiegeFormation", false},
-	{"StaleWarPeace", false}, {"WarAppetite", false},
+	{"StaleWarPeace", true}, {"WarAppetite", false},
 	{"SiegeFirst", false}, {"SiegeFinish", false},
 	{"GreedyWarArmy", false},
 	{"GiftsNeedPatronage", true},
