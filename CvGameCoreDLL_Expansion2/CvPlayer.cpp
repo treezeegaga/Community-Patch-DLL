@@ -33340,10 +33340,10 @@ struct CandidateFixInfo
 	bool bInBundle;
 };
 static const CandidateFixInfo kCandidateFixes[] = {
-	{"WidePlans", false}, {"BoxedIn", false}, {"BoxedInWar", false}, {"TimingAttack", false},
+	{"WidePlans", true}, {"BoxedIn", false}, {"BoxedInWar", false}, {"TimingAttack", false},
 	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false},
 	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false},
-	{"SettlersFirst", false}, {"SettlerOverlap", false},
+	{"SettlersFirst", false}, {"SettlerOverlap", true},
 	{"DiploPolicyValue", true},
 	{"GreedyAlarm", false},
 	{"IdeologyPick", false},
