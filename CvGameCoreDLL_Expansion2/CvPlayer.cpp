@@ -33381,6 +33381,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"AggressiveWalls", false},
 	{"TrueGoldRate", false},
 	{"TrueGoldRate", false},
+	{"WarEconomy", false},
 	{"WarChest", false},
 };
 // one line per flag, and room in the masks

@@ -234,6 +234,7 @@ enum CandidateFixTypes
 							// city at war, or near a neighbour with a visible army at our border). Off in the bundle
 	FIX_TRUE_GOLD_RATE,		// Economy: the gold rate used for bankruptcy checks is the net rate (CP adds the average of positive income only). Off in the bundle
 	FIX_TRUE_GOLD_RATE,		// Economy: the gold rate used for bankruptcy checks is the net rate (CP adds the average of positive income only). Off in the bundle
+	FIX_WAR_ECONOMY,		// Economy: while a timing attack is planned, the cities nearest the target favour production and military buildings. Off in the bundle
 	FIX_WAR_CHEST,			// Economy: a timing attacker saves for its build-up, buys it, and keeps gold per turn >= 0 while the army stands. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };

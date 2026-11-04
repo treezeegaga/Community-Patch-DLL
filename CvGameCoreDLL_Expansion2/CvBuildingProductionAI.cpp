@@ -253,6 +253,28 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		(pkBuildingInfo->GetYieldChange(YIELD_GOLD) > 0 || pkBuildingInfo->GetYieldModifier(YIELD_GOLD) > 0))
 		iBonus += 500;
 
+	// AI_AB_TEST candidate (WarEconomy, the user's design): while a timing attack is planned or building up, the cities
+	// nearest the target (within 3 tiles of our nearest city's distance) get ready to switch to war fast: buildings that
+	// raise production or give units experience (forge, workshop, barracks, armory) come first
+	if (kPlayer.UsesCandidateAI(FIX_WAR_ECONOMY) && (pkBuildingInfo->GetYieldModifier(YIELD_PRODUCTION) > 0 || pkBuildingInfo->GetFreeExperience() > 0 ||
+		pkBuildingInfo->GetDomainFreeExperience(DOMAIN_LAND) > 0))
+	{
+		const CvMilitaryAI::TimingBuildupPhase eWarPhase = kPlayer.GetMilitaryAI()->GetTimingBuildupPhase();
+		PlayerTypes eWarTarget = kPlayer.GetMilitaryAI()->GetTimingBuildupTarget();
+		CvCity* pTheirCity = (eWarTarget != NO_PLAYER && (eWarPhase == CvMilitaryAI::TIMING_BUILDUP_PLANNED || eWarPhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW)) ?
+			kPlayer.GetClosestCityToUsByPlots(eWarTarget) : NULL;
+		if (pTheirCity)
+		{
+			int iOurDistance = plotDistance(*m_pCity->plot(), *pTheirCity->plot());
+			int iNearest = iOurDistance;
+			int iCityLoop = 0;
+			for (CvCity* pLoopCity = kPlayer.firstCity(&iCityLoop); pLoopCity != NULL; pLoopCity = kPlayer.nextCity(&iCityLoop))
+				iNearest = min(iNearest, plotDistance(*pLoopCity->plot(), *pTheirCity->plot()));
+			if (iOurDistance <= iNearest + 3)
+				iBonus += 400;
+		}
+	}
+
 	// AI_AB_TEST candidate (SettlersBeforeWonders): no world wonder in the capital while the opening book still has
 	// settlers to start (in the first logged King games every B capital started one at T34-T48 and settler 2 waited)
 	if (isWorldWonderClass(kBuildingClassInfo) && m_pCity->isCapital() && kPlayer.UsesCandidateAI(FIX_SETTLERS_BEFORE_WONDERS) &&
