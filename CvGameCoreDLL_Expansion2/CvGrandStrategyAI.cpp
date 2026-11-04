@@ -1705,13 +1705,7 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 		{ 5, 70, 10, 15 },	// Scientist
 	};
 
-	CvStrategyProfile kProfile;
-	kProfile.eArchetype = NO_STRATEGY_ARCHETYPE;
-	kProfile.iHomeMeta = 0;
-	for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
-		kProfile.aiVictoryWeight[i] = 25;
-	kProfile.eRisk = STRATEGY_RISK_MEDIUM;
-	kProfile.eExpansion = STRATEGY_EXPANSION_MEDIUM;
+	CvStrategyProfile kProfile;	// the constructor sets every field (MSVC's C4701 is an error in this build)
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return kProfile;
 

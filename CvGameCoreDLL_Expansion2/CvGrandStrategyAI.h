@@ -56,6 +56,12 @@ struct CvStrategyProfile
 	int aiVictoryWeight[NUM_STRATEGY_VICTORY_WEIGHTS];	// adds up to 100
 	StrategyRiskTypes eRisk;
 	StrategyExpansionTypes eExpansion;
+
+	CvStrategyProfile() : eArchetype(NO_STRATEGY_ARCHETYPE), iHomeMeta(0), eRisk(STRATEGY_RISK_MEDIUM), eExpansion(STRATEGY_EXPANSION_MEDIUM)
+	{
+		for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
+			aiVictoryWeight[i] = 25;
+	}
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
