@@ -32591,6 +32591,55 @@ bool CvDiplomacyAI::IsOpenBordersExchangeAcceptable(PlayerTypes ePlayer)
 /////////////////////////////////////////////////////////
 
 /// Is this war not worth caring about?
+/// AI_AB_TEST FIX_GIFTS_NEED_PATRONAGE (the user's rule): without the Patronage tree a gold gift only rents an alliance for
+/// a few dozen turns (influence decays about 1 a turn), so it's poor value as general goodwill. Allowed anyway when the
+/// gift buys something specific:
+/// - our traits reward city-states (a city-state friendship or bonus modifier: Greece, Siam and the like);
+/// - we're going for a diplomatic victory and the World Congress is in session;
+/// - the city-state's "give gold" or "invest" quest is active for us;
+/// - it has a resource we lack (we'd get it as its ally), or it's our ally and supplies a luxury or strategic resource
+///   we don't produce ourselves (we'd lose it).
+bool CvDiplomacyAI::IsGoldGiftAllowed(PlayerTypes eMinor)
+{
+	if (!GetPlayer()->UsesCandidateAI(FIX_GIFTS_NEED_PATRONAGE) || !GetPlayer()->isMajorCiv())
+		return true;
+	if (eMinor < MAX_MAJOR_CIVS || eMinor >= MAX_CIV_PLAYERS || !GET_PLAYER(eMinor).isMinorCiv())
+		return true;
+
+	const PolicyBranchTypes ePatronage = (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_PATRONAGE", true);
+	if (ePatronage == NO_POLICY_BRANCH_TYPE || GetPlayer()->GetPlayerPolicies()->IsPolicyBranchUnlocked(ePatronage))
+		return true;
+
+	CvPlayerTraits* pTraits = GetPlayer()->GetPlayerTraits();
+	if (pTraits->GetCityStateFriendshipModifier() > 0 || pTraits->GetCityStateBonusModifier() != 0)
+		return true;
+
+	if (IsGoingForDiploVictory() && GC.getGame().GetGameLeagues()->GetActiveLeague() != NULL)
+		return true;
+
+	CvMinorCivAI* pMinorCivAI = GET_PLAYER(eMinor).GetMinorCivAI();
+	if (pMinorCivAI->IsActiveQuestForPlayer(GetID(), MINOR_CIV_QUEST_GIVE_GOLD) || pMinorCivAI->IsActiveQuestForPlayer(GetID(), MINOR_CIV_QUEST_INVEST))
+		return true;
+
+	if (pMinorCivAI->GetNumResourcesMajorLacks(GetID()) > 0)
+		return true;
+
+	if (pMinorCivAI->GetAlly() == GetID())
+	{
+		for (int iResourceLoop = 0; iResourceLoop < GC.getNumResourceInfos(); iResourceLoop++)
+		{
+			const ResourceTypes eResource = (ResourceTypes)iResourceLoop;
+			const CvResourceInfo* pkResource = GC.getResourceInfo(eResource);
+			if (!pkResource || (pkResource->getResourceUsage() != RESOURCEUSAGE_LUXURY && pkResource->getResourceUsage() != RESOURCEUSAGE_STRATEGIC))
+				continue;
+			if (GET_PLAYER(eMinor).getNumResourceTotal(eResource, false) > 0 && GetPlayer()->getNumResourceTotal(eResource, false) <= 0)
+				return true;
+		}
+	}
+
+	return false;
+}
+
 /// AI_AB_TEST FIX_STALE_WAR_PEACE: a war going nowhere. 20+ turns of war, no city changed hands between us in either
 /// direction for 20 turns, and we have no attack under way against them. Holding out for concessions only pays if we
 /// press; a winner that doesn't attack (bully pair 0879B791: the Netherlands, Calm for 35 turns, refusing every peace
@@ -36693,7 +36742,8 @@ void CvDiplomacyAI::DoContactMinorCivs()
 			}
 
 			// Calculate desirability to give this minor gold
-			if (bWantsToMakeGoldGift && !bWantsToBuyoutThisMinor && !bWantsToBullyAnnexThisMinor)
+			// (FIX_GIFTS_NEED_PATRONAGE: without Patronage, only where the gift buys something specific)
+			if (bWantsToMakeGoldGift && !bWantsToBuyoutThisMinor && !bWantsToBullyAnnexThisMinor && IsGoldGiftAllowed(eMinor))
 			{
 				if (GET_PLAYER(eMinor).GetMinorCivAI()->IsNoAlly())
 				{

@@ -221,6 +221,9 @@ enum CandidateFixTypes
 							// consider peace, no "they're in danger, hold out" term, progress penalty doubled. Off in the bundle
 	FIX_WAR_APPETITE,		// Diplomacy (Personality's profile): the WAR approach weight follows the meta position M: x0.5 at -100
 							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
+	FIX_GIFTS_NEED_PATRONAGE,// Diplomacy (user's rule): no gold gifts to city-states without Patronage, except city-state traits,
+							// a diplomatic victory with the World Congress in session, an ally supplying a resource we'd lack, and
+							// an active gold or invest quest. In the bundle (the user ruled it obvious)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
