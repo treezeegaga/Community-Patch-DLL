@@ -5715,6 +5715,12 @@ void CvHomelandAI::ExecuteAircraftMoves()
 				if (!pUnit->canRebase() || !(it->pPlot->isCity()))
 					continue;
 
+				//AI_AB_TEST (candidate, flag AirRebaseHeal): the bases are sorted quietest first, so once we reach one no
+				//quieter than our own there is nothing better. CP skips past its own base and rebases to a busier one every
+				//turn, and a plane that rebases never heals.
+				if (m_pPlayer->UsesCandidateAI(FIX_AIR_REBASE_HEAL) && it->score >= scoreLookup[pUnit->plot()->GetPlotIndex()])
+					break;
+
 				//apparently we're already in the best possible base?
 				if (pUnit->plot() == it->pPlot)
 					continue;
