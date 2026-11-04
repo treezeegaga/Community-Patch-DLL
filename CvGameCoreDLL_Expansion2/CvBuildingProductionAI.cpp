@@ -190,7 +190,7 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		for (int iCombat = 0; iCombat < GC.getNumUnitCombatClassInfos() && !bMilitary; iCombat++)
 			bMilitary = pkBuildingInfo->GetUnitCombatFreeExperience(iCombat) > 0;
 		// GreedyWarArmy, and MetaDial's greedy side: a war that is a credible threat (CvGrandStrategyAI::GetWarDefenceLandUnitCap:
-		// a city under siege, a close enemy with a large army, or enemy units in sight) lifts the ban on walls and castles
+		// a city under siege, or an enemy force in sight that could take one of our cities) lifts the ban on walls and castles
 		// in border cities and cities under siege (the user, 2026-11-04: "prepare accordingly"). Barracks stay off.
 		const bool bWallsOnly = pkBuildingInfo->GetDefenseModifier() > 0 || pkBuildingInfo->GetExtraCityHitPoints() > 0;
 		const bool bThreatWalls = bWallsOnly && kPlayer.IsAtWarAnyMajor() &&

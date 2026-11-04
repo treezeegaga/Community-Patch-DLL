@@ -1837,16 +1837,69 @@ int CvGrandStrategyAI::GetMetaPosition() const
 	return m_iCachedMetaPosition;
 }
 
+/// AI_AB_TEST (Personality, GreedyWarArmy): could these enemy land units take pCity, or nearly? A defender's version of the
+/// siege sketch in CvDiplomacyAI.cpp (CanTakeNearestCity, flag CanWin), from units we can see: their ranged units fire,
+/// the city heals and shoots the most damaging one, which drops out once it dies. "Close to capable" (the user,
+/// 2026-11-04): their damage counts a third extra, and one melee unit is enough to walk in.
+static bool CouldEnemyTakeCity(const vector<CvUnit*>& vpUnits, CvCity* pCity)
+{
+	if (!pCity || vpUnits.empty())
+		return false;
+	const int iGarrisonMaxHP = (pCity->HasGarrison() && pCity->GetGarrisonedUnit()) ? pCity->GetGarrisonedUnit()->GetMaxHitPoints() : 0;
+	vector<int> viDamage, viHP, viHitTaken;
+	int iMelee = 0;
+	for (size_t i = 0; i < vpUnits.size(); i++)
+	{
+		CvUnit* pUnit = vpUnits[i];
+		if (pUnit->IsCanAttackRanged())
+		{
+			int iGarrisonDamage = 0;
+			viDamage.push_back(pUnit->GetRangeCombatDamage(NULL, pCity, iGarrisonMaxHP, iGarrisonDamage, /*bIncludeRand*/ false, 0, 0, NULL, NULL, true, true) * 4 / 3);
+			viHP.push_back(pUnit->GetCurrHitPoints());
+			viHitTaken.push_back(pCity->rangeCombatDamage(pUnit, /*bIncludeRand*/ false, NULL, /*bQuickAndDirty*/ true) * 3 / 2);
+		}
+		else
+			iMelee++;
+	}
+	if (iMelee < 1)
+		return false;
+
+	const int iMaxHP = pCity->GetMaxHitPoints();
+	const int iHeal = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
+	int iCityHP = iMaxHP - pCity->getDamage();
+	for (int iTurn = 0; iTurn < 20; iTurn++)
+	{
+		int iFire = 0;
+		int iTarget = -1;
+		for (size_t i = 0; i < viDamage.size(); i++)
+		{
+			if (viHP[i] <= 0)
+				continue;
+			iFire += viDamage[i];
+			if (iTarget < 0 || viDamage[i] > viDamage[iTarget])
+				iTarget = (int)i;
+		}
+		if (iFire <= 0)
+			return false;
+		iCityHP -= iFire;
+		if (iCityHP <= 0)
+			return true;
+		iCityHP = min(iMaxHP, iCityHP + iHeal);
+		viHP[iTarget] -= viHitTaken[iTarget];
+	}
+	return false;
+}
+
 /// AI_AB_TEST (Personality, GreedyWarArmy and MetaDial's greedy side): a greedy civ at war judges how much threat it is
-/// under (the user, 2026-11-04): an enemy on the other side of the world, or one with a weak army, changes nothing,
-/// and the civ keeps its peace plan. Returns the land units it needs to defend, or 0 when no war is a credible threat:
-/// - enemy land combat units we can see within 5 plots of our cities: 3/4 of their number (only what a human could see);
-/// - a credible war: 2 land units per city. Credible means one of our cities is under siege, or an enemy at war with us
-///   is close (CLOSE or NEIGHBORS) and has a large army: military might at or above the average of the living major
-///   civs (the demographics screen shows a human the average and the best). Not compared with our own army: a greedy
-///   civ's army is small, so nearly everyone would look strong next to it.
-/// The larger of the two (the user, 2026-11-04: "if they are under siege or their neighbour with a large army has
-/// declared war, they should prepare accordingly"). Enemies: major civs at war with us. Worked out once per turn.
+/// under (the user, 2026-11-04). An enemy on the other side of the world, or one whose army couldn't take a city, changes
+/// nothing: the civ keeps its peace plan. A credible threat is:
+/// - one of our cities under siege, or
+/// - an enemy force we can see that could take one of our cities, or nearly (the user: "a large army is one that is
+///   capable or close to capable of taking one of your cities"): one enemy's land combat units in sight within 8 plots
+///   of the city, run through CouldEnemyTakeCity. Only units a human could see.
+/// Returns 0 without a credible threat, else the land units the civ needs to defend: the larger of 2 per city and 3/4
+/// of the enemy land combat units in sight within 5 plots of our cities. Enemies: major civs at war with us. Worked out
+/// once per turn.
 int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 {
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
@@ -1856,60 +1909,53 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 		return m_iCachedWarDefenceCap;
 
 	const TeamTypes eTeam = m_pPlayer->getTeam();
-	int iEnemiesNear = 0;
-	bool bCredibleEnemy = false;
-
-	// a city under siege is a credible war on its own
-	int iSiegeLoop = 0;
-	for (const CvCity* pCity = m_pPlayer->firstCity(&iSiegeLoop); pCity != NULL && !bCredibleEnemy; pCity = m_pPlayer->nextCity(&iSiegeLoop))
+	bool bThreat = false;
+	int iCityLoop = 0;
+	for (CvCity* pCity = m_pPlayer->firstCity(&iCityLoop); pCity != NULL && !bThreat; pCity = m_pPlayer->nextCity(&iCityLoop))
 	{
 		if (pCity->isUnderSiege())
-			bCredibleEnemy = true;
+			bThreat = true;
 	}
 
-	// the average military might of the living major civs: a large army is at or above it
-	long long llMightSum = 0;
-	int iMajors = 0;
+	int iEnemiesNear = 0;
 	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 	{
-		const CvPlayer& kLoop = GET_PLAYER((PlayerTypes)iPlayerLoop);
-		if (kLoop.isAlive() && kLoop.isMajorCiv())
-		{
-			llMightSum += kLoop.GetMilitaryMight();
-			iMajors++;
-		}
-	}
-	const long long llAverageMight = (iMajors > 0) ? llMightSum / iMajors : 0;
-	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
-	{
-		const PlayerTypes eEnemy = (PlayerTypes)iPlayerLoop;
-		CvPlayer& kEnemy = GET_PLAYER(eEnemy);
+		CvPlayer& kEnemy = GET_PLAYER((PlayerTypes)iPlayerLoop);
 		if (!kEnemy.isAlive() || kEnemy.getTeam() == eTeam || !GET_TEAM(eTeam).isAtWar(kEnemy.getTeam()))
 			continue;
 
-		if (m_pPlayer->GetProximityToPlayer(eEnemy) >= PLAYER_PROXIMITY_CLOSE && (long long)kEnemy.GetMilitaryMight() >= llAverageMight)
-			bCredibleEnemy = true;
-
+		// this enemy's land combat units we can see
+		vector<CvUnit*> vpSeen;
 		int iUnitLoop = 0;
 		for (CvUnit* pUnit = kEnemy.firstUnit(&iUnitLoop); pUnit != NULL; pUnit = kEnemy.nextUnit(&iUnitLoop))
 		{
-			if (!pUnit->IsCombatUnit() || pUnit->getDomainType() != DOMAIN_LAND || !pUnit->plot() || !pUnit->plot()->isVisible(eTeam))
-				continue;
-			int iCityLoop = 0;
-			for (const CvCity* pCity = m_pPlayer->firstCity(&iCityLoop); pCity != NULL; pCity = m_pPlayer->nextCity(&iCityLoop))
-			{
-				if (plotDistance(pUnit->getX(), pUnit->getY(), pCity->getX(), pCity->getY()) <= 5)
-				{
-					iEnemiesNear++;
-					break;
-				}
-			}
+			if (pUnit->IsCombatUnit() && pUnit->getDomainType() == DOMAIN_LAND && pUnit->AI_getUnitAIType() != UNITAI_EXPLORE &&
+				pUnit->plot() && pUnit->plot()->isVisible(eTeam))
+				vpSeen.push_back(pUnit);
 		}
+		if (vpSeen.empty())
+			continue;
+
+		vector<bool> vbNear(vpSeen.size(), false);
+		for (CvCity* pCity = m_pPlayer->firstCity(&iCityLoop); pCity != NULL; pCity = m_pPlayer->nextCity(&iCityLoop))
+		{
+			vector<CvUnit*> vpForce;
+			for (size_t i = 0; i < vpSeen.size(); i++)
+			{
+				const int iDistance = plotDistance(vpSeen[i]->getX(), vpSeen[i]->getY(), pCity->getX(), pCity->getY());
+				if (iDistance <= 8)
+					vpForce.push_back(vpSeen[i]);
+				if (iDistance <= 5)
+					vbNear[i] = true;
+			}
+			if (!bThreat && CouldEnemyTakeCity(vpForce, pCity))
+				bThreat = true;
+		}
+		for (size_t i = 0; i < vbNear.size(); i++)
+			iEnemiesNear += vbNear[i] ? 1 : 0;
 	}
 
-	const int iSeenThreat = (iEnemiesNear > 0) ? (iEnemiesNear * 3 + 3) / 4 : 0;
-	const int iCredibleThreat = bCredibleEnemy ? 2 * max(1, m_pPlayer->getNumCities()) : 0;
-	m_iCachedWarDefenceCap = max(iSeenThreat, iCredibleThreat);
+	m_iCachedWarDefenceCap = bThreat ? max(2 * max(1, m_pPlayer->getNumCities()), (iEnemiesNear * 3 + 3) / 4) : 0;
 	m_iCachedWarDefenceTurn = iTurn;
 	return m_iCachedWarDefenceCap;
 }

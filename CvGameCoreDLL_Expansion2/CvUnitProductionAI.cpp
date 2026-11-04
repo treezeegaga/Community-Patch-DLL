@@ -313,8 +313,9 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// build well past the cap), and GreedyAlarm lifts the cap.
 	// GreedyWarArmy (the user, 2026-11-04: at war a greedy civ judges the threat and builds enough to defend): at war with
 	// a major civ the cap is the peace cap (1 per city) unless a war is a credible threat, then
-	// CvGrandStrategyAI::GetWarDefenceLandUnitCap (2 per city for a close enemy with at least an average army, or 3/4 of
-	// the enemy land units seen near our cities if more); never siege units: defenders, not an army of conquest.
+	// CvGrandStrategyAI::GetWarDefenceLandUnitCap (when a city is under siege or an enemy force in sight could take one of
+	// our cities: 2 per city, or 3/4 of the enemy land units seen near our cities if more); never siege units: defenders,
+	// not an army of conquest.
 	const bool bGreedyWarDefence = kPlayer.IsAtWarAnyMajor() && kPlayer.UsesCandidateAI(FIX_GREEDY_WAR_ARMY);
 	if (bCombat && !bFree && (!bDesperate || m_pCity->HasGarrison()) && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
 		kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
