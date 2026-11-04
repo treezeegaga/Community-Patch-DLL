@@ -151,12 +151,9 @@ enum CandidateFixTypes
 	FIX_SIEGE_BOOK,			// c4/c5: the warmonger capital builds 3 catapults, 2 spearmen and 2 archers after its 2nd settler
 	FIX_DECLARE_TIMING,		// c4/c5: a warmonger declares once it has 2 siege units and 4 other land units (fallback T90
 							// Standard); off: from turn 45 Standard, as in c3
-	FIX_GROWTH_TECH,		// c5/c5b: tall civs head for Engineering once the capital reaches size 6
-	FIX_AQUEDUCT_VALUE,		// c5/c5b: tall civs value the aqueduct's kept food twice
 	FIX_GREEDY_BOOK,		// c7: the tall capital book goes on to the aqueduct and university, to turn 130 (Standard)
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
-	FIX_CLOSED_BORDERS,		// c7c: tall civs never give open borders to major civs
 	FIX_SETTLERS_FIRST,		// Economy: the capital's opening-book settlers come before its monument, shrine and worker. Not in the bundle
 	FIX_SETTLER_OVERLAP,	// Economy: the next book settler may start training while the last one walks to its site. Not in the bundle
 	FIX_DIPLO_POLICY_VALUE,	// Economy (CvPolicyAI audit P1): diplomacy-flavoured policies lose their value only when hostile to a city-state. Not in the bundle
