@@ -250,8 +250,8 @@ void CvGrandStrategyAI::DoTurn()
 
 	// AI_AB_TEST (Personality): the strategy profile, logged only
 	LogStrategyProfile();
-	// AI_AB_TEST (Personality, GreedyFewUnits and MetaDial's greedy side): refuse city-state unit gifts at the cap
-	DoGreedyCityStateUnitGifts();
+	// AI_AB_TEST (Personality, the styles and MetaDial): refuse city-state unit gifts at the unit cap
+	DoStyleCityStateUnitGifts();
 
 	int iGrandStrategiesLoop = 0;
 	AIGrandStrategyTypes eGrandStrategy;
@@ -1832,28 +1832,46 @@ int CvGrandStrategyAI::GetMetaPosition() const
 	return m_iCachedMetaPosition;
 }
 
-/// AI_AB_TEST (Personality, GreedyFewUnits and MetaDial's greedy side): militaristic city-states give each friend a
-/// land unit every ~19 turns, and a city-state can gift one on first contact. In bully pair 0B09BFE1 these took greedy
-/// civs well past their cap at peace (Siam: 3 land units built, 8 owned). A human can switch the gifts off in the
-/// city-state screen; a greedy AI does that while it is at its cap and switches them back on below it. Unit gifts are
-/// the only thing the switch stops (CvMinorCivAI::DoSpawnUnit, IsUnitSpawningAllowed).
-void CvGrandStrategyAI::DoGreedyCityStateUnitGifts()
+/// AI_AB_TEST (Personality, the styles and MetaDial): militaristic city-states give each friend a land unit every ~19
+/// turns, and a city-state can gift one on first contact. In bully pair 0B09BFE1 these took greedy civs well past their
+/// cap at peace (Siam: 3 land units built, 8 owned). A human can switch the gifts off in the city-state screen; a civ
+/// with a unit cap does that while it is at its cap and switches them back on below it. The caps are the production
+/// caps (CvUnitProductionAI::CheckUnitBuildSanity):
+/// - GreedyFewUnits: 1 land unit per city in peace, 2 at war;
+/// - BalancedArmy: 3 per city in peace, none at war;
+/// - AggressiveArmy: none (it wants every unit it can get);
+/// - MetaDial (when no style army flag is on): the peace ceiling up to meta position 0 (above it, the aggressive side
+///   keeps its gifts); at war 2 per city on the greedy side (-50 or below), none above.
+/// GreedyAlarm (a neighbour's army near our cities) lifts the cap. Unit gifts are the only thing the switch stops
+/// (CvMinorCivAI::DoSpawnUnit, IsUnitSpawningAllowed).
+void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 {
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman() || !m_pPlayer->isAlive())
 		return;
-	const bool bGreedyFlag = m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS);
-	if (!bGreedyFlag && !m_pPlayer->IsMetaDialGreedy())
-		return;
+
+	const int iCities = max(1, m_pPlayer->getNumCities());
+	const bool bWar = m_pPlayer->IsAtWarAnyMajor();
+	int iCap = -1;	// -1: no cap
+	if (m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
+		iCap = iCities * (bWar ? 2 : 1);
+	else if (m_pPlayer->UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
+		iCap = -1;
+	else if (m_pPlayer->UsesCandidateAI(FIX_BALANCED_ARMY))
+		iCap = bWar ? -1 : iCities * 3;
+	else if (m_pPlayer->UsesMetaDial())
+	{
+		const int iMeta = m_pPlayer->GetMetaDialPosition();
+		if (!bWar)
+			iCap = (iMeta <= 0) ? iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10 : -1;
+		else
+			iCap = (iMeta <= -50) ? iCities * 2 : -1;
+	}
+	else
+		return;	// no style: the switch stays as it is (off)
 
 	bool bRefuse = false;
-	if (CityStrategyAIHelpers::GetGreedyAlarmThreat(*m_pPlayer) == NO_PLAYER)
+	if (iCap >= 0 && CityStrategyAIHelpers::GetGreedyAlarmThreat(*m_pPlayer) == NO_PLAYER)
 	{
-		const int iCities = max(1, m_pPlayer->getNumCities());
-		int iCap = 0;
-		if (m_pPlayer->IsAtWarAnyMajor())
-			iCap = iCities * 2;
-		else
-			iCap = bGreedyFlag ? iCities : iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10;
 		const int iLand = m_pPlayer->getNumMilitaryLandUnits() - m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_EXPLORE, false, true);
 		bRefuse = iLand >= iCap;
 	}
