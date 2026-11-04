@@ -255,6 +255,8 @@ static ABTestFixMask ParseABTestFixList(const std::string& strList, const CvStri
 ///     [ABTest]
 ///     Fixes = bundle      ; flags group c runs (see ParseABTestFixList); empty or no file = the bundle
 ///     Screen =            ; flags each on for a random half of the AI civs instead, for screening
+///     Base =              ; flags every AI civ runs, both groups; RoleFixes = the bully aggressor's, first game only
+///     OthersBase =        ; (bully, builders) flags every AI civ without a role runs, both games of a pair
 ///     Flip = 0            ; 1 swaps the groups (c/b, new/cp, and the screened halves)
 ///     StopTurn = 150      ; where the runner stops the game, recorded in the results file
 ///     Ruins = 0           ; 0 = no ancient ruins, 1 = ruins (missing = as set up)
@@ -269,6 +271,7 @@ void CvGame::ReadABTestSettings()
 	m_uiABTestScreenedFixes = 0;
 	m_uiABTestBaseFixes = 0;
 	m_uiABTestRoleFixes = 0;
+	m_uiABTestOthersBaseFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -287,8 +290,10 @@ void CvGame::ReadABTestSettings()
 	// one more flag against the package alone)
 	// RoleFixes = (bully test) flags the aggressor runs in the first game of a pair and not in the flipped replay, so a
 	// pair compares the same game with and without them on the attacking side
-	const wchar_t* const aszKeys[4] = { L"Fixes", L"Screen", L"Base", L"RoleFixes" };
-	for (int iKey = 0; iKey < 4; iKey++)
+	// OthersBase = (bully and builders tests) flags every AI civ without a role runs, in both games of a pair: sets the
+	// opponents the roles meet, e.g. a greedy style, so the aggressor's matchup is the same in both games
+	const wchar_t* const aszKeys[5] = { L"Fixes", L"Screen", L"Base", L"RoleFixes", L"OthersBase" };
+	for (int iKey = 0; iKey < 5; iKey++)
 	{
 		szBuffer[0] = 0;
 		GetPrivateProfileStringW(L"ABTest", aszKeys[iKey], L"", szBuffer, 1024, wstrPath.c_str());
@@ -304,8 +309,10 @@ void CvGame::ReadABTestSettings()
 			m_uiABTestScreenedFixes = ParseABTestFixList(strList, strErrorPath);
 		else if (iKey == 2)
 			m_uiABTestBaseFixes = ParseABTestFixList(strList, strErrorPath);
-		else
+		else if (iKey == 3)
 			m_uiABTestRoleFixes = ParseABTestFixList(strList, strErrorPath);
+		else
+			m_uiABTestOthersBaseFixes = ParseABTestFixList(strList, strErrorPath);
 	}
 
 	// Paired games (see WriteABTestReplayRecord): Flip = 1 swaps the groups, and the replay keys repeat the first
@@ -1608,6 +1615,7 @@ void CvGame::uninit()
 	m_uiABTestScreenedFixes = 0;
 	m_uiABTestBaseFixes = 0;
 	m_uiABTestRoleFixes = 0;
+	m_uiABTestOthersBaseFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -11353,6 +11361,7 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 		visitor(game.m_uiABTestScreenedFixes);
 		visitor(game.m_uiABTestBaseFixes);
 		visitor(game.m_uiABTestRoleFixes);
+		visitor(game.m_uiABTestOthersBaseFixes);
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
 		visitor(game.m_iABTestMode);

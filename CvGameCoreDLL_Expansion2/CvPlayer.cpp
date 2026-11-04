@@ -33622,6 +33622,8 @@ bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
 	const CvGame& kGame = GC.getGame();
 	if (kGame.GetABTestBaseFixes() & uBit)
 		return !isHuman();
+	if (kGame.GetABTestOthersBaseFixes() & uBit)
+		return !isHuman() && GetABTestRole() == AB_ROLE_NONE;
 	if (kGame.GetABTestRoleFixes() & uBit)
 		return !isHuman() && kGame.GetABTestMode() == AB_MODE_BULLY && !kGame.IsABTestFlipped() && GetABTestRole() == AB_ROLE_AGGRESSOR;
 	if (kGame.GetABTestScreenedFixes() & uBit)
