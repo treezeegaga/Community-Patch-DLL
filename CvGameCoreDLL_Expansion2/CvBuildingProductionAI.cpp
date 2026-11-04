@@ -1473,12 +1473,15 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		const bool bGreedyFewUnits = kPlayer.isMajorCiv() && !kPlayer.isHuman() && !bGreedyWarDefence &&
 			(kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) || kPlayer.IsMetaDialGreedy()) &&
 			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER;
+		//AI_AB_TEST (candidate, flag TimingBuildup, War): the same for a timing attacker in its peace phase: its unit cap
+		//refuses the units this cut asks for, so the cut only sent production into workers and work boats (a test replay)
+		const bool bTimingPeaceArmy = kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.GetMilitaryAI()->IsTimingBuildupPeace();
 		if (bGreedyWarDefence)
 		{
 			if (kPlayer.getNumMilitaryLandUnits() < kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap())
 				WarPenalty += 75;
 		}
-		else if (!bGreedyFewUnits && kPlayer.getNumMilitaryUnits() * 10 <= (kPlayer.getNumCities() * iTinyArmyTimes10))
+		else if (!bGreedyFewUnits && !bTimingPeaceArmy && kPlayer.getNumMilitaryUnits() * 10 <= (kPlayer.getNumCities() * iTinyArmyTimes10))
 		{
 			WarPenalty += 75;
 		}
