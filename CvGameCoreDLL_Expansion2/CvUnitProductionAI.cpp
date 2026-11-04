@@ -1318,6 +1318,18 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	//Make sure we need naval workers in this city.
 	if(pkUnitEntry->GetDefaultUnitAIType() == UNITAI_WORKER_SEA)
 	{
+		// AI_AB_TEST candidate (LeanBuilders, the user's call: 9 workers and 7 work boats for 7 cities is too many):
+		// one work boat in training at a time across the civ
+		const bool bLeanBuilders = kPlayer.UsesCandidateAI(FIX_LEAN_BUILDERS);
+		if (bLeanBuilders && !bFree)
+		{
+			int iBoatsInTraining = kPlayer.GetNumUnitsWithUnitAI(UNITAI_WORKER_SEA, true) - kPlayer.GetNumUnitsWithUnitAI(UNITAI_WORKER_SEA, false);
+			if (m_pCity->isProductionUnit() && m_pCity->getProductionUnit() == eUnit)
+				iBoatsInTraining--;
+			if (iBoatsInTraining > 0)
+				return SR_STRATEGY;
+		}
+
 		CvTacticalDominanceZone* pZone = kPlayer.GetTacticalAI()->GetTacticalAnalysisMap()->GetZoneByCity(m_pCity,true);
 		if (pZone && pZone->GetOverallDominanceFlag() != TACTICAL_DOMINANCE_FRIENDLY)
 			return SR_STRATEGY;
@@ -1377,6 +1389,10 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			if (!kPlayer.NeedWorkboatToImproveResource(eResource))
 				continue;
 
+			// LeanBuilders: only sea resources this city can work itself, not everything within 12 turns
+			if (bLeanBuilders && !m_pCity->IsWithinWorkRange(pLoopPlot))
+				continue;
+
 			CvResourceInfo* pkResourceInfo = GC.getResourceInfo(eResource);
 			if (pkResourceInfo && pkResourceInfo->getResourceUsage() == RESOURCEUSAGE_BONUS)
 			{
@@ -1417,6 +1433,9 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			return SR_USELESS;
 
 		int iNumBuilders = kPlayer.GetNumUnitsWithUnitAI(UNITAI_WORKER, true);
+		// AI_AB_TEST candidate (LeanBuilders, the user's call): at most 2 workers per 3 cities (rounded up)
+		if (kPlayer.UsesCandidateAI(FIX_LEAN_BUILDERS) && !bFree && iNumBuilders >= (2 * kPlayer.getNumCities() + 2) / 3)
+			return SR_USELESS;
 		int iMissingBuilders = kPlayer.getCitiesNeedingTerrainImprovements() + 1 - iNumBuilders; //one for roads
 		int iScale = (iMissingBuilders > 2) ? 3 : 1; //escalate if many are missing
 
