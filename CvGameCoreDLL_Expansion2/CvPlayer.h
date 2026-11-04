@@ -145,7 +145,7 @@ enum CandidateFixTypes
 {
 	FIX_WIDE_PLANS,			// c1/c2 (2q, 2r): warmongers, aggressive and expansionist culture civs play the wide plan
 	FIX_BOXED_IN,			// c1 (2u): a settler idle 10+ turns means no land is left
-	FIX_BOXED_IN_WAR,		// c3: a boxed-in wide civ attacks the neighbour blocking it
+	FIX_BOXED_IN_WAR,		// c3: a boxed-in wide civ attacks the neighbour blocking it. In the bundle (the user's audit)
 	FIX_TIMING_ATTACK,		// c3/c3b: a warmonger attacks a weak close neighbour (committed target, one front)
 	FIX_SIEGE_TECHS,		// c4: warmongers research Pottery, The Wheel, Mathematics, Bronze Working, Archery, Writing
 	FIX_SIEGE_BOOK,			// c4/c5: the warmonger capital builds 3 catapults, 2 spearmen and 2 archers after its 2nd settler
@@ -153,7 +153,7 @@ enum CandidateFixTypes
 							// Standard); off: from turn 45 Standard, as in c3
 	FIX_GREEDY_BOOK,		// c7: the tall capital book goes on to the aqueduct and university, to turn 130 (Standard)
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
-	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
+	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city. In the bundle (the user's audit)
 	FIX_SETTLERS_FIRST,		// Economy: the capital's opening-book settlers come before its monument, shrine and worker. Not in the bundle
 	FIX_SETTLER_OVERLAP,	// Economy: the next book settler may start training while the last one walks to its site. Not in the bundle
 	FIX_DIPLO_POLICY_VALUE,	// Economy (CvPolicyAI audit P1): diplomacy-flavoured policies lose their value only when hostile to a city-state. Not in the bundle
@@ -222,7 +222,7 @@ enum CandidateFixTypes
 	FIX_GIFTS_NEED_PATRONAGE,// Diplomacy (user's rule): no gold gifts to city-states without Patronage, except city-state traits,
 							// a diplomatic victory with the World Congress in session, an ally supplying a resource we'd lack, and
 							// an active gold or invest quest. In the bundle (the user ruled it obvious)
-	FIX_CS_CONQUEST,		// War: a warmonger in the conquest role goes to war on a weak, nearby, unguarded city-state. Off in the bundle
+	FIX_CS_CONQUEST,		// War: a warmonger in the conquest role goes to war on a weak, nearby, unguarded city-state. In the bundle (the user's audit)
 	FIX_CONQUEST_TRAIT_TARGETS,// War: a warmonger's conquest bonus shapes its targets (Assyria, Songhai, Mongolia; Austria and Venice skip city-states). Off in the bundle
 	FIX_SIEGE_EXPOSURE,		// War: in a city attack, a unit that attacked is judged at turn end by the planner's danger (/ aggression level). Off in the bundle
 	FIX_SIEGE_ROLL,			// War: a city attack mustering within 5 tiles of its target (already at war) moves with 3+ units, no wait for slots or the bar. Off in the bundle
@@ -232,6 +232,7 @@ enum CandidateFixTypes
 	FIX_TIMING_BUILDUP,		// War (the user's design): a warmonger keeps garrisons at peace, builds up for 15 turns once it has a target, then attacks. Off in the bundle
 	FIX_AGGRESSIVE_WALLS,	// Personality (aggressive style): walls and castles only in threatened border cities (under siege, near an enemy's
 							// city at war, or near a neighbour with a visible army at our border). Off in the bundle
+	FIX_TARGET_VULNERABILITY,// War (the user's redesign of GreedyTarget): a warmonger's target is the most vulnerable city nearby (its defence, its owner's army, distance). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

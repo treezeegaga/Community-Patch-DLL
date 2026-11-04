@@ -33331,9 +33331,9 @@ struct CandidateFixInfo
 	bool bInBundle;
 };
 static const CandidateFixInfo kCandidateFixes[] = {
-	{"WidePlans", false}, {"BoxedIn", false}, {"BoxedInWar", false}, {"TimingAttack", false},
+	{"WidePlans", false}, {"BoxedIn", false}, {"BoxedInWar", true}, {"TimingAttack", false},
 	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false},
-	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false},
+	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", true},
 	{"SettlersFirst", false}, {"SettlerOverlap", false},
 	{"DiploPolicyValue", true},
 	{"GreedyAlarm", false},
@@ -33363,13 +33363,14 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeFirst", false}, {"SiegeFinish", false},
 	{"GreedyWarArmy", false},
 	{"GiftsNeedPatronage", true},
-	{"CSConquest", false},
+	{"CSConquest", true},
 	{"ConquestTraitTargets", false},
 	{"SiegeExposure", false},
 	{"SiegeRoll", false},
 	{"DeclareWhenGathered", false}, {"SiegeConcentrate", false}, {"SiegeKeep", false},
 	{"TimingBuildup", false},
 	{"AggressiveWalls", false},
+	{"TargetVulnerability", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
