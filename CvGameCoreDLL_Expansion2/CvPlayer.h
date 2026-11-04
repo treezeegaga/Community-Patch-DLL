@@ -1813,6 +1813,7 @@ public:
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;
+	TechTypes GetTimingBuildupTech() const; // AI_AB_TEST War, flag TimingBuildup
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
 	bool IsVassalOfSomeone() const;

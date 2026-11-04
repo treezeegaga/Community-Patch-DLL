@@ -1205,6 +1205,7 @@ public:
 	void DoUpdateWarTargets();
 	// AI_AB_TEST: the major civ the new AI wants to conquer now, if any, and why
 	PlayerTypes GetNewAIConquestTarget(const char*& szReason);
+	PlayerTypes GetCommittedConquestTarget() const { return m_eNewAIConquestTarget; } // AI_AB_TEST: for TimingBuildup, WarChest, WarEconomy
 
 	// Minor Civ Approach
 	void DoUpdateMinorCivApproaches();

@@ -1921,6 +1921,52 @@ int CvMilitaryAI::GetTimingBuildupPeaceCap() const
 	return max(1, m_pPlayer->getNumCities()) + 1;
 }
 
+/// the plan's phase: NONE (not a timing attacker), PEACE (no target), PLANNED (target chosen, at peace, no window yet),
+/// WINDOW (building up), ATTACK (built up or window over, not yet at war), WAR (at war with a major)
+CvMilitaryAI::TimingBuildupPhase CvMilitaryAI::GetTimingBuildupPhase() const
+{
+	if (!IsTimingBuildupPlayer())
+		return TIMING_BUILDUP_NONE;
+	if (m_pPlayer->IsAtWarAnyMajor())
+		return TIMING_BUILDUP_WAR;
+	if (IsInTimingBuildupWindow())
+		return TIMING_BUILDUP_WINDOW;
+	if (m_iTimingBuildupStartTurn >= 0)
+		return TIMING_BUILDUP_ATTACK;
+	if (m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget() != NO_PLAYER)
+		return TIMING_BUILDUP_PLANNED;
+	return TIMING_BUILDUP_PEACE;
+}
+
+/// the attack's target: the window's, or the committed one while planned
+PlayerTypes CvMilitaryAI::GetTimingBuildupTarget() const
+{
+	if (!IsTimingBuildupPlayer())
+		return NO_PLAYER;
+	if (m_iTimingBuildupStartTurn >= 0 && m_eTimingBuildupTarget != NO_PLAYER)
+		return m_eTimingBuildupTarget;
+	return m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
+}
+
+/// land units still missing for the attack army (2 siege units and cities + 4 others)
+int CvMilitaryAI::GetTimingBuildupUnitsWanted() const
+{
+	if (!IsTimingBuildupPlayer())
+		return 0;
+	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+	return max(0, 2 - iSiege) + max(0, max(1, m_pPlayer->getNumCities()) + 4 - (iLand - iSiege));
+}
+
+/// the unit the build-up would build or buy now (at the capital): siege or attack
+UnitTypes CvMilitaryAI::GetTimingBuildupUnitType(bool bSiege) const
+{
+	CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (!IsTimingBuildupPlayer() || !pCapital)
+		return NO_UNIT;
+	return pCapital->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(bSiege ? UNITAI_CITY_BOMBARD : UNITAI_ATTACK, true);
+}
+
 void CvMilitaryAI::StartTimingBuildup(PlayerTypes eTarget)
 {
 	if (m_iTimingBuildupStartTurn >= 0)

@@ -23509,8 +23509,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// Flag DeclareTiming; without it a warmonger attacks from turn 45 (Standard), as in c3
 	// AI_AB_TEST (candidate, flag TimingBuildup): the army is built in a window after the target is found (below), so
 	// DeclareTiming's "army first" gate doesn't apply; the window doesn't open before turn 40 (Standard)
+	// From turn 25 the target is chosen and kept (the "planned" phase: the economy prepares, the army stays small)
 	const bool bTimingBuildup = bWarmonger && pPlayer->GetMilitaryAI()->IsTimingBuildupPlayer();
-	if (bTimingBuildup && iTurn < 40 * iSpeed / 100)
+	if (bTimingBuildup && iTurn < 25 * iSpeed / 100)
 		return NO_PLAYER;
 	if (bWarmonger && !bTimingBuildup && pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 90 * iSpeed / 100)
 	{
@@ -23625,6 +23626,8 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// ready or the window is over
 	if (bTimingBuildup && eBest != NO_PLAYER)
 	{
+		if (iTurn < 40 * iSpeed / 100)
+			return NO_PLAYER; // planned only
 		CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
 		if (!pMilitary->IsTimingBuildupArmyReady() && !pMilitary->HasTimingBuildupWindowEnded())
 		{

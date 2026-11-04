@@ -217,6 +217,12 @@ public:
 	bool IsTimingBuildupArmyReady() const;
 	int GetTimingBuildupPeaceCap() const;
 	void StartTimingBuildup(PlayerTypes eTarget);
+	// read-only plan for other subsystems (Economy's WarChest and WarEconomy)
+	enum TimingBuildupPhase { TIMING_BUILDUP_NONE, TIMING_BUILDUP_PEACE, TIMING_BUILDUP_PLANNED, TIMING_BUILDUP_WINDOW, TIMING_BUILDUP_ATTACK, TIMING_BUILDUP_WAR };
+	TimingBuildupPhase GetTimingBuildupPhase() const;
+	PlayerTypes GetTimingBuildupTarget() const;
+	int GetTimingBuildupUnitsWanted() const;
+	UnitTypes GetTimingBuildupUnitType(bool bSiege) const;
 
 	int GetRecommendedMilitarySize() const
 	{

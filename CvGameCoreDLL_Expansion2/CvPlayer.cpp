@@ -34216,6 +34216,62 @@ TechTypes CvPlayer::GetCandidateGrowthTech() const
 	return GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_ENGINEERING", true), 0);
 }
 
+/// AI_AB_TEST (candidate, flag TimingBuildup, War): while a timing attack is planned (or before it), after the opening book,
+/// research toward the attack's units: catapults (Mathematics), the spearman line (Bronze Working), and Iron Working or
+/// Horseback Riding when iron or horses lie in our lands (resources the army can then use). Each only once.
+TechTypes CvPlayer::GetTimingBuildupTech() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv() || isHuman() || IsOpeningBookActive() || IsAtWarAnyMajor())
+		return NO_TECH;
+	CvMilitaryAI* pMilitary = GetMilitaryAI();
+	if (!pMilitary || !pMilitary->IsTimingBuildupPlayer())
+		return NO_TECH;
+	CvMilitaryAI::TimingBuildupPhase ePhase = pMilitary->GetTimingBuildupPhase();
+	if (ePhase != CvMilitaryAI::TIMING_BUILDUP_PEACE && ePhase != CvMilitaryAI::TIMING_BUILDUP_PLANNED)
+		return NO_TECH;
+
+	static const char* const kAlways[] = { "TECH_MATHEMATICS", "TECH_BRONZE_WORKING" };
+	for (int i = 0; i < 2; i++)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString(kAlways[i], true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+
+	// strategic resources in our lands
+	const ResourceTypes eIron = (ResourceTypes)GC.getInfoTypeForString("RESOURCE_IRON", true);
+	const ResourceTypes eHorse = (ResourceTypes)GC.getInfoTypeForString("RESOURCE_HORSE", true);
+	bool bIron = false, bHorse = false;
+	int iLoop = 0;
+	for (const CvCity* pCity = firstCity(&iLoop); pCity != NULL && !(bIron && bHorse); pCity = nextCity(&iLoop))
+	{
+		for (int i = 0; i < RING3_PLOTS; i++)
+		{
+			CvPlot* pPlot = iterateRingPlots(pCity->plot(), i);
+			if (!pPlot || pPlot->getOwner() != GetID())
+				continue;
+			ResourceTypes eRes = pPlot->getResourceType(getTeam());
+			if (eRes != NO_RESOURCE && eRes == eIron)
+				bIron = true;
+			if (eRes != NO_RESOURCE && eRes == eHorse)
+				bHorse = true;
+		}
+	}
+	if (bIron)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_IRON_WORKING", true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	if (bHorse)
+	{
+		TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_HORSEBACK_RIDING", true), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	return NO_TECH;
+}
+
 /// The next tech the opening book wants researched, if any
 TechTypes CvPlayer::GetOpeningBookTech() const
 {
