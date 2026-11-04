@@ -222,6 +222,9 @@ enum CandidateFixTypes
 	FIX_SIEGE_FINISH,		// War: melee units assault a city at a third of its HP or less (high aggression). Off in the bundle
 	FIX_GREEDY_WAR_ARMY,	// Personality (greedy style): at war a greedy civ judges the threat. A far or weak enemy changes nothing; a credible
 							// one (a city under siege, or enemy units in sight that could take a city) gets defenders and border walls. Off in the bundle
+	FIX_GIFTS_NEED_PATRONAGE,// Diplomacy (user's rule): no gold gifts to city-states without Patronage, except city-state traits,
+							// a diplomatic victory with the World Congress in session, an ally supplying a resource we'd lack, and
+							// an active gold or invest quest. In the bundle (the user ruled it obvious)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
