@@ -367,6 +367,7 @@ private:
 	int m_iTimingBuildupStartTurn;		// AI_AB_TEST TimingBuildup: -1 when no window
 	PlayerTypes m_eTimingBuildupTarget;
 	bool m_bTimingBuildupSaving;
+	int m_iTimingBuildupPausedTurns;	// turns this window was paused while units were unaffordable
 	void DoTimingBuildup();
 	int m_iNumFreeCarriers;
 
