@@ -193,7 +193,6 @@ enum CandidateFixTypes
 	FIX_SIEGE_POSTURE,		// War: the attrition posture also bombards the city (safe shots only). Off in the bundle
 	FIX_DECLARE_AT_BORDER,	// War: a sneak attack counts as discovered only at the target's border. Off in the bundle
 	FIX_UPGRADE_SAVE_CANCEL,// War (bug H1): the stale gold request for unit upgrades is cancelled. Off in the bundle
-	FIX_AIR_REBASE_HEAL,	// War (bug H2): healing aircraft stay in the quietest base. Off in the bundle
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
 	FIX_TRADE_OPINION,		// Diplomacy: the trade-partner opinion comes from deals running now in which they supply us (what a war

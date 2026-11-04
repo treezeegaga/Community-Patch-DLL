@@ -33352,7 +33352,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"DealExploits", true}, {"CoalitionStrength", false}, {"CoalitionCoop", false},
 	{"Sanctions", false}, {"CoalitionPact", false}, {"DealReputation", false},
 	{"SiegeStay", false}, {"SiegePosture", false}, {"DeclareAtBorder", true},
-	{"UpgradeSaveCancel", true}, {"AirRebaseHeal", false},
+	{"UpgradeSaveCancel", true},
 	{"SiegeArmy", false}, {"ArmyHandoff", false},
 	{"TradeOpinion", false},
 	{"SiegeAbort", false},
