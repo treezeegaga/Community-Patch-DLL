@@ -464,12 +464,12 @@ int CvAIOperation::GetArmyExpectedCityDamage(CvArmyAI* pArmy) const
 /// AI_AB_TEST (candidate, flag SiegeArmy): should this land city attack wait for more units? It should while its expected
 /// damage a turn is below the city's healing plus a fifth of its full HP (about 60 a turn for a 200 HP city, 80 with
 /// walls), for at most 20 turns after the operation started.
-bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog) const
+bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog, bool bIgnoreTimeLimit) const
 {
 	if (m_eType != AI_OPERATION_CITY_ATTACK_LAND || !GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_ARMY))
 		return false;
 	CvCity* pCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
-	if (!pArmy || !pCity || GC.getGame().getGameTurn() - GetTurnStarted() >= 20)
+	if (!pArmy || !pCity || (!bIgnoreTimeLimit && GC.getGame().getGameTurn() - GetTurnStarted() >= 20))
 		return false;
 
 	//AI_AB_TEST (candidate, flag SiegeBar): a third of the city's HP instead of a fifth. In a test pair the fifth was met at
@@ -1615,6 +1615,17 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 		break;
 	case ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE:
 		{
+			//AI_AB_TEST (candidate, flag SiegeAbort): still too weak when SiegeArmy's 20 turns are up, so call it off instead of
+			//marching (a test game's attack marched at 27 of 60 a turn, declared on an equal neighbour and lost the army).
+			//The WAR approach stays, so a fresh attack forms and has to reach the bar before it can march or declare.
+			if (GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_ABORT) && GC.getGame().getGameTurn() - GetTurnStarted() >= 20 &&
+				IsArmyTooWeakForTarget(pThisArmy, false, true))
+			{
+				LogOperationSpecialMessage("SiegeArmy: still too weak after 20 turns, giving up");
+				SetToAbort(AI_ABORT_TIMED_OUT);
+				return false;
+			}
+
 			//AI_AB_TEST (candidate, flag SiegeArmy): the required slots alone make a 4-5 unit army, which in test games never
 			//brought a quarter of the damage needed to take a city. Keep recruiting until it can, for up to 20 turns.
 			if(OperationalAIHelpers::HaveEnoughUnits(pThisArmy->GetSlotStatus(),0) && !IsArmyTooWeakForTarget(pThisArmy, true))

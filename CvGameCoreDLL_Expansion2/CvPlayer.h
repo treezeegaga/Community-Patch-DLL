@@ -199,6 +199,7 @@ enum CandidateFixTypes
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
 	FIX_SIEGE_BAR,			// War: SiegeArmy waits for healing + a third of the city's HP a turn (not a fifth). Off in the bundle
+	FIX_SIEGE_ABORT,		// War: an attack still too weak after SiegeArmy's 20 turns is called off, not sent. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
