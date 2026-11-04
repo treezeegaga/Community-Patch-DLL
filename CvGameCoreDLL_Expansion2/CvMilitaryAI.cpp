@@ -318,6 +318,7 @@ void CvMilitaryAI::Reset()
 	m_iTimingBuildupStartTurn = -1;
 	m_eTimingBuildupTarget = NO_PLAYER;
 	m_bTimingBuildupSaving = false;
+	m_iTimingBuildupPausedTurns = 0;
 	m_eLandDefenseState = NO_DEFENSE_STATE;
 	m_eNavalDefenseState = NO_DEFENSE_STATE;
 	m_iNumberOfTimesOpsBuildSkippedOver = 0;
@@ -373,6 +374,7 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iTimingBuildupStartTurn);
 	visitor(militaryAI.m_eTimingBuildupTarget);
 	visitor(militaryAI.m_bTimingBuildupSaving);
+	visitor(militaryAI.m_iTimingBuildupPausedTurns);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -1978,6 +1980,7 @@ void CvMilitaryAI::StartTimingBuildup(PlayerTypes eTarget)
 		return;
 	m_iTimingBuildupStartTurn = GC.getGame().getGameTurn();
 	m_eTimingBuildupTarget = eTarget;
+	m_iTimingBuildupPausedTurns = 0;
 	if (GC.getLogging() && GC.getAILogging())
 		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("TimingBuildup: window opens for %d turns against %s",
 			TimingBuildupWindowTurns(), eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "?"));
@@ -2007,6 +2010,21 @@ void CvMilitaryAI::DoTimingBuildup()
 		if (bLog)
 			pTactical->LogTacticalMessage("TimingBuildup: no war 3 windows after the build-up, back to the peace army");
 		m_iTimingBuildupStartTurn = -1;
+	}
+
+	// the window pauses while units are unaffordable: CP's upkeep guard refuses every combat unit when the treasury goes
+	// bankrupt in under 9 turns (a test window refused 82 units as "too expensive" and ran out with no army); at most 10
+	// paused turns a window
+	if (IsInTimingBuildupWindow() && m_iTimingBuildupPausedTurns < 10)
+	{
+		const int iAverageGoldPerUnit = m_pPlayer->GetTreasury()->GetExpensePerTurnUnitMaintenance() / max(1, m_pPlayer->getNumUnits());
+		if (m_pPlayer->getTurnsToBankruptcy(iAverageGoldPerUnit) < 9)
+		{
+			m_iTimingBuildupStartTurn++;
+			m_iTimingBuildupPausedTurns++;
+			if (bLog)
+				pTactical->LogTacticalMessage(CvString::format("TimingBuildup: window paused, units unaffordable (%d paused turns)", m_iTimingBuildupPausedTurns));
+		}
 	}
 
 	// Economy's WarChest owns the gold when it's on (savings and window purchases, CvEconomicAI::DoWarChest); looked up by
