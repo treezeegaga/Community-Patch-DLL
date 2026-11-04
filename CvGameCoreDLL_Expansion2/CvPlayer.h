@@ -221,6 +221,8 @@ enum CandidateFixTypes
 							// consider peace, no "they're in danger, hold out" term, progress penalty doubled. Off in the bundle
 	FIX_WAR_APPETITE,		// Diplomacy (Personality's profile): the WAR approach weight follows the meta position M: x0.5 at -100
 							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
+	FIX_SIEGE_FIRST,		// War: while SiegeArmy holds an attack, its siege-first slots take only siege units. Off in the bundle
+	FIX_SIEGE_FINISH,		// War: melee units assault a city at a third of its HP or less (high aggression). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

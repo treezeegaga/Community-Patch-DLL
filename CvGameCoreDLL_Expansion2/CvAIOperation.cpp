@@ -26,6 +26,8 @@
 #include "FStlContainerSerialization.h"
 #include "CvDiplomacyAI.h"
 #include "CvTypes.h"
+#include "CvCityStrategyAI.h"
+#include "CvUnitProductionAI.h"
 
 #define LINT_WARNINGS_ONLY
 #include "LintFree.h"
@@ -1444,12 +1446,25 @@ bool CvAIOperation::FindBestFitReserveUnit(OperationSlot thisOperationSlot, vect
 	}
 
 	CvFormationSlotEntry thisSlotEntry =  pThisArmy->GetSlotInfo(thisOperationSlot.m_iSlotID);
+	//AI_AB_TEST (candidate, flag SiegeFirst): only if the civ can build a siege unit at all
+	bool bSiegeOnly = false;
+	//optional slots only, and not on the creation turn (CvPlayer::addAIOperation aborts a new operation missing too many units)
+	if (ownerPlayer.UsesCandidateAI(FIX_SIEGE_FIRST) && thisSlotEntry.m_primaryUnitType == UNITAI_CITY_BOMBARD && !thisSlotEntry.m_requiredSlot &&
+		GC.getGame().getGameTurn() > GetTurnStarted() && IsArmyTooWeakForTarget(pThisArmy))
+	{
+		CvCity* pCapital = ownerPlayer.getCapitalCity();
+		bSiegeOnly = pCapital && pCapital->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(UNITAI_CITY_BOMBARD, true) != NO_UNIT;
+	}
 	for (size_t iI=0; iI<choices.size(); iI++)
 	{
 		CvUnit* pBestUnit = GET_PLAYER(m_eOwner).getUnit(choices[iI].option);
 		if (pBestUnit != NULL)
 		{
 			CvUnitEntry* unitInfo = GC.getUnitInfo(pBestUnit->getUnitType());
+			//AI_AB_TEST (candidate, flag SiegeFirst): while SiegeArmy holds this attack back, a siege-first slot takes only a real
+			//siege unit, so it stays open and a city is asked for a catapult (composite bowmen filled these slots in test games)
+			if (bSiegeOnly && thisSlotEntry.m_primaryUnitType == UNITAI_CITY_BOMBARD && !unitInfo->GetUnitAIType(UNITAI_CITY_BOMBARD))
+				continue;
 			if (unitInfo->GetUnitAIType(thisSlotEntry.m_primaryUnitType) || unitInfo->GetUnitAIType(thisSlotEntry.m_secondaryUnitType))
 			{
 				pThisArmy->AddUnit(pBestUnit->GetID(), thisOperationSlot.m_iSlotID, thisSlotEntry.m_requiredSlot);

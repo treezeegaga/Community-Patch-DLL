@@ -976,7 +976,12 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 
 				//finally do the attack. be a bit more careful if we have few melee units
 				//AI_AB_TEST: eMaxAggLvl is AL_HIGH except for the SiegePosture flag's safe-shots-only call
-				ExecuteAttackWithUnits(pPlot, eMaxAggLvl < AL_HIGH ? eMaxAggLvl : (iMeleeCount>2 ? AL_HIGH : AL_MEDIUM));
+				eAggressionLevel eAggLvl = eMaxAggLvl < AL_HIGH ? eMaxAggLvl : (iMeleeCount>2 ? AL_HIGH : AL_MEDIUM);
+				//AI_AB_TEST (candidate, flag SiegeFinish): a city down to a third of its HP gets the melee assault (test sieges brought
+				//cities to about 130 of 200 and never went in, and the city healed back)
+				if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_FINISH) && eMaxAggLvl == AL_HIGH && iMeleeCount > 0 && iRequiredDamage * 3 <= pCity->GetMaxHitPoints())
+					eAggLvl = AL_HIGH;
+				ExecuteAttackWithUnits(pPlot, eAggLvl);
 
 				// Did it work?  If so, don't need a temporary dominance zone if had one here
 				if (pPlot->getOwner() == m_pPlayer->GetID())
