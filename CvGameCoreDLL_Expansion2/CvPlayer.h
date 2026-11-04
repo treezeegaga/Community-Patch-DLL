@@ -1806,6 +1806,8 @@ public:
 	int GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const;
 	// AI_AB_TEST (Personality, GreedyNoUpgrades, GreedyWarArmy, MetaDial): does the greedy style hold off upgrading now?
 	bool IsGreedyUpgradeBlocked() const;
+	// AI_AB_TEST (Personality, AggressiveArmy and MetaDial's aggressive side): building up for a war, or at war?
+	bool IsInWarBuildup() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;

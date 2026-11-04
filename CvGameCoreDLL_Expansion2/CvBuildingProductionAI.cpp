@@ -1386,7 +1386,7 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		if (iNumWar == 0 && kPlayer.isMajorCiv() && !kPlayer.isHuman())
 		{
 			if (kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
-				iTinyArmyUnitsPerCity = 3;
+				iTinyArmyUnitsPerCity = kPlayer.IsInWarBuildup() ? 3 : 1;	// a small army until the build-up window
 			else if (kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
 				iTinyArmyUnitsPerCity = 2;
 		}
@@ -1394,7 +1394,12 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//in tenths of a unit, when no style flag sets it
 		int iTinyArmyTimes10 = iTinyArmyUnitsPerCity * 10;
 		if (iNumWar == 0 && kPlayer.UsesMetaDial() && !kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY) && !kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
+		{
 			iTinyArmyTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(false);
+			// the conquest-plan side (M >= +50) keeps a small army until the build-up window
+			if (kPlayer.GetMetaDialPosition() >= 50 && !kPlayer.IsInWarBuildup())
+				iTinyArmyTimes10 = 10;
+		}
 		//AI_AB_TEST candidate (Personality, GreedyFewUnits): a small army is the greedy style's plan, and the unit cap
 		//blocks the units this penalty asks for, so it would only push production into gold and research processes
 		//(MetaDial: the same on the greedy side of the dial, in peace only.)

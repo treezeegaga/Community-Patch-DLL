@@ -338,10 +338,15 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	const bool bAggressiveArmy = bStyleLandUnit && kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY);
 	const bool bBalancedArmy = bStyleLandUnit && !bAggressiveArmy && kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY);
 	const int iStyleCities = max(1, kPlayer.getNumCities());
+	// AggressiveArmy outside the build-up window (CvPlayer::IsInWarBuildup; the user, 2026-11-04: a timing attacker keeps a
+	// small army most of the game and builds up just before attacking): about a garrison plus one, cities + 1 land units
+	const bool bAggressiveQuiet = bAggressiveArmy && !kPlayer.IsInWarBuildup();
+	if (bAggressiveQuiet && !bDesperate && iNumLandUnits >= iStyleCities + 1 + (bForOperation ? 2 : 0))
+		return SR_STRATEGY;
 	if (bBalancedArmy && !bDesperate && !kPlayer.IsAtWarAnyMajor() && iNumLandUnits >= iStyleCities * 3 + (bForOperation ? 2 : 0))
 		return SR_STRATEGY;
 	int iRecommendLandArmySize = kPlayer.GetMilitaryAI()->GetRecommendLandArmySize();
-	if (bAggressiveArmy || bBalancedArmy)
+	if ((bAggressiveArmy && !bAggressiveQuiet) || bBalancedArmy)
 	{
 		const int iSupplyRoom = kPlayer.GetNumUnitsSupplied() - (kPlayer.GetNumUnitsToSupply() - iNumLandUnits);
 		iRecommendLandArmySize = max(iRecommendLandArmySize, min(iStyleCities * (bAggressiveArmy ? 4 : 2), iSupplyRoom));
@@ -359,22 +364,32 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	{
 		const int iCeilingTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(true);
 		const bool bDialWarDefence = kPlayer.IsAtWarAnyMajor() && iDialMeta <= -50;
-		if (bDialWarDefence && pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)
-			return SR_STRATEGY;
-		// at war on the greedy side: the peace ceiling unless a war is a credible threat (then the war defence cap)
-		const int iCapTimes10 = !kPlayer.IsAtWarAnyMajor() ? iCeilingTimes10 :
-			(bDialWarDefence ? max(iCeilingTimes10, kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap() * 10 / iStyleCities) : -1);
-		// a city under siege on the greedy side gets a defender past the cap only if it has none
-		const bool bSiegeExempt = bDesperate && (!bDialWarDefence || !m_pCity->HasGarrison());
-		if (iCapTimes10 >= 0 && !bSiegeExempt && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
-			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
-			return SR_STRATEGY;
-		if (iDialMeta > -50)
+		// the conquest-plan side (M >= +50) outside the build-up window: cities + 1, as for AggressiveArmy
+		if (iDialMeta >= 50 && !kPlayer.IsInWarBuildup())
 		{
-			const int iSupplyRoom = kPlayer.GetNumUnitsSupplied() - (kPlayer.GetNumUnitsToSupply() - iNumLandUnits);
-			iRecommendLandArmySize = max(iRecommendLandArmySize, min(iStyleCities * iCeilingTimes10 / 10, iSupplyRoom));
+			if (!bDesperate && iNumLandUnits >= iStyleCities + 1 + (bForOperation ? 2 : 0))
+				return SR_STRATEGY;
+		}
+		else
+		{
+			if (bDialWarDefence && pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)
+				return SR_STRATEGY;
+			// at war on the greedy side: the peace ceiling unless a war is a credible threat (then the war defence cap)
+			const int iCapTimes10 = !kPlayer.IsAtWarAnyMajor() ? iCeilingTimes10 :
+				(bDialWarDefence ? max(iCeilingTimes10, kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap() * 10 / iStyleCities) : -1);
+			// a city under siege on the greedy side gets a defender past the cap only if it has none
+			const bool bSiegeExempt = bDesperate && (!bDialWarDefence || !m_pCity->HasGarrison());
+			if (iCapTimes10 >= 0 && !bSiegeExempt && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
+				CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+				return SR_STRATEGY;
+			if (iDialMeta > -50)
+			{
+				const int iSupplyRoom = kPlayer.GetNumUnitsSupplied() - (kPlayer.GetNumUnitsToSupply() - iNumLandUnits);
+				iRecommendLandArmySize = max(iRecommendLandArmySize, min(iStyleCities * iCeilingTimes10 / 10, iSupplyRoom));
+			}
 		}
 	}
+	const bool bDialTimingQuiet = bDialLandUnit && iDialMeta >= 50 && !kPlayer.IsInWarBuildup();
 
 	if (bNeedsSupply)
 	{
@@ -1764,7 +1779,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// AI_AB_TEST candidates (Personality, styles): below its floor (3 land units per city aggressive, 2 balanced) the
 	// style's own unit types come first: attack, siege and ranged units for the aggressive style, defenders and ranged
 	// units for the balanced one
-	if ((bAggressiveArmy || bBalancedArmy) && iNumLandUnits < iStyleCities * (bAggressiveArmy ? 3 : 2))
+	if (((bAggressiveArmy && !bAggressiveQuiet) || bBalancedArmy) && iNumLandUnits < iStyleCities * (bAggressiveArmy ? 3 : 2))
 	{
 		const UnitAITypes eStyleAI = pkUnitEntry->GetDefaultUnitAIType();
 		const bool bWanted = bAggressiveArmy ?
@@ -1775,7 +1790,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	}
 	// MetaDial: below the floor (1, 2, 3 per city at M = -100, 0, +100) the dial's unit types come first: attack, siege and
 	// ranged units from M = +25, defenders and ranged units between -25 and +25, nothing extra on the greedy side
-	if (bDialLandUnit && iDialMeta > -25 && iNumLandUnits * 10 < iStyleCities * iDialFloorTimes10)
+	if (bDialLandUnit && !bDialTimingQuiet && iDialMeta > -25 && iNumLandUnits * 10 < iStyleCities * iDialFloorTimes10)
 	{
 		const UnitAITypes eDialAI = pkUnitEntry->GetDefaultUnitAIType();
 		const bool bWanted = (iDialMeta >= 25) ?

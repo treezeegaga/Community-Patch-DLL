@@ -2030,7 +2030,7 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 /// - GreedyFewUnits: 1 land unit per city in peace, 2 at war (with GreedyWarArmy: the peace cap, or the war defence
 ///   cap when a war is a credible threat);
 /// - BalancedArmy: 3 per city in peace, none at war;
-/// - AggressiveArmy: none (it wants every unit it can get);
+/// - AggressiveArmy: cities + 1 until the build-up window (CvPlayer::IsInWarBuildup), none inside it;
 /// - MetaDial (when no style army flag is on): the peace ceiling up to meta position 0 (above it, the aggressive side
 ///   keeps its gifts); at war on the greedy side (-50 or below) the larger of that and the war defence cap, none above.
 /// GreedyAlarm (a neighbour's army near our cities) lifts the cap. Unit gifts are the only thing the switch stops
@@ -2046,14 +2046,18 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 	if (m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
 		iCap = !bWar ? iCities : (m_pPlayer->UsesCandidateAI(FIX_GREEDY_WAR_ARMY) ? max(iCities, GetWarDefenceLandUnitCap()) : iCities * 2);
 	else if (m_pPlayer->UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
-		iCap = -1;
+		iCap = m_pPlayer->IsInWarBuildup() ? -1 : iCities + 1;	// small army until the build-up window
 	else if (m_pPlayer->UsesCandidateAI(FIX_BALANCED_ARMY))
 		iCap = bWar ? -1 : iCities * 3;
 	else if (m_pPlayer->UsesMetaDial())
 	{
 		const int iMeta = m_pPlayer->GetMetaDialPosition();
 		if (!bWar)
+		{
 			iCap = (iMeta <= 0) ? iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10 : -1;
+			if (iMeta >= 50 && !m_pPlayer->IsInWarBuildup())
+				iCap = iCities + 1;
+		}
 		else
 			iCap = (iMeta <= -50) ? max(iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10, GetWarDefenceLandUnitCap()) : -1;
 	}

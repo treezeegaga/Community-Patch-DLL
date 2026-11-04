@@ -33777,6 +33777,37 @@ bool CvPlayer::IsGreedyUpgradeBlocked() const
 	return false;
 }
 
+/// AI_AB_TEST (Personality): an aggressive player doing a timing attack keeps a small army most of the game, to save
+/// maintenance, and builds up fast just before attacking (the user, 2026-11-04). AggressiveArmy and MetaDial's
+/// aggressive side keep their big army only in this window or at war. The window is open when:
+/// - we are at war with a major civ; or
+/// - our approach to a major civ is WAR (CP's own war preparation, and TimingAttack's committed target); or
+/// - interim, until War's TimingBuildup defines the window: we are a timing attacker (TimingAttack) within 20 turns
+///   (Standard speed) of DeclareTiming's fallback declaration turn (90), i.e. from turn 70. DeclareTiming waits for
+///   the army before it picks a target, so the window has to open before the target exists.
+bool CvPlayer::IsInWarBuildup() const
+{
+	if (!isMajorCiv() || isHuman())
+		return false;
+	if (IsAtWarAnyMajor())
+		return true;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (eLoopPlayer == GetID() || !GET_PLAYER(eLoopPlayer).isAlive() || GET_PLAYER(eLoopPlayer).getTeam() == getTeam())
+			continue;
+		if (GetDiplomacyAI()->GetCivApproach(eLoopPlayer) == CIV_APPROACH_WAR)
+			return true;
+	}
+	if (IsCandidateWarmonger(FIX_TIMING_ATTACK))
+	{
+		const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
+		if (GC.getGame().getElapsedGameTurns() >= 70 * iSpeed / 100)
+			return true;
+	}
+	return false;
+}
+
 /// Land units per city in peace, in tenths: the floor (1, 2, 3 at -100, 0, +100) or the ceiling (1, 3, 4)
 int CvPlayer::GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const
 {
