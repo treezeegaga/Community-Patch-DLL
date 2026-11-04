@@ -33380,7 +33380,6 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"TimingBuildup", false},
 	{"AggressiveWalls", false},
 	{"TrueGoldRate", false},
-	{"TrueGoldRate", false},
 	{"WarEconomy", false},
 	{"WarChest", false},
 };
