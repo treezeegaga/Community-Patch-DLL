@@ -258,6 +258,33 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		(pkBuildingInfo->GetYieldChange(YIELD_GOLD) > 0 || pkBuildingInfo->GetYieldModifier(YIELD_GOLD) > 0))
 		iBonus += 500;
 
+	// AI_AB_TEST candidate (WarGold): a warmonger short of gold builds its gold buildings before the window opens (in the
+	// window, WarChest's bonus above takes over), so the army it will build can be paid for
+	if (kPlayer.IsWarGoldShort() && (pkBuildingInfo->GetYieldChange(YIELD_GOLD) > 0 || pkBuildingInfo->GetYieldModifier(YIELD_GOLD) > 0))
+	{
+		const CvMilitaryAI::TimingBuildupPhase eGoldPhase = kPlayer.GetMilitaryAI()->GetTimingBuildupPhase();
+		if (eGoldPhase != CvMilitaryAI::TIMING_BUILDUP_WINDOW && eGoldPhase != CvMilitaryAI::TIMING_BUILDUP_ATTACK)
+			iBonus += 500;
+	}
+
+	// AI_AB_TEST candidate (WarGold, the lead's): a warmonger at peace keeps its income at 0 or more. While it's losing gold,
+	// no new building with upkeep (unless it makes gold, defends, or gets the army ready: production or experience) and no
+	// world wonder
+	if (kPlayer.IsWarGoldShort() && kPlayer.GetTreasury()->CalculateBaseNetGold() < 0)
+	{
+		const CvMilitaryAI::TimingBuildupPhase eGoldPhase = kPlayer.GetMilitaryAI()->GetTimingBuildupPhase();
+		if (eGoldPhase != CvMilitaryAI::TIMING_BUILDUP_WINDOW && eGoldPhase != CvMilitaryAI::TIMING_BUILDUP_ATTACK)
+		{
+			if (isWorldWonderClass(kBuildingClassInfo))
+				return SR_STRATEGY;
+			const bool bMakesGold = pkBuildingInfo->GetYieldChange(YIELD_GOLD) > 0 || pkBuildingInfo->GetYieldModifier(YIELD_GOLD) > 0;
+			const bool bReadiesArmy = pkBuildingInfo->GetYieldModifier(YIELD_PRODUCTION) > 0 || pkBuildingInfo->GetFreeExperience() > 0 ||
+				pkBuildingInfo->GetDomainFreeExperience(DOMAIN_LAND) > 0;
+			if (pkBuildingInfo->GetGoldMaintenance() > 0 && !bMakesGold && !bReadiesArmy && pkBuildingInfo->GetExtraCityHitPoints() == 0)
+				return SR_MAINTENANCE;
+		}
+	}
+
 	// AI_AB_TEST candidate (WarEconomy, the user's design): while a timing attack is planned or building up, the cities
 	// nearest the target (within 3 tiles of our nearest city's distance) get ready to switch to war fast: buildings that
 	// raise production or give units experience (forge, workshop, barracks, armory) come first

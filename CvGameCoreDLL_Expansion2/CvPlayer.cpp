@@ -33421,6 +33421,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"WondersForVictory", false},
 	{"LeanBuilders", false},
 	{"GreedyWideDeals", false},
+	{"WarGold", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -34417,6 +34418,25 @@ TechTypes CvPlayer::GetCandidateGrowthTech() const
 	if (!pCapital || pCapital->getPopulation() < 6)
 		return NO_TECH;
 	return GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_ENGINEERING", true), 0);
+}
+
+/// AI_AB_TEST candidate (WarGold, Economy): a warmonger whose net gold per turn is below its cities + 2, at peace with
+/// the majors. Its forced research (the opening book, then TimingBuildup's techs) has no Currency: in replay 0C3C8913
+/// the Aztecs got their Market at T103 (our other civs T55-T59), were at 0 gold through their window, and CP's upkeep
+/// guard refused 82 units.
+bool CvPlayer::IsWarGoldShort() const
+{
+	if (!MOD_AI_AB_TEST || !IsCandidateWarmonger(FIX_WAR_GOLD) || IsAtWarAnyMajor())
+		return false;
+	return GetTreasury()->CalculateBaseNetGold() < getNumCities() + 2;
+}
+
+/// AI_AB_TEST candidate (WarGold, Economy): after the opening book, a warmonger short of gold researches toward Currency
+TechTypes CvPlayer::GetWarGoldTech() const
+{
+	if (IsOpeningBookActive() || !IsWarGoldShort())
+		return NO_TECH;
+	return GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString("TECH_CURRENCY", true), 0);
 }
 
 /// AI_AB_TEST (candidate, flag TimingBuildup, War): while a timing attack is planned (or before it), after the opening book,

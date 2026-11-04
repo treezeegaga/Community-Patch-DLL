@@ -248,6 +248,7 @@ enum CandidateFixTypes
 	FIX_LEAN_BUILDERS,		// Economy (the user's call): workers at most 2 per 3 cities; work boats only for this city's own sea tiles, one in training at a time. Off in the bundle
 	FIX_GREEDY_WIDE_DEALS,	// Diplomacy (Personality's request): a greedy wide civ out of room seeks trade deals: luxury, open
 							// borders and research agreement offers twice as often, and it wants open borders and RAs widely. Off in the bundle
+	FIX_WAR_GOLD,			// Economy: a warmonger short of gold researches Currency and builds gold buildings before its window. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1845,6 +1846,8 @@ public:
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;
 	TechTypes GetTimingBuildupTech() const; // AI_AB_TEST War, flag TimingBuildup
+	TechTypes GetWarGoldTech() const; // AI_AB_TEST Economy, flag WarGold
+	bool IsWarGoldShort() const; // AI_AB_TEST Economy, flag WarGold
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
 	bool IsVassalOfSomeone() const;

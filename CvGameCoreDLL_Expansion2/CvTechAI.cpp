@@ -177,6 +177,12 @@ TechTypes CvTechAI::ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech)
 			LogResearchChoice(eBookTech);
 			return eBookTech;
 		}
+		eBookTech = pPlayer->GetWarGoldTech(); // AI_AB_TEST Economy, flag WarGold: Currency first when short of gold
+		if (eBookTech != NO_TECH)
+		{
+			LogResearchChoice(eBookTech);
+			return eBookTech;
+		}
 		eBookTech = pPlayer->GetTimingBuildupTech(); // AI_AB_TEST War, flag TimingBuildup
 		if (eBookTech != NO_TECH)
 		{

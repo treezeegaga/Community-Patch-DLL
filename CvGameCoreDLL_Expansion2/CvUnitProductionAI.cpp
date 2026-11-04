@@ -1089,6 +1089,10 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 				return SR_USELESS;
 			}
 			
+			// AI_AB_TEST candidate (WarGold): a warmonger losing gold at peace wants its trade routes
+			if (kPlayer.IsWarGoldShort() && kPlayer.GetTreasury()->CalculateBaseNetGold() < 0)
+				iBonus += 300;
+
 			if (pkUnitEntry->GetDomainType() == DOMAIN_LAND)
 			{
 				iBonus += m_pCity->GetTradePriorityLand() * 10;

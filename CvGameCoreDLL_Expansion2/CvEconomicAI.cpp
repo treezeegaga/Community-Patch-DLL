@@ -3147,7 +3147,8 @@ static void BuyExpansionSettler(CvPlayer* pPlayer)
 /// AI_AB_TEST candidate (WarChest): a timing attacker (War's TimingBuildup) saves gold while its attack is planned and
 /// buys the missing units once the 15-turn window opens, so the build-up is bought rather than run into bankruptcy
 /// (13% of bully-test aggressors sat at 0 gold, and CP's deficit rule gifted their armies away). Target, agreed with
-/// War: the price of the units still wanted, capped at 15 turns of net income, at least 2 siege units' price.
+/// War: the price of the units still wanted, capped at 15 turns of net income, at least 2 siege units' price. It saves at
+/// peace too, from turn 30 (Standard).
 static void DoWarChest(CvPlayer* pPlayer)
 {
 	if (!pPlayer->UsesCandidateAI(FIX_WAR_CHEST) || pPlayer->isHuman() || !pPlayer->isMajorCiv())
@@ -3156,7 +3157,11 @@ static void DoWarChest(CvPlayer* pPlayer)
 	CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
 	CvEconomicAI* pEconomic = pPlayer->GetEconomicAI();
 	const CvMilitaryAI::TimingBuildupPhase ePhase = pMilitary->GetTimingBuildupPhase();
-	const bool bSaving = (ePhase == CvMilitaryAI::TIMING_BUILDUP_PLANNED || ePhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW);
+	// at peace too, from turn 30 (Standard; the lead and War, 0C3C8913: the Aztecs went from peace straight into the window
+	// at T81 and had saved nothing)
+	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
+	const bool bPeaceSaving = ePhase == CvMilitaryAI::TIMING_BUILDUP_PEACE && GC.getGame().getGameTurn() >= 30 * iSpeed / 100;
+	const bool bSaving = bPeaceSaving || ePhase == CvMilitaryAI::TIMING_BUILDUP_PLANNED || ePhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW;
 	CvCity* pCapital = pPlayer->getCapitalCity();
 	if (!bSaving || !pCapital)
 	{
