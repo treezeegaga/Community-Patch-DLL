@@ -23520,6 +23520,12 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// DeclareTiming's "army first" gate doesn't apply; the window doesn't open before turn 40 (Standard)
 	// From turn 25 the target is chosen and kept (the "planned" phase: the economy prepares, the army stays small)
 	const bool bTimingBuildup = bWarmonger && pPlayer->GetMilitaryAI()->IsTimingBuildupPlayer();
+	// Before the army is built (no window yet, or one still running) the peace army is garrisons only, so targets are judged
+	// against the army the window will build: one more strength step, and no CanWin sketch yet (trio test: four aggressors
+	// with garrison armies found no target, so no window opened and no war came). Both apply again once the army is ready
+	// or the window is over.
+	const bool bBuildupPlanning = bTimingBuildup && !pPlayer->GetMilitaryAI()->IsTimingBuildupArmyReady() &&
+		!pPlayer->GetMilitaryAI()->HasTimingBuildupWindowEnded();
 	if (bTimingBuildup && iTurn < 25 * iSpeed / 100)
 		return NO_PLAYER;
 	if (bWarmonger && !bTimingBuildup && pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 90 * iSpeed / 100)
@@ -23559,7 +23565,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 
 		const bool bCommitted = (eLoopPlayer == eCommitted);
 		StrengthTypes eTheirStrength = GetMilitaryStrengthComparedToUs(eLoopPlayer);
-		int iMaxStrength = (bExpansionist ? STRENGTH_AVERAGE : STRENGTH_POOR) + (bCommitted ? 1 : 0);
+		int iMaxStrength = (bExpansionist ? STRENGTH_AVERAGE : STRENGTH_POOR) + (bCommitted ? 1 : 0) + (bBuildupPlanning ? 1 : 0);
 		if ((int)eTheirStrength > iMaxStrength)
 			continue;
 
@@ -23572,7 +23578,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			continue;
 
 		// c7c: and only a war we can win (flag CanWin)
-		if (pPlayer->UsesCandidateAI(FIX_CAN_WIN) && !CanTakeNearestCity(pPlayer, eLoopPlayer))
+		if (pPlayer->UsesCandidateAI(FIX_CAN_WIN) && !bBuildupPlanning && !CanTakeNearestCity(pPlayer, eLoopPlayer))
 			continue;
 
 		if (bCommitted)
