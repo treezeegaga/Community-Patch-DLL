@@ -311,11 +311,21 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// this city's current one doesn't). Operations (settler escorts) may go 2 above the cap. A city under siege may still
 	// get a defender if it has none (bully pair 0B09BFE1: exempting every city under siege let greedy civs at war buy and
 	// build well past the cap), and GreedyAlarm lifts the cap.
+	// GreedyWarArmy (the user, 2026-11-04: at war a greedy civ judges the threat and builds enough to defend): at war with
+	// a major civ the cap is the peace cap (1 per city) unless a war is a credible threat, then
+	// CvGrandStrategyAI::GetWarDefenceLandUnitCap (when a city is under siege or an enemy force in sight could take one of
+	// our cities: 2 per city, or 3/4 of the enemy land units seen near our cities if more); never siege units: defenders,
+	// not an army of conquest.
+	const bool bGreedyWarDefence = kPlayer.IsAtWarAnyMajor() && kPlayer.UsesCandidateAI(FIX_GREEDY_WAR_ARMY);
 	if (bCombat && !bFree && (!bDesperate || m_pCity->HasGarrison()) && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
 		kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
 	{
-		const int iUnitsPerCity = kPlayer.IsAtWarAnyMajor() ? 2 : 1;
-		const int iCap = max(1, kPlayer.getNumCities()) * iUnitsPerCity + (bForOperation ? 2 : 0);
+		if (bGreedyWarDefence && pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)
+			return SR_STRATEGY;
+		const int iCities = max(1, kPlayer.getNumCities());
+		const int iBaseCap = bGreedyWarDefence ? max(iCities, kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap()) :
+			iCities * (kPlayer.IsAtWarAnyMajor() ? 2 : 1);
+		const int iCap = iBaseCap + (bForOperation ? 2 : 0);
 		if (iNumLandUnits >= iCap && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
 			return SR_STRATEGY;
 	}
@@ -338,18 +348,24 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	}
 
 	// AI_AB_TEST candidate (Personality, MetaDial): the same from the meta position M, when no style flag is on. In peace
-	// at most the ceiling (1, 3, 4 land units per city at M = -100, 0, +100; operations +2); at war the greedy side
-	// (M <= -50) keeps 2 per city. A city under siege may still build defenders, and GreedyAlarm lifts the cap. Above
-	// the greedy side the ceiling also lifts CP's recommended army size, within supply.
+	// at most the ceiling (1, 3, 4 land units per city at M = -100, 0, +100; operations +2). At war with a major civ the
+	// greedy side (M <= -50) builds enough to defend (the user, 2026-11-04): the war defence cap, as for GreedyWarArmy,
+	// and no siege units; no cap above the greedy side. GreedyAlarm lifts the cap. Above the greedy side the ceiling
+	// also lifts CP's recommended army size, within supply.
 	const bool bDialLandUnit = bStyleLandUnit && !bAggressiveArmy && !bBalancedArmy && kPlayer.UsesMetaDial();
 	const int iDialMeta = bDialLandUnit ? kPlayer.GetMetaDialPosition() : 0;
 	const int iDialFloorTimes10 = bDialLandUnit ? kPlayer.GetMetaDialLandUnitsPerCityTimes10(false) : 0;
 	if (bDialLandUnit)
 	{
 		const int iCeilingTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(true);
-		const int iCapTimes10 = !kPlayer.IsAtWarAnyMajor() ? iCeilingTimes10 : (iDialMeta <= -50 ? 20 : -1);
-		// as for GreedyFewUnits, a city under siege on the greedy side may still get a defender only if it has none
-		const bool bSiegeExempt = bDesperate && (iDialMeta > -50 || !m_pCity->HasGarrison());
+		const bool bDialWarDefence = kPlayer.IsAtWarAnyMajor() && iDialMeta <= -50;
+		if (bDialWarDefence && pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)
+			return SR_STRATEGY;
+		// at war on the greedy side: the peace ceiling unless a war is a credible threat (then the war defence cap)
+		const int iCapTimes10 = !kPlayer.IsAtWarAnyMajor() ? iCeilingTimes10 :
+			(bDialWarDefence ? max(iCeilingTimes10, kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap() * 10 / iStyleCities) : -1);
+		// a city under siege on the greedy side gets a defender past the cap only if it has none
+		const bool bSiegeExempt = bDesperate && (!bDialWarDefence || !m_pCity->HasGarrison());
 		if (iCapTimes10 >= 0 && !bSiegeExempt && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
 			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
 			return SR_STRATEGY;

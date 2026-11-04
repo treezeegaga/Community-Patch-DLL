@@ -33358,6 +33358,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"MetaDial", false}, {"SiegeFormation", false},
 	{"StaleWarPeace", false}, {"WarAppetite", false},
 	{"SiegeFirst", false}, {"SiegeFinish", false},
+	{"GreedyWarArmy", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33746,6 +33747,24 @@ int CvPlayer::GetMetaDialPosition() const
 bool CvPlayer::IsMetaDialGreedy() const
 {
 	return UsesMetaDial() && GetMetaDialPosition() <= -50;
+}
+
+/// AI_AB_TEST (Personality): the greedy style (GreedyNoUpgrades, or MetaDial at -50 or below) spends no gold upgrading
+/// units in peace. At war: GreedyNoUpgrades alone upgrades at any war; with GreedyWarArmy, and on MetaDial's greedy side,
+/// only when a war is a credible threat (CvGrandStrategyAI::GetWarDefenceLandUnitCap > 0: a far or weak enemy changes
+/// nothing, the user, 2026-11-04).
+bool CvPlayer::IsGreedyUpgradeBlocked() const
+{
+	if (!isMajorCiv() || isHuman())
+		return false;
+	const bool bDialGreedy = IsMetaDialGreedy();
+	if (!UsesCandidateAI(FIX_GREEDY_NO_UPGRADES) && !bDialGreedy)
+		return false;
+	if (!IsAtWarAnyMajor())
+		return true;
+	if (bDialGreedy || UsesCandidateAI(FIX_GREEDY_WAR_ARMY))
+		return GetGrandStrategyAI()->GetWarDefenceLandUnitCap() == 0;
+	return false;
 }
 
 /// Land units per city in peace, in tenths: the floor (1, 2, 3 at -100, 0, +100) or the ceiling (1, 3, 4)

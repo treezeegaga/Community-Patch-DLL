@@ -107,6 +107,7 @@ public:
 	CvStrategyProfile GetStrategyProfile() const;
 	static const char* GetStrategyArchetypeName(StrategyArchetypeTypes eArchetype);
 	int GetMetaPosition() const;
+	int GetWarDefenceLandUnitCap() const;
 
 	// **********
 	// Stuff relating to guessing what other Players are up to
@@ -138,7 +139,7 @@ private:
 	void LogGrandStrategies(const vector<int>& vGrandStrategyPriorities);
 	void LogGuessOtherPlayerGrandStrategy(const vector<int>& vGrandStrategyPriorities, PlayerTypes ePlayer);
 	void LogStrategyProfile();
-	void DoGreedyCityStateUnitGifts();
+	void DoStyleCityStateUnitGifts();
 
 	CvPlayer* m_pPlayer;
 	CvAIGrandStrategyXMLEntries* m_pAIGrandStrategies;
@@ -169,6 +170,9 @@ private:
 	// AI_AB_TEST (Personality, MetaDial): not saved, worked out again from the game data
 	mutable int m_iCachedMetaPosition;
 	mutable int m_iCachedMetaTurn;
+	// AI_AB_TEST (Personality, GreedyWarArmy): not saved, worked out again from the game state
+	mutable int m_iCachedWarDefenceCap;
+	mutable int m_iCachedWarDefenceTurn;
 };
 
 FDataStream& operator>>(FDataStream&, CvGrandStrategyAI&);

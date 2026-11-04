@@ -220,6 +220,8 @@ enum CandidateFixTypes
 							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
 	FIX_SIEGE_FIRST,		// War: while SiegeArmy holds an attack, its siege-first slots take only siege units. Off in the bundle
 	FIX_SIEGE_FINISH,		// War: melee units assault a city at a third of its HP or less (high aggression). Off in the bundle
+	FIX_GREEDY_WAR_ARMY,	// Personality (greedy style): at war a greedy civ judges the threat. A far or weak enemy changes nothing; a credible
+							// one (a city under siege, or enemy units in sight that could take a city) gets defenders and border walls. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
@@ -1798,6 +1800,8 @@ public:
 	int GetMetaDialPosition() const;
 	bool IsMetaDialGreedy() const;
 	int GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const;
+	// AI_AB_TEST (Personality, GreedyNoUpgrades, GreedyWarArmy, MetaDial): does the greedy style hold off upgrading now?
+	bool IsGreedyUpgradeBlocked() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;
