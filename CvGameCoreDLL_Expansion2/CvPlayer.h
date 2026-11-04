@@ -194,7 +194,7 @@ enum CandidateFixTypes
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
 	FIX_TRADE_OPINION,		// Diplomacy: the trade-partner opinion comes from deals running now in which they supply us (what a war
-							// would cost us), gone when they expire, back when renewed, capped below Favorable. Off in the bundle
+							// would cost us), gone when they expire, back when renewed, capped below Favorable. In the bundle (user)
 	FIX_SIEGE_ABORT,		// War: an attack still too weak after SiegeArmy's 20 turns is called off, not sent. Off in the bundle
 	FIX_GREEDY_FEW_UNITS,	// Personality (greedy style): at most 1 land combat unit per city at peace, 2 at war with a major civ; no
 							// tiny-army building penalty at peace. Lifted while GreedyAlarm fires. Off in the bundle
@@ -211,8 +211,8 @@ enum CandidateFixTypes
 	FIX_META_DIAL,			// Personality: the style settings (army size, walls, upgrades, growth value, conquest plan) follow the strategy
 							// profile's meta position, from greedy (-100) to aggressive (+100). Off in the bundle
 	FIX_SIEGE_FORMATION,	// War: classical-medieval land city attacks use the formation with 5 siege/ranged slots (not 2). Off in the bundle
-	FIX_STALE_WAR_PEACE,	// Diplomacy: a war with no city changing hands for 20 turns and no attack under way is stale: reason to
-							// consider peace, no "they're in danger, hold out" term, progress penalty doubled. Off in the bundle
+	FIX_STALE_WAR_PEACE,	// Diplomacy: at war, if we don't intend to take their cities, drop the hold-out and make a fair peace;
+							// consider peace (user's rule: reworked to intent, see IsStaleWar). In the bundle (user)
 	FIX_WAR_APPETITE,		// Diplomacy (Personality's profile): the WAR approach weight follows the meta position M: x0.5 at -100
 							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
 	FIX_SIEGE_FIRST,		// War: while SiegeArmy holds an attack, its siege-first slots take only siege units. Off in the bundle

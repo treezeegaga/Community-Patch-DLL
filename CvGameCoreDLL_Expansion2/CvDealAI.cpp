@@ -948,7 +948,7 @@ int CvDealAI::GetDealValue(CvDeal* pDeal) const
 			// declare war, which cancels the rest of its payments. Count those turns in full and the rest at half.
 			const bool bPerTurnToUs = !bFromMe && (it->m_eItemType == TRADE_ITEM_GOLD_PER_TURN || it->m_eItemType == TRADE_ITEM_RESOURCES);
 			// FIX_DEAL_REPUTATION: deals they ended by declaring war on us while owing us payments
-			const int iBroken = (bPerTurnToUs && GetPlayer()->UsesCandidateAI(FIX_DEAL_REPUTATION)) ? GetPlayer()->GetDiplomacyAI()->GetNumDealsBrokenByWar(eOtherPlayer) : 0;
+			const int iBroken = (bPerTurnToUs && GetPlayer()->isMajorCiv() && GET_PLAYER(eOtherPlayer).isMajorCiv() && GetPlayer()->UsesCandidateAI(FIX_DEAL_REPUTATION)) ? GetPlayer()->GetDiplomacyAI()->GetNumDealsBrokenByWar(eOtherPlayer) : 0;
 			if (bPerTurnToUs && GetPlayer()->UsesCandidateAI(FIX_DEAL_EXPLOITS) && pDeal->IsPeaceTreatyTrade(eOtherPlayer))
 			{
 				const int iBound = GC.getGame().getGameSpeedInfo().getPeaceDealDuration();
