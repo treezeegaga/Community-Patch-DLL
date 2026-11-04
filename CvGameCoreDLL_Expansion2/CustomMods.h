@@ -1870,4 +1870,22 @@ protected:
 };
 
 extern CustomMods gCustomMods;
+
+// AI_AB_TEST: a set of candidate flags (bit i = CandidateFixTypes i), 128 bits wide. Defined here, before CvGame.h and
+// CvPlayer.h, which both hold masks. Test as a bool ("if (mask & bit)"); there's no == or != (with the int constructor
+// they'd be ambiguous), so compare by testing (a & b).
+struct ABTestFixMask
+{
+	enum { NUM_WORDS = 2, NUM_BITS = 128 };
+	unsigned long long w[NUM_WORDS];
+	ABTestFixMask() { w[0] = 0; w[1] = 0; }
+	ABTestFixMask(int iZero) { w[0] = (unsigned long long)iZero; w[1] = 0; } // only for 0: "uMask = 0"
+	static ABTestFixMask Bit(int i) { ABTestFixMask m; if (i >= 0 && i < NUM_BITS) m.w[i / 64] = 1ULL << (i % 64); return m; }
+	operator bool() const { return w[0] != 0 || w[1] != 0; }
+	ABTestFixMask operator|(const ABTestFixMask& o) const { ABTestFixMask m; m.w[0] = w[0] | o.w[0]; m.w[1] = w[1] | o.w[1]; return m; }
+	ABTestFixMask operator&(const ABTestFixMask& o) const { ABTestFixMask m; m.w[0] = w[0] & o.w[0]; m.w[1] = w[1] & o.w[1]; return m; }
+	ABTestFixMask operator~() const { ABTestFixMask m; m.w[0] = ~w[0]; m.w[1] = ~w[1]; return m; }
+	ABTestFixMask& operator|=(const ABTestFixMask& o) { w[0] |= o.w[0]; w[1] |= o.w[1]; return *this; }
+	ABTestFixMask& operator&=(const ABTestFixMask& o) { w[0] &= o.w[0]; w[1] &= o.w[1]; return *this; }
+};
 #endif

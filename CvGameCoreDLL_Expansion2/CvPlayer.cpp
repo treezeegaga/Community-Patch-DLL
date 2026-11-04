@@ -33368,13 +33368,15 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeExposure", false},
 	{"SiegeRoll", false},
 };
-// one line per flag, and room in the 64-bit masks
+// one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
-typedef char ABTestFixesFitMask[(NUM_CANDIDATE_FIXES <= 64) ? 1 : -1];
+typedef char ABTestFixesFitMask[(NUM_CANDIDATE_FIXES <= ABTestFixMask::NUM_BITS) ? 1 : -1];
 
 ABTestFixMask CvPlayer::GetABTestFixBit(int iFix)
 {
-	return (iFix >= 0 && iFix < NUM_CANDIDATE_FIXES) ? ((ABTestFixMask)1 << iFix) : 0;
+	if (iFix < 0 || iFix >= NUM_CANDIDATE_FIXES)
+		return ABTestFixMask();
+	return ABTestFixMask::Bit(iFix);
 }
 
 const char* CvPlayer::GetCandidateFixName(int iFix)
@@ -33633,7 +33635,7 @@ bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
 {
 	const ABTestFixMask uBit = GetABTestFixBit((int)eFix);
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
-		return (GetCandidateFixBundle() & uBit) != 0;
+		return (bool)(GetCandidateFixBundle() & uBit);
 
 	const CvGame& kGame = GC.getGame();
 	if (kGame.GetABTestBaseFixes() & uBit)
@@ -33644,7 +33646,7 @@ bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
 		return !isHuman() && kGame.GetABTestMode() == AB_MODE_BULLY && !kGame.IsABTestFlipped() && GetABTestRole() == AB_ROLE_AGGRESSOR;
 	if (kGame.GetABTestScreenedFixes() & uBit)
 		return !isHuman() && IsABTestScreenSlot(GetID(), (int)eFix);
-	return (kGame.GetABTestCandidateFixes() & uBit) != 0 && IsInCandidateGroup();
+	return (kGame.GetABTestCandidateFixes() & uBit) && IsInCandidateGroup();
 }
 
 /// AI_AB_TEST: counts as a warmonger for the c/b split and the warmonger candidate changes (IsABTestWarmongerCiv)

@@ -11357,11 +11357,15 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	// AI_AB_TEST: the test pack's saves only, so the normal pack's save format is unchanged
 	if (MOD_AI_AB_TEST)
 	{
-		visitor(game.m_uiABTestCandidateFixes);
-		visitor(game.m_uiABTestScreenedFixes);
-		visitor(game.m_uiABTestBaseFixes);
-		visitor(game.m_uiABTestRoleFixes);
-		visitor(game.m_uiABTestOthersBaseFixes);
+		// the masks are two 64-bit words each (128 flags)
+		for (int iWord = 0; iWord < ABTestFixMask::NUM_WORDS; iWord++)
+		{
+			visitor(game.m_uiABTestCandidateFixes.w[iWord]);
+			visitor(game.m_uiABTestScreenedFixes.w[iWord]);
+			visitor(game.m_uiABTestBaseFixes.w[iWord]);
+			visitor(game.m_uiABTestRoleFixes.w[iWord]);
+			visitor(game.m_uiABTestOthersBaseFixes.w[iWord]);
+		}
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
 		visitor(game.m_iABTestMode);

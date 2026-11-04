@@ -705,11 +705,11 @@ public:
 	void LogABTestResults(bool bFinal) const;
 	// AI_AB_TEST settings from AIABTest.ini, read when a test game starts and saved with it (bit i = CandidateFixTypes i)
 	void ReadABTestSettings();
-	unsigned long long GetABTestCandidateFixes() const { return m_uiABTestCandidateFixes; }	// ABTestFixMask
-	unsigned long long GetABTestScreenedFixes() const { return m_uiABTestScreenedFixes; }
-	unsigned long long GetABTestBaseFixes() const { return m_uiABTestBaseFixes; }
-	unsigned long long GetABTestRoleFixes() const { return m_uiABTestRoleFixes; }
-	unsigned long long GetABTestOthersBaseFixes() const { return m_uiABTestOthersBaseFixes; }
+	const ABTestFixMask& GetABTestCandidateFixes() const { return m_uiABTestCandidateFixes; }
+	const ABTestFixMask& GetABTestScreenedFixes() const { return m_uiABTestScreenedFixes; }
+	const ABTestFixMask& GetABTestBaseFixes() const { return m_uiABTestBaseFixes; }
+	const ABTestFixMask& GetABTestRoleFixes() const { return m_uiABTestRoleFixes; }
+	const ABTestFixMask& GetABTestOthersBaseFixes() const { return m_uiABTestOthersBaseFixes; }
 	// AI_AB_TEST paired games: the second game of a pair replays the first one's map, civs and city-states with the
 	// groups swapped (Flip = 1 in AIABTest.ini)
 	bool IsABTestFlipped() const { return (m_iABTestFlags & 1) != 0; }
@@ -954,11 +954,11 @@ protected:
 	int m_intGameId;
 
 	// AI_AB_TEST (see ReadABTestSettings); saved only in test games
-	unsigned long long m_uiABTestCandidateFixes;
-	unsigned long long m_uiABTestScreenedFixes;
-	unsigned long long m_uiABTestBaseFixes; // flags every major AI civ runs, both groups (AIABTest.ini Base =)
-	unsigned long long m_uiABTestRoleFixes; // bully test: flags the aggressor runs in the first game of a pair only (RoleFixes =)
-	unsigned long long m_uiABTestOthersBaseFixes; // bully/builders tests: flags every AI civ without a role runs, both games (OthersBase =)
+	ABTestFixMask m_uiABTestCandidateFixes;
+	ABTestFixMask m_uiABTestScreenedFixes;
+	ABTestFixMask m_uiABTestBaseFixes; // flags every major AI civ runs, both groups (AIABTest.ini Base =)
+	ABTestFixMask m_uiABTestRoleFixes; // bully test: flags the aggressor runs in the first game of a pair only (RoleFixes =)
+	ABTestFixMask m_uiABTestOthersBaseFixes; // bully/builders tests: flags every AI civ without a role runs, both games (OthersBase =)
 	int m_iABTestFlags;
 	int m_iABTestStopTurn;
 	int m_iABTestMode;

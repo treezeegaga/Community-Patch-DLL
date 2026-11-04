@@ -140,7 +140,7 @@ enum OpeningBookType
 // AIABTest.ini in My Games, read when a test game starts and saved with it (see CvGame::ReadABTestSettings).
 // To add a flag: append it here, and append one line to kCandidateFixes in CvPlayer.cpp (its name, as the ini file
 // and the results file use it, and whether it's in the bundle: new flags are not, until they pass). A flag's number
-// is its bit in the 64-bit masks (ABTestFixMask), so up to 64 flags.
+// is its bit in the masks (ABTestFixMask, 128 bits since 2026-11-04), so up to 128 flags.
 enum CandidateFixTypes
 {
 	FIX_WIDE_PLANS,			// c1/c2 (2q, 2r): warmongers, aggressive and expansionist culture civs play the wide plan
@@ -228,8 +228,7 @@ enum CandidateFixTypes
 	FIX_SIEGE_ROLL,			// War: a city attack mustering within 5 tiles of its target (already at war) moves with 3+ units, no wait for slots or the bar. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
-// AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
-typedef unsigned long long ABTestFixMask;
+// AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
 
 // AI_AB_TEST game modes (Mode = in AIABTest.ini; lead job 10). AB_MODE_SPLIT is the usual c/b split. In the bully and
 // builders tests a few civs play fixed roles (ABTestRoleTypes) and group c is every other AI civ; the second game of
