@@ -1706,6 +1706,7 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	};
 
 	CvStrategyProfile kProfile;
+	memset(&kProfile, 0, sizeof(kProfile));	// VC9 warns (as an error) that the victory weights may be read uninitialized
 	kProfile.eArchetype = NO_STRATEGY_ARCHETYPE;
 	kProfile.iHomeMeta = 0;
 	for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
