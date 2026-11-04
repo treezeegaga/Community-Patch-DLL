@@ -140,6 +140,7 @@ private:
 	void LogGuessOtherPlayerGrandStrategy(const vector<int>& vGrandStrategyPriorities, PlayerTypes ePlayer);
 	void LogStrategyProfile();
 	void DoStyleCityStateUnitGifts();
+	void DoGreedyDisbandToCap();
 
 	CvPlayer* m_pPlayer;
 	CvAIGrandStrategyXMLEntries* m_pAIGrandStrategies;

@@ -257,6 +257,8 @@ void CvGrandStrategyAI::DoTurn()
 	LogStrategyProfile();
 	// AI_AB_TEST (Personality, the styles and MetaDial): refuse city-state unit gifts at the unit cap
 	DoStyleCityStateUnitGifts();
+	// AI_AB_TEST (Personality, GreedyFewUnits and MetaDial's greedy side): back down to the cap in peace
+	DoGreedyDisbandToCap();
 
 	int iGrandStrategiesLoop = 0;
 	AIGrandStrategyTypes eGrandStrategy;
@@ -2013,6 +2015,73 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 		if (kMinor.GetMinorCivAI()->IsUnitSpawningDisabled(m_pPlayer->GetID()) != bRefuse)
 			kMinor.GetMinorCivAI()->SetUnitSpawningDisabled(m_pPlayer->GetID(), bRefuse);
 	}
+}
+
+/// AI_AB_TEST (Personality, GreedyFewUnits and MetaDial's greedy side): in bully pair 0B58EE0F greedy civs kept the units
+/// they built for a war after it ended (Assyria 11 land units on 5 cities in peace), and settler escorts built 2 over the
+/// cap stayed after their operation. A greedy human disbands what it no longer needs to save upkeep. So in peace, once
+/// 10 turns have passed since its last peace treaty and GreedyAlarm is quiet, a greedy civ above its peace cap lets one
+/// land unit go each turn: the weakest that isn't a scout, isn't in an army, and preferably isn't in a city. Like CP's
+/// own scrapping (CvMilitaryAI::DisbandObsoleteUnits), it gifts the unit to a city-state if one would take it.
+void CvGrandStrategyAI::DoGreedyDisbandToCap()
+{
+	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman() || !m_pPlayer->isAlive())
+		return;
+	const bool bGreedyFlag = m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS);
+	if (!bGreedyFlag && !m_pPlayer->IsMetaDialGreedy())
+		return;
+	if (m_pPlayer->IsAtWarAnyMajor() || CityStrategyAIHelpers::GetGreedyAlarmThreat(*m_pPlayer) != NO_PLAYER)
+		return;
+
+	// not right after a war: it may start again
+	const int iTurn = GC.getGame().getGameTurn();
+	for (int iTeamLoop = 0; iTeamLoop < MAX_MAJOR_CIVS; iTeamLoop++)
+	{
+		const TeamTypes eLoopTeam = (TeamTypes)iTeamLoop;
+		if (eLoopTeam == m_pPlayer->getTeam())
+			continue;
+		const int iPeaceTurn = GET_TEAM(m_pPlayer->getTeam()).GetTurnMadePeaceTreatyWithTeam(eLoopTeam);
+		if (iPeaceTurn >= 0 && iTurn - iPeaceTurn < 10)
+			return;
+	}
+
+	const int iCities = max(1, m_pPlayer->getNumCities());
+	const int iCap = bGreedyFlag ? iCities : iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10;
+	const int iLand = m_pPlayer->getNumMilitaryLandUnits() - m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_EXPLORE, false, true);
+	if (iLand <= iCap)
+		return;
+
+	CvUnit* pBest = NULL;
+	int iBestScore = INT_MAX;
+	int iUnitLoop = 0;
+	for (CvUnit* pUnit = m_pPlayer->firstUnit(&iUnitLoop); pUnit != NULL; pUnit = m_pPlayer->nextUnit(&iUnitLoop))
+	{
+		if (!pUnit->IsCombatUnit() || pUnit->getDomainType() != DOMAIN_LAND || pUnit->isDelayedDeath() || !pUnit->canScrap())
+			continue;
+		if (pUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pUnit->getUnitInfo().GetDefaultUnitAIType() == UNITAI_EXPLORE)
+			continue;
+		if (pUnit->getArmyID() != -1)
+			continue;
+		// the weakest first, units outside cities before garrisons
+		const int iScore = pUnit->GetPower() + ((pUnit->plot() && pUnit->plot()->isCity()) ? 100000 : 0);
+		if (iScore < iBestScore)
+		{
+			iBestScore = iScore;
+			pBest = pUnit;
+		}
+	}
+	if (!pBest)
+		return;
+
+	if (GC.getLogging() && GC.getAILogging())
+		m_pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("GREEDY: %d land units over a cap of %d in peace, letting %s go",
+			iLand, iCap, pBest->getUnitInfo().GetDescription()));
+
+	const PlayerTypes eMinor = m_pPlayer->GetBestGiftTarget(DOMAIN_LAND);
+	if (eMinor != NO_PLAYER)
+		GET_PLAYER(eMinor).AddIncomingUnit(m_pPlayer->GetID(), pBest);
+	else
+		pBest->scrap();
 }
 
 /// AI_AB_TEST (Personality): the profile in StrategyProfile_Log.csv (logged games only), at turns 1, 50, 100, 150...
