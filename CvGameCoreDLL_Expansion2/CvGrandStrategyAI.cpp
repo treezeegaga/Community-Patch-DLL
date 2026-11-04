@@ -1693,6 +1693,8 @@ const char* CvGrandStrategyAI::GetStrategyArchetypeName(StrategyArchetypeTypes e
 		return "Tourism";
 	case STRATEGY_ARCHETYPE_SCIENTIST:
 		return "Scientist";
+	case STRATEGY_ARCHETYPE_RAIDER:
+		return "Raider";
 	default:
 		return "None";
 	}
@@ -1701,9 +1703,9 @@ const char* CvGrandStrategyAI::GetStrategyArchetypeName(StrategyArchetypeTypes e
 CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 {
 	// per archetype: home meta position and its range; victory weights (domination, science, culture, diplomacy)
-	static const int aiHome[NUM_STRATEGY_ARCHETYPES] = { 70, 15, 0, 0, -20, -60, -60 };
-	static const int aiMin[NUM_STRATEGY_ARCHETYPES] = { 40, -10, -20, -30, -50, -90, -90 };
-	static const int aiMax[NUM_STRATEGY_ARCHETYPES] = { 100, 40, 30, 30, 10, -30, -30 };
+	static const int aiHome[NUM_STRATEGY_ARCHETYPES] = { 70, 15, 0, 0, -20, -60, -60, 60 };
+	static const int aiMin[NUM_STRATEGY_ARCHETYPES] = { 40, -10, -20, -30, -50, -90, -90, 40 };
+	static const int aiMax[NUM_STRATEGY_ARCHETYPES] = { 100, 40, 30, 30, 10, -30, -30, 80 };
 	static const int aaiWeights[NUM_STRATEGY_ARCHETYPES][NUM_STRATEGY_VICTORY_WEIGHTS] = {
 		{ 70, 10, 10, 10 },	// Conqueror
 		{ 40, 20, 20, 20 },	// Opportunist
@@ -1712,6 +1714,7 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 		{ 10, 15, 15, 60 },	// Diplomat
 		{ 5, 15, 70, 10 },	// Tourism
 		{ 5, 70, 10, 15 },	// Scientist
+		{ 40, 20, 20, 20 },	// Raider: wars pay for its economy, but it doesn't conquer its way to a win
 	};
 
 	CvStrategyProfile kProfile;
@@ -1754,7 +1757,7 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	// warmonger and a science civ; Venice's "no annexing" makes it a smaller civ), and CP scores the victory pursuit that
 	// breaks the tie from flavours, so a conquest civ could come out a Scientist. Trait fields, not a civ list, so mods
 	// and other civs work too.
-	bool bConquestBonus = pTraits->IsTechFromCityConquer() || pTraits->GetPlunderModifier() > 0 || pTraits->GetRazeSpeedModifier() > 0 ||
+	bool bConquestBonus = pTraits->IsTechFromCityConquer() || pTraits->GetPlunderModifier() > 0 ||
 		pTraits->GetCityStateCombatModifier() > 0 || pTraits->GetProductionBonusModifierConquest() > 0 || pTraits->GetCityConquestGWAM() > 0 ||
 		pTraits->IsKeepConqueredBuildings() || pTraits->GetGoldenAgeFromVictory() > 0;
 	for (int iYield = 0; iYield < NUM_YIELD_TYPES && !bConquestBonus; iYield++)
@@ -1767,6 +1770,24 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 				bConquestBonus = true;
 		}
 	}
+	// raiders (the user, 2026-11-04: "raider is a great flavour archetype"): rewarded for pillaging, plundering or razing,
+	// not for holding cities. Faster razing (the Huns), plundering trade routes without a war, or a free promotion that
+	// rewards pillage or attacking cities (free pillage moves, strength or healing from pillage, plunder from city
+	// attacks: Denmark's Viking promotion). A conquest bonus wins over this: Songhai's plunder gold comes from taking
+	// cities, so it stays a Conqueror (the user).
+	bool bRaider = pTraits->GetRazeSpeedModifier() > 0 || pTraits->IsCanPlunderWithoutWar();
+	for (int iPromotion = 0; iPromotion < GC.getNumPromotionInfos() && !bRaider; iPromotion++)
+	{
+		CvPromotionEntry* pkPromotion = GC.getPromotionInfo((PromotionTypes)iPromotion);
+		if (!pkPromotion || !(pkPromotion->IsFreePillageMoves() || pkPromotion->IsHealOnPillage() ||
+			pkPromotion->GetPillageBonusStrengthPercent() > 0 || pkPromotion->GetCityAttackPlunderModifier() > 0))
+			continue;
+		for (int iCombat = 0; iCombat < GC.getNumUnitCombatClassInfos() && !bRaider; iCombat++)
+			bRaider = pTraits->HasFreePromotionUnitCombat(iPromotion, iCombat);
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && !bRaider; iClass++)
+			bRaider = pTraits->HasFreePromotionUnitClass(iPromotion, iClass);
+	}
+
 	// city-states without a war: diplomatic marriage (Austria), annexing city-states, or a unique unit that can buy one
 	// (Venice's Merchant of Venice)
 	bool bCityStateTakeover = pTraits->IsDiplomaticMarriage() || pTraits->IsAbleToAnnexCityStates();
@@ -1780,6 +1801,8 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 
 	if (bConquestBonus)
 		kProfile.eArchetype = STRATEGY_ARCHETYPE_CONQUEROR;
+	else if (bRaider)
+		kProfile.eArchetype = STRATEGY_ARCHETYPE_RAIDER;
 	else if (bCityStateTakeover)
 		kProfile.eArchetype = STRATEGY_ARCHETYPE_DIPLOMAT;
 	else if (!veTagged.empty())

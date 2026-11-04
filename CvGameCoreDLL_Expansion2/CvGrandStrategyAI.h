@@ -26,6 +26,7 @@ enum StrategyArchetypeTypes
 	STRATEGY_ARCHETYPE_DIPLOMAT,		// city-states, World Congress, organises coalitions
 	STRATEGY_ARCHETYPE_TOURISM,			// wonders, great works, tourism
 	STRATEGY_ARCHETYPE_SCIENTIST,		// tall science
+	STRATEGY_ARCHETYPE_RAIDER,			// wars for loot: pillage, plunder, raze; doesn't need to hold cities (the user, 2026-11-04)
 	NUM_STRATEGY_ARCHETYPES
 };
 enum StrategyVictoryWeightTypes
