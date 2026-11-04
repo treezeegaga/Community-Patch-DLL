@@ -226,6 +226,7 @@ enum CandidateFixTypes
 							// a diplomatic victory with the World Congress in session, an ally supplying a resource we'd lack, and
 							// an active gold or invest quest. In the bundle (the user ruled it obvious)
 	FIX_CS_CONQUEST,		// War: a warmonger in the conquest role goes to war on a weak, nearby, unguarded city-state. Off in the bundle
+	FIX_CONQUEST_TRAIT_TARGETS,// War: a warmonger's conquest bonus shapes its targets (Assyria, Songhai, Mongolia; Austria and Venice skip city-states). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

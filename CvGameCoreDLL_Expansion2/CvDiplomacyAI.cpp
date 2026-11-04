@@ -23586,6 +23586,25 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			iScore = (NUM_STRENGTH_VALUES - (int)eTheirStrength) * 10 + (eProximity == PLAYER_PROXIMITY_NEIGHBORS ? 5 : 0);
 		}
 
+		// AI_AB_TEST (candidate, flag ConquestTraitTargets): the conqueror's own spoils. Assyria takes a tech per city, so it
+		// favours targets that know what it lacks; Songhai triples capture gold, so it favours populous targets
+		if (!bExpansionist && pPlayer->UsesCandidateAI(FIX_CONQUEST_TRAIT_TARGETS))
+		{
+			const CvPlayerTraits* pTraits = pPlayer->GetPlayerTraits();
+			if (pTraits->IsTechFromCityConquer())
+			{
+				int iTechsWeLack = 0;
+				CvTeamTechs* pTheirTechs = GET_TEAM(GET_PLAYER(eLoopPlayer).getTeam()).GetTeamTechs();
+				CvTeamTechs* pOurTechs = GET_TEAM(pPlayer->getTeam()).GetTeamTechs();
+				for (int iTech = 0; iTech < GC.getNumTechInfos(); iTech++)
+					if (pTheirTechs->HasTech((TechTypes)iTech) && !pOurTechs->HasTech((TechTypes)iTech))
+						iTechsWeLack++;
+				iScore += min(30, iTechsWeLack * 5);
+			}
+			if (pTraits->GetPlunderModifier() > 0)
+				iScore += min(30, GET_PLAYER(eLoopPlayer).getTotalPopulation() / 2);
+		}
+
 		if (iScore > iBestScore)
 		{
 			iBestScore = iScore;
@@ -25202,6 +25221,18 @@ void CvDiplomacyAI::SelectBestApproachTowardsMinorCiv(PlayerTypes ePlayer)
 	// MILITARY TARGET VALUE - how tough is this guy to kill?
 	////////////////////////////////////
 
+	// AI_AB_TEST (candidate, flag ConquestTraitTargets): civs that take city-states peacefully (Austria by marriage, Venice
+	// with its merchant; NoAnnexing is Venice's marker in the base game) never conquer them
+	if (GetPlayer()->UsesCandidateAI(FIX_CONQUEST_TRAIT_TARGETS) && !IsAtWar(ePlayer))
+	{
+		const CvPlayerTraits* pTraits = GetPlayer()->GetPlayerTraits();
+		if (pTraits->IsAbleToAnnexCityStates() || pTraits->IsDiplomaticMarriage() || pTraits->IsNoAnnexing())
+		{
+			vApproachScores[CIV_APPROACH_WAR] = 0;
+			bPotentialWarTarget = false;
+		}
+	}
+
 	// Negative approach weights - cap at zero!
 	for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
 	{
@@ -25456,7 +25487,8 @@ void CvDiplomacyAI::SelectBestApproachTowardsMinorCiv(PlayerTypes ePlayer)
 	if (GetPlayer()->UsesCandidateAI(FIX_CS_CONQUEST) && GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) && !GetPlayer()->IsAtWarAnyMajor() &&
 		GetPlayer()->GetProximityToPlayer(ePlayer) >= PLAYER_PROXIMITY_CLOSE &&
 		GET_TEAM(GetTeam()).canDeclareWar(eTeam, eMyPlayer) && GetPlayer()->GetMilitaryAI()->HavePossibleAttackTarget(ePlayer) &&
-		(int)GetMilitaryStrengthComparedToUs(ePlayer) <= (int)STRENGTH_POOR)
+		(int)GetMilitaryStrengthComparedToUs(ePlayer) <= ((GetPlayer()->UsesCandidateAI(FIX_CONQUEST_TRAIT_TARGETS) &&
+			GetPlayer()->GetPlayerTraits()->GetCityStateCombatModifier() > 0) ? (int)STRENGTH_AVERAGE : (int)STRENGTH_POOR))
 	{
 		PlayerTypes eCSAlly = GET_PLAYER(ePlayer).GetMinorCivAI()->GetAlly();
 		bool bOk = eCSAlly == NO_PLAYER || IsAtWar(eCSAlly);
