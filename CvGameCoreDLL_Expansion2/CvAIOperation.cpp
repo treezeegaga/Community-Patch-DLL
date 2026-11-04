@@ -1795,7 +1795,7 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 					//AI_AB_TEST (candidate, flag DeclareWhenGathered): at peace the army can't cross their border, and DeclareAtBorder
 					//then waited to be seen (a test attack sat at the border 7 turns and declared with units 3-7 tiles out). At the
 					//border, declare once the army is together, or once it has stopped moving for 3 turns.
-					if (!bInPlace && m_eType == AI_OPERATION_CITY_ATTACK_LAND_SNEAKY && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_DECLARE_WHEN_GATHERED))
+					if (!bInPlace && m_eType == AI_OPERATION_CITY_ATTACK_LAND && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_DECLARE_WHEN_GATHERED)) //at peace (the block above): a sneak attack
 					{
 						bool bAtBorder = IsNextToEnemyTerritory(pCenterOfMass);
 						for (CvUnit* pUnit = pThisArmy->GetFirstUnit(); pUnit && !bAtBorder; pUnit = pThisArmy->GetNextUnit(pUnit))
