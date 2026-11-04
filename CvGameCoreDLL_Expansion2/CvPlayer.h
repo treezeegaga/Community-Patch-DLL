@@ -205,6 +205,12 @@ enum CandidateFixTypes
 							// unless GreedyAlarm fires. Off in the bundle
 	FIX_GREEDY_NO_UPGRADES,	// Personality (greedy style): no unit upgrades and no gold saved for them unless at war with a major civ. Off in the bundle
 	FIX_GREEDY_BUILDS,		// Personality (greedy style): food, growth and science buildings and world wonders valued x1.5. Off in the bundle
+	FIX_AGGRESSIVE_PLAN,	// Personality (aggressive style): counts as a warmonger for the candidate conquest flags (TimingAttack,
+							// DeclareTiming, SiegeBook, SiegeTechs) whatever its personality. Off in the bundle
+	FIX_AGGRESSIVE_ARMY,	// Personality (aggressive style): at peace at least 3 land units per city (buildings cut until then), up to 4;
+							// attack, siege and ranged units first. Off in the bundle
+	FIX_BALANCED_ARMY,		// Personality (balanced style): at peace at least 2 land units per city, at most 3; defenders first. Off in the bundle
+	FIX_BALANCED_WALLS,		// Personality (balanced style): walls and castles first in border cities and the capital. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

@@ -33352,6 +33352,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"UpgradeSaveCancel", true}, {"AirRebaseHeal", false},
 	{"SiegeArmy", false}, {"ArmyHandoff", false}, {"SiegeBar", false},
 	{"GreedyFewUnits", false}, {"GreedyNoWalls", false}, {"GreedyNoUpgrades", false}, {"GreedyBuilds", false},
+	{"AggressivePlan", false}, {"AggressiveArmy", false}, {"BalancedArmy", false}, {"BalancedWalls", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33716,7 +33717,9 @@ bool CvPlayer::IsCandidateWarmonger(CandidateFixTypes eFix) const
 {
 	if (!UsesCandidateAI(eFix) || !isMajorCiv() || isHuman())
 		return false;
-	return IsABTestWarmongerCiv(*this);
+	// AggressivePlan (Personality, aggressive style): the conquest plan whatever the personality. The c/b split, the
+	// screening deal, the bully roles and the Warmonger column still read the personality (IsABTestWarmonger).
+	return IsABTestWarmongerCiv(*this) || UsesCandidateAI(FIX_AGGRESSIVE_PLAN);
 }
 
 /// AI_AB_TEST (candidate): no room left to settle: no site at all, or one of our settlers has stood for 10+ turns

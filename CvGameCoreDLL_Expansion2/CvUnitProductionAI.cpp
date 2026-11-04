@@ -319,9 +319,26 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			return SR_STRATEGY;
 	}
 
+	// AI_AB_TEST candidates (Personality, the balanced and aggressive styles): land army size per city at peace.
+	// BalancedArmy keeps at least 2 and at most 3 (operations +2), AggressiveArmy at least 3 and up to 4. The upper
+	// number also lifts CP's recommended army size when that is lower, as long as the units stay within supply.
+	const bool bStyleLandUnit = bCombat && !bFree && pkUnitEntry->GetDomainType() == DOMAIN_LAND &&
+		pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && kPlayer.isMajorCiv() && !kPlayer.isHuman();
+	const bool bAggressiveArmy = bStyleLandUnit && kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY);
+	const bool bBalancedArmy = bStyleLandUnit && !bAggressiveArmy && kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY);
+	const int iStyleCities = max(1, kPlayer.getNumCities());
+	if (bBalancedArmy && !bDesperate && !kPlayer.IsAtWarAnyMajor() && iNumLandUnits >= iStyleCities * 3 + (bForOperation ? 2 : 0))
+		return SR_STRATEGY;
+	int iRecommendLandArmySize = kPlayer.GetMilitaryAI()->GetRecommendLandArmySize();
+	if (bAggressiveArmy || bBalancedArmy)
+	{
+		const int iSupplyRoom = kPlayer.GetNumUnitsSupplied() - (kPlayer.GetNumUnitsToSupply() - iNumLandUnits);
+		iRecommendLandArmySize = max(iRecommendLandArmySize, min(iStyleCities * (bAggressiveArmy ? 4 : 2), iSupplyRoom));
+	}
+
 	if (bNeedsSupply)
 	{
-		if (pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && iNumLandUnits >= kPlayer.GetMilitaryAI()->GetRecommendLandArmySize())
+		if (pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && iNumLandUnits >= iRecommendLandArmySize)
 			return SR_UNITSUPPLY;
 		else if (pkUnitEntry->GetDomainType() == DOMAIN_SEA && iNumSeaUnits >= kPlayer.GetMilitaryAI()->GetRecommendNavySize())
 			return SR_UNITSUPPLY;
@@ -1702,6 +1719,19 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		default:
 			break;
 		}
+	}
+
+	// AI_AB_TEST candidates (Personality, styles): below its floor (3 land units per city aggressive, 2 balanced) the
+	// style's own unit types come first: attack, siege and ranged units for the aggressive style, defenders and ranged
+	// units for the balanced one
+	if ((bAggressiveArmy || bBalancedArmy) && iNumLandUnits < iStyleCities * (bAggressiveArmy ? 3 : 2))
+	{
+		const UnitAITypes eStyleAI = pkUnitEntry->GetDefaultUnitAIType();
+		const bool bWanted = bAggressiveArmy ?
+			(eStyleAI == UNITAI_ATTACK || eStyleAI == UNITAI_CITY_BOMBARD || eStyleAI == UNITAI_FAST_ATTACK || eStyleAI == UNITAI_RANGED) :
+			(eStyleAI == UNITAI_DEFENSE || eStyleAI == UNITAI_RANGED || eStyleAI == UNITAI_COUNTER);
+		if (bWanted)
+			iBonus += 300;
 	}
 
 	/////

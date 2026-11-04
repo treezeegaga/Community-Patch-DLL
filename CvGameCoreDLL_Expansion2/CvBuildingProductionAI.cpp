@@ -192,6 +192,15 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			return SR_STRATEGY;
 	}
 
+	// AI_AB_TEST candidate (Personality, BalancedWalls): the balanced style walls its border cities and capital as soon as
+	// it can, the way a careful human does: buildings that add city defence or city HP get +800 there, wonders excepted
+	if (!bAnyWonder && !bFreeBuilding && !bIgnoreSituational && kPlayer.isMajorCiv() && !kPlayer.isHuman() &&
+		kPlayer.UsesCandidateAI(FIX_BALANCED_WALLS) && (m_pCity->isBorderCity() || m_pCity->isCapital()) &&
+		(pkBuildingInfo->GetDefenseModifier() > 0 || pkBuildingInfo->GetExtraCityHitPoints() > 0))
+	{
+		iBonus += 800;
+	}
+
 	if (m_pCity->getPopulation() <= 6 && !m_pCity->isCapital())
 	{
 		if(isWorldWonderClass(kBuildingClassInfo) || isTeamWonderClass(kBuildingClassInfo) || isNationalWonderClass(kBuildingClassInfo) || isLimitedWonderClass(kBuildingClassInfo))
@@ -1359,6 +1368,15 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//building's value by 75% and keeps building units. The new AI uses 3 per city only at war, and at peace
 		//only reacts to a truly tiny army (1 per city).
 		int iTinyArmyUnitsPerCity = (kPlayer.UsesNewAI() && iNumWar == 0) ? 1 : 3;
+		//AI_AB_TEST candidates (Personality, AggressiveArmy and BalancedArmy): the style's army floor at peace, 3 units
+		//per city aggressive (CP's own number) and 2 balanced; buildings wait until the army is there
+		if (iNumWar == 0 && kPlayer.isMajorCiv() && !kPlayer.isHuman())
+		{
+			if (kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
+				iTinyArmyUnitsPerCity = 3;
+			else if (kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
+				iTinyArmyUnitsPerCity = 2;
+		}
 		//AI_AB_TEST candidate (Personality, GreedyFewUnits): a small army is the greedy style's plan, and the unit cap
 		//blocks the units this penalty asks for, so it would only push production into gold and research processes
 		const bool bGreedyFewUnits = kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) &&
