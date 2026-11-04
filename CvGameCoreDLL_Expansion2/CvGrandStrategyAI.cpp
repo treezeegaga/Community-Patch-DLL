@@ -123,7 +123,9 @@ CvAIGrandStrategyXMLEntry* CvAIGrandStrategyXMLEntries::GetEntry(int index)
 //=====================================
 /// Constructor
 CvGrandStrategyAI::CvGrandStrategyAI():
-	m_paiGrandStrategyPriority(NULL)
+	m_paiGrandStrategyPriority(NULL),
+	m_iCachedMetaPosition(0),
+	m_iCachedMetaTurn(-1)
 {
 }
 
@@ -182,6 +184,9 @@ void CvGrandStrategyAI::Reset()
 	m_iFlavorHappiness = 7;
 	m_iFlavorGrowth = 7;
 	m_iFlavorDiplomacy = 7;
+
+	m_iCachedMetaPosition = 0;
+	m_iCachedMetaTurn = -1;
 }
 
 ///
@@ -204,6 +209,8 @@ void CvGrandStrategyAI::Read(FDataStream& kStream)
 	CvStreamLoadVisitor serialVisitor(kStream);
 	CvGrandStrategyAI::Serialize(*this, serialVisitor);
 
+	// AI_AB_TEST (Personality): the meta position is worked out again from the loaded game
+	m_iCachedMetaTurn = -1;
 }
 
 /// Serialization write
@@ -240,6 +247,9 @@ CvAIGrandStrategyXMLEntries* CvGrandStrategyAI::GetAIGrandStrategies()
 void CvGrandStrategyAI::DoTurn()
 {
 	DoGuessOtherPlayersActiveGrandStrategy();
+
+	// AI_AB_TEST (Personality): the strategy profile, logged only
+	LogStrategyProfile();
 
 	int iGrandStrategiesLoop = 0;
 	AIGrandStrategyTypes eGrandStrategy;
@@ -1611,6 +1621,243 @@ int CvGrandStrategyAI::GetPersonalityAndGrandStrategy(FlavorTypes eFlavorType, b
 		return iModdedFlavor;
 	}
 	return m_pPlayer->GetFlavorManager()->GetPersonalityIndividualFlavor(eFlavorType);
+}
+
+//	--------------------------------------------------------------------------------
+// AI_AB_TEST (Personality): the strategy profile (pack repo tools/ab/RESULTS.md, "The strategy profile: spec"). Step 1:
+// worked out and logged, nothing reads it yet. A pure function of game data fixed at game start (traits, leader
+// personality, CP's victory pursuit pick, which is saved with the game), so it needs no saved state of its own.
+
+static int GetStrategyProfileFlavor(CvPlayer* pPlayer, const char* szFlavor)
+{
+	FlavorTypes eFlavor = (FlavorTypes)GC.getInfoTypeForString(szFlavor, true);
+	return (eFlavor == NO_FLAVOR) ? 5 : pPlayer->GetFlavorManager()->GetPersonalityIndividualFlavor(eFlavor);
+}
+
+static StrategyArchetypeTypes GetStrategyArchetypeForPursuit(VictoryPursuitTypes ePursuit)
+{
+	switch (ePursuit)
+	{
+	case VICTORY_PURSUIT_DOMINATION:
+		return STRATEGY_ARCHETYPE_CONQUEROR;
+	case VICTORY_PURSUIT_SCIENCE:
+		return STRATEGY_ARCHETYPE_SCIENTIST;
+	case VICTORY_PURSUIT_CULTURE:
+		return STRATEGY_ARCHETYPE_TOURISM;
+	case VICTORY_PURSUIT_DIPLOMACY:
+		return STRATEGY_ARCHETYPE_DIPLOMAT;
+	default:
+		return NO_STRATEGY_ARCHETYPE;
+	}
+}
+
+static StrategyVictoryWeightTypes GetStrategyVictoryForPursuit(VictoryPursuitTypes ePursuit)
+{
+	switch (ePursuit)
+	{
+	case VICTORY_PURSUIT_SCIENCE:
+		return STRATEGY_VICTORY_SCIENCE;
+	case VICTORY_PURSUIT_CULTURE:
+		return STRATEGY_VICTORY_CULTURE;
+	case VICTORY_PURSUIT_DIPLOMACY:
+		return STRATEGY_VICTORY_DIPLOMACY;
+	default:
+		return STRATEGY_VICTORY_DOMINATION;
+	}
+}
+
+const char* CvGrandStrategyAI::GetStrategyArchetypeName(StrategyArchetypeTypes eArchetype)
+{
+	switch (eArchetype)
+	{
+	case STRATEGY_ARCHETYPE_CONQUEROR:
+		return "Conqueror";
+	case STRATEGY_ARCHETYPE_OPPORTUNIST:
+		return "Opportunist";
+	case STRATEGY_ARCHETYPE_EXPANSIONIST:
+		return "Expansionist";
+	case STRATEGY_ARCHETYPE_ZEALOT:
+		return "Zealot";
+	case STRATEGY_ARCHETYPE_DIPLOMAT:
+		return "Diplomat";
+	case STRATEGY_ARCHETYPE_TOURISM:
+		return "Tourism";
+	case STRATEGY_ARCHETYPE_SCIENTIST:
+		return "Scientist";
+	default:
+		return "None";
+	}
+}
+
+CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
+{
+	// per archetype: home meta position and its range; victory weights (domination, science, culture, diplomacy)
+	static const int aiHome[NUM_STRATEGY_ARCHETYPES] = { 70, 15, 0, 0, -20, -60, -60 };
+	static const int aiMin[NUM_STRATEGY_ARCHETYPES] = { 40, -10, -20, -30, -50, -90, -90 };
+	static const int aiMax[NUM_STRATEGY_ARCHETYPES] = { 100, 40, 30, 30, 10, -30, -30 };
+	static const int aaiWeights[NUM_STRATEGY_ARCHETYPES][NUM_STRATEGY_VICTORY_WEIGHTS] = {
+		{ 70, 10, 10, 10 },	// Conqueror
+		{ 40, 20, 20, 20 },	// Opportunist
+		{ 25, 25, 25, 25 },	// Expansionist
+		{ 15, 15, 50, 20 },	// Zealot
+		{ 10, 15, 15, 60 },	// Diplomat
+		{ 5, 15, 70, 10 },	// Tourism
+		{ 5, 70, 10, 15 },	// Scientist
+	};
+
+	CvStrategyProfile kProfile;
+	kProfile.eArchetype = NO_STRATEGY_ARCHETYPE;
+	kProfile.iHomeMeta = 0;
+	for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
+		kProfile.aiVictoryWeight[i] = 25;
+	kProfile.eRisk = STRATEGY_RISK_MEDIUM;
+	kProfile.eExpansion = STRATEGY_EXPANSION_MEDIUM;
+	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
+		return kProfile;
+
+	CvPlayerTraits* pTraits = m_pPlayer->GetPlayerTraits();
+	CvDiplomacyAI* pDiplo = m_pPlayer->GetDiplomacyAI();
+	const VictoryPursuitTypes ePrimary = pDiplo->GetPrimaryVictoryPursuit();
+	const VictoryPursuitTypes eSecondary = pDiplo->GetSecondaryVictoryPursuit();
+	const int iOffense = GetStrategyProfileFlavor(m_pPlayer, "FLAVOR_OFFENSE");
+	const int iExpansion = GetStrategyProfileFlavor(m_pPlayer, "FLAVOR_EXPANSION");
+	const int iBoldness = pDiplo->GetBoldness();
+
+	// 1. the unique ability (CP's trait tags), in this order; the primary pursuit breaks a tie between two tags
+	vector<StrategyArchetypeTypes> veTagged;
+	if (pTraits->IsWarmonger())
+		veTagged.push_back(STRATEGY_ARCHETYPE_CONQUEROR);
+	if (pTraits->IsReligious())
+		veTagged.push_back(STRATEGY_ARCHETYPE_ZEALOT);
+	if (pTraits->IsTourism())
+		veTagged.push_back(STRATEGY_ARCHETYPE_TOURISM);
+	if (pTraits->IsNerd() || pTraits->IsSmaller())
+		veTagged.push_back(STRATEGY_ARCHETYPE_SCIENTIST);
+	if (pTraits->IsDiplomat())
+		veTagged.push_back(STRATEGY_ARCHETYPE_DIPLOMAT);
+	if (pTraits->IsExpansionist())
+		veTagged.push_back(STRATEGY_ARCHETYPE_EXPANSIONIST);
+	const StrategyArchetypeTypes ePursuitArchetype = GetStrategyArchetypeForPursuit(ePrimary);
+	if (!veTagged.empty())
+	{
+		kProfile.eArchetype = veTagged[0];
+		for (size_t i = 0; i < veTagged.size(); i++)
+		{
+			if (veTagged[i] == ePursuitArchetype)
+				kProfile.eArchetype = veTagged[i];
+		}
+	}
+	// 2. no tag: the primary victory pursuit picked for this game
+	else if (ePrimary == VICTORY_PURSUIT_DOMINATION)
+		kProfile.eArchetype = (iOffense >= 7) ? STRATEGY_ARCHETYPE_CONQUEROR : STRATEGY_ARCHETYPE_OPPORTUNIST;
+	else if (ePursuitArchetype != NO_STRATEGY_ARCHETYPE)
+		kProfile.eArchetype = ePursuitArchetype;
+	else
+		kProfile.eArchetype = (iExpansion >= 7) ? STRATEGY_ARCHETYPE_EXPANSIONIST : STRATEGY_ARCHETYPE_OPPORTUNIST;
+
+	const int eArch = (int)kProfile.eArchetype;
+
+	// 3. home meta position: the archetype's, moved by boldness and offence, kept inside its range
+	kProfile.iHomeMeta = range(aiHome[eArch] + 5 * (iBoldness - 5) + 5 * (iOffense - 5), aiMin[eArch], aiMax[eArch]);
+
+	// victory weights: 40% the archetype's, 40% the primary pursuit, 20% the secondary (or the primary if none)
+	for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
+		kProfile.aiVictoryWeight[i] = aaiWeights[eArch][i] * 40 / 100;
+	int iRest = 100;
+	for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
+		iRest -= kProfile.aiVictoryWeight[i];
+	if (ePrimary != NO_VICTORY_PURSUIT)
+	{
+		const int iSecondaryShare = (eSecondary != NO_VICTORY_PURSUIT) ? iRest / 3 : 0;
+		kProfile.aiVictoryWeight[GetStrategyVictoryForPursuit(ePrimary)] += iRest - iSecondaryShare;
+		if (eSecondary != NO_VICTORY_PURSUIT)
+			kProfile.aiVictoryWeight[GetStrategyVictoryForPursuit(eSecondary)] += iSecondaryShare;
+	}
+	else
+	{
+		// no pursuit: the rest follows the archetype too (rounding goes to its first weight)
+		for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
+			kProfile.aiVictoryWeight[i] += aaiWeights[eArch][i] * 60 / 100;
+		int iSum = 0;
+		for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
+			iSum += kProfile.aiVictoryWeight[i];
+		kProfile.aiVictoryWeight[0] += 100 - iSum;
+	}
+
+	// risk appetite from boldness
+	kProfile.eRisk = (iBoldness >= 7) ? STRATEGY_RISK_HIGH : (iBoldness <= 3) ? STRATEGY_RISK_LOW : STRATEGY_RISK_MEDIUM;
+
+	// expansion style: the archetype's, one step wider or narrower with the expansion flavour (conquest stays)
+	switch (kProfile.eArchetype)
+	{
+	case STRATEGY_ARCHETYPE_CONQUEROR:
+		kProfile.eExpansion = STRATEGY_EXPANSION_CONQUEST;
+		break;
+	case STRATEGY_ARCHETYPE_EXPANSIONIST:
+		kProfile.eExpansion = STRATEGY_EXPANSION_WIDE;
+		break;
+	case STRATEGY_ARCHETYPE_TOURISM:
+	case STRATEGY_ARCHETYPE_SCIENTIST:
+		kProfile.eExpansion = STRATEGY_EXPANSION_TALL;
+		break;
+	default:
+		kProfile.eExpansion = STRATEGY_EXPANSION_MEDIUM;
+		break;
+	}
+	if (kProfile.eExpansion != STRATEGY_EXPANSION_CONQUEST)
+	{
+		if (iExpansion >= 8 && kProfile.eExpansion != STRATEGY_EXPANSION_WIDE)
+			kProfile.eExpansion = (StrategyExpansionTypes)(kProfile.eExpansion + 1);
+		else if (iExpansion <= 3 && kProfile.eExpansion != STRATEGY_EXPANSION_TALL)
+			kProfile.eExpansion = (StrategyExpansionTypes)(kProfile.eExpansion - 1);
+	}
+
+	return kProfile;
+}
+
+/// AI_AB_TEST (Personality, MetaDial): the meta position the dial reads, -100 greedy to +100 aggressive. The home
+/// position for now (MetaAdapt will move it). Worked out once per turn: the profile needs string lookups, and the
+/// dial is read in hot paths (every building and unit choice, every upgrade check).
+int CvGrandStrategyAI::GetMetaPosition() const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iCachedMetaTurn != iTurn)
+	{
+		m_iCachedMetaPosition = GetStrategyProfile().iHomeMeta;
+		m_iCachedMetaTurn = iTurn;
+	}
+	return m_iCachedMetaPosition;
+}
+
+/// AI_AB_TEST (Personality): the profile in StrategyProfile_Log.csv (logged games only), at turns 1, 50, 100, 150...
+void CvGrandStrategyAI::LogStrategyProfile()
+{
+	if (!GC.getLogging() || !GC.getAILogging() || !m_pPlayer || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman())
+		return;
+	const int iTurn = GC.getGame().getElapsedGameTurns();
+	if (iTurn != 1 && (iTurn <= 0 || iTurn % 50 != 0))
+		return;
+
+	static const char* aszRisk[3] = { "low", "medium", "high" };
+	static const char* aszExpansion[4] = { "tall", "medium", "wide", "conquest" };
+	const CvStrategyProfile kProfile = GetStrategyProfile();
+	CvPlayerTraits* pTraits = m_pPlayer->GetPlayerTraits();
+	CvString strTags;
+	strTags.Format("%s%s%s%s%s%s%s", pTraits->IsWarmonger() ? "W" : "", pTraits->IsReligious() ? "R" : "", pTraits->IsTourism() ? "T" : "",
+		pTraits->IsNerd() ? "N" : "", pTraits->IsSmaller() ? "S" : "", pTraits->IsDiplomat() ? "D" : "", pTraits->IsExpansionist() ? "E" : "");
+
+	FILogFile* pLog = LOGFILEMGR.GetLog("StrategyProfile_Log.csv", FILogFile::kDontTimeStamp);
+	if (!pLog)
+		return;
+	CvString strOut;
+	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s",
+		iTurn, m_pPlayer->getCivilizationShortDescription(), m_pPlayer->getLeaderTypeKey(), strTags.c_str(),
+		(int)m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit(), (int)m_pPlayer->GetDiplomacyAI()->GetSecondaryVictoryPursuit(),
+		GetStrategyArchetypeName(kProfile.eArchetype), kProfile.iHomeMeta,
+		kProfile.aiVictoryWeight[STRATEGY_VICTORY_DOMINATION], kProfile.aiVictoryWeight[STRATEGY_VICTORY_SCIENCE],
+		kProfile.aiVictoryWeight[STRATEGY_VICTORY_CULTURE], kProfile.aiVictoryWeight[STRATEGY_VICTORY_DIPLOMACY],
+		aszRisk[kProfile.eRisk], aszExpansion[kProfile.eExpansion]);
+	pLog->Msg(strOut);
 }
 
 /// Returns the Active Grand Strategy for this Player: how am I trying to win right now?

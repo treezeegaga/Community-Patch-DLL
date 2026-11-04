@@ -174,6 +174,39 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	int iBonus = 0;
 
 	const CvBuildingClassInfo& kBuildingClassInfo = pkBuildingInfo->GetBuildingClassInfo();
+
+	// AI_AB_TEST candidate (Personality, GreedyNoWalls): the greedy style builds no walls or castles and no barracks-type
+	// buildings: anything that adds city defence, city HP or unit experience, wonders excepted. GreedyAlarm (a neighbour's
+	// army at the border) lifts it. MetaDial: the same on the greedy side of the dial (meta position -50 or below).
+	const bool bAnyWonder = isWorldWonderClass(kBuildingClassInfo) || isTeamWonderClass(kBuildingClassInfo) ||
+		isNationalWonderClass(kBuildingClassInfo) || isLimitedWonderClass(kBuildingClassInfo);
+	if (!bAnyWonder && !bFreeBuilding && kPlayer.isMajorCiv() && !kPlayer.isHuman() &&
+		(kPlayer.UsesCandidateAI(FIX_GREEDY_NO_WALLS) || kPlayer.IsMetaDialGreedy()))
+	{
+		bool bMilitary = pkBuildingInfo->GetDefenseModifier() > 0 || pkBuildingInfo->GetExtraCityHitPoints() > 0 ||
+			pkBuildingInfo->GetFreeExperience() > 0;
+		for (int iDomain = 0; iDomain < NUM_DOMAIN_TYPES && !bMilitary; iDomain++)
+			bMilitary = pkBuildingInfo->GetDomainFreeExperience(iDomain) > 0;
+		for (int iCombat = 0; iCombat < GC.getNumUnitCombatClassInfos() && !bMilitary; iCombat++)
+			bMilitary = pkBuildingInfo->GetUnitCombatFreeExperience(iCombat) > 0;
+		if (bMilitary && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+			return SR_STRATEGY;
+	}
+
+	// AI_AB_TEST candidate (Personality, BalancedWalls): the balanced style walls its border cities and capital as soon as
+	// it can, the way a careful human does: buildings that add city defence or city HP get +800 there, wonders excepted.
+	// MetaDial: the same from meta position 0 up, rising from nothing at -50 (below that the greedy side builds none)
+	if (!bAnyWonder && !bFreeBuilding && !bIgnoreSituational && kPlayer.isMajorCiv() && !kPlayer.isHuman() &&
+		(kPlayer.UsesCandidateAI(FIX_BALANCED_WALLS) || kPlayer.UsesMetaDial()) &&
+		(m_pCity->isBorderCity() || m_pCity->isCapital()) &&
+		(pkBuildingInfo->GetDefenseModifier() > 0 || pkBuildingInfo->GetExtraCityHitPoints() > 0))
+	{
+		if (kPlayer.UsesCandidateAI(FIX_BALANCED_WALLS))
+			iBonus += 800;
+		else if (kPlayer.UsesMetaDial() && kPlayer.GetMetaDialPosition() > -50)
+			iBonus += 800 * min(50, kPlayer.GetMetaDialPosition() + 50) / 50;
+	}
+
 	if (m_pCity->getPopulation() <= 6 && !m_pCity->isCapital())
 	{
 		if(isWorldWonderClass(kBuildingClassInfo) || isTeamWonderClass(kBuildingClassInfo) || isNationalWonderClass(kBuildingClassInfo) || isLimitedWonderClass(kBuildingClassInfo))
@@ -1341,7 +1374,27 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//building's value by 75% and keeps building units. The new AI uses 3 per city only at war, and at peace
 		//only reacts to a truly tiny army (1 per city).
 		int iTinyArmyUnitsPerCity = (kPlayer.UsesNewAI() && iNumWar == 0) ? 1 : 3;
-		if (kPlayer.getNumMilitaryUnits() <= (kPlayer.getNumCities() * iTinyArmyUnitsPerCity))
+		//AI_AB_TEST candidates (Personality, AggressiveArmy and BalancedArmy): the style's army floor at peace, 3 units
+		//per city aggressive (CP's own number) and 2 balanced; buildings wait until the army is there
+		if (iNumWar == 0 && kPlayer.isMajorCiv() && !kPlayer.isHuman())
+		{
+			if (kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
+				iTinyArmyUnitsPerCity = 3;
+			else if (kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
+				iTinyArmyUnitsPerCity = 2;
+		}
+		//AI_AB_TEST candidate (Personality, MetaDial): the floor from the meta position (1, 2, 3 per city at -100, 0, +100),
+		//in tenths of a unit, when no style flag sets it
+		int iTinyArmyTimes10 = iTinyArmyUnitsPerCity * 10;
+		if (iNumWar == 0 && kPlayer.UsesMetaDial() && !kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_ARMY) && !kPlayer.UsesCandidateAI(FIX_BALANCED_ARMY))
+			iTinyArmyTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(false);
+		//AI_AB_TEST candidate (Personality, GreedyFewUnits): a small army is the greedy style's plan, and the unit cap
+		//blocks the units this penalty asks for, so it would only push production into gold and research processes
+		//(MetaDial: the same on the greedy side of the dial)
+		const bool bGreedyFewUnits = kPlayer.isMajorCiv() && !kPlayer.isHuman() &&
+			(kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) || kPlayer.IsMetaDialGreedy()) &&
+			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER;
+		if (!bGreedyFewUnits && kPlayer.getNumMilitaryUnits() * 10 <= (kPlayer.getNumCities() * iTinyArmyTimes10))
 		{
 			WarPenalty += 75;
 		}
@@ -1410,6 +1463,30 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 	//////
 	if (iBonus < 1)
 		return SR_UNKNOWN;
+
+	// AI_AB_TEST candidate (Personality, GreedyBuilds): the greedy style puts its production into growth, science and
+	// wonders: world wonders and buildings that add food, keep food on growth or add science are worth 50% more.
+	// MetaDial: below meta position 0, worth up to 50% more (+50% at -100)
+	int iGreedyValuePercent = 0;
+	if (!bFreeBuilding && kPlayer.isMajorCiv() && !kPlayer.isHuman())
+	{
+		if (kPlayer.UsesCandidateAI(FIX_GREEDY_BUILDS))
+			iGreedyValuePercent = 50;
+		else if (kPlayer.UsesMetaDial() && kPlayer.GetMetaDialPosition() < 0)
+			iGreedyValuePercent = min(100, -kPlayer.GetMetaDialPosition()) / 2;
+	}
+	if (iGreedyValuePercent > 0)
+	{
+		bool bGreedy = isWorldWonderClass(kBuildingClassInfo) || pkBuildingInfo->GetFoodKept() > 0;
+		const YieldTypes aeYields[2] = { YIELD_FOOD, YIELD_SCIENCE };
+		for (int i = 0; i < 2 && !bGreedy; i++)
+		{
+			bGreedy = pkBuildingInfo->GetYieldChange(aeYields[i]) > 0 || pkBuildingInfo->GetYieldChangePerPop(aeYields[i]) > 0 ||
+				pkBuildingInfo->GetYieldModifier(aeYields[i]) > 0;
+		}
+		if (bGreedy)
+			return max(1, (iValue + iBonus) * (100 + iGreedyValuePercent) / 100);
+	}
 
 	//iValue is the compunded value of the items.
 	return max(1,iValue + iBonus);

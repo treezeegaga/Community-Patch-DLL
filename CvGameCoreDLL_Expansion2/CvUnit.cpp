@@ -14026,6 +14026,14 @@ bool CvUnit::CanUpgradeRightNow(bool bOnlyTestVisible) const
 	if(!isReadyForUpgrade())
 		return false;
 
+	// AI_AB_TEST candidate (Personality, GreedyNoUpgrades): the greedy style spends no gold upgrading units unless it is
+	// at war with a major civ. AI players only; every AI upgrade path (homeland, tactical, armies) asks this first.
+	// MetaDial: the same on the greedy side of the dial (meta position -50 or below).
+	const CvPlayer& kUpgradeOwner = GET_PLAYER(getOwner());
+	if (kUpgradeOwner.isMajorCiv() && !kUpgradeOwner.isHuman() && (kUpgradeOwner.UsesCandidateAI(FIX_GREEDY_NO_UPGRADES) || kUpgradeOwner.IsMetaDialGreedy()) &&
+		!kUpgradeOwner.IsAtWarAnyMajor())
+		return false;
+
 	return CanUpgradeTo(GetUpgradeUnitType(), bOnlyTestVisible);
 }
 

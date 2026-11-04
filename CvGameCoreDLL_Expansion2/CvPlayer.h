@@ -202,6 +202,20 @@ enum CandidateFixTypes
 	FIX_TRADE_OPINION,		// Diplomacy: the trade-partner opinion comes from deals running now in which they supply us (what a war
 							// would cost us), gone when they expire, back when renewed, capped below Favorable. Off in the bundle
 	FIX_SIEGE_ABORT,		// War: an attack still too weak after SiegeArmy's 20 turns is called off, not sent. Off in the bundle
+	FIX_GREEDY_FEW_UNITS,	// Personality (greedy style): at most 1 land combat unit per city at peace, 2 at war with a major civ; no
+							// tiny-army building penalty at peace. Lifted while GreedyAlarm fires. Off in the bundle
+	FIX_GREEDY_NO_WALLS,	// Personality (greedy style): no walls, castles or other defence and unit-XP buildings (wonders excepted),
+							// unless GreedyAlarm fires. Off in the bundle
+	FIX_GREEDY_NO_UPGRADES,	// Personality (greedy style): no unit upgrades and no gold saved for them unless at war with a major civ. Off in the bundle
+	FIX_GREEDY_BUILDS,		// Personality (greedy style): food, growth and science buildings and world wonders valued x1.5. Off in the bundle
+	FIX_AGGRESSIVE_PLAN,	// Personality (aggressive style): counts as a warmonger for the candidate conquest flags (TimingAttack,
+							// DeclareTiming, SiegeBook, SiegeTechs) whatever its personality. Off in the bundle
+	FIX_AGGRESSIVE_ARMY,	// Personality (aggressive style): at peace at least 3 land units per city (buildings cut until then), up to 4;
+							// attack, siege and ranged units first. Off in the bundle
+	FIX_BALANCED_ARMY,		// Personality (balanced style): at peace at least 2 land units per city, at most 3; defenders first. Off in the bundle
+	FIX_BALANCED_WALLS,		// Personality (balanced style): walls and castles first in border cities and the capital. Off in the bundle
+	FIX_META_DIAL,			// Personality: the style settings (army size, walls, upgrades, growth value, conquest plan) follow the strategy
+							// profile's meta position, from greedy (-100) to aggressive (+100). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
@@ -1775,6 +1789,11 @@ public:
 	bool IsBoxedInForSettling() const;
 	bool HasUnstartedBookSettlers() const;
 	bool IsCandidateWarmonger(CandidateFixTypes eFix) const;
+	// AI_AB_TEST (Personality, MetaDial): the style settings from the meta position
+	bool UsesMetaDial() const;
+	int GetMetaDialPosition() const;
+	bool IsMetaDialGreedy() const;
+	int GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;
