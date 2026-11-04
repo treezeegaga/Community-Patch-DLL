@@ -309,8 +309,9 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// AI_AB_TEST candidate (Personality, GreedyFewUnits): the greedy style keeps a garrison and little else, whatever its
 	// opening book: at most 1 land combat unit per city at peace and 2 at war with a major civ (units in production count,
 	// this city's current one doesn't). Operations (settler escorts) may go 2 above the cap. A city under siege may still
-	// build defenders, and GreedyAlarm lifts the cap.
-	if (bCombat && !bFree && !bDesperate && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
+	// get a defender if it has none (bully pair 0B09BFE1: exempting every city under siege let greedy civs at war buy and
+	// build well past the cap), and GreedyAlarm lifts the cap.
+	if (bCombat && !bFree && (!bDesperate || m_pCity->HasGarrison()) && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
 		kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
 	{
 		const int iUnitsPerCity = kPlayer.IsAtWarAnyMajor() ? 2 : 1;
@@ -347,7 +348,9 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	{
 		const int iCeilingTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(true);
 		const int iCapTimes10 = !kPlayer.IsAtWarAnyMajor() ? iCeilingTimes10 : (iDialMeta <= -50 ? 20 : -1);
-		if (iCapTimes10 >= 0 && !bDesperate && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
+		// as for GreedyFewUnits, a city under siege on the greedy side may still get a defender only if it has none
+		const bool bSiegeExempt = bDesperate && (iDialMeta > -50 || !m_pCity->HasGarrison());
+		if (iCapTimes10 >= 0 && !bSiegeExempt && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
 			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
 			return SR_STRATEGY;
 		if (iDialMeta > -50)
