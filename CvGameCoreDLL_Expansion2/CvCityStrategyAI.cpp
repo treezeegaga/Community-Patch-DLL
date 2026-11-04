@@ -4302,7 +4302,9 @@ int CityStrategyAIHelpers::GetBuildingYieldValue(CvCity *pCity, BuildingTypes eB
 
 				// AI_AB_TEST candidate (CultureRivalValue): CP asks the rival whether it is valid to itself, which is always false
 				// (IsPlayerValid rejects one's own team), so no rival multiplier ever applied, in CP or B
-				CvDiplomacyAI* pValidator = kPlayer.UsesCandidateAI(FIX_CULTURE_RIVAL_VALUE) ? kPlayer.GetDiplomacyAI() : GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
+				// Majors only: a city-state runs the bundle's flags too, and for it the rival's influence lookup below
+				// (GetInfluenceOnTimes100 on a city-state) halts the game (C8, 2026-11-03)
+				CvDiplomacyAI* pValidator = (kPlayer.isMajorCiv() && kPlayer.UsesCandidateAI(FIX_CULTURE_RIVAL_VALUE)) ? kPlayer.GetDiplomacyAI() : GET_PLAYER(eLoopPlayer).GetDiplomacyAI();
 				if (eLoopPlayer != NO_PLAYER && eLoopPlayer != kPlayer.GetID() && pValidator->IsPlayerValid(eLoopPlayer) && !GET_PLAYER(eLoopPlayer).isMinorCiv())
 				{
 					int iRivalMultiplier = 1;
