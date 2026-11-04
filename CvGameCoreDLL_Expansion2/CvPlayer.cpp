@@ -2964,6 +2964,9 @@ CvCity* CvPlayer::acquireCity(CvCity* pCity, bool bConquest, bool bGift, bool bO
 		GC.getGame().ChangeABTestCount(GetID(), AB_COUNT_CITIES_CAPTURED);
 		GC.getGame().ChangeABTestCount(eOldOwner, AB_COUNT_CITIES_LOST);
 	}
+	// AI_AB_TEST: city-state cities a major civ conquered (not counted above)
+	if (MOD_AI_AB_TEST && bConquest && isMajorCiv() && GET_PLAYER(eOldOwner).isMinorCiv())
+		GC.getGame().ChangeABTestCount(GetID(), AB_COUNT_CITY_STATES_CAPTURED);
 
 	// make sure the player is alive
 	setAlive(true);

@@ -264,6 +264,7 @@ enum ABTestCountTypes
 	AB_COUNT_SANCTIONS_PROPOSED_VS_AGGRESSOR,	// ... of them against the aggressor
 	AB_COUNT_SANCTIONS_PASSED,				// sanctions it proposed that passed
 	AB_COUNT_SANCTIONS_PASSED_VS_AGGRESSOR,	// ... of them against the aggressor
+	AB_COUNT_CITY_STATES_CAPTURED,	// city-state cities it conquered (the user: a true bully conquers city-states too)
 	NUM_AB_COUNTS
 };
 
