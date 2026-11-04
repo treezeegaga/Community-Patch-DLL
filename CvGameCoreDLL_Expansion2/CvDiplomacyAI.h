@@ -1400,6 +1400,7 @@ public:
 	bool IsPhonyWar(PlayerTypes ePlayer, bool bIgnoreCurrentApproach = false) const;
 	bool IsStaleWar(PlayerTypes ePlayer, int iWarDuration) const; // AI_AB_TEST FIX_STALE_WAR_PEACE
 	bool IsGoldGiftAllowed(PlayerTypes eMinor); // AI_AB_TEST FIX_GIFTS_NEED_PATRONAGE
+	bool IsGreedyWideDealSeeker() const; // AI_AB_TEST FIX_GREEDY_WIDE_DEALS
 	bool IsWantsToConquer(PlayerTypes ePlayer) const;
 	bool IsPotentialMilitaryTargetOrThreat(PlayerTypes ePlayer, bool bFromApproachSelection) const;
 

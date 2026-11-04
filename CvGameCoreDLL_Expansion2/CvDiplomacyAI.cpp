@@ -22862,7 +22862,11 @@ void CvDiplomacyAI::DoUpdatePlanningExchanges()
 	{
 		for (std::vector<PlayerTypes>::iterator it = vValidPlayers.begin(); it != vValidPlayers.end(); ++it)
 		{
-			if (IsGoodChoiceForResearchAgreement(*it))
+			// FIX_GREEDY_WIDE_DEALS: out of room, a greedy wide civ wants RAs with anyone it's at peace with and doesn't
+			// distrust (the deal AI still checks it can afford one)
+			const bool bSeekRA = IsGreedyWideDealSeeker() && GET_PLAYER(*it).isMajorCiv() && !IsAtWar(*it) && !IsUntrustworthy(*it) &&
+				GetCivApproach(*it) >= CIV_APPROACH_NEUTRAL && !GetPlayer()->IsAITeammateOfHuman();
+			if (IsGoodChoiceForResearchAgreement(*it) || bSeekRA)
 			{
 				SetWantsResearchAgreementWithPlayer(*it, true);
 			}
@@ -31279,7 +31283,7 @@ void CvDiplomacyAI::DoResearchAgreementOffer(PlayerTypes ePlayer, DiploStatement
 	if (!GET_PLAYER(ePlayer).isHuman(ISHUMAN_AI_DIPLOMACY) && !GET_PLAYER(ePlayer).GetDiplomacyAI()->IsWantsResearchAgreementWithPlayer(GetID()))
 		return;
 
-	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER) >= 20)
+	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER) >= (IsGreedyWideDealSeeker() ? 10 : 20))
 	{
 		if (GetPlayer()->GetDealAI()->IsMakeOfferForResearchAgreement(ePlayer, /*pDeal can be modified in this function*/ pDeal))
 			eStatement = DIPLO_STATEMENT_RESEARCH_AGREEMENT_OFFER;
@@ -31311,8 +31315,9 @@ void CvDiplomacyAI::DoOpenBordersExchange(PlayerTypes ePlayer, DiploStatementTyp
 	if (!GET_PLAYER(ePlayer).isHuman(ISHUMAN_AI_DIPLOMACY) && !GET_PLAYER(ePlayer).GetDiplomacyAI()->IsOpenBordersExchangeAcceptable(GetID()))
 		return;
 
-	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_EXCHANGE) >= 25 &&
-		GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_OFFER) >= 25)
+	const int iOBTurns = IsGreedyWideDealSeeker() ? 12 : 25; // FIX_GREEDY_WIDE_DEALS: twice as often
+	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_EXCHANGE) >= iOBTurns &&
+		GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_OFFER) >= iOBTurns)
 	{			
 		if (GetPlayer()->GetDealAI()->IsMakeOfferForOpenBordersExchange(ePlayer, /*pDeal can be modified in this function*/ pDeal))
 			eStatement = DIPLO_STATEMENT_OPEN_BORDERS_EXCHANGE;
@@ -31347,8 +31352,9 @@ void CvDiplomacyAI::DoOpenBordersOffer(PlayerTypes ePlayer, DiploStatementTypes&
 	if (!GET_PLAYER(ePlayer).isHuman(ISHUMAN_AI_DIPLOMACY) && !GET_PLAYER(ePlayer).GetDiplomacyAI()->IsWillingToGiveOpenBordersToPlayer(GetID()))
 		return;
 
-	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_OFFER) >= 25 &&
-		GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_EXCHANGE) >= 25)
+	const int iOBTurns = IsGreedyWideDealSeeker() ? 12 : 25; // FIX_GREEDY_WIDE_DEALS: twice as often
+	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_OFFER) >= iOBTurns &&
+		GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_OPEN_BORDERS_EXCHANGE) >= iOBTurns)
 	{
 		if (GetPlayer()->GetDealAI()->IsMakeOfferForOpenBorders(ePlayer, /*pDeal can be modified in this function*/ pDeal))
 			eStatement = DIPLO_STATEMENT_OPEN_BORDERS_OFFER;
@@ -31369,7 +31375,7 @@ void CvDiplomacyAI::DoLuxuryTrade(PlayerTypes ePlayer, DiploStatementTypes& eSta
 	if (MOD_DIPLOAI_SHUT_UP_TRADE_OFFERS && GET_PLAYER(ePlayer).isHuman(ISHUMAN_AI_DIPLOMACY))
 		return;
 
-	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_LUXURY_TRADE) >= 20)
+	if (GetNumTurnsSinceStatementSent(ePlayer, DIPLO_STATEMENT_LUXURY_TRADE) >= (IsGreedyWideDealSeeker() ? 10 : 20))
 	{
 		if (GetPlayer()->GetDealAI()->IsMakeOfferForLuxuryResource(ePlayer, /*pDeal can be modified in this function*/ pDeal))
 			eStatement = DIPLO_STATEMENT_LUXURY_TRADE;
@@ -32513,6 +32519,11 @@ bool CvDiplomacyAI::IsWantsOpenBordersWithPlayer(PlayerTypes ePlayer)
 		return false;
 	}
 
+	// FIX_GREEDY_WIDE_DEALS: out of room, a greedy wide civ wants open borders (trade routes, tourism, goodwill) with any
+	// major civ it's at least neutral toward
+	if (IsGreedyWideDealSeeker() && GET_PLAYER(ePlayer).isMajorCiv() && GetCivApproach(ePlayer) >= CIV_APPROACH_NEUTRAL)
+		return true;
+
 	if (!MOD_BALANCE_FLIPPED_OPEN_BORDERS_TOURISM)
 	{
 		// If going for culture win we always want open borders with civs we need influence on
@@ -32742,6 +32753,14 @@ bool CvDiplomacyAI::IsOpenBordersExchangeAcceptable(PlayerTypes ePlayer)
 /// - the city-state's "give gold" or "invest" quest is active for us;
 /// - it has a resource we lack (we'd get it as its ally), or it's our ally and supplies a luxury or strategic resource
 ///   we don't produce ourselves (we'd lose it).
+/// AI_AB_TEST FIX_GREEDY_WIDE_DEALS (Personality's request, the user's "greedy wide" design): a greedy civ of the wide
+/// kind expands as fast as happiness allows; once it's out of room it grows vertically and seeks trade deals.
+bool CvDiplomacyAI::IsGreedyWideDealSeeker() const
+{
+	return GetPlayer()->isMajorCiv() && GetPlayer()->UsesCandidateAI(FIX_GREEDY_WIDE_DEALS) && GetPlayer()->IsGreedyWide() &&
+		GetPlayer()->GetGrandStrategyAI()->IsGreedyWideOutOfRoom();
+}
+
 bool CvDiplomacyAI::IsGoldGiftAllowed(PlayerTypes eMinor)
 {
 	if (!GetPlayer()->UsesCandidateAI(FIX_GIFTS_NEED_PATRONAGE) || !GetPlayer()->isMajorCiv())

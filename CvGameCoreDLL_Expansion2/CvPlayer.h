@@ -246,6 +246,8 @@ enum CandidateFixTypes
 							// tech and policies (culture buildings valued x1.5). Off in the bundle
 	FIX_WONDERS_FOR_VICTORY,	// Economy (the user's design): a world wonder only if it suits the civ's target victory, or helps any. Off in the bundle
 	FIX_LEAN_BUILDERS,		// Economy (the user's call): workers at most 2 per 3 cities; work boats only for this city's own sea tiles, one in training at a time. Off in the bundle
+	FIX_GREEDY_WIDE_DEALS,	// Diplomacy (Personality's request): a greedy wide civ out of room seeks trade deals: luxury, open
+							// borders and research agreement offers twice as often, and it wants open borders and RAs widely. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
