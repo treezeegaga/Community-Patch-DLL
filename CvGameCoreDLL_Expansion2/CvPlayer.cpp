@@ -33328,9 +33328,9 @@ struct CandidateFixInfo
 	bool bInBundle;
 };
 static const CandidateFixInfo kCandidateFixes[] = {
-	{"WidePlans", false}, {"BoxedIn", false}, {"LongWide", false}, {"BoxedInWar", false}, {"TimingAttack", false},
+	{"WidePlans", false}, {"BoxedIn", false}, {"BoxedInWar", false}, {"TimingAttack", false},
 	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false}, {"GrowthTech", false}, {"AqueductValue", false},
-	{"GreedyArmyCap", false}, {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false}, {"ClosedBorders", false},
+	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false}, {"ClosedBorders", false},
 	{"SettlersFirst", false}, {"SettlerOverlap", false},
 	{"DiploPolicyValue", true},
 	{"GreedyAlarm", false},
@@ -33350,7 +33350,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"Sanctions", false}, {"CoalitionPact", false}, {"DealReputation", false},
 	{"SiegeStay", false}, {"SiegePosture", false}, {"DeclareAtBorder", true},
 	{"UpgradeSaveCancel", true}, {"AirRebaseHeal", false},
-	{"SiegeArmy", false}, {"ArmyHandoff", false}, {"SiegeBar", false},
+	{"SiegeArmy", false}, {"ArmyHandoff", false},
 	{"TradeOpinion", false},
 	{"SiegeAbort", false},
 	{"GreedyFewUnits", false}, {"GreedyNoWalls", false}, {"GreedyNoUpgrades", false}, {"GreedyBuilds", false},
@@ -33790,7 +33790,7 @@ bool CvPlayer::IsOpeningBookActive() const
 	// Turn limits are for Standard speed
 	// Candidate: wide civs keep settling longer. In test games they led CP by a city at turn 60 on Quick, then expanded
 	// no faster than CP once the book ended (turn 67), so the lead never grew.
-	int iWideLimit = UsesCandidateAI(FIX_LONG_WIDE) ? 130 : 100;
+	int iWideLimit = false /*retired flag LongWide*/ ? 130 : 100;
 	// c7: a candidate tall civ's book runs on through the National College, aqueduct and university
 	int iTallLimit = UsesCandidateAI(FIX_GREEDY_BOOK) ? 130 : 80;
 	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : iTallLimit;
@@ -33909,7 +33909,7 @@ static const OpeningBookStep* GetOpeningBookCapitalSteps(const CvPlayer& kPlayer
 	}
 	if (eBook == OPENING_BOOK_WIDE)
 	{
-		if (kPlayer.UsesCandidateAI(FIX_LONG_WIDE))
+		if (false /*retired flag LongWide*/)
 		{
 			if (bSF)
 				AB_BOOK_STEPS(kOpeningWideCapitalLongSF)
@@ -34015,7 +34015,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		iNumSteps = bCapital ? (int)(sizeof(kOpeningTallCapital) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCity) / sizeof(OpeningBookStep));
 		break;
 	case OPENING_BOOK_WIDE:
-		if (bCapital && UsesCandidateAI(FIX_LONG_WIDE))
+		if (bCapital && false /*retired flag LongWide*/)
 		{
 			bool bSF = UsesCandidateAI(FIX_SETTLERS_FIRST);
 			pSteps = bSF ? kOpeningWideCapitalLongSF : kOpeningWideCapitalLong;

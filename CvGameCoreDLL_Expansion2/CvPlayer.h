@@ -145,7 +145,6 @@ enum CandidateFixTypes
 {
 	FIX_WIDE_PLANS,			// c1/c2 (2q, 2r): warmongers, aggressive and expansionist culture civs play the wide plan
 	FIX_BOXED_IN,			// c1 (2u): a settler idle 10+ turns means no land is left
-	FIX_LONG_WIDE,			// c1 (2s): the wide opening settles up to 8 cities, to turn 130 (Standard). Off in the bundle
 	FIX_BOXED_IN_WAR,		// c3: a boxed-in wide civ attacks the neighbour blocking it
 	FIX_TIMING_ATTACK,		// c3/c3b: a warmonger attacks a weak close neighbour (committed target, one front)
 	FIX_SIEGE_TECHS,		// c4: warmongers research Pottery, The Wheel, Mathematics, Bronze Working, Archery, Writing
@@ -154,7 +153,6 @@ enum CandidateFixTypes
 							// Standard); off: from turn 45 Standard, as in c3
 	FIX_GROWTH_TECH,		// c5/c5b: tall civs head for Engineering once the capital reaches size 6
 	FIX_AQUEDUCT_VALUE,		// c5/c5b: tall civs value the aqueduct's kept food twice
-	FIX_GREEDY_ARMY_CAP,	// c6: tall civs keep cities + 1 land units outside war and defence emergencies. Off in the bundle
 	FIX_GREEDY_BOOK,		// c7: the tall capital book goes on to the aqueduct and university, to turn 130 (Standard)
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
@@ -198,7 +196,6 @@ enum CandidateFixTypes
 	FIX_AIR_REBASE_HEAL,	// War (bug H2): healing aircraft stay in the quietest base. Off in the bundle
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
-	FIX_SIEGE_BAR,			// War: SiegeArmy waits for healing + a third of the city's HP a turn (not a fifth). Off in the bundle
 	FIX_TRADE_OPINION,		// Diplomacy: the trade-partner opinion comes from deals running now in which they supply us (what a war
 							// would cost us), gone when they expire, back when renewed, capped below Favorable. Off in the bundle
 	FIX_SIEGE_ABORT,		// War: an attack still too weak after SiegeArmy's 20 turns is called off, not sent. Off in the bundle

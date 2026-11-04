@@ -474,7 +474,7 @@ bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog, bool bIgn
 
 	//AI_AB_TEST (candidate, flag SiegeBar): a third of the city's HP instead of a fifth. In a test pair the fifth was met at
 	//the muster point, but at the city the siege peaked at 92 of 200 a turn and the city held
-	const int iHPDivisor = GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_BAR) ? 3 : 5;
+	const int iHPDivisor = false /*retired flag SiegeBar*/ ? 3 : 5;
 	int iNeeded = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) + pCity->GetMaxHitPoints() / iHPDivisor;
 	int iExpected = GetArmyExpectedCityDamage(pArmy);
 	if (iExpected >= iNeeded)
