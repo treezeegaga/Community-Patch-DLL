@@ -200,6 +200,30 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			return SR_STRATEGY;
 	}
 
+	// AI_AB_TEST candidate (Personality, AggressiveWalls): the aggressive style spends upkeep on walls and castles only where
+	// they're needed (the lead, 2026-11-04: a bully had walls in 7 of 7 cities; interior walls are upkeep spent on nothing).
+	// Only in a city under siege, or a border city near a city of a major civ we're at war with, or near a neighbour whose
+	// army we can see at our border (CP's military posture toward us MEDIUM or worse, the GreedyAlarm signal).
+	if (!bAnyWonder && !bFreeBuilding && kPlayer.isMajorCiv() && !kPlayer.isHuman() && kPlayer.UsesCandidateAI(FIX_AGGRESSIVE_WALLS) &&
+		(pkBuildingInfo->GetDefenseModifier() > 0 || pkBuildingInfo->GetExtraCityHitPoints() > 0))
+	{
+		bool bThreatened = m_pCity->isUnderSiege();
+		for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS && !bThreatened; iPlayerLoop++)
+		{
+			const PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+			const CvPlayer& kLoop = GET_PLAYER(eLoopPlayer);
+			if (eLoopPlayer == kPlayer.GetID() || !kLoop.isAlive() || kLoop.getTeam() == kPlayer.getTeam() || kLoop.getNumCities() <= 0)
+				continue;
+			if (!m_pCity->plot()->IsCloseToCity(eLoopPlayer))
+				continue;
+			if (GET_TEAM(kPlayer.getTeam()).isAtWar(kLoop.getTeam()) ||
+				kPlayer.GetDiplomacyAI()->GetMilitaryAggressivePosture(eLoopPlayer) >= AGGRESSIVE_POSTURE_MEDIUM)
+				bThreatened = true;
+		}
+		if (!bThreatened)
+			return SR_STRATEGY;
+	}
+
 	// AI_AB_TEST candidate (Personality, BalancedWalls): the balanced style walls its border cities and capital as soon as
 	// it can, the way a careful human does: buildings that add city defence or city HP get +800 there, wonders excepted.
 	// MetaDial: the same from meta position 0 up, rising from nothing at -50 (below that the greedy side builds none)

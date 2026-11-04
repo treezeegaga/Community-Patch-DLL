@@ -230,6 +230,8 @@ enum CandidateFixTypes
 	FIX_SIEGE_CONCENTRATE,	// War: SiegeRoll's wave moves only when it plus our units at the siege fill the formation's required slots. Off in the bundle
 	FIX_SIEGE_KEEP,			// War: at war with a major, units fresh from an attack or in an enemy city's zone don't go after barbarian camps. Off in the bundle
 	FIX_TIMING_BUILDUP,		// War (the user's design): a warmonger keeps garrisons at peace, builds up for 15 turns once it has a target, then attacks. Off in the bundle
+	FIX_AGGRESSIVE_WALLS,	// Personality (aggressive style): walls and castles only in threatened border cities (under siege, near an enemy's
+							// city at war, or near a neighbour with a visible army at our border). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
