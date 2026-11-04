@@ -33370,6 +33370,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"DeclareWhenGathered", false}, {"SiegeConcentrate", false}, {"SiegeKeep", false},
 	{"TimingBuildup", false},
 	{"AggressiveWalls", false},
+	{"GreedyAlarmScale", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33778,6 +33779,42 @@ bool CvPlayer::IsGreedyUpgradeBlocked() const
 	if (bDialGreedy || UsesCandidateAI(FIX_GREEDY_WAR_ARMY))
 		return GetGrandStrategyAI()->GetWarDefenceLandUnitCap() == 0;
 	return false;
+}
+
+/// AI_AB_TEST (Personality, GreedyAlarmScale; the user's flag audit, 2026-11-04): GreedyAlarm's reaction depends on how
+/// greedy the civ is. 0 to 100: 100 with the greedy style flags (GreedyFewUnits or GreedyNoWalls); with MetaDial, minus
+/// the meta position on the greedy half (M = -100 gives 100, M >= 0 gives 0); otherwise 0, GreedyAlarm unchanged.
+int CvPlayer::GetGreedyAlarmGreed() const
+{
+	if (!isMajorCiv() || isHuman() || !UsesCandidateAI(FIX_GREEDY_ALARM_SCALE))
+		return 0;
+	if (UsesCandidateAI(FIX_GREEDY_FEW_UNITS) || UsesCandidateAI(FIX_GREEDY_NO_WALLS))
+		return 100;
+	if (UsesMetaDial())
+		return min(100, max(0, -GetMetaDialPosition()));
+	return 0;
+}
+
+/// AI_AB_TEST (GreedyAlarm, GreedyAlarmScale): may an alarmed civ build past its army cap? GreedyAlarm removes the cap;
+/// GreedyAlarmScale lifts it by 1 + cities x (100 - greed) / 100 land units: one over the peace garrison for the
+/// greedy style ("one extra archer", GreedyAlarm's ranged bonus picks the type), more the less greedy the civ is.
+bool CvPlayer::IsGreedyAlarmLiftingCap(int iNumLandUnits, int iCap) const
+{
+	if (CityStrategyAIHelpers::GetGreedyAlarmThreat(*this) == NO_PLAYER)
+		return false;
+	const int iGreed = GetGreedyAlarmGreed();
+	if (iGreed <= 0)
+		return true;
+	return iNumLandUnits < iCap + 1 + max(1, getNumCities()) * (100 - iGreed) / 100;
+}
+
+/// AI_AB_TEST (GreedyAlarm, GreedyAlarmScale): how much of GreedyAlarm's wall reaction an alarmed civ keeps, in percent.
+/// 100 without GreedyAlarmScale or greed; the greediest (75 and up) build walls only once war is declared (0); in
+/// between 100 - greed.
+int CvPlayer::GetGreedyAlarmWallPercent() const
+{
+	const int iGreed = GetGreedyAlarmGreed();
+	return (iGreed >= 75) ? 0 : 100 - iGreed;
 }
 
 /// AI_AB_TEST (Personality): an aggressive player doing a timing attack keeps a small army most of the game, to save

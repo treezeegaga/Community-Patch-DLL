@@ -5601,7 +5601,9 @@ PlayerTypes CityStrategyAIHelpers::GetGreedyAlarmThreat(const CvPlayer& kPlayer)
 {
 	if (!kPlayer.isMajorCiv() || kPlayer.isHuman() || !kPlayer.UsesCandidateAI(FIX_GREEDY_ALARM))
 		return NO_PLAYER;
-	if (kPlayer.GetOpeningBook() != OPENING_BOOK_TALL || kPlayer.IsAtWarAnyMajor())
+	// GreedyAlarmScale (Personality): a greedy civ (the greedy style, MetaDial's greedy half) keeps a small army on any
+	// opening book, so it watches the border on any book
+	if ((kPlayer.GetOpeningBook() != OPENING_BOOK_TALL && kPlayer.GetGreedyAlarmGreed() <= 0) || kPlayer.IsAtWarAnyMajor())
 		return NO_PLAYER;
 
 	PlayerTypes eWorst = NO_PLAYER;

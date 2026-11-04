@@ -326,7 +326,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		const int iBaseCap = bGreedyWarDefence ? max(iCities, kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap()) :
 			iCities * (kPlayer.IsAtWarAnyMajor() ? 2 : 1);
 		const int iCap = iBaseCap + (bForOperation ? 2 : 0);
-		if (iNumLandUnits >= iCap && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+		if (iNumLandUnits >= iCap && !kPlayer.IsGreedyAlarmLiftingCap(iNumLandUnits, iCap))	// GreedyAlarmScale: lifted by some
 			return SR_STRATEGY;
 	}
 
@@ -396,7 +396,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			// a city under siege on the greedy side gets a defender past the cap only if it has none
 			const bool bSiegeExempt = bDesperate && (!bDialWarDefence || !m_pCity->HasGarrison());
 			if (iCapTimes10 >= 0 && !bSiegeExempt && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
-				CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+				!kPlayer.IsGreedyAlarmLiftingCap(iNumLandUnits, (iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) + 9) / 10))
 				return SR_STRATEGY;
 			if (iDialMeta > -50)
 			{

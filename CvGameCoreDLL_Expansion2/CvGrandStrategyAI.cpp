@@ -2033,7 +2033,7 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 /// - AggressiveArmy: cities + 1 until the build-up window (CvPlayer::IsInWarBuildup), none inside it;
 /// - MetaDial (when no style army flag is on): the peace ceiling up to meta position 0 (above it, the aggressive side
 ///   keeps its gifts); at war on the greedy side (-50 or below) the larger of that and the war defence cap, none above.
-/// GreedyAlarm (a neighbour's army near our cities) lifts the cap. Unit gifts are the only thing the switch stops
+/// GreedyAlarm (a neighbour's army near our cities) lifts the cap (GreedyAlarmScale: by a few units). Unit gifts are the only thing the switch stops
 /// (CvMinorCivAI::DoSpawnUnit, IsUnitSpawningAllowed).
 void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 {
@@ -2065,10 +2065,10 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 		return;	// no style: the switch stays as it is (off)
 
 	bool bRefuse = false;
-	if (iCap >= 0 && CityStrategyAIHelpers::GetGreedyAlarmThreat(*m_pPlayer) == NO_PLAYER)
+	if (iCap >= 0)
 	{
 		const int iLand = m_pPlayer->getNumMilitaryLandUnits() - m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_EXPLORE, false, true);
-		bRefuse = iLand >= iCap;
+		bRefuse = iLand >= iCap && !m_pPlayer->IsGreedyAlarmLiftingCap(iLand, iCap);	// GreedyAlarmScale: lifted by some
 	}
 
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)

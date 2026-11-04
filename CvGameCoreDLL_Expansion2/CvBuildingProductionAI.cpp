@@ -196,7 +196,12 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		const bool bThreatWalls = bWallsOnly && kPlayer.IsAtWarAnyMajor() &&
 			(kPlayer.IsMetaDialGreedy() || kPlayer.UsesCandidateAI(FIX_GREEDY_WAR_ARMY)) &&
 			(m_pCity->isBorderCity() || m_pCity->isUnderSiege()) && kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap() > 0;
-		if (bMilitary && !bThreatWalls && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+		// GreedyAlarmScale: with greed, the alarm lifts the ban for walls and castles only, and not at all for the
+		// greediest (walls only once war is declared)
+		bool bAlarmLifts = CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) != NO_PLAYER;
+		if (bAlarmLifts && kPlayer.GetGreedyAlarmGreed() > 0)
+			bAlarmLifts = bWallsOnly && kPlayer.GetGreedyAlarmWallPercent() > 0;
+		if (bMilitary && !bThreatWalls && !bAlarmLifts)
 			return SR_STRATEGY;
 	}
 
@@ -854,8 +859,9 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		iDefenseMod += 150;
 
 	// AI_AB_TEST candidate (GreedyAlarm): a neighbour's army is at the border; wall up as if at war
+	// (GreedyAlarmScale: scaled by how greedy the civ is, none for the greediest)
 	if (!bIgnoreSituational && CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) != NO_PLAYER)
-		iDefenseMod += m_pCity->isBorderCity() ? 1000 : 300;
+		iDefenseMod += (m_pCity->isBorderCity() ? 1000 : 300) * kPlayer.GetGreedyAlarmWallPercent() / 100;
 
 	bool bDanger = !bIgnoreSituational && m_pCity->isUnderSiege();
 	if (bDanger)

@@ -232,6 +232,8 @@ enum CandidateFixTypes
 	FIX_TIMING_BUILDUP,		// War (the user's design): a warmonger keeps garrisons at peace, builds up for 15 turns once it has a target, then attacks. Off in the bundle
 	FIX_AGGRESSIVE_WALLS,	// Personality (aggressive style): walls and castles only in threatened border cities (under siege, near an enemy's
 							// city at war, or near a neighbour with a visible army at our border). Off in the bundle
+	FIX_GREEDY_ALARM_SCALE,	// Personality (the user's flag audit): GreedyAlarm's reaction scales with how greedy the civ is (the greedy style:
+							// one unit over the cap, walls only at war; less greedy: more units, walls sooner). Needs GreedyAlarm. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1812,6 +1814,10 @@ public:
 	int GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const;
 	// AI_AB_TEST (Personality, GreedyNoUpgrades, GreedyWarArmy, MetaDial): does the greedy style hold off upgrading now?
 	bool IsGreedyUpgradeBlocked() const;
+	// AI_AB_TEST (Personality, GreedyAlarmScale): how greedy GreedyAlarm's reaction is, and what the alarm lifts
+	int GetGreedyAlarmGreed() const;
+	bool IsGreedyAlarmLiftingCap(int iNumLandUnits, int iCap) const;
+	int GetGreedyAlarmWallPercent() const;
 	// AI_AB_TEST (Personality, AggressiveArmy and MetaDial's aggressive side): building up for a war, or at war?
 	bool IsInWarBuildup() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
