@@ -23491,7 +23491,8 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 {
 	szReason = "";
 	CvPlayer* pPlayer = GetPlayer();
-	if (pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
+	// (majors only: CanWin and BoxedInWar are in the bundle, which city-states run too)
+	if (!pPlayer->isMajorCiv() || pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
 		return NO_PLAYER;
 
 	// flags TimingAttack (warmongers) and BoxedInWar (other wide civs)
@@ -23533,6 +23534,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	PlayerTypes eCommitted = m_eNewAIConquestTarget;
 
 	const CvCity* pCapital = pPlayer->getCapitalCity();
+	const char* szVulnerableReason = "warmonger timing attack, most vulnerable city";
 	PlayerTypes eBest = NO_PLAYER;
 	int iBestScore = INT_MIN;
 	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
@@ -23579,6 +23581,41 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			const CvCity* pTheirCapital = GET_PLAYER(eLoopPlayer).getCapitalCity();
 			iScore = (pCapital && pTheirCapital) ? -plotDistance(pCapital->getX(), pCapital->getY(), pTheirCapital->getX(), pTheirCapital->getY()) : -1000;
 		}
+		else if (pPlayer->UsesCandidateAI(FIX_TARGET_VULNERABILITY))
+		{
+			// AI_AB_TEST (candidate, flag TargetVulnerability, the user's redesign of GreedyTarget): the most vulnerable city
+			// within 12 plots of ours, from its own defence, what its owner can bring to defend it, and the distance
+			const CvPlayer& kTarget = GET_PLAYER(eLoopPlayer);
+			const int iArmyRatio = kTarget.GetMilitaryMight() * 100 / max(1, pPlayer->GetMilitaryMight());
+			int iBestCityScore = INT_MIN;
+			const CvCity* pBestCity = NULL;
+			int iCityLoop = 0;
+			for (const CvCity* pLoopCity = kTarget.firstCity(&iCityLoop); pLoopCity != NULL; pLoopCity = kTarget.nextCity(&iCityLoop))
+			{
+				if (!pLoopCity->plot()->isRevealed(pPlayer->getTeam()))
+					continue;
+				const int iDistance = pPlayer->GetCityDistanceInPlots(pLoopCity->plot());
+				if (iDistance > 12)
+					continue;
+				const int iMaxHP = max(1, pLoopCity->GetMaxHitPoints());
+				int iDefence = (pLoopCity->getStrengthValue() / 100) * (iMaxHP - pLoopCity->getDamage()) / iMaxHP;
+				const CvUnit* pGarrison = pLoopCity->GetGarrisonedUnit();
+				if (pGarrison)
+					iDefence += pGarrison->GetBaseCombatStrength() / 2;
+				const int iCityScore = -3 * iDefence - iArmyRatio / 2 - 5 * iDistance;
+				if (iCityScore > iBestCityScore)
+				{
+					iBestCityScore = iCityScore;
+					pBestCity = pLoopCity;
+				}
+			}
+			if (!pBestCity)
+				continue;
+			iScore = iBestCityScore;
+			static CvString strVulnerableReason;
+			strVulnerableReason.Format("warmonger timing attack, most vulnerable city %s", pBestCity->getNameNoSpace().c_str());
+			szVulnerableReason = strVulnerableReason.c_str();
+		}
 		else if (pPlayer->UsesCandidateAI(FIX_GREEDY_TARGET))
 		{
 			// c7: the greediest, fewest land units per city (USER: greedy civs are the ones a warmonger can punish; c5b's
@@ -23615,8 +23652,8 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		{
 			iBestScore = iScore;
 			eBest = eLoopPlayer;
-			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : pPlayer->UsesCandidateAI(FIX_GREEDY_TARGET) ?
-				"warmonger timing attack, greediest neighbour" : "warmonger timing attack, weakest neighbour";
+			szReason = bExpansionist ? "boxed in, nearest neighbour not stronger" : pPlayer->UsesCandidateAI(FIX_TARGET_VULNERABILITY) ? szVulnerableReason :
+				pPlayer->UsesCandidateAI(FIX_GREEDY_TARGET) ? "warmonger timing attack, greediest neighbour" : "warmonger timing attack, weakest neighbour";
 		}
 	}
 

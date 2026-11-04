@@ -33344,6 +33344,10 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false},
 	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false},
 	{"SettlersFirst", false}, {"SettlerOverlap", true},
+	{"WidePlans", false}, {"BoxedIn", false}, {"BoxedInWar", true}, {"TimingAttack", false},
+	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false},
+	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", true},
+	{"SettlersFirst", false}, {"SettlerOverlap", false},
 	{"DiploPolicyValue", true},
 	{"GreedyAlarm", false},
 	{"IdeologyPick", false},
@@ -33372,7 +33376,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeFirst", false}, {"SiegeFinish", false},
 	{"GreedyWarArmy", false},
 	{"GiftsNeedPatronage", true},
-	{"CSConquest", false},
+	{"CSConquest", true},
 	{"ConquestTraitTargets", false},
 	{"SiegeExposure", false},
 	{"SiegeRoll", false},
@@ -33382,6 +33386,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"TrueGoldRate", false},
 	{"WarEconomy", false},
 	{"WarChest", false},
+	{"TargetVulnerability", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
