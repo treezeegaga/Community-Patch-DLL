@@ -126,6 +126,9 @@ CvGrandStrategyAI::CvGrandStrategyAI():
 	m_paiGrandStrategyPriority(NULL),
 	m_iCachedMetaPosition(0),
 	m_iCachedMetaTurn(-1),
+	m_iCachedGreedyKind(STRATEGY_GREEDY_TALL),
+	m_iCachedOutOfRoom(0),
+	m_iCachedOutOfRoomTurn(-1),
 	m_iCachedWarDefenceCap(0),
 	m_iCachedWarDefenceTurn(-1)
 {
@@ -189,6 +192,9 @@ void CvGrandStrategyAI::Reset()
 
 	m_iCachedMetaPosition = 0;
 	m_iCachedMetaTurn = -1;
+	m_iCachedGreedyKind = STRATEGY_GREEDY_TALL;
+	m_iCachedOutOfRoom = 0;
+	m_iCachedOutOfRoomTurn = -1;
 	m_iCachedWarDefenceCap = 0;
 	m_iCachedWarDefenceTurn = -1;
 }
@@ -215,6 +221,7 @@ void CvGrandStrategyAI::Read(FDataStream& kStream)
 
 	// AI_AB_TEST (Personality): the meta position and war defence cap are worked out again from the loaded game
 	m_iCachedMetaTurn = -1;
+	m_iCachedOutOfRoomTurn = -1;
 	m_iCachedWarDefenceTurn = -1;
 }
 
@@ -1725,6 +1732,7 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 		kProfile.aiVictoryWeight[i] = 25;
 	kProfile.eRisk = STRATEGY_RISK_MEDIUM;
 	kProfile.eExpansion = STRATEGY_EXPANSION_MEDIUM;
+	kProfile.eGreedyKind = STRATEGY_GREEDY_TALL;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return kProfile;
 
@@ -1882,6 +1890,22 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 			kProfile.eExpansion = (StrategyExpansionTypes)(kProfile.eExpansion - 1);
 	}
 
+	// GreedyWide/GreedyTall (the user, 2026-11-04): which kind of greedy the leader plays. The expansionist tag is wide,
+	// the small-empire and science tags tall; otherwise the expansion flavour against the larger of growth and science,
+	// and a tie by the expansion style above (wide or conquest is wide)
+	if (pTraits->IsExpansionist())
+		kProfile.eGreedyKind = STRATEGY_GREEDY_WIDE;
+	else if (pTraits->IsSmaller() || pTraits->IsNerd())
+		kProfile.eGreedyKind = STRATEGY_GREEDY_TALL;
+	else
+	{
+		const int iGrowthOrScience = max(GetStrategyProfileFlavor(m_pPlayer, "FLAVOR_GROWTH"), GetStrategyProfileFlavor(m_pPlayer, "FLAVOR_SCIENCE"));
+		if (iExpansion != iGrowthOrScience)
+			kProfile.eGreedyKind = (iExpansion > iGrowthOrScience) ? STRATEGY_GREEDY_WIDE : STRATEGY_GREEDY_TALL;
+		else
+			kProfile.eGreedyKind = (kProfile.eExpansion >= STRATEGY_EXPANSION_WIDE) ? STRATEGY_GREEDY_WIDE : STRATEGY_GREEDY_TALL;
+	}
+
 	return kProfile;
 }
 
@@ -1893,10 +1917,32 @@ int CvGrandStrategyAI::GetMetaPosition() const
 	const int iTurn = GC.getGame().getGameTurn();
 	if (m_iCachedMetaTurn != iTurn)
 	{
-		m_iCachedMetaPosition = GetStrategyProfile().iHomeMeta;
+		const CvStrategyProfile kProfile = GetStrategyProfile();
+		m_iCachedMetaPosition = kProfile.iHomeMeta;
+		m_iCachedGreedyKind = kProfile.eGreedyKind;
 		m_iCachedMetaTurn = iTurn;
 	}
 	return m_iCachedMetaPosition;
+}
+
+/// AI_AB_TEST (Personality, GreedyWide/GreedyTall): which kind of greedy this leader plays (the profile's, once per turn)
+StrategyGreedyKindTypes CvGrandStrategyAI::GetGreedyKind() const
+{
+	GetMetaPosition();	// fills the cache
+	return (StrategyGreedyKindTypes)m_iCachedGreedyKind;
+}
+
+/// AI_AB_TEST (Personality, GreedyWide): out of room to settle (CvPlayer::IsBoxedInForSettling), once per turn: it looks
+/// for a settle site, and building choices ask every time
+bool CvGrandStrategyAI::IsGreedyWideOutOfRoom() const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iCachedOutOfRoomTurn != iTurn)
+	{
+		m_iCachedOutOfRoom = (m_pPlayer && m_pPlayer->getNumCities() > 0 && m_pPlayer->IsBoxedInForSettling()) ? 1 : 0;
+		m_iCachedOutOfRoomTurn = iTurn;
+	}
+	return m_iCachedOutOfRoom != 0;
 }
 
 /// AI_AB_TEST (Personality, GreedyWarArmy): could these enemy land units take pCity, or nearly? A defender's version of the
@@ -2169,13 +2215,13 @@ void CvGrandStrategyAI::LogStrategyProfile()
 	if (!pLog)
 		return;
 	CvString strOut;
-	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s",
+	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s",
 		iTurn, m_pPlayer->getCivilizationShortDescription(), m_pPlayer->getLeaderTypeKey(), strTags.c_str(),
 		(int)m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit(), (int)m_pPlayer->GetDiplomacyAI()->GetSecondaryVictoryPursuit(),
 		GetStrategyArchetypeName(kProfile.eArchetype), kProfile.iHomeMeta,
 		kProfile.aiVictoryWeight[STRATEGY_VICTORY_DOMINATION], kProfile.aiVictoryWeight[STRATEGY_VICTORY_SCIENCE],
 		kProfile.aiVictoryWeight[STRATEGY_VICTORY_CULTURE], kProfile.aiVictoryWeight[STRATEGY_VICTORY_DIPLOMACY],
-		aszRisk[kProfile.eRisk], aszExpansion[kProfile.eExpansion]);
+		aszRisk[kProfile.eRisk], aszExpansion[kProfile.eExpansion], kProfile.eGreedyKind == STRATEGY_GREEDY_WIDE ? "wide" : "tall");
 	pLog->Msg(strOut);
 }
 

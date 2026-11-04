@@ -5251,6 +5251,14 @@ bool EconomicAIHelpers::IsTestStrategy_EarlyExpansion(EconomicAIStrategyTypes eS
 	if (pPlayer->GetNumCitiesFounded() < (bNewAI ? 4 : 3))
 		return true;
 
+	//AI_AB_TEST candidate (Personality, GreedyWide; the user, 2026-11-04): the wide kind of greedy expands as fast as
+	//happiness and growth allow, without regard for defence: no stop for a stronger neighbour or a far site, only for
+	//unhappiness (above) and for having no room left. GreedyTall: never past 4 cities.
+	if (pPlayer->IsGreedyWide())
+		return GC.getGame().getElapsedGameTurns() <= 169 && !pPlayer->GetGrandStrategyAI()->IsGreedyWideOutOfRoom();
+	if (pPlayer->IsGreedyTall())
+		return false;
+
 	//midgame depends on the map sitation ...
 	PlayerProximityTypes closestNeighborProximity = NO_PLAYER_PROXIMITY;
 	for (int i = 0; i < MAX_MAJOR_CIVS; i++)
@@ -5319,6 +5327,12 @@ bool EconomicAIHelpers::IsTestStrategy_EnoughExpansion(EconomicAIStrategyTypes e
 	if(pPlayer->getNumCities() <= 1)
 	{
 		return false;
+	}
+
+	//AI_AB_TEST candidate (Personality, GreedyTall): the tall kind of greedy keeps to 4 cities
+	if (pPlayer->IsGreedyTall() && pPlayer->getNumCities() >= 4)
+	{
+		return true;
 	}
 
 	if(pPlayer->IsEmpireVeryUnhappy())

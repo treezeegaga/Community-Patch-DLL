@@ -238,6 +238,10 @@ enum CandidateFixTypes
 	FIX_TARGET_VULNERABILITY,// War (the user's redesign of GreedyTarget): a warmonger's target is the most vulnerable city nearby (its defence, its owner's army, distance). Off in the bundle
 	FIX_GREEDY_ALARM_SCALE,	// Personality (the user's flag audit): GreedyAlarm's reaction scales with how greedy the civ is (the greedy style:
 							// one unit over the cap, walls only at war; less greedy: more units, walls sooner). Needs GreedyAlarm. Off in the bundle
+	FIX_GREEDY_WIDE,		// Personality (the user's design): a greedy leader of the wide kind (the strategy profile) plays Liberty and settles
+							// as fast as happiness allows, then grows its cities. Off in the bundle
+	FIX_GREEDY_TALL,		// Personality (the user's design): a greedy leader of the tall kind plays Tradition, at most 4 cities, and rushes
+							// tech and policies (culture buildings valued x1.5). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1826,6 +1830,9 @@ public:
 	int GetGreedyAlarmGreed() const;
 	bool IsGreedyAlarmLiftingCap(int iNumLandUnits, int iCap) const;
 	int GetGreedyAlarmWallPercent() const;
+	// AI_AB_TEST (Personality, GreedyWide/GreedyTall): does this civ play that kind of greedy?
+	bool IsGreedyWide() const;
+	bool IsGreedyTall() const;
 	// AI_AB_TEST (Personality, AggressiveArmy and MetaDial's aggressive side): building up for a war, or at war?
 	bool IsInWarBuildup() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);

@@ -33414,6 +33414,8 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"WarChest", false},
 	{"TargetVulnerability", false},
 	{"GreedyAlarmScale", false},
+	{"GreedyWide", false},
+	{"GreedyTall", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33649,12 +33651,41 @@ static ABTestRoleTypes GetABTestRoleOfSlot(PlayerTypes ePlayer)
 			// the trio: our aggressive civ is the most warlike personality, our greedy civ the most science/culture-minded
 			// of the rest, our balanced civ a random one of the others (map seed); the rest play CP's AI
 			s_aeRole[aAggressor[0].second] = AB_ROLE_AGGRESSOR;
-			for (size_t i = 0; i < aTall.size(); i++)
+			// GreedyWide/GreedyTall (Personality): when the greedy set has either kind's flag, the greedy civ is a random one
+			// of the non-warmongers left (map seed), so it plays a wide kind as often as its leaders come up; the most
+			// science/culture-minded is nearly always a tall kind
+			const ABTestFixMask uKinds = CvPlayer::GetABTestFixBit((int)FIX_GREEDY_WIDE) | CvPlayer::GetABTestFixBit((int)FIX_GREEDY_TALL);
+			if (GC.getGame().GetABTestGreedyFixes() & uKinds)
 			{
-				if (s_aeRole[aTall[i].second] == AB_ROLE_NONE)
+				int iGreedy = -1;
+				unsigned int uGreedy = 0;
+				bool bGreedyWarmonger = true;
+				for (size_t i = 0; i < aTall.size(); i++)
 				{
-					s_aeRole[aTall[i].second] = AB_ROLE_GREEDY;
-					break;
+					const int iPlayer = aTall[i].second;
+					if (s_aeRole[iPlayer] != AB_ROLE_NONE)
+						continue;
+					const bool bWarmonger = IsABTestWarmongerCiv(GET_PLAYER((PlayerTypes)iPlayer));
+					const unsigned int uDraw = ABTestHash(uSeed, 0x6EEDu, (unsigned int)iPlayer);
+					if (iGreedy < 0 || (bGreedyWarmonger && !bWarmonger) || (bWarmonger == bGreedyWarmonger && uDraw > uGreedy))
+					{
+						iGreedy = iPlayer;
+						uGreedy = uDraw;
+						bGreedyWarmonger = bWarmonger;
+					}
+				}
+				if (iGreedy >= 0)
+					s_aeRole[iGreedy] = AB_ROLE_GREEDY;
+			}
+			else
+			{
+				for (size_t i = 0; i < aTall.size(); i++)
+				{
+					if (s_aeRole[aTall[i].second] == AB_ROLE_NONE)
+					{
+						s_aeRole[aTall[i].second] = AB_ROLE_GREEDY;
+						break;
+					}
 				}
 			}
 			int iBest = -1;
@@ -33780,6 +33811,12 @@ OpeningBookType CvPlayer::GetOpeningBook() const
 	if (eRole == AB_ROLE_TALL || eRole == AB_ROLE_BUILDER)
 		return OPENING_BOOK_TALL;
 
+	// GreedyWide/GreedyTall (Personality): the greedy leader's kind picks the plan: wide (Liberty) or tall (Tradition)
+	if (IsGreedyWide())
+		return OPENING_BOOK_WIDE;
+	if (IsGreedyTall())
+		return OPENING_BOOK_TALL;
+
 	// The conquest plan (fewer settlers, two archers, Honor, no planned attack) was the weakest of the three in test
 	// games: 10% of the score against 13.4% for tall. Warmongers use the other plans until there is a real timing
 	// attack plan for them.
@@ -33902,6 +33939,20 @@ int CvPlayer::GetGreedyAlarmWallPercent() const
 {
 	const int iGreed = GetGreedyAlarmGreed();
 	return (iGreed >= 75) ? 0 : 100 - iGreed;
+}
+
+/// AI_AB_TEST (Personality, GreedyWide; the user, 2026-11-04): a greedy leader of the wide kind (the strategy profile's
+/// GetGreedyKind) with the flag on: Liberty, settles as fast as happiness and growth allow, then grows its cities
+bool CvPlayer::IsGreedyWide() const
+{
+	return isMajorCiv() && !isHuman() && UsesCandidateAI(FIX_GREEDY_WIDE) && GetGrandStrategyAI()->GetGreedyKind() == STRATEGY_GREEDY_WIDE;
+}
+
+/// AI_AB_TEST (Personality, GreedyTall; the user, 2026-11-04): a greedy leader of the tall kind with the flag on:
+/// Tradition, at most 4 cities, a tech and policy rush
+bool CvPlayer::IsGreedyTall() const
+{
+	return isMajorCiv() && !isHuman() && UsesCandidateAI(FIX_GREEDY_TALL) && GetGrandStrategyAI()->GetGreedyKind() == STRATEGY_GREEDY_TALL;
 }
 
 /// AI_AB_TEST (Personality): an aggressive player doing a timing attack keeps a small army most of the game, to save

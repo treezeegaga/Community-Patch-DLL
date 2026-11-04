@@ -13302,7 +13302,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 	fseek(pFile, 0, SEEK_END);
 	if (ftell(pFile) == 0)
-		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor,ResearchSpent,Faith,FaithPerTurn,WalledCities,CityStrength,LandUnits,CityStatesCaptured\r\n", pFile);
+		fputs("GameId,Turn,Final,Winner,Victory,Player,Civ,Group,Alive,Cities,Population,Score,Techs,Policies,Military,Gold,Land,Wonders,LostCapital,City2Turn,City3Turn,City4Turn,NationalCollege,Book,Warmonger,Flip,Fixes,Screen,Map,MapOptions,Ruins,Barbarians,Pace,Difficulty,WorldSize,StopTurn,Build,Mode,Role,WarsDeclared,WarsOnUs,CitiesCaptured,CitiesLost,Deals,WorkersStolen,WonderChops,AtWar,AtWarAggressor,Pacts,Friends,Denouncing,Influential,TurnSecs,CoopWarAsked,CoopWarAskedVsAggressor,CoopWarAgreed,CoopWarAgreedVsAggressor,SanctionsProposed,SanctionsProposedVsAggressor,SanctionsPassed,SanctionsPassedVsAggressor,ResearchSpent,Faith,FaithPerTurn,WalledCities,CityStrength,LandUnits,CityStatesCaptured,GreedyKind\r\n", pFile);
 
 	static const char* const kBookNames[] = { "none", "tall", "wide", "conquest" };
 
@@ -13479,7 +13479,7 @@ void CvGame::LogABTestResults(bool bFinal) const
 					llResearchSpent += pTeamTechs->GetResearchCost((TechTypes)iTech);
 			}
 		}
-		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%d,%d,%d,%d,%d,%d\r\n",
+		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%d,%d,%d,%d,%d,%d,%s\r\n",
 			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_TRIO) ? m_iABTestMode : 0],
 			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BALANCED) ? eRole : 0],
 			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
@@ -13496,7 +13496,9 @@ void CvGame::LogABTestResults(bool bFinal) const
 			llResearchSpent,
 			// Faith (stored) and FaithPerTurn (Economy's religion check, 2026-11-03): is faith spent or left to pile up?
 			kPlayer.isAlive() ? kPlayer.GetFaithTimes100() / 100 : 0, kPlayer.isAlive() ? kPlayer.GetTotalFaithPerTurnTimes100() / 100 : 0,
-			iWalledCities, iCityStrength, iLandUnits, GetABTestCount(ePlayer, AB_COUNT_CITY_STATES_CAPTURED));
+			iWalledCities, iCityStrength, iLandUnits, GetABTestCount(ePlayer, AB_COUNT_CITY_STATES_CAPTURED),
+			// GreedyKind (Personality, 2026-11-04): the kind of greedy this leader plays when it plays greedy (strategy profile)
+			kPlayer.isHuman() ? "" : (kPlayer.GetGrandStrategyAI()->GetGreedyKind() == STRATEGY_GREEDY_WIDE ? "wide" : "tall"));
 	}
 
 	fclose(pFile);
