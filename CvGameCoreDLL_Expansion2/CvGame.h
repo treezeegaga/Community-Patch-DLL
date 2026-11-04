@@ -710,6 +710,8 @@ public:
 	const ABTestFixMask& GetABTestBaseFixes() const { return m_uiABTestBaseFixes; }
 	const ABTestFixMask& GetABTestRoleFixes() const { return m_uiABTestRoleFixes; }
 	const ABTestFixMask& GetABTestOthersBaseFixes() const { return m_uiABTestOthersBaseFixes; }
+	const ABTestFixMask& GetABTestGreedyFixes() const { return m_uiABTestGreedyFixes; }
+	const ABTestFixMask& GetABTestBalancedFixes() const { return m_uiABTestBalancedFixes; }
 	// AI_AB_TEST paired games: the second game of a pair replays the first one's map, civs and city-states with the
 	// groups swapped (Flip = 1 in AIABTest.ini)
 	bool IsABTestFlipped() const { return (m_iABTestFlags & 1) != 0; }
@@ -958,7 +960,9 @@ protected:
 	ABTestFixMask m_uiABTestScreenedFixes;
 	ABTestFixMask m_uiABTestBaseFixes; // flags every major AI civ runs, both groups (AIABTest.ini Base =)
 	ABTestFixMask m_uiABTestRoleFixes; // bully test: flags the aggressor runs in the first game of a pair only (RoleFixes =)
-	ABTestFixMask m_uiABTestOthersBaseFixes; // bully/builders tests: flags every AI civ without a role runs, both games (OthersBase =)
+	ABTestFixMask m_uiABTestOthersBaseFixes;
+	ABTestFixMask m_uiABTestGreedyFixes; // trio: our greedy civ's style flags (GreedyFixes =)
+	ABTestFixMask m_uiABTestBalancedFixes; // trio: our balanced civ's style flags (BalancedFixes =) // bully/builders tests: flags every AI civ without a role runs, both games (OthersBase =)
 	int m_iABTestFlags;
 	int m_iABTestStopTurn;
 	int m_iABTestMode;

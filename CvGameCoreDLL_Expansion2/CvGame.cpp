@@ -272,6 +272,8 @@ void CvGame::ReadABTestSettings()
 	m_uiABTestBaseFixes = 0;
 	m_uiABTestRoleFixes = 0;
 	m_uiABTestOthersBaseFixes = 0;
+	m_uiABTestGreedyFixes = 0;
+	m_uiABTestBalancedFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -292,8 +294,9 @@ void CvGame::ReadABTestSettings()
 	// pair compares the same game with and without them on the attacking side
 	// OthersBase = (bully and builders tests) flags every AI civ without a role runs, in both games of a pair: sets the
 	// opponents the roles meet, e.g. a greedy style, so the aggressor's matchup is the same in both games
-	const wchar_t* const aszKeys[5] = { L"Fixes", L"Screen", L"Base", L"RoleFixes", L"OthersBase" };
-	for (int iKey = 0; iKey < 5; iKey++)
+	// GreedyFixes, BalancedFixes = (trio) our greedy and balanced civs' flags; RoleFixes is the trio's aggressive civ's
+	const wchar_t* const aszKeys[7] = { L"Fixes", L"Screen", L"Base", L"RoleFixes", L"OthersBase", L"GreedyFixes", L"BalancedFixes" };
+	for (int iKey = 0; iKey < 7; iKey++)
 	{
 		szBuffer[0] = 0;
 		GetPrivateProfileStringW(L"ABTest", aszKeys[iKey], L"", szBuffer, 1024, wstrPath.c_str());
@@ -311,8 +314,12 @@ void CvGame::ReadABTestSettings()
 			m_uiABTestBaseFixes = ParseABTestFixList(strList, strErrorPath);
 		else if (iKey == 3)
 			m_uiABTestRoleFixes = ParseABTestFixList(strList, strErrorPath);
-		else
+		else if (iKey == 4)
 			m_uiABTestOthersBaseFixes = ParseABTestFixList(strList, strErrorPath);
+		else if (iKey == 5)
+			m_uiABTestGreedyFixes = ParseABTestFixList(strList, strErrorPath);
+		else
+			m_uiABTestBalancedFixes = ParseABTestFixList(strList, strErrorPath);
 	}
 
 	// Paired games (see WriteABTestReplayRecord): Flip = 1 swaps the groups, and the replay keys repeat the first
@@ -331,6 +338,8 @@ void CvGame::ReadABTestSettings()
 		m_iABTestMode = AB_MODE_BULLY;
 	else if (_wcsicmp(szBuffer, L"builders") == 0)
 		m_iABTestMode = AB_MODE_BUILDERS;
+	else if (_wcsicmp(szBuffer, L"trio") == 0)
+		m_iABTestMode = AB_MODE_TRIO;
 	if (m_iABTestMode == AB_MODE_BULLY)
 	{
 		m_iABTestHeadStartProduction = (int)GetPrivateProfileIntW(L"ABTest", L"HeadStartProduction", 0, wstrPath.c_str());
@@ -385,6 +394,22 @@ void CvGame::ReadABTestSettings()
 		const int iValue = (int)GetPrivateProfileIntW(L"ABTest", szKey, -1, wstrPath.c_str());
 		if (iValue >= 0)
 			CvPreGame::SetMapOption(CvString::format("%d", iOption).c_str(), iValue);
+	}
+	// Civs = 6 (the trio test): AI slots from that number on are closed before the players are set up, so the game has
+	// that many major civs whatever the setup screen remembers (Civ's screen keeps the last count picked)
+	const int iCivs = (int)GetPrivateProfileIntW(L"ABTest", L"Civs", 0, wstrPath.c_str());
+	if (iCivs >= 2 && iCivs < MAX_MAJOR_CIVS)
+	{
+		int iSeen = 0;
+		for (int iI = 0; iI < MAX_MAJOR_CIVS; iI++)
+		{
+			const SlotStatus eStatus = CvPreGame::slotStatus((PlayerTypes)iI);
+			if (eStatus != SS_COMPUTER && eStatus != SS_TAKEN)
+				continue;
+			iSeen++;
+			if (iSeen > iCivs && eStatus == SS_COMPUTER)
+				CvPreGame::setSlotStatus((PlayerTypes)iI, SS_CLOSED);
+		}
 	}
 	GetPrivateProfileStringW(L"ABTest", L"MapSeed", L"", szBuffer, 1024, wstrPath.c_str());
 	if (szBuffer[0] != 0)
@@ -1616,6 +1641,8 @@ void CvGame::uninit()
 	m_uiABTestBaseFixes = 0;
 	m_uiABTestRoleFixes = 0;
 	m_uiABTestOthersBaseFixes = 0;
+	m_uiABTestGreedyFixes = 0;
+	m_uiABTestBalancedFixes = 0;
 	m_iABTestFlags = 0;
 	m_iABTestStopTurn = 0;
 	m_iABTestMode = AB_MODE_SPLIT;
@@ -11365,6 +11392,8 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 			visitor(game.m_uiABTestBaseFixes.w[iWord]);
 			visitor(game.m_uiABTestRoleFixes.w[iWord]);
 			visitor(game.m_uiABTestOthersBaseFixes.w[iWord]);
+			visitor(game.m_uiABTestGreedyFixes.w[iWord]);
+			visitor(game.m_uiABTestBalancedFixes.w[iWord]);
 		}
 		visitor(game.m_iABTestFlags);
 		visitor(game.m_iABTestStopTurn);
@@ -13394,8 +13423,8 @@ void CvGame::LogABTestResults(bool bFinal) const
 
 		// the bully and builders tests, and diplomacy (lead job 10): running counts, then this turn's state toward
 		// the other major civs
-		static const char* const kModeNames[] = { "split", "bully", "builders" };
-		static const char* const kRoleNames[] = { "", "aggressor", "tall", "builder" };
+		static const char* const kModeNames[] = { "split", "bully", "builders", "trio" };
+		static const char* const kRoleNames[] = { "", "aggressor", "tall", "builder", "greedy", "balanced" };
 		const PlayerTypes ePlayer = (PlayerTypes)iI;
 		const ABTestRoleTypes eRole = kPlayer.GetABTestRole();
 		int iAtWar = 0, iAtWarAggressor = 0, iPacts = 0, iFriends = 0, iDenouncing = 0;
@@ -13451,8 +13480,8 @@ void CvGame::LogABTestResults(bool bFinal) const
 			}
 		}
 		fprintf(pFile, ",%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d,%lld,%d,%d,%d,%d,%d,%d\r\n",
-			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_BUILDERS) ? m_iABTestMode : 0],
-			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BUILDER) ? eRole : 0],
+			kModeNames[(m_iABTestMode >= 0 && m_iABTestMode <= AB_MODE_TRIO) ? m_iABTestMode : 0],
+			kRoleNames[(eRole >= AB_ROLE_NONE && eRole <= AB_ROLE_BALANCED) ? eRole : 0],
 			GetABTestCount(ePlayer, AB_COUNT_WARS_DECLARED), GetABTestCount(ePlayer, AB_COUNT_WARS_ON_US),
 			GetABTestCount(ePlayer, AB_COUNT_CITIES_CAPTURED), GetABTestCount(ePlayer, AB_COUNT_CITIES_LOST),
 			GetABTestCount(ePlayer, AB_COUNT_DEALS), GetABTestCount(ePlayer, AB_COUNT_WORKERS_STOLEN),

@@ -33520,6 +33520,9 @@ static bool IsABTestCandidateSlot(PlayerTypes ePlayer)
 
 bool CvPlayer::UsesNewAI() const
 {
+	// AI_AB_TEST trio: our three style civs run the new AI, everyone else CP's
+	if (MOD_AI_AB_TEST && isMajorCiv() && GC.getGame().GetABTestMode() == AB_MODE_TRIO)
+		return isHuman() || GetABTestRole() != AB_ROLE_NONE;
 	if (!MOD_AI_AB_TEST || !isMajorCiv() || kABTestVersusBase)
 		return true;
 
@@ -33641,6 +33644,34 @@ static ABTestRoleTypes GetABTestRoleOfSlot(PlayerTypes ePlayer)
 			for (size_t i = 0; i < aTall.size() && i < 2; i++)
 				s_aeRole[aTall[i].second] = AB_ROLE_BUILDER;
 		}
+		else if (iMode == AB_MODE_TRIO && aAggressor.size() >= 3)
+		{
+			// the trio: our aggressive civ is the most warlike personality, our greedy civ the most science/culture-minded
+			// of the rest, our balanced civ a random one of the others (map seed); the rest play CP's AI
+			s_aeRole[aAggressor[0].second] = AB_ROLE_AGGRESSOR;
+			for (size_t i = 0; i < aTall.size(); i++)
+			{
+				if (s_aeRole[aTall[i].second] == AB_ROLE_NONE)
+				{
+					s_aeRole[aTall[i].second] = AB_ROLE_GREEDY;
+					break;
+				}
+			}
+			int iBest = -1;
+			unsigned int uBest = 0;
+			for (size_t i = 0; i < aTall.size(); i++)
+			{
+				const int iPlayer = aTall[i].second;
+				const unsigned int uDraw = ABTestHash(uSeed, 0xB41Au, (unsigned int)iPlayer);
+				if (s_aeRole[iPlayer] == AB_ROLE_NONE && (iBest < 0 || uDraw > uBest))
+				{
+					iBest = iPlayer;
+					uBest = uDraw;
+				}
+			}
+			if (iBest >= 0)
+				s_aeRole[iBest] = AB_ROLE_BALANCED;
+		}
 	}
 	return (ePlayer >= 0 && ePlayer < MAX_MAJOR_CIVS) ? s_aeRole[ePlayer] : AB_ROLE_NONE;
 }
@@ -33667,6 +33698,8 @@ bool CvPlayer::IsInCandidateGroup() const
 	if (!MOD_AI_AB_TEST || !isMajorCiv())
 		return true;
 
+	if (GC.getGame().GetABTestMode() == AB_MODE_TRIO)
+		return !isHuman() && GetABTestRole() != AB_ROLE_NONE; // the trio: Fixes = is our three civs' flags
 	if (GC.getGame().GetABTestMode() != AB_MODE_SPLIT)
 		return !isHuman() && !GC.getGame().IsABTestFlipped() && GetABTestRole() == AB_ROLE_NONE;
 
@@ -33689,7 +33722,18 @@ bool CvPlayer::UsesCandidateAI(CandidateFixTypes eFix) const
 		return !isHuman();
 	if (kGame.GetABTestOthersBaseFixes() & uBit)
 		return !isHuman() && GetABTestRole() == AB_ROLE_NONE;
-	if (kGame.GetABTestRoleFixes() & uBit)
+	if (kGame.GetABTestMode() == AB_MODE_TRIO)
+	{
+		// the trio: each of our three runs Fixes (below) plus its own style's flags; CP's civs run none
+		const ABTestRoleTypes eTrioRole = GetABTestRole();
+		if ((kGame.GetABTestRoleFixes() & uBit) && eTrioRole == AB_ROLE_AGGRESSOR)
+			return !isHuman();
+		if ((kGame.GetABTestGreedyFixes() & uBit) && eTrioRole == AB_ROLE_GREEDY)
+			return !isHuman();
+		if ((kGame.GetABTestBalancedFixes() & uBit) && eTrioRole == AB_ROLE_BALANCED)
+			return !isHuman();
+	}
+	else if (kGame.GetABTestRoleFixes() & uBit)
 		return !isHuman() && kGame.GetABTestMode() == AB_MODE_BULLY && !kGame.IsABTestFlipped() && GetABTestRole() == AB_ROLE_AGGRESSOR;
 	if (kGame.GetABTestScreenedFixes() & uBit)
 		return !isHuman() && IsABTestScreenSlot(GetID(), (int)eFix);

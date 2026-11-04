@@ -250,6 +250,8 @@ enum ABTestModeTypes
 	AB_MODE_SPLIT,
 	AB_MODE_BULLY,		// one aggressor, one tall civ
 	AB_MODE_BUILDERS,	// two builders: tall, no wars of their own
+	AB_MODE_TRIO,		// the trio goal (the user, 2026-11-04): our greedy, balanced and aggressive civs (B + Fixes + their style
+						// keys) against the other civs on CP's AI. Single games, no flip
 };
 enum ABTestRoleTypes
 {
@@ -257,6 +259,8 @@ enum ABTestRoleTypes
 	AB_ROLE_AGGRESSOR,	// the warmonger friend's role: the most aggressive personality (a head start only if AIABTest.ini asks)
 	AB_ROLE_TALL,		// the tall friend's role in the bully test: the tall opening plan
 	AB_ROLE_BUILDER,	// a turtling friend in the builders test: the tall opening plan and no wars of its own
+	AB_ROLE_GREEDY,		// trio: our greedy civ (GreedyFixes =); the trio's aggressive civ is AB_ROLE_AGGRESSOR (RoleFixes =)
+	AB_ROLE_BALANCED,	// trio: our balanced civ (BalancedFixes =)
 };
 // AI_AB_TEST running counts per major civ, for the results file (CvGame::ChangeABTestCount)
 enum ABTestCountTypes
