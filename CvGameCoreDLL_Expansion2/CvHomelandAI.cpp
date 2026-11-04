@@ -1819,8 +1819,9 @@ void CvHomelandAI::PlotUpgradeMoves()
 	ClearCurrentMoveUnits(AI_HOMELAND_MOVE_UPGRADE);
 
 	// AI_AB_TEST candidate (Personality, GreedyNoUpgrades): no upgrades outside a war with a major civ, so no gold is
-	// saved for them either (CvUnit::CanUpgradeRightNow blocks the upgrades themselves)
-	if (m_pPlayer->isMajorCiv() && m_pPlayer->UsesCandidateAI(FIX_GREEDY_NO_UPGRADES) && !m_pPlayer->IsAtWarAnyMajor())
+	// saved for them either (CvUnit::CanUpgradeRightNow blocks the upgrades themselves). MetaDial: the greedy side too.
+	if (m_pPlayer->isMajorCiv() && (m_pPlayer->UsesCandidateAI(FIX_GREEDY_NO_UPGRADES) || m_pPlayer->IsMetaDialGreedy()) &&
+		!m_pPlayer->IsAtWarAnyMajor())
 	{
 		if (m_pPlayer->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_UNIT_UPGRADE))
 			m_pPlayer->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_UNIT_UPGRADE);

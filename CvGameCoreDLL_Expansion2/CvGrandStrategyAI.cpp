@@ -123,7 +123,9 @@ CvAIGrandStrategyXMLEntry* CvAIGrandStrategyXMLEntries::GetEntry(int index)
 //=====================================
 /// Constructor
 CvGrandStrategyAI::CvGrandStrategyAI():
-	m_paiGrandStrategyPriority(NULL)
+	m_paiGrandStrategyPriority(NULL),
+	m_iCachedMetaPosition(0),
+	m_iCachedMetaTurn(-1)
 {
 }
 
@@ -182,6 +184,9 @@ void CvGrandStrategyAI::Reset()
 	m_iFlavorHappiness = 7;
 	m_iFlavorGrowth = 7;
 	m_iFlavorDiplomacy = 7;
+
+	m_iCachedMetaPosition = 0;
+	m_iCachedMetaTurn = -1;
 }
 
 ///
@@ -204,6 +209,8 @@ void CvGrandStrategyAI::Read(FDataStream& kStream)
 	CvStreamLoadVisitor serialVisitor(kStream);
 	CvGrandStrategyAI::Serialize(*this, serialVisitor);
 
+	// AI_AB_TEST (Personality): the meta position is worked out again from the loaded game
+	m_iCachedMetaTurn = -1;
 }
 
 /// Serialization write
@@ -1806,6 +1813,20 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	}
 
 	return kProfile;
+}
+
+/// AI_AB_TEST (Personality, MetaDial): the meta position the dial reads, -100 greedy to +100 aggressive. The home
+/// position for now (MetaAdapt will move it). Worked out once per turn: the profile needs string lookups, and the
+/// dial is read in hot paths (every building and unit choice, every upgrade check).
+int CvGrandStrategyAI::GetMetaPosition() const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iCachedMetaTurn != iTurn)
+	{
+		m_iCachedMetaPosition = GetStrategyProfile().iHomeMeta;
+		m_iCachedMetaTurn = iTurn;
+	}
+	return m_iCachedMetaPosition;
 }
 
 /// AI_AB_TEST (Personality): the profile in StrategyProfile_Log.csv (logged games only), at turns 1, 50, 100, 150...

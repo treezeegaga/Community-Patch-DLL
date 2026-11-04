@@ -336,6 +336,27 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		iRecommendLandArmySize = max(iRecommendLandArmySize, min(iStyleCities * (bAggressiveArmy ? 4 : 2), iSupplyRoom));
 	}
 
+	// AI_AB_TEST candidate (Personality, MetaDial): the same from the meta position M, when no style flag is on. In peace
+	// at most the ceiling (1, 3, 4 land units per city at M = -100, 0, +100; operations +2); at war the greedy side
+	// (M <= -50) keeps 2 per city. A city under siege may still build defenders, and GreedyAlarm lifts the cap. Above
+	// the greedy side the ceiling also lifts CP's recommended army size, within supply.
+	const bool bDialLandUnit = bStyleLandUnit && !bAggressiveArmy && !bBalancedArmy && kPlayer.UsesMetaDial();
+	const int iDialMeta = bDialLandUnit ? kPlayer.GetMetaDialPosition() : 0;
+	const int iDialFloorTimes10 = bDialLandUnit ? kPlayer.GetMetaDialLandUnitsPerCityTimes10(false) : 0;
+	if (bDialLandUnit)
+	{
+		const int iCeilingTimes10 = kPlayer.GetMetaDialLandUnitsPerCityTimes10(true);
+		const int iCapTimes10 = !kPlayer.IsAtWarAnyMajor() ? iCeilingTimes10 : (iDialMeta <= -50 ? 20 : -1);
+		if (iCapTimes10 >= 0 && !bDesperate && iNumLandUnits * 10 >= iStyleCities * iCapTimes10 + (bForOperation ? 20 : 0) &&
+			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER)
+			return SR_STRATEGY;
+		if (iDialMeta > -50)
+		{
+			const int iSupplyRoom = kPlayer.GetNumUnitsSupplied() - (kPlayer.GetNumUnitsToSupply() - iNumLandUnits);
+			iRecommendLandArmySize = max(iRecommendLandArmySize, min(iStyleCities * iCeilingTimes10 / 10, iSupplyRoom));
+		}
+	}
+
 	if (bNeedsSupply)
 	{
 		if (pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && iNumLandUnits >= iRecommendLandArmySize)
@@ -1730,6 +1751,17 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		const bool bWanted = bAggressiveArmy ?
 			(eStyleAI == UNITAI_ATTACK || eStyleAI == UNITAI_CITY_BOMBARD || eStyleAI == UNITAI_FAST_ATTACK || eStyleAI == UNITAI_RANGED) :
 			(eStyleAI == UNITAI_DEFENSE || eStyleAI == UNITAI_RANGED || eStyleAI == UNITAI_COUNTER);
+		if (bWanted)
+			iBonus += 300;
+	}
+	// MetaDial: below the floor (1, 2, 3 per city at M = -100, 0, +100) the dial's unit types come first: attack, siege and
+	// ranged units from M = +25, defenders and ranged units between -25 and +25, nothing extra on the greedy side
+	if (bDialLandUnit && iDialMeta > -25 && iNumLandUnits * 10 < iStyleCities * iDialFloorTimes10)
+	{
+		const UnitAITypes eDialAI = pkUnitEntry->GetDefaultUnitAIType();
+		const bool bWanted = (iDialMeta >= 25) ?
+			(eDialAI == UNITAI_ATTACK || eDialAI == UNITAI_CITY_BOMBARD || eDialAI == UNITAI_FAST_ATTACK || eDialAI == UNITAI_RANGED) :
+			(eDialAI == UNITAI_DEFENSE || eDialAI == UNITAI_RANGED || eDialAI == UNITAI_COUNTER);
 		if (bWanted)
 			iBonus += 300;
 	}

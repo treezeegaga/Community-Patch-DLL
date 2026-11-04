@@ -211,6 +211,8 @@ enum CandidateFixTypes
 							// attack, siege and ranged units first. Off in the bundle
 	FIX_BALANCED_ARMY,		// Personality (balanced style): at peace at least 2 land units per city, at most 3; defenders first. Off in the bundle
 	FIX_BALANCED_WALLS,		// Personality (balanced style): walls and castles first in border cities and the capital. Off in the bundle
+	FIX_META_DIAL,			// Personality: the style settings (army size, walls, upgrades, growth value, conquest plan) follow the strategy
+							// profile's meta position, from greedy (-100) to aggressive (+100). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
@@ -1784,6 +1786,11 @@ public:
 	bool IsBoxedInForSettling() const;
 	bool HasUnstartedBookSettlers() const;
 	bool IsCandidateWarmonger(CandidateFixTypes eFix) const;
+	// AI_AB_TEST (Personality, MetaDial): the style settings from the meta position
+	bool UsesMetaDial() const;
+	int GetMetaDialPosition() const;
+	bool IsMetaDialGreedy() const;
+	int GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
 	TechTypes GetOpeningBookTech() const;
 	TechTypes GetCandidateGrowthTech() const;

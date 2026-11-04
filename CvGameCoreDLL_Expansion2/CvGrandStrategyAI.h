@@ -106,6 +106,7 @@ public:
 	// AI_AB_TEST (Personality): the strategy profile; nothing reads it yet (logged only)
 	CvStrategyProfile GetStrategyProfile() const;
 	static const char* GetStrategyArchetypeName(StrategyArchetypeTypes eArchetype);
+	int GetMetaPosition() const;
 
 	// **********
 	// Stuff relating to guessing what other Players are up to
@@ -163,6 +164,10 @@ private:
 	int m_iFlavorHappiness;
 	int m_iFlavorGrowth;
 	int m_iFlavorDiplomacy;
+
+	// AI_AB_TEST (Personality, MetaDial): not saved, worked out again from the game data
+	mutable int m_iCachedMetaPosition;
+	mutable int m_iCachedMetaTurn;
 };
 
 FDataStream& operator>>(FDataStream&, CvGrandStrategyAI&);

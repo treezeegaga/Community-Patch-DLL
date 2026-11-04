@@ -33353,6 +33353,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeArmy", false}, {"ArmyHandoff", false}, {"SiegeBar", false},
 	{"GreedyFewUnits", false}, {"GreedyNoWalls", false}, {"GreedyNoUpgrades", false}, {"GreedyBuilds", false},
 	{"AggressivePlan", false}, {"AggressiveArmy", false}, {"BalancedArmy", false}, {"BalancedWalls", false},
+	{"MetaDial", false},
 };
 // one line per flag, and room in the 64-bit masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33719,7 +33720,37 @@ bool CvPlayer::IsCandidateWarmonger(CandidateFixTypes eFix) const
 		return false;
 	// AggressivePlan (Personality, aggressive style): the conquest plan whatever the personality. The c/b split, the
 	// screening deal, the bully roles and the Warmonger column still read the personality (IsABTestWarmonger).
-	return IsABTestWarmongerCiv(*this) || UsesCandidateAI(FIX_AGGRESSIVE_PLAN);
+	// MetaDial: from meta position +50 on, the conquest plan too
+	return IsABTestWarmongerCiv(*this) || UsesCandidateAI(FIX_AGGRESSIVE_PLAN) || (UsesMetaDial() && GetMetaDialPosition() >= 50);
+}
+
+/// AI_AB_TEST (Personality, MetaDial): an AI major civ whose style settings follow its meta position (RESULTS.md,
+/// "MetaDial"). The settings interpolate between the style flags' fixed points: greedy at -100, balanced at 0,
+/// aggressive at +100.
+bool CvPlayer::UsesMetaDial() const
+{
+	return isMajorCiv() && !isHuman() && UsesCandidateAI(FIX_META_DIAL);
+}
+
+/// -100 greedy, 0 balanced, +100 aggressive (the strategy profile's home position until MetaAdapt moves it)
+int CvPlayer::GetMetaDialPosition() const
+{
+	return GetGrandStrategyAI()->GetMetaPosition();
+}
+
+/// The greedy side of the dial (-50 or below): no walls or barracks, no upgrades in peace, a garrison-sized army
+bool CvPlayer::IsMetaDialGreedy() const
+{
+	return UsesMetaDial() && GetMetaDialPosition() <= -50;
+}
+
+/// Land units per city in peace, in tenths: the floor (1, 2, 3 at -100, 0, +100) or the ceiling (1, 3, 4)
+int CvPlayer::GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const
+{
+	const int iMeta = range(GetMetaDialPosition(), -100, 100);
+	if (!bCeiling)
+		return 20 + iMeta / 10;
+	return (iMeta < 0) ? 30 + iMeta / 5 : 30 + iMeta / 10;
 }
 
 /// AI_AB_TEST (candidate): no room left to settle: no site at all, or one of our settlers has stood for 10+ turns
