@@ -11379,7 +11379,7 @@ void CvDiplomacyAI::DoUpdatePlayerStrengthEstimates()
 		// its army busy) or denouncing it (at half; they would likely join). Not its friends, pact partners or team, and
 		// only civs that can reach it. Only public facts are used (wars and denouncements are announced). CP counted
 		// allies only once treaty-bound to us, so every civ judged a runaway alone, picked AFRAID, and nobody fought it.
-		if (GET_PLAYER(ePlayer).isMajorCiv() && GetWarmongerThreat(ePlayer) >= THREAT_SEVERE && GetPlayer()->UsesCandidateAI(FIX_COALITION_STRENGTH))
+		if (GetPlayer()->isMajorCiv() && GET_PLAYER(ePlayer).isMajorCiv() && GetWarmongerThreat(ePlayer) >= THREAT_SEVERE && GetPlayer()->UsesCandidateAI(FIX_COALITION_STRENGTH))
 		{
 			const TeamTypes eTheirTeam = GET_PLAYER(ePlayer).getTeam();
 			for (std::vector<PlayerTypes>::iterator it = vValidPlayers.begin(); it != vValidPlayers.end(); ++it)
@@ -42552,6 +42552,8 @@ bool CvDiplomacyAI::IsCoalitionPartnerAgainst(PlayerTypes eAllyPlayer, PlayerTyp
 /// it and so is next in line. Never its friends, pact partners or team.
 bool CvDiplomacyAI::IsVisiblyAgainstWarmonger(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer, bool bCountNeighbours) const
 {
+	if (!GetPlayer()->isMajorCiv())
+		return false;
 	if (eAllyPlayer == NO_PLAYER || eTargetPlayer == NO_PLAYER || eAllyPlayer == eTargetPlayer || eAllyPlayer == GetID() || eTargetPlayer == GetID())
 		return false;
 	if (!GET_PLAYER(eTargetPlayer).isMajorCiv() || !GET_PLAYER(eTargetPlayer).isAlive() || GetWarmongerThreat(eTargetPlayer) < THREAT_SEVERE)
@@ -47422,7 +47424,7 @@ int CvDiplomacyAI::GetRecentTradeScore(PlayerTypes ePlayer) const
 	// a deal expires (or a war cancels it) and comes back when it's renewed. Capped below the Favorable threshold (-30),
 	// so trade alone can't make a neighbour a friend. CP's version reached -40 from frequent luxury swaps, enough to
 	// make everyone Favorable, which multiplied FRIENDLY, divided WAR and led to friendships that rule war out.
-	if (GetPlayer()->UsesCandidateAI(FIX_TRADE_OPINION))
+	if (GetPlayer()->UsesCandidateAI(FIX_TRADE_OPINION) && GetPlayer()->isMajorCiv())
 	{
 		if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
 			return 0;

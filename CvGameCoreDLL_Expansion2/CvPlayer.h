@@ -194,7 +194,7 @@ enum CandidateFixTypes
 	FIX_SIEGE_ARMY,			// War: a land city attack keeps recruiting until it can take its city (up to 20 turns). Off in the bundle
 	FIX_ARMY_HANDOFF,		// War: units just delivered by an attack may reinforce its target from any zone. Off in the bundle
 	FIX_TRADE_OPINION,		// Diplomacy: the trade-partner opinion comes from deals running now in which they supply us (what a war
-							// would cost us), gone when they expire, back when renewed, capped below Favorable. Off in the bundle
+							// would cost us), gone when they expire, back when renewed, capped below Favorable. In the bundle (user)
 	FIX_SIEGE_ABORT,		// War: an attack still too weak after SiegeArmy's 20 turns is called off, not sent. Off in the bundle
 	FIX_GREEDY_FEW_UNITS,	// Personality (greedy style): at most 1 land combat unit per city at peace, 2 at war with a major civ; no
 							// tiny-army building penalty at peace. Lifted while GreedyAlarm fires. Off in the bundle
