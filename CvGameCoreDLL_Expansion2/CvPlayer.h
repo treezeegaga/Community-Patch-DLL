@@ -238,6 +238,7 @@ enum CandidateFixTypes
 	FIX_TARGET_VULNERABILITY,// War (the user's redesign of GreedyTarget): a warmonger's target is the most vulnerable city nearby (its defence, its owner's army, distance). Off in the bundle
 	FIX_GREEDY_ALARM_SCALE,	// Personality (the user's flag audit): GreedyAlarm's reaction scales with how greedy the civ is (the greedy style:
 							// one unit over the cap, walls only at war; less greedy: more units, walls sooner). Needs GreedyAlarm. Off in the bundle
+	FIX_MARCH_ON,			// War: a sneak attack declares when discovered or at the border, then keeps marching as an army until it's in place. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

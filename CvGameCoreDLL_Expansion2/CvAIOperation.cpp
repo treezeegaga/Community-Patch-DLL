@@ -1815,6 +1815,28 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 					}
 				}
 
+				//AI_AB_TEST (candidate, flag MarchOn): a sneak attack that declares before it's in place (discovered, or at the
+				//border) used to end here and be disbanded where it stood (test wars: units 3-7 tiles out, then walking in one
+				//by one into the garrison's fire). Declare, but keep the army marching; at war the distance check above ends it
+				//at the walls. At war an attack stalled for 3 turns within 6 tiles of the target is handed over as it is.
+				const bool bMarchOn = GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_MARCH_ON) && m_eType == AI_OPERATION_CITY_ATTACK_LAND;
+				const bool bAtTheWalls = (plotDistance(*pCenterOfMass, *pTarget) <= GetDeployRange()) && (pThisArmy->GetFurthestUnitDistance(pTarget) < 2*GetDeployRange());
+				//(if the war hasn't come after 5 turns of waiting at peace, the old way: end and disband)
+				const bool bStalledAtPeace = m_progressToTarget.size() >= 5 && m_progressToTarget.front() <= m_progressToTarget.back();
+				if (bMarchOn && bInPlace && !bAtTheWalls && !bStalledAtPeace && GET_PLAYER(m_eOwner).IsAtPeaceWith(m_eEnemy))
+				{
+					GET_PLAYER(m_eOwner).GetDiplomacyAI()->SetArmyInPlaceForAttack(m_eEnemy, true);
+					LogOperationSpecialMessage(CvString::format("MarchOn: declaring, the army marches on; unit distance near %d; far %d",
+						pThisArmy->GetClosestUnitDistance(pTarget), pThisArmy->GetFurthestUnitDistance(pTarget)));
+					bInPlace = false;
+				}
+				if (bMarchOn && !bInPlace && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy) && plotDistance(*pCenterOfMass, *pTarget) <= 2*GetDeployRange() &&
+					m_progressToTarget.size() >= 3 && m_progressToTarget[0] <= m_progressToTarget[2])
+				{
+					LogOperationSpecialMessage("MarchOn: stalled near the target at war, handing over");
+					bInPlace = true;
+				}
+
 				if(bInPlace)
 				{
 					// Notify Diplo AI we're in place for attack
