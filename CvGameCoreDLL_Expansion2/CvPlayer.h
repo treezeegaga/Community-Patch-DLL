@@ -216,6 +216,7 @@ enum CandidateFixTypes
 	FIX_BALANCED_WALLS,		// Personality (balanced style): walls and castles first in border cities and the capital. Off in the bundle
 	FIX_META_DIAL,			// Personality: the style settings (army size, walls, upgrades, growth value, conquest plan) follow the strategy
 							// profile's meta position, from greedy (-100) to aggressive (+100). Off in the bundle
+	FIX_SIEGE_FORMATION,	// War: classical-medieval land city attacks use the formation with 5 siege/ranged slots (not 2). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

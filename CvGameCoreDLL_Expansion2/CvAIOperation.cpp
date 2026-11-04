@@ -1484,6 +1484,17 @@ AIOperationAbortReason CvAIOperationMilitary::VerifyOrAdjustTarget(CvArmyAI*)
 	return NO_ABORT_REASON;
 }
 
+/// AI_AB_TEST: the formation this operation's army uses. With flag SiegeFormation a classical-medieval land city attack
+/// uses the basic attack force (5 siege/ranged slots) instead of the small one (2): the extra units SiegeArmy asks for
+/// were melee, which add almost no damage to a city
+MultiunitFormationTypes CvAIOperation::GetFormationType() const
+{
+	MultiunitFormationTypes eFormation = OperationalAIHelpers::GetArmyFormationForOpType(m_eType);
+	if (m_eType == AI_OPERATION_CITY_ATTACK_LAND && eFormation == MUFORMATION_SMALL_CITY_ATTACK_FORCE && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_FORMATION))
+		eFormation = MUFORMATION_BASIC_CITY_ATTACK_FORCE;
+	return eFormation;
+}
+
 MultiunitFormationTypes OperationalAIHelpers::GetArmyFormationForOpType(AIOperationTypes eType)
 {
 	switch (eType)
@@ -1551,7 +1562,7 @@ void CvAIOperationMilitary::Init(CvCity* pTargetCity, CvCity* pMusterCity)
 			return;
 	}
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -1933,7 +1944,7 @@ void CvAIOperationCivilian::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 			pMusterPlot = pClosestCity->plot();
 	}
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -2448,7 +2459,7 @@ void CvAIOperationNavalSuperiority::Init(CvCity* pTarget, CvCity* pMuster)
 	if (!pMusterPlot || !pTargetPlot)
 		return;
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -2567,7 +2578,7 @@ void CvAIOperationCarrierGroup::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 		}
 	}
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -2736,7 +2747,7 @@ void CvAIOperationCityAttackNaval::Init(CvCity* pTarget, CvCity* pMuster)
 		pMusterPlot = MilitaryAIHelpers::GetCoastalWaterNearPlot(pMuster->plot());
 	}
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -2812,7 +2823,7 @@ void CvAIOperationCityAttackCombined::Init(CvCity* pTarget, CvCity* pMuster)
 	// Muster just off the coast
 	CvPlot *pCoastalMuster = MilitaryAIHelpers::GetCoastalWaterNearPlot(pMuster->plot());
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -2828,7 +2839,7 @@ void CvAIOperationNukeAttack::Init(CvCity* /*pTarget*/, CvCity* /*pMuster*/)
 	CvPlot* pMuster = NULL;
 	CvPlot* pTarget = FindBestTarget(&pMuster);
 
-	CvArmyAI* pArmy = AddArmy(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvArmyAI* pArmy = AddArmy(GetFormationType());
 	if(!pArmy)
 		return;
 
@@ -3136,7 +3147,7 @@ bool CvAIOperationCivilian::IsEscorted() const
 			return pThisArmy->GetNumSlotsFilled() + pThisArmy->GetOpenSlots(true).size() > 1;
 		else
 		{
-			CvMultiUnitFormationInfo* thisFormation = GC.getMultiUnitFormationInfo(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+			CvMultiUnitFormationInfo* thisFormation = GC.getMultiUnitFormationInfo(GetFormationType());
 			if (thisFormation && thisFormation->getNumFormationSlotEntriesRequired() > 1)
 				return true;
 		}
@@ -3697,7 +3708,7 @@ bool CvAIOperation::PreconditionsAreMet(CvPlot* pMusterPlot, CvPlot* pTargetPlot
 	//use all slots, not only required slots
 	vector<pair<size_t,CvFormationSlotEntry>> freeSlots;
 	vector<CvArmyFormationSlot> fakeStatus;
-	CvMultiUnitFormationInfo* thisFormation = GC.getMultiUnitFormationInfo(OperationalAIHelpers::GetArmyFormationForOpType(m_eType));
+	CvMultiUnitFormationInfo* thisFormation = GC.getMultiUnitFormationInfo(GetFormationType());
 	for (size_t i = 0; i < thisFormation->getNumFormationSlotEntries(); i++)
 	{
 		freeSlots.push_back( make_pair(i, thisFormation->getFormationSlotEntry(i)) );

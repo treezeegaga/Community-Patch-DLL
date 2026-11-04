@@ -207,6 +207,7 @@ public:
 	virtual int GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTargetPlot, CvArmyAI* pArmy = NULL);
 	int GetArmyExpectedCityDamage(CvArmyAI* pArmy) const;
 	bool IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog = false, bool bIgnoreTimeLimit = false) const;
+	MultiunitFormationTypes GetFormationType() const;
 	virtual void UnitWasRemoved(int iArmyID, int iSlotID);
 	virtual CvPlot* ComputeTargetPlotForThisTurn(CvArmyAI* pArmy) const;
 
