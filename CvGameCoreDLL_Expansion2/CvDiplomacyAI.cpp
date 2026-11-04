@@ -21149,6 +21149,14 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 		}
 	}
 
+	// AI_AB_TEST (candidate, flag FocusedWar): with a committed target, no second war by CP's own approach either (a test
+	// timing attacker declared on another neighbour one turn into its build-up window against its target)
+	if (GetPlayer()->UsesCandidateAI(FIX_FOCUSED_WAR) && GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) &&
+		m_eNewAIConquestTarget != NO_PLAYER && ePlayer != m_eNewAIConquestTarget && !IsAtWar(ePlayer) && vApproachScores[CIV_APPROACH_WAR] > 0)
+	{
+		vApproachScores[CIV_APPROACH_WAR] = 0;
+	}
+
 	//--------------------------------//
 	// [PART 15: APPROACH SELECTION]  //
 	//--------------------------------//

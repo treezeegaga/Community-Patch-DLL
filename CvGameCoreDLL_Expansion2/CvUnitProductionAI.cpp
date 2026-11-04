@@ -1816,6 +1816,19 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			iBonus += 300;
 	}
 
+	// AI_AB_TEST (candidate, flag TimingBuildup): in the build-up window, until the attack army is ready, its units come
+	// first, about as strongly as units an attack operation asks for (a test window built 2 archers and 2 warriors in 10
+	// turns, and a sneak attack on a major civ forms only from units that already exist)
+	if (bCombat && !bFree && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
+		kPlayer.GetMilitaryAI()->IsInTimingBuildupWindow() && !kPlayer.GetMilitaryAI()->IsTimingBuildupArmyReady())
+	{
+		const bool bSiege = pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD;
+		if (bSiege && kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < 2)
+			iBonus += 4000;
+		else if (!bSiege)
+			iBonus += 3000;
+	}
+
 	/////
 	///WEIGHT
 	//////
