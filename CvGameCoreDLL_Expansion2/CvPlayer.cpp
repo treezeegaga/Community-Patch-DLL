@@ -17423,6 +17423,15 @@ int CvPlayer::getAvgGoldRate() const
 
 void CvPlayer::cacheAvgGoldRate()
 {
+	// AI_AB_TEST candidate (TrueGoldRate): CP adds the 10-turn average of m_GoldChangeForTurnTimes100 to the net rate, but
+	// that history only records positive changes (CvTreasury::ChangeGoldTimes100), so one-off income flips a deficit
+	// positive and getTurnsToBankruptcy says "never": the unit and building upkeep guards switched off while a bully-test
+	// aggressor ran -36 gold a turn at 0 gold, and CP's deficit rule then gifted its army away.
+	if (UsesCandidateAI(FIX_TRUE_GOLD_RATE))
+	{
+		m_iCachedGoldRate = calculateGoldRate();
+		return;
+	}
 	m_iCachedGoldRate = calculateGoldRate() + GetTreasury()->AverageIncome100(/*10*/ GD_INT_GET(HISTORY_NUM_TURNS_TO_AVERAGE))/100;
 }
 
@@ -33370,6 +33379,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"DeclareWhenGathered", false}, {"SiegeConcentrate", false}, {"SiegeKeep", false},
 	{"TimingBuildup", false},
 	{"AggressiveWalls", false},
+	{"TrueGoldRate", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
