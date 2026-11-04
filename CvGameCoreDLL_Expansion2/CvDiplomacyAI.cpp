@@ -47235,6 +47235,53 @@ int CvDiplomacyAI::GetRecentTradeScore(PlayerTypes ePlayer) const
 {
 	int iOpinionWeight = 0;
 
+	// FIX_TRADE_OPINION (the user's model): a trade partner is worth what a war with them would cost us, so the opinion
+	// comes from the deals running now in which they supply us, not from a decaying memory of past deals. It goes when
+	// a deal expires (or a war cancels it) and comes back when it's renewed. Capped below the Favorable threshold (-30),
+	// so trade alone can't make a neighbour a friend. CP's version reached -40 from frequent luxury swaps, enough to
+	// make everyone Favorable, which multiplied FRIENDLY, divided WAR and led to friendships that rule war out.
+	if (GetPlayer()->UsesCandidateAI(FIX_TRADE_OPINION))
+	{
+		if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS)
+			return 0;
+		CvGameDeals& kDeals = GC.getGame().GetGameDeals();
+		const uint uNumDeals = kDeals.GetNumCurrentDealsWithPlayer(GetID(), ePlayer);
+		int iGoldPerTurn = 0;
+		for (uint uDeal = 0; uDeal < uNumDeals; uDeal++)
+		{
+			CvDeal* pDeal = kDeals.GetCurrentDealWithPlayer(GetID(), ePlayer, uDeal);
+			if (!pDeal)
+				continue;
+			for (TradedItemList::iterator it = pDeal->m_TradedItems.begin(); it != pDeal->m_TradedItems.end(); ++it)
+			{
+				if (it->m_eFromPlayer != ePlayer || it->m_iDuration <= 0)
+					continue;
+				switch (it->m_eItemType)
+				{
+				case TRADE_ITEM_RESOURCES:
+				{
+					const CvResourceInfo* pkResource = GC.getResourceInfo((ResourceTypes)it->m_iData1);
+					if (pkResource && pkResource->getResourceUsage() == RESOURCEUSAGE_LUXURY)
+						iOpinionWeight -= 5;
+					else if (pkResource && pkResource->getResourceUsage() == RESOURCEUSAGE_STRATEGIC)
+						iOpinionWeight -= 3;
+					break;
+				}
+				case TRADE_ITEM_OPEN_BORDERS:
+					iOpinionWeight -= 2;
+					break;
+				case TRADE_ITEM_GOLD_PER_TURN:
+					iGoldPerTurn += it->m_iData1;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		iOpinionWeight -= iGoldPerTurn / 5;
+		return max(iOpinionWeight, -20);
+	}
+
 	if (GetRecentTradeValue(ePlayer) > 0)
 	{
 		int iCurrentValuePercent = (GetRecentTradeValue(ePlayer) * 100) / max(GetMaxRecentTradeValue(), 1);
