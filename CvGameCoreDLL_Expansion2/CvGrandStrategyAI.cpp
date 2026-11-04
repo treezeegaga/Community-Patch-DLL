@@ -1837,13 +1837,16 @@ int CvGrandStrategyAI::GetMetaPosition() const
 	return m_iCachedMetaPosition;
 }
 
-/// AI_AB_TEST (Personality, GreedyWarArmy and MetaDial's greedy side): at war a greedy civ builds enough land units to
-/// defend, not a full army (the user, 2026-11-04). The cap: the larger of 2 land units per city and three quarters of
-/// the enemy land combat units we can see within 5 plots of our cities (enemies: major civs at war with us; only what
-/// a human could see). Worked out once per turn.
+/// AI_AB_TEST (Personality, GreedyWarArmy and MetaDial's greedy side): a greedy civ at war judges how much threat it is
+/// under (the user, 2026-11-04): an enemy on the other side of the world, or one with a weak army, changes nothing,
+/// and the civ keeps its peace plan. Returns the land units it needs to defend, or 0 when no war is a credible threat:
+/// - enemy land combat units we can see within 5 plots of our cities: 3/4 of their number (only what a human could see);
+/// - an enemy at war with us that is close (CLOSE or NEIGHBORS) and whose army is at least AVERAGE compared to ours
+///   (CP's diplomacy estimate, roughly what the demographics screen shows a human): 2 land units per city.
+/// The larger of the two. Enemies: major civs at war with us. Worked out once per turn.
 int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 {
-	if (!m_pPlayer)
+	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return 0;
 	const int iTurn = GC.getGame().getGameTurn();
 	if (m_iCachedWarDefenceTurn == iTurn)
@@ -1851,11 +1854,18 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 
 	const TeamTypes eTeam = m_pPlayer->getTeam();
 	int iEnemiesNear = 0;
+	bool bCredibleEnemy = false;
 	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
 	{
-		CvPlayer& kEnemy = GET_PLAYER((PlayerTypes)iPlayerLoop);
+		const PlayerTypes eEnemy = (PlayerTypes)iPlayerLoop;
+		CvPlayer& kEnemy = GET_PLAYER(eEnemy);
 		if (!kEnemy.isAlive() || kEnemy.getTeam() == eTeam || !GET_TEAM(eTeam).isAtWar(kEnemy.getTeam()))
 			continue;
+
+		if (m_pPlayer->GetProximityToPlayer(eEnemy) >= PLAYER_PROXIMITY_CLOSE &&
+			m_pPlayer->GetDiplomacyAI()->GetMilitaryStrengthComparedToUs(eEnemy) >= STRENGTH_AVERAGE)
+			bCredibleEnemy = true;
+
 		int iUnitLoop = 0;
 		for (CvUnit* pUnit = kEnemy.firstUnit(&iUnitLoop); pUnit != NULL; pUnit = kEnemy.nextUnit(&iUnitLoop))
 		{
@@ -1873,7 +1883,9 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 		}
 	}
 
-	m_iCachedWarDefenceCap = max(2 * max(1, m_pPlayer->getNumCities()), (iEnemiesNear * 3 + 3) / 4);
+	const int iSeenThreat = (iEnemiesNear > 0) ? (iEnemiesNear * 3 + 3) / 4 : 0;
+	const int iCredibleThreat = bCredibleEnemy ? 2 * max(1, m_pPlayer->getNumCities()) : 0;
+	m_iCachedWarDefenceCap = max(iSeenThreat, iCredibleThreat);
 	m_iCachedWarDefenceTurn = iTurn;
 	return m_iCachedWarDefenceCap;
 }
@@ -1883,11 +1895,12 @@ int CvGrandStrategyAI::GetWarDefenceLandUnitCap() const
 /// cap at peace (Siam: 3 land units built, 8 owned). A human can switch the gifts off in the city-state screen; a civ
 /// with a unit cap does that while it is at its cap and switches them back on below it. The caps are the production
 /// caps (CvUnitProductionAI::CheckUnitBuildSanity):
-/// - GreedyFewUnits: 1 land unit per city in peace, 2 at war (with GreedyWarArmy, the war defence cap);
+/// - GreedyFewUnits: 1 land unit per city in peace, 2 at war (with GreedyWarArmy: the peace cap, or the war defence
+///   cap when a war is a credible threat);
 /// - BalancedArmy: 3 per city in peace, none at war;
 /// - AggressiveArmy: none (it wants every unit it can get);
 /// - MetaDial (when no style army flag is on): the peace ceiling up to meta position 0 (above it, the aggressive side
-///   keeps its gifts); at war the war defence cap on the greedy side (-50 or below), none above.
+///   keeps its gifts); at war on the greedy side (-50 or below) the larger of that and the war defence cap, none above.
 /// GreedyAlarm (a neighbour's army near our cities) lifts the cap. Unit gifts are the only thing the switch stops
 /// (CvMinorCivAI::DoSpawnUnit, IsUnitSpawningAllowed).
 void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
@@ -1899,7 +1912,7 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 	const bool bWar = m_pPlayer->IsAtWarAnyMajor();
 	int iCap = -1;	// -1: no cap
 	if (m_pPlayer->UsesCandidateAI(FIX_GREEDY_FEW_UNITS))
-		iCap = !bWar ? iCities : (m_pPlayer->UsesCandidateAI(FIX_GREEDY_WAR_ARMY) ? GetWarDefenceLandUnitCap() : iCities * 2);
+		iCap = !bWar ? iCities : (m_pPlayer->UsesCandidateAI(FIX_GREEDY_WAR_ARMY) ? max(iCities, GetWarDefenceLandUnitCap()) : iCities * 2);
 	else if (m_pPlayer->UsesCandidateAI(FIX_AGGRESSIVE_ARMY))
 		iCap = -1;
 	else if (m_pPlayer->UsesCandidateAI(FIX_BALANCED_ARMY))
@@ -1910,7 +1923,7 @@ void CvGrandStrategyAI::DoStyleCityStateUnitGifts()
 		if (!bWar)
 			iCap = (iMeta <= 0) ? iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10 : -1;
 		else
-			iCap = (iMeta <= -50) ? GetWarDefenceLandUnitCap() : -1;
+			iCap = (iMeta <= -50) ? max(iCities * m_pPlayer->GetMetaDialLandUnitsPerCityTimes10(true) / 10, GetWarDefenceLandUnitCap()) : -1;
 	}
 	else
 		return;	// no style: the switch stays as it is (off)

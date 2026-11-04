@@ -1391,10 +1391,13 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		//AI_AB_TEST candidate (Personality, GreedyFewUnits): a small army is the greedy style's plan, and the unit cap
 		//blocks the units this penalty asks for, so it would only push production into gold and research processes
 		//(MetaDial: the same on the greedy side of the dial, in peace only.)
-		//GreedyWarArmy, and MetaDial's greedy side: at war the cut applies again until the civ has enough land units to
-		//defend (the war defence cap, CvGrandStrategyAI::GetWarDefenceLandUnitCap), not CP's 3 per city
+		//GreedyWarArmy, and MetaDial's greedy side: at war the civ judges the threat (the user, 2026-11-04). With a credible
+		//threat the cut applies until it has enough land units to defend (CvGrandStrategyAI::GetWarDefenceLandUnitCap), not
+		//CP's 3 per city. With none (a far or weak enemy: the cap is 0) it keeps its peace plan: no cut, and none of CP's
+		//at-war cut on other buildings below either.
 		const bool bGreedyWarDefence = iNumWar > 0 && kPlayer.isMajorCiv() && !kPlayer.isHuman() &&
 			((kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) && kPlayer.UsesCandidateAI(FIX_GREEDY_WAR_ARMY)) || kPlayer.IsMetaDialGreedy());
+		const bool bGreedyUnthreatened = bGreedyWarDefence && kPlayer.GetGrandStrategyAI()->GetWarDefenceLandUnitCap() == 0;
 		const bool bGreedyFewUnits = kPlayer.isMajorCiv() && !kPlayer.isHuman() && !bGreedyWarDefence &&
 			(kPlayer.UsesCandidateAI(FIX_GREEDY_FEW_UNITS) || kPlayer.IsMetaDialGreedy()) &&
 			CityStrategyAIHelpers::GetGreedyAlarmThreat(kPlayer) == NO_PLAYER;
@@ -1407,7 +1410,7 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 		{
 			WarPenalty += 75;
 		}
-		if (iNumWar > 0 && pkBuildingInfo->GetDefenseModifier() <= 0 && !CityStrategyAIHelpers::IsTestCityStrategy_IsPuppetAndAnnexable(m_pCity) && !bFreeBuilding && !kPlayer.IsEmpireVeryUnhappy())
+		if (iNumWar > 0 && !bGreedyUnthreatened && pkBuildingInfo->GetDefenseModifier() <= 0 && !CityStrategyAIHelpers::IsTestCityStrategy_IsPuppetAndAnnexable(m_pCity) && !bFreeBuilding && !kPlayer.IsEmpireVeryUnhappy())
 		{
 			WarPenalty += 50 + m_pCity->getThreatValue();
 
