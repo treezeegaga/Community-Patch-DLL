@@ -1748,7 +1748,41 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	if (pTraits->IsExpansionist())
 		veTagged.push_back(STRATEGY_ARCHETYPE_EXPANSIONIST);
 	const StrategyArchetypeTypes ePursuitArchetype = GetStrategyArchetypeForPursuit(ePrimary);
-	if (!veTagged.empty())
+
+	// 0. bonuses for taking cities, or for taking city-states without a war, come before CP's broad tags (the user,
+	// 2026-11-04: use each civ's conquest bonus). CP's tags overlap (Assyria's tech from captured cities makes it both a
+	// warmonger and a science civ; Venice's "no annexing" makes it a smaller civ), and CP scores the victory pursuit that
+	// breaks the tie from flavours, so a conquest civ could come out a Scientist. Trait fields, not a civ list, so mods
+	// and other civs work too.
+	bool bConquestBonus = pTraits->IsTechFromCityConquer() || pTraits->GetPlunderModifier() > 0 || pTraits->GetRazeSpeedModifier() > 0 ||
+		pTraits->GetCityStateCombatModifier() > 0 || pTraits->GetProductionBonusModifierConquest() > 0 || pTraits->GetCityConquestGWAM() > 0 ||
+		pTraits->IsKeepConqueredBuildings() || pTraits->GetGoldenAgeFromVictory() > 0;
+	for (int iYield = 0; iYield < NUM_YIELD_TYPES && !bConquestBonus; iYield++)
+	{
+		if (pTraits->GetYieldFromConquest((YieldTypes)iYield) > 0)
+			bConquestBonus = true;
+		for (int iTerrain = 0; iTerrain < GC.getNumTerrainInfos() && !bConquestBonus; iTerrain++)
+		{
+			if (pTraits->GetYieldChangeFromTileConquest((TerrainTypes)iTerrain, (YieldTypes)iYield) > 0)
+				bConquestBonus = true;
+		}
+	}
+	// city-states without a war: diplomatic marriage (Austria), annexing city-states, or a unique unit that can buy one
+	// (Venice's Merchant of Venice)
+	bool bCityStateTakeover = pTraits->IsDiplomaticMarriage() || pTraits->IsAbleToAnnexCityStates();
+	for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && !bCityStateTakeover; iClass++)
+	{
+		const UnitTypes eUnit = (UnitTypes)m_pPlayer->getCivilizationInfo().getCivilizationUnits(iClass);
+		CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (pkUnitInfo && pkUnitInfo->IsCanBuyCityState())
+			bCityStateTakeover = true;
+	}
+
+	if (bConquestBonus)
+		kProfile.eArchetype = STRATEGY_ARCHETYPE_CONQUEROR;
+	else if (bCityStateTakeover)
+		kProfile.eArchetype = STRATEGY_ARCHETYPE_DIPLOMAT;
+	else if (!veTagged.empty())
 	{
 		kProfile.eArchetype = veTagged[0];
 		for (size_t i = 0; i < veTagged.size(); i++)
@@ -1769,6 +1803,9 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 
 	// 3. home meta position: the archetype's, moved by boldness and offence, kept inside its range
 	kProfile.iHomeMeta = range(aiHome[eArch] + 5 * (iBoldness - 5) + 5 * (iOffense - 5), aiMin[eArch], aiMax[eArch]);
+	// a civ rewarded for taking cities plays the conquest plan (MetaDial: from +50) whatever its boldness
+	if (bConquestBonus)
+		kProfile.iHomeMeta = max(50, kProfile.iHomeMeta);
 
 	// victory weights: 40% the archetype's, 40% the primary pursuit, 20% the secondary (or the primary if none)
 	for (int i = 0; i < NUM_STRATEGY_VICTORY_WEIGHTS; i++)
