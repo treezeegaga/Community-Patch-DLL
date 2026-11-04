@@ -239,6 +239,7 @@ enum CandidateFixTypes
 	FIX_GREEDY_ALARM_SCALE,	// Personality (the user's flag audit): GreedyAlarm's reaction scales with how greedy the civ is (the greedy style:
 							// one unit over the cap, walls only at war; less greedy: more units, walls sooner). Needs GreedyAlarm. Off in the bundle
 	FIX_MARCH_ON,			// War: a sneak attack declares when discovered or at the border, then keeps marching as an army until it's in place. Off in the bundle
+	FIX_FOCUSED_WAR,		// War: a timing attacker with a committed target doesn't ask for or accept coop wars against anyone else. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

@@ -42550,6 +42550,14 @@ bool CvDiplomacyAI::IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarE
 	if (GetPlayer()->IsVassalOfSomeone() || !GetPlayer()->isMajorCiv() || !GetPlayer()->isAlive() || GetPlayer()->getNumCities() <= 0)
 		return false;
 
+	// AI_AB_TEST (candidate, flag FocusedWar): a timing attacker with a committed target fights that war only. In a test
+	// game a coop war against a far, strong civ came in during the build-up window; the army built for a target 5 tiles
+	// away sat out a war 20 tiles away, and every attack on the real target was cancelled. Also cancels a coop war agreed
+	// but not yet started (CP's "invalid target" path, no broken-promise penalty).
+	if (GetPlayer()->UsesCandidateAI(FIX_FOCUSED_WAR) && GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) &&
+		m_eNewAIConquestTarget != NO_PLAYER && eTargetPlayer != m_eNewAIConquestTarget)
+		return false;
+
 	if (GET_PLAYER(eTargetPlayer).IsVassalOfSomeone() || !GET_PLAYER(eTargetPlayer).isMajorCiv() || !GET_PLAYER(eTargetPlayer).isAlive() || GET_PLAYER(eTargetPlayer).getNumCities() <= 0)
 		return false;
 
