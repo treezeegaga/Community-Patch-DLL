@@ -1647,9 +1647,21 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 			if (GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_ABORT) && GC.getGame().getGameTurn() - GetTurnStarted() >= 20 &&
 				IsArmyTooWeakForTarget(pThisArmy, false, true))
 			{
-				LogOperationSpecialMessage("SiegeArmy: still too weak after 20 turns, giving up");
-				SetToAbort(AI_ABORT_TIMED_OUT);
-				return false;
+				//an army close to the bar (85% or more) marches instead: a test attack at 57 of 60 a turn waited 20 turns and was
+				//thrown away, though the city would have fallen in about 7; the tactical AI's own 13-turn check still applies
+				CvCity* pBarCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
+				const int iBarNeeded = pBarCity ? /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) + pBarCity->GetMaxHitPoints() / 5 : 0;
+				const int iBarExpected = GetArmyExpectedCityDamage(pThisArmy);
+				if (iBarNeeded > 0 && iBarExpected * 100 >= iBarNeeded * 85)
+				{
+					LogOperationSpecialMessage(CvString::format("SiegeArmy: close to the bar after 20 turns (%d of %d), marching", iBarExpected, iBarNeeded));
+				}
+				else
+				{
+					LogOperationSpecialMessage("SiegeArmy: still too weak after 20 turns, giving up");
+					SetToAbort(AI_ABORT_TIMED_OUT);
+					return false;
+				}
 			}
 
 			//AI_AB_TEST (candidate, flag SiegeArmy): the required slots alone make a 4-5 unit army, which in test games never
