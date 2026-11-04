@@ -151,7 +151,7 @@ enum CandidateFixTypes
 	FIX_SIEGE_BOOK,			// c4/c5: the warmonger capital builds 3 catapults, 2 spearmen and 2 archers after its 2nd settler
 	FIX_DECLARE_TIMING,		// c4/c5: a warmonger declares once it has 2 siege units and 4 other land units (fallback T90
 							// Standard); off: from turn 45 Standard, as in c3
-	FIX_GREEDY_BOOK,		// c7: the tall capital book goes on to the aqueduct and university, to turn 130 (Standard)
+	FIX_GREEDY_BOOK,		// the user's redesign: the tall book runs until the capital has the National College (to T130 Standard), then ends
 	FIX_GREEDY_TARGET,		// c7: warmongers pick the neighbour with the fewest land units per city; off: the weakest (c4)
 	FIX_CAN_WIN,			// c7c: war only if the siege sketch says the army brings down the nearest city
 	FIX_SETTLERS_FIRST,		// Economy: the capital's opening-book settlers come before its monument, shrine and worker. Not in the bundle

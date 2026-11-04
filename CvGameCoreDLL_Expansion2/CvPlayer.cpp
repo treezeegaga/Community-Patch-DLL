@@ -33875,8 +33875,17 @@ bool CvPlayer::IsOpeningBookActive() const
 	// Candidate: wide civs keep settling longer. In test games they led CP by a city at turn 60 on Quick, then expanded
 	// no faster than CP once the book ended (turn 67), so the lead never grew.
 	int iWideLimit = false /*retired flag LongWide*/ ? 130 : 100;
-	// c7: a candidate tall civ's book runs on through the National College, aqueduct and university
-	int iTallLimit = UsesCandidateAI(FIX_GREEDY_BOOK) ? 130 : 80;
+	// GreedyBook (the user's redesign): a tall civ's book runs until its capital has the National College (to turn 130
+	// Standard at most), then ends so the normal AI opens up; B's tall book ends at turn 80 whatever it has built
+	int iTallLimit = 80;
+	if (eBook == OPENING_BOOK_TALL && UsesCandidateAI(FIX_GREEDY_BOOK))
+	{
+		static const BuildingClassTypes eCollege = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_NATIONAL_COLLEGE", true);
+		const CvCity* pCapital = getCapitalCity();
+		if (eCollege != NO_BUILDINGCLASS && pCapital && pCapital->GetCityBuildings()->HasBuildingClass(eCollege))
+			return false;
+		iTallLimit = 130;
+	}
 	int iTurnLimit = (eBook == OPENING_BOOK_WIDE) ? iWideLimit : (eBook == OPENING_BOOK_CONQUEST) ? 70 : iTallLimit;
 	iTurnLimit = iTurnLimit * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
 	if (GC.getGame().getElapsedGameTurns() <= iTurnLimit)
@@ -33908,13 +33917,6 @@ static const OpeningBookStep kOpeningTallCapital[] = {
 	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WARRIOR"},
 	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
 	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
-// c7, candidate tall civs play greedy (USER: "library -> national college -> aqueducts -> university"): no
-// change to the start (its two warriors escort the settlers), then the capital goes on to growth and science
-static const OpeningBookStep kOpeningTallCapitalGreedy[] = {
-	{true, "UNITCLASS_SCOUT"}, {false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WARRIOR"},
-	{true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_WORKER"}, {true, "UNITCLASS_SETTLER"}, {true, "UNITCLASS_SETTLER"},
-	{false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"}, {false, "BUILDINGCLASS_AQUEDUCT"},
-	{false, "BUILDINGCLASS_UNIVERSITY"} };
 // Economy candidate (SettlersFirst): the same steps with the settlers ahead of the monument, shrine and worker. In B
 // the 2nd city came at T35-45 on Quick for tall civs and the 3rd at T55-75 for both plans, against T33-40 for a good
 // human's 4th: each settler waited behind 15-25 turns of buildings (a monument or shrine is 8-10 turns, a worker 8)
@@ -33922,11 +33924,6 @@ static const OpeningBookStep kOpeningTallCapitalSF[] = {
 	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"},
 	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WORKER"},
 	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"} };
-static const OpeningBookStep kOpeningTallCapitalGreedySF[] = {
-	{true, "UNITCLASS_SCOUT"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_WARRIOR"}, {true, "UNITCLASS_SETTLER"},
-	{false, "BUILDINGCLASS_MONUMENT"}, {true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_SHRINE"}, {true, "UNITCLASS_WORKER"},
-	{true, "UNITCLASS_SETTLER"}, {false, "BUILDINGCLASS_LIBRARY"}, {false, "BUILDINGCLASS_NATIONAL_COLLEGE"},
-	{false, "BUILDINGCLASS_AQUEDUCT"}, {false, "BUILDINGCLASS_UNIVERSITY"} };
 static const OpeningBookStep kOpeningTallCity[] = {
 	{false, "BUILDINGCLASS_MONUMENT"}, {false, "BUILDINGCLASS_LIBRARY"} };
 static const OpeningBookStep kOpeningWideCapital[] = {
@@ -33981,12 +33978,6 @@ static const OpeningBookStep* GetOpeningBookCapitalSteps(const CvPlayer& kPlayer
 	const bool bSF = kPlayer.UsesCandidateAI(FIX_SETTLERS_FIRST);
 	if (eBook == OPENING_BOOK_TALL)
 	{
-		if (kPlayer.UsesCandidateAI(FIX_GREEDY_BOOK))
-		{
-			if (bSF)
-				AB_BOOK_STEPS(kOpeningTallCapitalGreedySF)
-			AB_BOOK_STEPS(kOpeningTallCapitalGreedy)
-		}
 		if (bSF)
 			AB_BOOK_STEPS(kOpeningTallCapitalSF)
 		AB_BOOK_STEPS(kOpeningTallCapital)
@@ -34082,13 +34073,6 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	else switch (eBook)
 	{
 	case OPENING_BOOK_TALL:
-		if (bCapital && UsesCandidateAI(FIX_GREEDY_BOOK))
-		{
-			bool bSF = UsesCandidateAI(FIX_SETTLERS_FIRST);
-			pSteps = bSF ? kOpeningTallCapitalGreedySF : kOpeningTallCapitalGreedy;
-			iNumSteps = bSF ? (int)(sizeof(kOpeningTallCapitalGreedySF) / sizeof(OpeningBookStep)) : (int)(sizeof(kOpeningTallCapitalGreedy) / sizeof(OpeningBookStep));
-			break;
-		}
 		if (bCapital && UsesCandidateAI(FIX_SETTLERS_FIRST))
 		{
 			pSteps = kOpeningTallCapitalSF;
@@ -34333,8 +34317,6 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	static const char* const kTall[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY" };
 	static const char* const kWide[] = { "TECH_POTTERY", "TECH_MINING", "TECH_WRITING", "TECH_CURRENCY" };
 	static const char* const kConquest[] = { "TECH_ARCHERY", "TECH_BRONZE_WORKING", "TECH_WRITING", "TECH_CONSTRUCTION" };
-	// c7, candidate tall civs: the techs for the greedy capital's library, college, aqueduct and university
-	static const char* const kTallGreedy[] = { "TECH_POTTERY", "TECH_WRITING", "TECH_PHILOSOPHY", "TECH_ENGINEERING", "TECH_EDUCATION" };
 	// candidate warmongers: catapults (Mathematics needs only The Wheel) and the spearman class (hoplite, ram...)
 	static const char* const kWarmonger[] = { "TECH_POTTERY", "TECH_THE_WHEEL", "TECH_MATHEMATICS", "TECH_BRONZE_WORKING", "TECH_ARCHERY", "TECH_WRITING" };
 
@@ -34345,11 +34327,6 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	{
 		pTechs = kWarmonger;
 		iNumTechs = (int)(sizeof(kWarmonger) / sizeof(kWarmonger[0]));
-	}
-	else if (eBook == OPENING_BOOK_TALL && UsesCandidateAI(FIX_GREEDY_BOOK))
-	{
-		pTechs = kTallGreedy;
-		iNumTechs = (int)(sizeof(kTallGreedy) / sizeof(kTallGreedy[0]));
 	}
 	else if (eBook == OPENING_BOOK_WIDE)
 	{
