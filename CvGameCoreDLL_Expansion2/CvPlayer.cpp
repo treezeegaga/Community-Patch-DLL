@@ -33332,8 +33332,8 @@ struct CandidateFixInfo
 };
 static const CandidateFixInfo kCandidateFixes[] = {
 	{"WidePlans", false}, {"BoxedIn", false}, {"BoxedInWar", false}, {"TimingAttack", false},
-	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false}, {"GrowthTech", false}, {"AqueductValue", false},
-	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false}, {"ClosedBorders", false},
+	{"SiegeTechs", false}, {"SiegeBook", false}, {"DeclareTiming", false},
+	 {"GreedyBook", false}, {"GreedyTarget", false}, {"CanWin", false},
 	{"SettlersFirst", false}, {"SettlerOverlap", false},
 	{"DiploPolicyValue", true},
 	{"GreedyAlarm", false},
@@ -34194,7 +34194,7 @@ static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech
 /// c5b: tall civs only; a warmonger's cities are building its army then, and a wide civ's its settlers.
 TechTypes CvPlayer::GetCandidateGrowthTech() const
 {
-	if (!MOD_AI_AB_TEST || !UsesCandidateAI(FIX_GROWTH_TECH) || !isMajorCiv() || isHuman() || IsOpeningBookActive())
+	if (!MOD_AI_AB_TEST || !false /*retired flag GrowthTech*/ || !isMajorCiv() || isHuman() || IsOpeningBookActive())
 		return NO_TECH;
 	if (GetOpeningBook() != OPENING_BOOK_TALL)
 		return NO_TECH;
