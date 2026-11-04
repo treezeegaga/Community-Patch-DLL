@@ -236,6 +236,8 @@ enum CandidateFixTypes
 	FIX_WAR_ECONOMY,		// Economy: while a timing attack is planned, the cities nearest the target favour production and military buildings. Off in the bundle
 	FIX_WAR_CHEST,			// Economy: a timing attacker saves for its build-up, buys it, and keeps gold per turn >= 0 while the army stands. Off in the bundle
 	FIX_TARGET_VULNERABILITY,// War (the user's redesign of GreedyTarget): a warmonger's target is the most vulnerable city nearby (its defence, its owner's army, distance). Off in the bundle
+	FIX_GREEDY_ALARM_SCALE,	// Personality (the user's flag audit): GreedyAlarm's reaction scales with how greedy the civ is (the greedy style:
+							// one unit over the cap, walls only at war; less greedy: more units, walls sooner). Needs GreedyAlarm. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1816,6 +1818,10 @@ public:
 	int GetMetaDialLandUnitsPerCityTimes10(bool bCeiling) const;
 	// AI_AB_TEST (Personality, GreedyNoUpgrades, GreedyWarArmy, MetaDial): does the greedy style hold off upgrading now?
 	bool IsGreedyUpgradeBlocked() const;
+	// AI_AB_TEST (Personality, GreedyAlarmScale): how greedy GreedyAlarm's reaction is, and what the alarm lifts
+	int GetGreedyAlarmGreed() const;
+	bool IsGreedyAlarmLiftingCap(int iNumLandUnits, int iCap) const;
+	int GetGreedyAlarmWallPercent() const;
 	// AI_AB_TEST (Personality, AggressiveArmy and MetaDial's aggressive side): building up for a war, or at war?
 	bool IsInWarBuildup() const;
 	bool GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& iData);
