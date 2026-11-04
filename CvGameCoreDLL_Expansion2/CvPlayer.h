@@ -217,6 +217,8 @@ enum CandidateFixTypes
 	FIX_META_DIAL,			// Personality: the style settings (army size, walls, upgrades, growth value, conquest plan) follow the strategy
 							// profile's meta position, from greedy (-100) to aggressive (+100). Off in the bundle
 	FIX_SIEGE_FORMATION,	// War: classical-medieval land city attacks use the formation with 5 siege/ranged slots (not 2). Off in the bundle
+	FIX_STALE_WAR_PEACE,	// Diplomacy: a war with no city changing hands for 20 turns and no attack under way is stale: reason to
+							// consider peace, no "they're in danger, hold out" term, progress penalty doubled. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i

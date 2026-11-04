@@ -26208,6 +26208,13 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 		// Okay, so no automatic peace. But should we consider peace at all?
 		bool bConsiderPeace = !bFailedAnyVassalagePrereq || bAllWarsArePhony || bAnySeriousDangerUs || bInTerribleShape || bWarWeary || bAnyNonHostileApproach || bAnyBadWarState || iWarDuration >= 30;
 
+		// FIX_STALE_WAR_PEACE: a stale war with any member of their team is reason enough
+		for (size_t i=0; i<vEnemyTeamMembers.size() && !bConsiderPeace; i++)
+		{
+			if (GET_PLAYER(vEnemyTeamMembers[i]).isAlive() && IsStaleWar(vEnemyTeamMembers[i], iWarDuration))
+				bConsiderPeace = true;
+		}
+
 		// Not worth making peace with. Proceed.
 		if (!bConsiderPeace)
 		{
@@ -26279,6 +26286,11 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 			{
 				iPeaceScore += iWarScore / 5;
 			}
+
+			// FIX_STALE_WAR_PEACE: no city changed hands for 20 turns and no attack under way
+			const bool bStaleWar = IsStaleWar(ePlayer, iWarDuration);
+			if (bStaleWar)
+				iPeaceScore += max(0, iDurationPenalty); // lack of progress counts twice (again below)
 
 			// Lack of progress in war increases desire for peace (moreso if far away).
 			if (iWarDuration > iTooLongWarThreshold)
@@ -26370,7 +26382,11 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 			bool bSeriousDangerThem = TheirSeriousDangerFinder->second;
 
 			// They're in danger and we're not? Let's hold out longer!
-			if (iOurDanger == 0 && iTheirDanger > 0)
+			// (FIX_STALE_WAR_PEACE: not in a stale war: a threat we never act on isn't leverage)
+			if (bStaleWar && iOurDanger == 0)
+			{
+			}
+			else if (iOurDanger == 0 && iTheirDanger > 0)
 			{
 				if (iWarDuration < 20 || iOurMultiplier > 2 || bSeriousDangerThem)
 				{
@@ -32565,6 +32581,22 @@ bool CvDiplomacyAI::IsOpenBordersExchangeAcceptable(PlayerTypes ePlayer)
 /////////////////////////////////////////////////////////
 
 /// Is this war not worth caring about?
+/// AI_AB_TEST FIX_STALE_WAR_PEACE: a war going nowhere. 20+ turns of war, no city changed hands between us in either
+/// direction for 20 turns, and we have no attack under way against them. Holding out for concessions only pays if we
+/// press; a winner that doesn't attack (bully pair 0879B791: the Netherlands, Calm for 35 turns, refusing every peace
+/// the beaten Celts offered) just keeps both sides at war.
+bool CvDiplomacyAI::IsStaleWar(PlayerTypes ePlayer, int iWarDuration) const
+{
+	if (!GetPlayer()->UsesCandidateAI(FIX_STALE_WAR_PEACE) || ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || !IsAtWar(ePlayer))
+		return false;
+	const int iStaleTurns = 20;
+	if (iWarDuration < iStaleTurns)
+		return false;
+	if (GetPlayer()->GetNumTurnsSinceCityCapture(ePlayer) < iStaleTurns || GET_PLAYER(ePlayer).GetNumTurnsSinceCityCapture(GetID()) < iStaleTurns)
+		return false;
+	return !m_pPlayer->HasAnyOffensiveOperationsAgainstPlayer(ePlayer);
+}
+
 bool CvDiplomacyAI::IsPhonyWar(PlayerTypes ePlayer, bool bIgnoreCurrentApproach /* = false */) const
 {
 	if (!IsAtWar(ePlayer))

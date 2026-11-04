@@ -1397,6 +1397,7 @@ public:
 	/////////////////////////////////////////////////////////
 
 	bool IsPhonyWar(PlayerTypes ePlayer, bool bIgnoreCurrentApproach = false) const;
+	bool IsStaleWar(PlayerTypes ePlayer, int iWarDuration) const; // AI_AB_TEST FIX_STALE_WAR_PEACE
 	bool IsWantsToConquer(PlayerTypes ePlayer) const;
 	bool IsPotentialMilitaryTargetOrThreat(PlayerTypes ePlayer, bool bFromApproachSelection) const;
 
