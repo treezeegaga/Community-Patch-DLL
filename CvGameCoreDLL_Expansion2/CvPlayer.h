@@ -221,8 +221,8 @@ enum CandidateFixTypes
 							// consider peace, no "they're in danger, hold out" term, progress penalty doubled. Off in the bundle
 	FIX_WAR_APPETITE,		// Diplomacy (Personality's profile): the WAR approach weight follows the meta position M: x0.5 at -100
 							// (greedy), x1 at 0, x2 at +100 (aggressive). Off in the bundle
-	FIX_GREEDY_WAR_ARMY,	// Personality (greedy style): at war with a major civ GreedyFewUnits' cap lifts, the small-army cut on
-							// buildings applies again and city-state unit gifts are taken: a greedy civ arms up once a war comes. Off in the bundle
+	FIX_GREEDY_WAR_ARMY,	// Personality (greedy style): at war with a major civ a greedy civ builds enough to defend: the cap becomes 2 land
+							// units per city or 3/4 of the enemy land units seen near its cities, no siege units. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: a set of candidate flags, bit i = CandidateFixTypes i
