@@ -287,6 +287,9 @@ enum CandidateFixTypes
 							// of income, upkeep included), from the normal army up to BigArmy's size, with no upkeep waiver. Off in the bundle
 	FIX_VICTORY_TECH_PATH,	// Personality (the user, on Economy's finding): after the opening book, each target victory's key techs get extra
 							// research weight by the strategy profile's victory weights (not forced). Off in the bundle
+	FIX_SIEGE_SLOTS,		// War: in the build-up window, while siege is short of its target, siege units skip the land army size cap and
+							// other land units stop getting the window's bonus once the field target is met (28 BigArmy declarations: the
+							// field target met in 16, siege in 5). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

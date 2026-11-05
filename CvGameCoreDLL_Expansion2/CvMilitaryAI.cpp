@@ -2017,6 +2017,11 @@ static int TimingBuildupFieldUnits(const CvPlayer* pPlayer, const CvMilitaryAI* 
 	return iCount;
 }
 
+int CvMilitaryAI::GetTimingBuildupFieldUnits() const
+{
+	return TimingBuildupFieldUnits(m_pPlayer, this, m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true));
+}
+
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
