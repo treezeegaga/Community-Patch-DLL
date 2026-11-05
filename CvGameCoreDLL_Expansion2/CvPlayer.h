@@ -283,6 +283,8 @@ enum CandidateFixTypes
 	FIX_ARMY_SCRAP,			// War: a TimingBuildup civ short of gold in the window or at war gives away or disbands one land unit a turn
 							// below ArmyQuality's floor (not a garrison, not in an army), freeing upkeep for units that fight.
 							// Off in the bundle
+	FIX_WAR_BUDGET,			// Economy and War (the lead's): a timing attacker's army target is what its gold pays for (treasury + 20 turns
+							// of income, upkeep included), from the normal army up to BigArmy's size, with no upkeep waiver. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

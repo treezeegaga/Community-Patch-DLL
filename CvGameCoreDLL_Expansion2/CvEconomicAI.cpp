@@ -264,7 +264,10 @@ CvEconomicAIStrategyXMLEntry* CvEconomicAIStrategyXMLEntries::GetEntry(int index
 /// Constructor
 CvEconomicAI::CvEconomicAI():
 	m_pabUsingStrategy(NULL),
-	m_paiTurnStrategyAdopted(NULL)
+	m_paiTurnStrategyAdopted(NULL),
+	m_iWarBudgetTurn(-1),
+	m_iWarBudgetTurns(-1),
+	m_iWarBudgetUnits(0)
 {
 }
 
@@ -308,6 +311,9 @@ void CvEconomicAI::Uninit()
 void CvEconomicAI::Reset()
 {
 	int iI = 0;
+
+	m_iWarBudgetTurn = -1; // AI_AB_TEST (WarBudget): the cache belongs to one game
+	m_mWarmongerHurryLogTurn.clear();
 
 	for(iI = 0; iI < m_pAIStrategies->GetNumEconomicAIStrategies(); iI++)
 	{
@@ -371,6 +377,8 @@ void CvEconomicAI::Serialize(EconomicAI& economicAI, Visitor& visitor)
 /// Serialization read
 void CvEconomicAI::Read(FDataStream& kStream)
 {
+	m_iWarBudgetTurn = -1; // AI_AB_TEST (WarBudget): a loaded game recomputes
+
 	CvStreamLoadVisitor serialVisitor(kStream);
 	CvEconomicAI::Serialize(*this, serialVisitor);
 }
@@ -3194,6 +3202,67 @@ bool CvEconomicAI::IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, B
 		}
 	}
 	return false;
+}
+
+/// AI_AB_TEST (WarBudget, the lead's; War uses it for the build-up's army target): how many more paid units this civ can
+/// keep for iTurns turns, from its treasury and income, with their upkeep. BigArmy measured the honest cost (11 aggressors,
+/// RESULTS "Paying for BigArmy without the waiver"): unit upkeep 22 a turn in the window and 73 at war, against 7 and 25 left
+/// after buildings. The answer is the largest N with
+///     gold + iTurns x (net income before unit upkeep - upkeep of today's units - extra upkeep of N more) >= 0,
+/// where the extra upkeep comes from CP's own formula (CvTreasury::CalculateUnitCost, which grows faster than linearly).
+/// Negative when today's units already can't be kept that long: -N means N units too many. Any BigArmy waiver is ignored
+/// (the real upkeep is used). Cached for the turn.
+int CvEconomicAI::GetAffordableWarUnits(int iTurns) const
+{
+	const int iGameTurn = GC.getGame().getGameTurn();
+	if (m_iWarBudgetTurn == iGameTurn && m_iWarBudgetTurns == iTurns)
+		return m_iWarBudgetUnits;
+
+	CvTreasury* pTreasury = m_pPlayer->GetTreasury();
+	const int iGold = pTreasury->GetGold();
+	const int iUnitCostNow = pTreasury->CalculateUnitCost(-1, /*bIgnoreBigArmyWaiver*/ true);
+	// CalculateBaseNetGold has subtracted the upkeep actually charged (0 under BigArmy's waiver); add it back
+	const int iNetBeforeUnits = pTreasury->CalculateBaseNetGold() + pTreasury->CalculateUnitCost(-1, false);
+
+	// paid units today, as CalculateUnitCost counts them
+	const CvHandicapInfo& kHandicap = m_pPlayer->getHandicapInfo();
+	int iFreeUnits = kHandicap.getMaintenanceFreeUnits() + m_pPlayer->GetNumMaintenanceFreeUnits() + m_pPlayer->getBaseFreeUnits();
+	iFreeUnits += m_pPlayer->isHuman(ISHUMAN_HANDICAP) ? 0 : GC.getGame().getHandicapInfo().getAIMaintenanceFreeUnits();
+	const int iPaid = max(0, m_pPlayer->getNumUnits() - iFreeUnits);
+	const int iBase = pTreasury->CalculateUnitCost(iPaid, true);
+	const int iTurnsUsed = max(1, iTurns);
+
+	// can we keep iPaid + N units for iTurns turns? (N may be negative)
+	int iAnswer = 0;
+	const int iMargin = iGold + iTurnsUsed * (iNetBeforeUnits - iUnitCostNow);
+	if (iMargin >= 0)
+	{
+		for (int iExtra = 1; iExtra <= 200; iExtra++)
+		{
+			const int iMore = pTreasury->CalculateUnitCost(iPaid + iExtra, true) - iBase;
+			if (iMargin - iTurnsUsed * iMore < 0)
+				break;
+			iAnswer = iExtra;
+		}
+	}
+	else
+	{
+		iAnswer = -iPaid;
+		for (int iFewer = 1; iFewer <= iPaid; iFewer++)
+		{
+			const int iLess = iBase - pTreasury->CalculateUnitCost(iPaid - iFewer, true);
+			if (iMargin + iTurnsUsed * iLess >= 0)
+			{
+				iAnswer = -iFewer;
+				break;
+			}
+		}
+	}
+
+	m_iWarBudgetTurn = iGameTurn;
+	m_iWarBudgetTurns = iTurns;
+	m_iWarBudgetUnits = iAnswer;
+	return iAnswer;
 }
 
 /// AI_AB_TEST: buys the wanted settler as soon as the new AI can pay for it

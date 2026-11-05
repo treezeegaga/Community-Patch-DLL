@@ -221,6 +221,8 @@ public:
 	bool IsSavingForExpansionSettler();
 	// AI_AB_TEST candidate (WarmongerHurry): may this city's owner buy this item with gold? (CvCity::IsCanPurchase)
 	static bool IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, BuildingTypes eBuilding, ProjectTypes eProject, bool bLog);
+	// AI_AB_TEST (WarBudget): how many more paid units the treasury plus iTurns turns of income pay for (negative: over budget)
+	int GetAffordableWarUnits(int iTurns) const;
 	void StartSaveForPurchase(PurchaseType ePurchase, int iAmount, int iPriority);
 	bool IsSavingForThisPurchase(PurchaseType ePurchase);
 	void CancelSaveForPurchase(PurchaseType ePurchase);
@@ -287,6 +289,10 @@ private:
 
 	// AI_AB_TEST (WarmongerHurry): last turn a blocked purchase was logged, per city and item (logging only, not saved)
 	std::map<int, int> m_mWarmongerHurryLogTurn;
+	// AI_AB_TEST (WarBudget): GetAffordableWarUnits' answer, cached for one turn and one iTurns (not saved: recomputed)
+	mutable int m_iWarBudgetTurn;
+	mutable int m_iWarBudgetTurns;
+	mutable int m_iWarBudgetUnits;
 
 	// DoTurn() sub-functions
 	void DoHurry();
