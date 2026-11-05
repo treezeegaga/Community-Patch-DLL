@@ -257,6 +257,8 @@ enum CandidateFixTypes
 							// and would take the city within 3 turns (the lead: "that check throws the war away"). Off in the bundle
 	FIX_SECOND_WAVE,		// War: at war with a major, a new attack on it may form with up to 3 required slots still to be built (new
 							// attacks after the first one ended NoUnits at once in 6 test games). Off in the bundle
+	FIX_CS_AFTER_WAR,		// War (the lead's request): while a war on the committed major is building or on, no WAR approach to city-states
+							// we're not already fighting (a test aggressor sent 6-7 units at a city-state, 3 at its target). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
