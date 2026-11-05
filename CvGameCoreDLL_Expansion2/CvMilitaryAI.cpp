@@ -1969,7 +1969,7 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 /// Nothing else changes. Test only: never in the bundle or a style.
 bool CvMilitaryAI::IsTimingBuildupBigArmy() const
 {
-	return IsTimingBuildupPlayer() && m_pPlayer->UsesCandidateAI(FIX_BIG_ARMY);
+	return m_pPlayer->UsesCandidateAI(FIX_BIG_ARMY) && IsTimingBuildupPlayer(); // the flag first: this is asked often (unit supply)
 }
 
 /// BigArmy: gold is made irrelevant from the window's start to the end of the war (the lead): no unit upkeep, no bankruptcy
@@ -2959,6 +2959,9 @@ void CvMilitaryAI::DisbandObsoleteUnits()
 		// Are we running at a deficit?
 		static EconomicAIStrategyTypes eStrategyLosingMoney = (EconomicAIStrategyTypes)GC.getInfoTypeForString("ECONOMICAISTRATEGY_LOSING_MONEY");
 		bInDeficit = m_pPlayer->GetEconomicAI()->IsUsingStrategy(eStrategyLosingMoney);
+		//AI_AB_TEST (diagnostic flag BigArmy): no deficit scrapping or gifting while the BigArmy plan runs; test only
+		if (IsBigArmyUpkeepWaived())
+			bInDeficit = false;
 		// Are we running anything other than the Conquest Grand Strategy?
 		if (m_pPlayer->GetDiplomacyAI()->IsGoingForWorldConquest())
 		{

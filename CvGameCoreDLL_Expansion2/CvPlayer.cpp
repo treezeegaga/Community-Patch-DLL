@@ -17274,6 +17274,11 @@ int CvPlayer::GetNumUnitsOutOfSupply(bool bCheckWarWeariness) const
 	if (!isAlive() || isBarbarian())
 		return 0;
 
+	// AI_AB_TEST (diagnostic flag BigArmy, the lead: "lift the unit-supply cap"): while the BigArmy plan runs, no unit counts as
+	// out of supply, so no training cap, no production penalty and no over-supply scrapping; test only
+	if (GetMilitaryAI() && GetMilitaryAI()->IsBigArmyUpkeepWaived())
+		return 0;
+
 	return std::max(0, GetNumUnitsToSupply() - GetNumUnitsSupplied(bCheckWarWeariness));
 }
 
