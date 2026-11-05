@@ -9,6 +9,7 @@
 #include "CvGameCoreDLLPCH.h"
 #include "CvGameCoreUtils.h"
 #include "ICvDLLUserInterface.h"
+#include "CvMilitaryAI.h" // AI_AB_TEST (diagnostic flag BigArmy): IsBigArmyUpkeepWaived
 
 #include "LintFree.h"
 
