@@ -1036,6 +1036,27 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 		if (eTargetPlayer != eIntendedTarget)
 			continue;
 
+		//AI_AB_TEST (candidate, flag SiegeFeed): no new attack operation against a city we're already besieging. A test aggressor's
+		//new attack on the city under siege recruited the units SiegeClose had brought up and held them in a gathering army beside the
+		//walls for 10 turns, while 1-3 free units attacked (0D9905E5, Ribe). The tactical AI's reinforcement brings units in reach.
+		if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_FEED) && eTargetPlayer != NO_PLAYER && pTargetPlot->isCity() &&
+			GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eTargetPlayer).getTeam()))
+		{
+			CvTacticalDominanceZone* pSiegeZone = m_pPlayer->GetTacticalAI()->GetTacticalAnalysisMap()->GetZoneByCity(pTargetPlot->getPlotCity(), false);
+			if (pSiegeZone && pSiegeZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_FRIENDLY && pSiegeZone->GetTotalFriendlyUnitCount() >= 3)
+			{
+				if (GC.getLogging() && GC.getAILogging())
+				{
+					CvString strSiegePlayerName = m_pPlayer->getCivilizationShortDescription();
+					FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(strSiegePlayerName), FILogFile::kDontTimeStamp);
+					pLog->Msg(CvString::format("%d, %s, SiegeFeed: %s is under siege (%d units in the zone), no new army for it\n",
+						GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription(),
+						pTargetPlot->getPlotCity()->getNameNoSpace().c_str(), pSiegeZone->GetTotalFriendlyUnitCount()).c_str());
+				}
+				continue;
+			}
+		}
+
 		AIOperationTypes opType = AI_OPERATION_TYPE_UNKNOWN;
 		switch (m_potentialAttackTargets[i].m_armyType)
 		{
