@@ -1835,7 +1835,16 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 				const bool bAtTheWalls = (plotDistance(*pCenterOfMass, *pTarget) <= GetDeployRange()) && (pThisArmy->GetFurthestUnitDistance(pTarget) < 2*GetDeployRange());
 				//(if the war hasn't come after 5 turns of waiting at peace, the old way: end and disband)
 				const bool bStalledAtPeace = m_progressToTarget.size() >= 5 && m_progressToTarget.front() <= m_progressToTarget.back();
-				if (bMarchOn && bInPlace && !bAtTheWalls && !bStalledAtPeace && GET_PLAYER(m_eOwner).IsAtPeaceWith(m_eEnemy))
+				//(and at the walls at peace: ask for the war, but wait as one army until it comes; a test attack ended at the walls
+				//and was disbanded 4 turns before the declaration)
+				if (bMarchOn && bInPlace && bAtTheWalls && !bStalledAtPeace && GET_PLAYER(m_eOwner).IsAtPeaceWith(m_eEnemy))
+				{
+					GET_PLAYER(m_eOwner).GetDiplomacyAI()->SetArmyInPlaceForAttack(m_eEnemy, true);
+					LogOperationSpecialMessage(CvString::format("MarchOn: at the walls, waiting for the war; unit distance near %d; far %d",
+						pThisArmy->GetClosestUnitDistance(pTarget), pThisArmy->GetFurthestUnitDistance(pTarget)));
+					bInPlace = false;
+				}
+				else if (bMarchOn && bInPlace && !bAtTheWalls && !bStalledAtPeace && GET_PLAYER(m_eOwner).IsAtPeaceWith(m_eEnemy))
 				{
 					GET_PLAYER(m_eOwner).GetDiplomacyAI()->SetArmyInPlaceForAttack(m_eEnemy, true);
 					LogOperationSpecialMessage(CvString::format("MarchOn: declaring, the army marches on; unit distance near %d; far %d",

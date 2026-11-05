@@ -23689,6 +23689,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			pMilitary->StartTimingBuildup(eBest);
 			return NO_PLAYER;
 		}
+		// the army was ready without a window: start the plan's clock anyway, so the phase is the attack, not PLANNED (a test
+		// aggressor demobilised 3 units and had its unit cap during the attack)
+		pMilitary->StartTimingBuildup(eBest);
 	}
 	return eBest;
 }
