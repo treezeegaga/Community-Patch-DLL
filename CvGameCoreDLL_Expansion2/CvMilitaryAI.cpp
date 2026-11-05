@@ -1911,7 +1911,7 @@ void CvMilitaryAI::SetRecommendedArmyNavySize()
 		const int iCities = max(1, m_pPlayer->getNumCities());
 		const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 		if (IsInTimingBuildupWindow())
-			m_iRecLandUnits = max(m_iRecLandUnits, IsTimingBuildupBigArmy() ? GetTimingBuildupSiegeTarget() + GetTimingBuildupFieldTarget() + 2 : iCities + 6);
+			m_iRecLandUnits = max(m_iRecLandUnits, (IsTimingBuildupBigArmy() || IsTimingBuildupWarBudget()) ? GetTimingBuildupSiegeTarget() + GetTimingBuildupFieldTarget() + 2 : iCities + 6);
 		else if (IsTimingBuildupPeace())
 			m_iRecLandUnits = min(m_iRecLandUnits, GetTimingBuildupPeaceCap() + min(3, iSiege));
 	}
@@ -2043,15 +2043,32 @@ int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
 	return IsTimingBuildupBigArmy() ? 4 : 2;
 }
 
+/// AI_AB_TEST (candidate, flag WarBudget, Economy and War; the lead's honest package): BigArmy's doubled army took cities in
+/// 5 of 11 games against 3 of 28, but only with its upkeep waived (73 a turn at war). Under WarBudget the field target is the
+/// field units the civ has plus the paid units its gold can keep for 20 turns (CvEconomicAI::GetAffordableWarUnits, patch
+/// 0025), from the normal army (cities + 4) up to BigArmy's (twice that). Counted from today's army so the target stays put
+/// as units are built (each one built is one less affordable); no waiver. BigArmy, when on, takes precedence.
+bool CvMilitaryAI::IsTimingBuildupWarBudget() const
+{
+	return m_pPlayer->UsesCandidateAI(FIX_WAR_BUDGET) && IsTimingBuildupPlayer() && !IsTimingBuildupBigArmy();
+}
+
 int CvMilitaryAI::GetTimingBuildupFieldTarget() const
 {
-	return (max(1, m_pPlayer->getNumCities()) + 4) * (IsTimingBuildupBigArmy() ? 2 : 1);
+	const int iNormal = max(1, m_pPlayer->getNumCities()) + 4;
+	if (IsTimingBuildupWarBudget())
+	{
+		const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+		const int iAffordable = max(0, m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20));
+		return min(2 * iNormal, max(iNormal, TimingBuildupFieldUnits(m_pPlayer, this, iSiege) + iAffordable));
+	}
+	return iNormal * (IsTimingBuildupBigArmy() ? 2 : 1);
 }
 
 /// BigArmy's log: the land army by unit type, with the gold
 void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 {
-	if (!IsTimingBuildupBigArmy() || !(GC.getLogging() && GC.getAILogging()))
+	if (!(IsTimingBuildupBigArmy() || IsTimingBuildupWarBudget()) || !(GC.getLogging() && GC.getAILogging()))
 		return;
 	map<CvString, int> mTypes;
 	int iLand = 0, iSiege = 0, iLoop = 0;
@@ -2067,9 +2084,11 @@ void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 	CvString strTypes;
 	for (map<CvString, int>::const_iterator it = mTypes.begin(); it != mTypes.end(); ++it)
 		strTypes += CvString::format("%s%s %d", strTypes.empty() ? "" : ", ", it->first.c_str(), it->second);
-	m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("BigArmy: army %s: %d land (%d siege; target %d siege, %d others), gold %d, %d a turn: %s",
-		szWhen, iLand, iSiege, GetTimingBuildupSiegeTarget(), GetTimingBuildupFieldTarget(), m_pPlayer->GetTreasury()->GetGold(),
-		m_pPlayer->GetTreasury()->CalculateBaseNetGold(), strTypes.c_str()));
+	//WarBudget writes the same line under its own name, with what gold still pays for (20 turns)
+	const CvString strAffordable = IsTimingBuildupWarBudget() ? CvString::format(", affordable %d more", m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20)) : CvString("");
+	m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("%s: army %s: %d land (%d siege; target %d siege, %d others), gold %d, %d a turn%s: %s",
+		IsTimingBuildupBigArmy() ? "BigArmy" : "WarBudget", szWhen, iLand, iSiege, GetTimingBuildupSiegeTarget(), GetTimingBuildupFieldTarget(), m_pPlayer->GetTreasury()->GetGold(),
+		m_pPlayer->GetTreasury()->CalculateBaseNetGold(), strAffordable.c_str(), strTypes.c_str()));
 }
 
 /// non-siege land combat units at peace: a garrison per city and one escort
@@ -2177,6 +2196,8 @@ void CvMilitaryAI::DoTimingBuildup()
 	// bankrupt in under 9 turns (a test window refused 82 units as "too expensive" and ran out with no army); at most 10
 	// paused turns a window
 	//AI_AB_TEST (diagnostic flag BigArmy): no pause for gold; it may go into debt for the test, so log the army and the gold
+	if (IsTimingBuildupWarBudget() && IsInTimingBuildupWindow())	// WarBudget: the army in the window; the gold pause still applies
+		LogBigArmy(CvString::format("in the window (turn %d)", iTurn - m_iTimingBuildupStartTurn + 1).c_str());
 	if (IsTimingBuildupBigArmy() && IsInTimingBuildupWindow())
 		LogBigArmy(CvString::format("in the window (turn %d)", iTurn - m_iTimingBuildupStartTurn + 1).c_str());
 	else if (IsInTimingBuildupWindow() && m_iTimingBuildupPausedTurns < 10)

@@ -1040,7 +1040,7 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 						iMovedBefore++;
 				}
 				//AI_AB_TEST (diagnostic flag BigArmy): the army, and the units in reach, at the first capture attempt on each city
-				if (m_pPlayer->GetMilitaryAI()->IsTimingBuildupBigArmy() && GC.getLogging() && GC.getAILogging() &&
+				if ((m_pPlayer->GetMilitaryAI()->IsTimingBuildupBigArmy() || m_pPlayer->GetMilitaryAI()->IsTimingBuildupWarBudget()) && GC.getLogging() && GC.getAILogging() &&
 					m_BigArmyLoggedCities.insert(pPlot->GetPlotIndex()).second)
 				{
 					CvString strReach;
