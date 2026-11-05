@@ -37368,7 +37368,12 @@ void CvDiplomacyAI::DoContactMinorCivs()
 				if(eApproach == CIV_APPROACH_HOSTILE || bWarChestTarget)
 				{
 					// Only bother if we can successfully bully
-					if (pMinor->GetMinorCivAI()->CanMajorBullyGold(eID, MOD_BALANCE_HEAVY_TRIBUTE ? iValue - 25 : 0))
+					bool bCanBullyGold = pMinor->GetMinorCivAI()->CanMajorBullyGold(eID, MOD_BALANCE_HEAVY_TRIBUTE ? iValue - 25 : 0);
+					// FIX_WAR_CHEST_TRIBUTE: without heavy tribute the check above is passed a metric of 0 and always succeeds, while
+					// the bully itself (below) checks the real bully score. Check it here too, so a pick never fails at execution.
+					if (bCanBullyGold && bWarChestSeeker)
+						bCanBullyGold = pMinor->GetMinorCivAI()->CanMajorBullyGold(eID);
+					if (bCanBullyGold)
 					{
 						// FIX_WAR_CHEST_TRIBUTE: prefer city-states close to us (and our army)
 						if (bWarChestTarget && GetPlayer()->GetProximityToPlayer(eMinor) >= PLAYER_PROXIMITY_CLOSE)
