@@ -280,7 +280,7 @@ enum CandidateFixTypes
 	FIX_ARMY_QUALITY,		// War: a TimingBuildup civ builds no land unit weaker than 70% of the best of its kind (melee or ranged) it can
 							// train, and such units don't count toward its army (22% of BigArmy's first-declaration armies were Warriors and
 							// Scouts). Off in the bundle
-	FIX_ARMY_SCRAP,			// War: a TimingBuildup civ short of gold in the window or at war gives away or disbands one land unit a turn
+	FIX_ARMY_SCRAP,			// War: a TimingBuildup civ short of gold in the window (not at war) gives away or disbands one land unit a turn
 							// below ArmyQuality's floor (not a garrison, not in an army), freeing upkeep for units that fight.
 							// Off in the bundle
 	FIX_WAR_BUDGET,			// Economy and War (the lead's): a timing attacker's army target is what its gold pays for (treasury + 20 turns

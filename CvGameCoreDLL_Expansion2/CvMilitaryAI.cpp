@@ -3172,11 +3172,14 @@ CvUnit* CvMilitaryAI::FindUselessShip()
 /// Score the strength of the units for a domain; best candidate to scrap (with lowest score) is returned. Only supports land and naval units
 /// AI_AB_TEST (candidate, flag ArmyScrap, War): without BigArmy's waiver the attacker's gold holds its army at 9 to 10 land
 /// units through 40 turns of war (f6d1e84, 850e142), while 22% of the armies were Warriors and Scouts (BigArmy, at the first
-/// declaration). In the window or at war, when the treasury would run dry in under 9 turns (the window's pause test), give
+/// declaration). In the window or the attack phase (not at war), when the treasury would run dry in under 9 turns (the window's pause test), give
 /// away or disband one land unit a turn below ArmyQuality's floor: not siege, not a garrison, not in an army; the weakest.
 CvUnit* CvMilitaryAI::FindArmyScrapUnit() const
 {
-	if (!IsTimingBuildupPlayer() || GetTimingBuildupPhase() < TIMING_BUILDUP_WINDOW)
+	//not at war (the lead, 6:39pm ET): over the first 5 package games all 7 drops came at war, none in the window, taking
+	//bodies out of the fight they were built for; the upkeep it frees is for building the army, before the war
+	if (!IsTimingBuildupPlayer() || GetTimingBuildupPhase() < TIMING_BUILDUP_WINDOW || GetTimingBuildupPhase() >= TIMING_BUILDUP_WAR ||
+		m_pPlayer->IsAtWarAnyMajor())
 		return NULL;
 	const int iAverageGoldPerUnit = m_pPlayer->GetTreasury()->GetExpensePerTurnUnitMaintenance() / max(1, m_pPlayer->getNumUnits());
 	if (m_pPlayer->getTurnsToBankruptcy(iAverageGoldPerUnit) >= 9)
