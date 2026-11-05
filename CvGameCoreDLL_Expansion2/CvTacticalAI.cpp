@@ -739,6 +739,16 @@ void CvTacticalAI::ProcessDominanceZones()
 					pZone ? pZone->GetZoneID() : -1, pZone->IsWater() ? "water" : "land",
 					pZoneCity ? pZoneCity->getNameNoSpace().c_str() : "none", 
 					postureNames[pZone->GetPosture()], iTargets);
+				//AI_AB_TEST War: logging only - why enemy cities read enemy dominated (strengths behind the posture)
+				if (pZone->GetTerritoryType() == TACTICAL_TERRITORY_ENEMY && pZoneCity)
+				{
+					CvString strStrength;
+					strStrength.Format(", friendly %u (%d units, melee %u, ranged %u), enemy %u (%d units, melee %u, ranged %u, city HP %d/%d)",
+						pZone->GetOverallFriendlyStrength(), pZone->GetTotalFriendlyUnitCount(), pZone->GetFriendlyMeleeStrength(), pZone->GetFriendlyRangedStrength(),
+						pZone->GetOverallEnemyStrength(), pZone->GetTotalEnemyUnitCount(), pZone->GetEnemyMeleeStrength(), pZone->GetEnemyRangedStrength(),
+						pZoneCity->GetMaxHitPoints() - pZoneCity->getDamage(), pZoneCity->GetMaxHitPoints());
+					strLogString += strStrength;
+				}
 				LogTacticalMessage(strLogString);
 			}
 
