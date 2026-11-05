@@ -255,6 +255,8 @@ enum CandidateFixTypes
 							// an attack on it is under way (one failed turn cancelled the attack being gathered). Off in the bundle
 	FIX_SIEGE_DOMINATED,	// War: at an enemy major's city, an enemy-dominated zone doesn't stop a capture attempt when 3+ units can strike
 							// and would take the city within 3 turns (the lead: "that check throws the war away"). Off in the bundle
+	FIX_SECOND_WAVE,		// War: at war with a major, a new attack on it may form with up to 3 required slots still to be built (new
+							// attacks after the first one ended NoUnits at once in 6 test games). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

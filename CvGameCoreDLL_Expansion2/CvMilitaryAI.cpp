@@ -1068,7 +1068,15 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 		//made 302 requests that all failed "for lack of units", since every required slot needed a free unit up front)
 		const TimingBuildupPhase eTimingPhase = GetTimingBuildupPhase();
 		const bool bTimingAttack = eTimingPhase == TIMING_BUILDUP_WINDOW || eTimingPhase == TIMING_BUILDUP_ATTACK;
-		if (m_pPlayer->addAIOperation(opType, (bCareful || bTimingAttack) ? iNumUnitsWillingToBuild : 0, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)
+		int iMaxMissing = (bCareful || bTimingAttack) ? iNumUnitsWillingToBuild : 0;
+		//AI_AB_TEST (candidate, flag SecondWave): at war with a major, the next attack may form with up to 3 required slots to be
+		//built. The siege formation has 6 required slots and the attacks after the first started with 3 units and ended NoUnits
+		//the same turn (6 test games), so a damaged city never saw a second wave. SiegeArmy's at-war bar and SiegeRoll decide
+		//when it marches.
+		if (m_pPlayer->UsesCandidateAI(FIX_SECOND_WAVE) && eTargetPlayer != NO_PLAYER && eTargetPlayer < MAX_MAJOR_CIVS &&
+			GET_PLAYER(eTargetPlayer).isMajorCiv() && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eTargetPlayer).getTeam()))
+			iMaxMissing = max(iMaxMissing, max(iNumUnitsWillingToBuild, 3));
+		if (m_pPlayer->addAIOperation(opType, iMaxMissing, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)
 			return true;
 		else
 		{
