@@ -319,6 +319,9 @@ void CvMilitaryAI::Reset()
 	m_eTimingBuildupTarget = NO_PLAYER;
 	m_bTimingBuildupSaving = false;
 	m_iTimingBuildupPausedTurns = 0;
+	m_iArmyQualityTurn = -1;
+	m_iArmyQualityFloor = 0;
+	m_iArmyQualityRangedFloor = 0;
 	m_eLandDefenseState = NO_DEFENSE_STATE;
 	m_eNavalDefenseState = NO_DEFENSE_STATE;
 	m_iNumberOfTimesOpsBuildSkippedOver = 0;
@@ -1956,11 +1959,68 @@ bool CvMilitaryAI::HasTimingBuildupWindowEnded() const
 }
 
 /// ready to attack: 2 siege units and 4 field units on top of a garrison per city (DeclareTiming's army)
+/// AI_AB_TEST (flag ArmyQuality): land combat units (not scouts) at least 70% as strong as the best one of their kind (melee
+/// or ranged, siege apart) the civ can train;
+/// the rest of the TimingBuildup army's field units count for nothing. 22% of the BigArmy armies at their first declaration
+/// were Warriors and Scouts, counted as army and paid for like the rest.
+int CvMilitaryAI::GetArmyQualityFloor(bool bRanged) const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iArmyQualityTurn != iTurn)
+	{
+		m_iArmyQualityTurn = iTurn;
+		m_iArmyQualityFloor = 0;
+		m_iArmyQualityRangedFloor = 0;
+		const CvCity* pCapital = m_pPlayer->getCapitalCity();
+		int iBest = 0, iBestRanged = 0;
+		for (int iUnit = 0; pCapital && iUnit < GC.getNumUnitInfos(); iUnit++)
+		{
+			const UnitTypes eUnit = (UnitTypes)iUnit;
+			const CvUnitEntry* pkEntry = GC.getUnitInfo(eUnit);
+			if (!pkEntry || pkEntry->GetDomainType() != DOMAIN_LAND || pkEntry->GetDefaultUnitAIType() == UNITAI_EXPLORE ||
+				pkEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)	// siege is counted apart
+				continue;
+			const bool bIsRanged = pkEntry->GetRangedCombat() > 0;
+			const int iStrength = bIsRanged ? pkEntry->GetRangedCombat() : pkEntry->GetCombat();
+			if (iStrength <= (bIsRanged ? iBestRanged : iBest) || !pCapital->canTrain(eUnit))
+				continue;
+			if (bIsRanged) iBestRanged = iStrength; else iBest = iStrength;
+		}
+		m_iArmyQualityFloor = iBest * 70 / 100;
+		m_iArmyQualityRangedFloor = iBestRanged * 70 / 100;
+	}
+	return bRanged ? m_iArmyQualityRangedFloor : m_iArmyQualityFloor;
+}
+
+/// melee units against the best melee unit, ranged ones against the best ranged unit
+bool CvMilitaryAI::IsArmyQualityUnit(const CvUnitEntry* pkUnitEntry) const
+{
+	if (!pkUnitEntry || pkUnitEntry->GetDomainType() != DOMAIN_LAND || pkUnitEntry->GetDefaultUnitAIType() == UNITAI_EXPLORE)
+		return false;
+	const bool bRanged = pkUnitEntry->GetRangedCombat() > 0;
+	return (bRanged ? pkUnitEntry->GetRangedCombat() : pkUnitEntry->GetCombat()) >= GetArmyQualityFloor(bRanged);
+}
+
+/// the TimingBuildup army's field units: land military units that aren't siege (ArmyQuality: only those above the floor)
+static int TimingBuildupFieldUnits(const CvPlayer* pPlayer, const CvMilitaryAI* pMilitary, int iSiege)
+{
+	if (!pPlayer->UsesCandidateAI(FIX_ARMY_QUALITY))
+		return pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true) - iSiege;
+	int iCount = 0, iLoop = 0;
+	for (const CvUnit* pLoopUnit = pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD || !pLoopUnit->IsCombatUnit())
+			continue;
+		if (pMilitary->IsArmyQualityUnit(&pLoopUnit->getUnitInfo()))
+			iCount++;
+	}
+	return iCount;
+}
+
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-	return iSiege >= GetTimingBuildupSiegeTarget() && iLand - iSiege >= GetTimingBuildupFieldTarget();
+	return iSiege >= GetTimingBuildupSiegeTarget() && TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= GetTimingBuildupFieldTarget();
 }
 
 /// AI_AB_TEST (diagnostic flag BigArmy, the user and the lead): is the attack failing because the army is too small, or
@@ -2051,8 +2111,7 @@ int CvMilitaryAI::GetTimingBuildupUnitsWanted() const
 	if (!IsTimingBuildupPlayer())
 		return 0;
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-	return max(0, GetTimingBuildupSiegeTarget() - iSiege) + max(0, GetTimingBuildupFieldTarget() - (iLand - iSiege));
+	return max(0, GetTimingBuildupSiegeTarget() - iSiege) + max(0, GetTimingBuildupFieldTarget() - TimingBuildupFieldUnits(m_pPlayer, this, iSiege));
 }
 
 /// the unit the build-up would build or buy now (at the capital): siege or attack
