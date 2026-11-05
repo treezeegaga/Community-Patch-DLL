@@ -2094,10 +2094,20 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 	bool bNeedMeleeOnly = false;
 	if (pTargetZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_FRIENDLY && pTargetZone->GetRangedDominanceFlag(100) == TACTICAL_DOMINANCE_FRIENDLY)
 	{
+		//AI_AB_TEST (candidate, flag SiegeClose): dominating an enemy major's city zone is the time to close in, not to stop.
+		//The capture step only uses units within striking distance this turn; an army handed over 2-5 tiles out at a city
+		//whose zone we dominate got no tactical move here and the homeland AI sent it to garrisons and exploring (0D9AF4AA)
+		bool bSiegeClose = m_pPlayer->UsesCandidateAI(FIX_SIEGE_CLOSE) && !pTargetZone->IsWater() &&
+			pZoneCity->getTeam() != m_pPlayer->getTeam() && GET_PLAYER(pZoneCity->getOwner()).isMajorCiv() &&
+			GET_TEAM(m_pPlayer->getTeam()).isAtWar(pZoneCity->getTeam());
+
 		if (pTargetZone->GetFriendlyMeleeStrength() == 0) //get in melee units to capture a city!
 			bNeedMeleeOnly = true;
-		else
+		else if (!bSiegeClose)
 			return;
+		else if (GC.getLogging() && GC.getAILogging())
+			LogTacticalMessage(CvString::format("SiegeClose: zone %d (%s) is ours, moving units in reach up around the city",
+				pTargetZone->GetZoneID(), pZoneCity->getNameNoSpace().c_str()));
 	}
 
 	//sometimes it's pointless, too far out
