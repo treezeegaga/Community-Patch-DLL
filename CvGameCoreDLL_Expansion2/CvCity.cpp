@@ -30697,7 +30697,8 @@ bool CvCity::IsCanPurchase(const std::vector<int>& vPreExistingBuildings, bool b
 		return false;
 	}
 
-	// AI_AB_TEST candidate (WarmongerHurry, Economy): a warmonger buys only settlers and siege units with gold
+	// AI_AB_TEST (WarmongerHurry, NoObsoleteHurry; Economy): a warmonger buys only settlers and siege units with gold, and
+	// no civ of ours buys a Warrior or a unit whose upgrade it can train
 	if (ePurchaseYield == YIELD_GOLD && !CvEconomicAI::IsGoldPurchaseAllowed(this, eUnitType, eBuildingType, eProjectType, bTestPurchaseCost))
 	{
 		return false;

@@ -272,10 +272,11 @@ enum CandidateFixTypes
 							// army can intimidate (not only hostile ones), and a successful tribute pays at least half. Off in the bundle
 	FIX_SETTLER_SAVE_REALISTIC,	// Economy (Diplomacy's finding): save for a settler purchase only when gold + income can reach the price before
 							// the city builds it. Off in the bundle
-	FIX_NO_OBSOLETE_HURRY,	// Economy (Diplomacy's finding): gold doesn't hurry a unit whose upgrade the civ can already train. Off in the bundle
+	FIX_NO_OBSOLETE_HURRY,	// Economy (Diplomacy's finding; the user's rule): gold never buys a Warrior (or its unique replacement), nor a unit
+							// whose upgrade the civ can already train. In the bundle (the user's call, untested)
 	FIX_PEACE_HURRY,		// Economy (Diplomacy's finding): at peace and out of danger, gold doesn't hurry combat units. Off in the bundle
 	FIX_WARMONGER_HURRY,	// Economy (the user's rule): a candidate warmonger spends gold on production only for settlers and siege units.
-							// Off in the bundle
+							// In the bundle (the user's call, untested)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

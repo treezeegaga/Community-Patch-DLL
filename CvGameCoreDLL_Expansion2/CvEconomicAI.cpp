@@ -3127,26 +3127,53 @@ bool CvEconomicAI::IsSavingForExpansionSettler()
 /// settlers and siege units (unit combat class UNITCOMBAT_SIEGE, or city-bombard units: catapult, ballista, trebuchet,
 /// cannon, artillery, rocket artillery and their unique versions). No buildings, wonders, projects, workers, work
 /// boats, caravans or other combat units, and no exceptions. Faith purchases and tiles aren't purchases of production.
-/// Checked in CvCity::IsCanPurchase, so every gold purchase path obeys it.
+/// NoObsoleteHurry (the user's rule): no major AI of ours ever buys a Warrior (or its unique replacement), nor a unit
+/// whose upgrade it can already train. Checked in CvCity::IsCanPurchase, so every gold purchase path obeys both.
 bool CvEconomicAI::IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, BuildingTypes eBuilding, ProjectTypes eProject, bool bLog)
 {
 	if (!pCity)
 		return true;
 	CvPlayer& kPlayer = GET_PLAYER(pCity->getOwner());
-	if (!kPlayer.IsCandidateWarmonger(FIX_WARMONGER_HURRY))
+	if (!kPlayer.isMajorCiv() || kPlayer.isHuman())
 		return true;
+	CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (eUnit != NO_UNIT && !pkUnitInfo)
+		return false;
 
-	if (eUnit != NO_UNIT)
+	bool bAllowed = true;
+
+	// NoObsoleteHurry (the user's rule, and Diplomacy's finding): never a Warrior or its unique replacement (Jaguar,
+	// Maori Warrior...), and never a unit whose upgrade we can already train
+	if (pkUnitInfo && kPlayer.UsesCandidateAI(FIX_NO_OBSOLETE_HURRY))
 	{
-		CvUnitEntry* pkUnitInfo = GC.getUnitInfo(eUnit);
-		if (!pkUnitInfo)
-			return false;
-		static const UnitCombatTypes eSiegeCombat = (UnitCombatTypes)GC.getInfoTypeForString("UNITCOMBAT_SIEGE", true);
-		if (pkUnitInfo->IsFound() || pkUnitInfo->IsFoundAbroad())
-			return true;
-		if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD || (eSiegeCombat != NO_UNITCOMBAT && pkUnitInfo->GetUnitCombatType() == eSiegeCombat))
-			return true;
+		static const UnitClassTypes eWarriorClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_WARRIOR", true);
+		if (eWarriorClass != NO_UNITCLASS && pkUnitInfo->GetUnitClassType() == eWarriorClass)
+			bAllowed = false;
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && bAllowed; iClass++)
+		{
+			if (!pkUnitInfo->GetUpgradeUnitClass(iClass))
+				continue;
+			UnitTypes eUpgrade = kPlayer.GetSpecificUnitType((UnitClassTypes)iClass);
+			if (eUpgrade != NO_UNIT && kPlayer.canTrainUnit(eUpgrade, false, false, /*bIgnoreCost*/ true))
+				bAllowed = false;
+		}
 	}
+
+	// WarmongerHurry (the user's rule): a warmonger buys settlers and siege units only
+	if (bAllowed && kPlayer.IsCandidateWarmonger(FIX_WARMONGER_HURRY))
+	{
+		bAllowed = false;
+		if (pkUnitInfo)
+		{
+			static const UnitCombatTypes eSiegeCombat = (UnitCombatTypes)GC.getInfoTypeForString("UNITCOMBAT_SIEGE", true);
+			if (pkUnitInfo->IsFound() || pkUnitInfo->IsFoundAbroad())
+				bAllowed = true;
+			if (pkUnitInfo->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD || (eSiegeCombat != NO_UNITCOMBAT && pkUnitInfo->GetUnitCombatType() == eSiegeCombat))
+				bAllowed = true;
+		}
+	}
+	if (bAllowed)
+		return true;
 
 	// blocked: log it when the city is in danger, once per city, item and turn
 	if (bLog && GC.getLogging() && GC.getAILogging() && (pCity->isInDangerOfFalling() || pCity->isUnderSiege()))
@@ -3161,7 +3188,8 @@ bool CvEconomicAI::IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, B
 			mLogged[iKey] = iTurn;
 			const char* szItem = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit)->GetDescription() :
 				(eBuilding != NO_BUILDING) ? GC.getBuildingInfo(eBuilding)->GetDescription() : GC.getProjectInfo(eProject)->GetDescription();
-			kPlayer.GetHomelandAI()->LogHomelandMessage(CvString::format("WarmongerHurry: blocked %s in threatened city %s",
+			kPlayer.GetHomelandAI()->LogHomelandMessage(CvString::format("%s: blocked %s in threatened city %s",
+				kPlayer.IsCandidateWarmonger(FIX_WARMONGER_HURRY) ? "WarmongerHurry" : "NoObsoleteHurry",
 				szItem, pCity->getName().c_str()));
 		}
 	}
@@ -3432,8 +3460,8 @@ void CvEconomicAI::DoHurry()
 		if (pSelectedCity == NULL)
 			continue;
 
-		// AI_AB_TEST candidate (WarmongerHurry): also covers the investment paths below, which skip IsCanPurchase
-		if (m_pPlayer->UsesCandidateAI(FIX_WARMONGER_HURRY))
+		// AI_AB_TEST candidates (WarmongerHurry, NoObsoleteHurry): also cover the investment paths below, which skip IsCanPurchase
+		if (m_pPlayer->UsesCandidateAI(FIX_WARMONGER_HURRY) || m_pPlayer->UsesCandidateAI(FIX_NO_OBSOLETE_HURRY))
 		{
 			const bool bUnit = selection.m_eBuildableType == CITY_BUILDABLE_UNIT || selection.m_eBuildableType == CITY_BUILDABLE_UNIT_FOR_ARMY ||
 				selection.m_eBuildableType == CITY_BUILDABLE_UNIT_FOR_OPERATION;
@@ -3459,22 +3487,6 @@ void CvEconomicAI::DoHurry()
 			// AI_AB_TEST: CP's AI often spends its first 100 gold on a scout; the new AI saves it for a settler
 			if (pkUnitInfo && m_pPlayer->UsesNewAI() && pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE)
 				continue;
-			// AI_AB_TEST candidate (NoObsoleteHurry, Diplomacy's finding): no gold for a unit whose upgrade we can already
-			// train (104 Warriors bought at 140 gold in 112 games, then upgraded for 55 more). CP's own check in
-			// CheckUnitBuildSanity only covers unit classes unlocked by buildings, not by techs.
-			if (pkUnitInfo && m_pPlayer->UsesCandidateAI(FIX_NO_OBSOLETE_HURRY))
-			{
-				bool bObsolete = false;
-				for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && !bObsolete; iClass++)
-				{
-					if (!pkUnitInfo->GetUpgradeUnitClass(iClass))
-						continue;
-					UnitTypes eUpgrade = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
-					bObsolete = eUpgrade != NO_UNIT && m_pPlayer->canTrainUnit(eUpgrade, false, false, /*bIgnoreCost*/ true);
-				}
-				if (bObsolete)
-					continue;
-			}
 			// AI_AB_TEST candidate (PeaceHurry, Diplomacy's finding): at peace and out of danger, no gold for combat units
 			// (104 Warriors bought at 140 gold in 112 games, median T40, then upkeep and upgrades). Units for armies and
 			// operations, and a timing attack's window or march, are unchanged.
