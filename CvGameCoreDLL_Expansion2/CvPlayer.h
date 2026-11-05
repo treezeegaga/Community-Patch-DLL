@@ -290,6 +290,8 @@ enum CandidateFixTypes
 	FIX_SIEGE_SLOTS,		// War: in the build-up window, while siege is short of its target, siege units skip the land army size cap and
 							// other land units stop getting the window's bonus once the field target is met (28 BigArmy declarations: the
 							// field target met in 16, siege in 5). Off in the bundle
+	FIX_WAR_TRADE_ROUTES,	// Economy (the lead's go): a timing attacker before its war trains caravans even in small cities until its trade
+							// slots are full, sends them on gold routes, and never to its war target. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

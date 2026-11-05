@@ -3257,6 +3257,22 @@ bool CvEconomicAI::IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, B
 	return false;
 }
 
+/// AI_AB_TEST candidate (WarTradeRoutes, the lead's go): the package block's aggressors netted +2 to +3 gold a turn at
+/// T30-T40 against +8 to +13 for the other civs, with as many cities and a 3-unit army. Caravans were offered from T37-T44
+/// and skipped as "useless" (CP: no trade units in cities of size 4 or less): 0-1 chosen by T80. Before its war, a
+/// timing attacker trains them anyway (CvUnitProductionAI), sends them on gold routes and never to its war target
+/// (CvTradeAI::GetPrioritizedTradeRoutes, GetAvailableTR)
+bool CvEconomicAI::IsWarTradeRoutesActive(const CvPlayer* pPlayer)
+{
+	if (!pPlayer || !pPlayer->UsesCandidateAI(FIX_WAR_TRADE_ROUTES) || !pPlayer->isMajorCiv() || pPlayer->isHuman() || pPlayer->IsAtWarAnyMajor())
+		return false;
+	CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
+	if (!pMilitary || !pMilitary->IsTimingBuildupPlayer())
+		return false;
+	const CvMilitaryAI::TimingBuildupPhase ePhase = pMilitary->GetTimingBuildupPhase();
+	return ePhase == CvMilitaryAI::TIMING_BUILDUP_PEACE || ePhase == CvMilitaryAI::TIMING_BUILDUP_PLANNED || ePhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW;
+}
+
 /// AI_AB_TEST (WarBudget, the lead's; War uses it for the build-up's army target): how many more paid units this civ can
 /// keep for iTurns turns, from its treasury and income, with their upkeep. BigArmy measured the honest cost (11 aggressors,
 /// RESULTS "Paying for BigArmy without the waiver"): unit upkeep 22 a turn in the window and 73 at war, against 7 and 25 left

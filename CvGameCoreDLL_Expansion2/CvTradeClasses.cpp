@@ -22,6 +22,7 @@
 
 #include "CvDiplomacyAI.h"
 #include "CvMilitaryAI.h"
+#include "CvEconomicAI.h" // AI_AB_TEST (WarTradeRoutes)
 
 #include "CvGrandStrategyAI.h"
 
@@ -6250,6 +6251,15 @@ void CvTradeAI::GetPrioritizedTradeRoutes(TradeConnectionList& aTradeConnectionL
 		}
 	}
 
+	// AI_AB_TEST candidate (WarTradeRoutes): before its war a timing attacker sends its trade units for gold; food and
+	// production routes only when no gold route is open
+	if (!aGoldSortedTR.empty() && CvEconomicAI::IsWarTradeRoutesActive(m_pPlayer))
+	{
+		aProductionSortedTR.clear();
+		aFoodSortedTR.clear();
+		aWonderSortedTR.clear();
+	}
+
 	// Clear the raw available route list before replacing it with the sorted list
 	aTradeConnectionList.clear();
 
@@ -6479,6 +6489,10 @@ void CvTradeAI::GetAvailableTR(TradeConnectionList& aTradeConnectionList, bool b
 					continue;
 
 				if (m_pPlayer->IsAtWarWith(eOtherPlayer))
+					continue;
+
+				// AI_AB_TEST candidate (WarTradeRoutes): no route to the civ we're about to attack (plundered, and it pays them)
+				if (CvEconomicAI::IsWarTradeRoutesActive(m_pPlayer) && eOtherPlayer == m_pPlayer->GetMilitaryAI()->GetTimingBuildupTarget())
 					continue;
 
 				int iDestCityLoop = 0;

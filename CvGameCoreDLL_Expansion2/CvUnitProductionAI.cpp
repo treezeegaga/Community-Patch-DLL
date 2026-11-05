@@ -1105,8 +1105,13 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 
 		if (pkUnitEntry->IsTrade())
 		{
+			// AI_AB_TEST candidate (WarTradeRoutes): before its war a timing attacker fills its trade slots, small cities too
+			const bool bWarTradeRoutes = CvEconomicAI::IsWarTradeRoutesActive(&kPlayer) && kPlayer.GetTrade()->GetNumTradeUnitsRemaining(true) > 0;
+			if (bWarTradeRoutes)
+				iBonus += 400;
+
 			//No if we're small.
-			if (m_pCity->getPopulation() <= 4)
+			if (m_pCity->getPopulation() <= 4 && !bWarTradeRoutes)
 			{
 				return SR_USELESS;
 			}

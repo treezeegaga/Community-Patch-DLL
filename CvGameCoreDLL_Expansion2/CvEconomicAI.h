@@ -221,6 +221,8 @@ public:
 	bool IsSavingForExpansionSettler();
 	// AI_AB_TEST candidate (WarmongerHurry): may this city's owner buy this item with gold? (CvCity::IsCanPurchase)
 	static bool IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, BuildingTypes eBuilding, ProjectTypes eProject, bool bLog);
+	// AI_AB_TEST (WarTradeRoutes): a timing attacker before its war (peace, planned or window) using the flag
+	static bool IsWarTradeRoutesActive(const CvPlayer* pPlayer);
 	// AI_AB_TEST (WarBudget): how many more paid units the treasury plus iTurns turns of income pay for (negative: over budget)
 	int GetAffordableWarUnits(int iTurns) const;
 	void StartSaveForPurchase(PurchaseType ePurchase, int iAmount, int iPriority);
