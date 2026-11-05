@@ -1070,6 +1070,7 @@ public:
 	void DoUpdateCoopWarStates();
 	bool CanStartCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer);
 	void DoStartCoopWar(PlayerTypes eAllyPlayer, PlayerTypes eTargetPlayer);
+	bool IsCoopWarWaitingForArmy(PlayerTypes eTargetPlayer, int iTurnsSinceAgreed) const; // AI_AB_TEST: flag CoopWhenReady
 
 	// ------------------------------------
 	// Victory Competition

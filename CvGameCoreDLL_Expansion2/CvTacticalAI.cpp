@@ -1025,6 +1025,13 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 				//expected damage a turn for 8 turns while the city never lost HP)
 				int iHPBefore = pCity->GetMaxHitPoints() - pCity->getDamage();
 				CvString strCityName = pCity->getNameNoSpace(); //pCity may be gone after a capture
+				//AI_AB_TEST War (logging only): the city's defence and its garrison, before and after (damage can go to the garrison)
+				const int iCityStrength = pCity->getStrengthValue() / 100;
+				const int iWallsDefence = pCity->GetCityBuildings()->GetBuildingDefense() / 100;
+				CvUnit* pGarrisonBefore = pCity->GetGarrisonedUnit();
+				const int iGarrisonID = pGarrisonBefore ? pGarrisonBefore->GetID() : -1;
+				const int iGarrisonHPBefore = pGarrisonBefore ? pGarrisonBefore->GetCurrHitPoints() : 0;
+				CvString strGarrison = pGarrisonBefore ? pGarrisonBefore->getUnitInfo().GetDescription() : "none";
 				int iMovedBefore = 0;
 				for (unsigned int iU = 0; iU < m_CurrentMoveUnits.size(); iU++)
 				{
@@ -1044,9 +1051,12 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 					}
 					CvCity* pCityAfter = pPlot->getPlotCity();
 					int iHPAfter = pCityAfter ? pCityAfter->GetMaxHitPoints() - pCityAfter->getDamage() : 0;
-					LogTacticalMessage(CvString::format("Zone %d, capture attempt on %s done: city HP %d -> %d, %d of %d units used, agg %d%s",
+					CvUnit* pGarrisonAfter = iGarrisonID >= 0 && pCityAfter ? GET_PLAYER(pCityAfter->getOwner()).getUnit(iGarrisonID) : NULL;
+					LogTacticalMessage(CvString::format("Zone %d, capture attempt on %s done: city HP %d -> %d, %d of %d units used, agg %d%s; "
+						"city strength %d, walls +%d, garrison %s HP %d -> %d",
 						pZone ? pZone->GetZoneID() : -1, strCityName.c_str(), iHPBefore, iHPAfter, iUsed, (int)m_CurrentMoveUnits.size(), (int)eAggLvl,
-						pPlot->getOwner() == m_pPlayer->GetID() ? ", CAPTURED" : ""));
+						pPlot->getOwner() == m_pPlayer->GetID() ? ", CAPTURED" : "",
+						iCityStrength, iWallsDefence, strGarrison.c_str(), iGarrisonHPBefore, pGarrisonAfter ? pGarrisonAfter->GetCurrHitPoints() : 0));
 				}
 
 				// Did it work?  If so, don't need a temporary dominance zone if had one here
@@ -12350,6 +12360,50 @@ bool TacticalAIHelpers::FindAndExecuteBestUnitAssignments(PlayerTypes ePlayer, v
 		iCount++;
 
 		vector<STacticalAssignment> vAssignments = TacticalAIHelpers::FindBestUnitAssignments(currentUnits, pTarget, eAggLvl, unuseableUnits, true);
+
+		//AI_AB_TEST War (logging only): what the plan against an enemy city does with each unit. Capture attempts left the city
+		//untouched in 70% of test turns, worst with 6+ units in the sim; the attempt log didn't say whether units attacked.
+		//One line per plan: each unit's actions in order, with the attacks' predicted damage to the city's garrison and to itself.
+		if (GC.getLogging() && GC.getAILogging() && pTarget->isCity() && pTarget->getOwner() != NO_PLAYER &&
+			GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(pTarget->getTeam()))
+		{
+			vector<int> vOrder;
+			map<int, CvString> mActions;
+			int iAttacks = 0, iCityTargetAttacks = 0;
+			for (size_t i = 0; i < vAssignments.size(); i++)
+			{
+				const STacticalAssignment& a = vAssignments[i];
+				if (a.iUnitID < 0 || a.eAssignmentType == A_INITIAL)
+					continue;
+				if (mActions.find(a.iUnitID) == mActions.end())
+					vOrder.push_back(a.iUnitID);
+				CvString& str = mActions[a.iUnitID];
+				if (!str.empty())
+					str += ">";
+				str += assignmentTypeNames[a.eAssignmentType];
+				const bool bAttack = a.eAssignmentType == A_MELEEATTACK || a.eAssignmentType == A_MELEEKILL || a.eAssignmentType == A_RANGEATTACK ||
+					a.eAssignmentType == A_RANGEKILL || a.eAssignmentType == A_MELEEKILL_NO_ADVANCE || a.eAssignmentType == A_CAPTURE;
+				if (bAttack)
+				{
+					iAttacks++;
+					if (a.iToPlotIndex == pTarget->GetPlotIndex())
+						iCityTargetAttacks++;
+					str += CvString::format("(%s, garrison %d, self %d)", a.iToPlotIndex == pTarget->GetPlotIndex() ? "city" : "unit",
+						a.iCityDamage, a.iSelfDamage);
+				}
+			}
+			CvString strPlan = CvString::format("capture plan vs %s, agg %d: %d units in the sim, %d in the plan, %d attacks (%d on the city):",
+				pTarget->getPlotCity()->getNameNoSpace().c_str(), (int)eAggLvl, (int)currentUnits.size(), (int)vOrder.size(), iAttacks, iCityTargetAttacks);
+			if (vAssignments.empty())
+				strPlan += " no plan";
+			for (size_t i = 0; i < vOrder.size(); i++)
+			{
+				CvUnit* pPlanUnit = GET_PLAYER(ePlayer).getUnit(vOrder[i]);
+				strPlan += CvString::format(" %s %s;", pPlanUnit ? pPlanUnit->getUnitInfo().GetDescription() : "?", mActions[vOrder[i]].c_str());
+			}
+			GET_PLAYER(ePlayer).GetTacticalAI()->LogTacticalMessage(strPlan);
+		}
+
 		if (vAssignments.empty())
 		{
 			if (unuseableUnits.size()>0 && currentUnits.size()>unuseableUnits.size())
