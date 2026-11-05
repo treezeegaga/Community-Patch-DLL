@@ -319,6 +319,9 @@ void CvMilitaryAI::Reset()
 	m_eTimingBuildupTarget = NO_PLAYER;
 	m_bTimingBuildupSaving = false;
 	m_iTimingBuildupPausedTurns = 0;
+	m_iArmyQualityTurn = -1;
+	m_iArmyQualityFloor = 0;
+	m_iArmyQualityRangedFloor = 0;
 	m_eLandDefenseState = NO_DEFENSE_STATE;
 	m_eNavalDefenseState = NO_DEFENSE_STATE;
 	m_iNumberOfTimesOpsBuildSkippedOver = 0;
@@ -1956,11 +1959,68 @@ bool CvMilitaryAI::HasTimingBuildupWindowEnded() const
 }
 
 /// ready to attack: 2 siege units and 4 field units on top of a garrison per city (DeclareTiming's army)
+/// AI_AB_TEST (flag ArmyQuality): land combat units (not scouts) at least 70% as strong as the best one of their kind (melee
+/// or ranged, siege apart) the civ can train;
+/// the rest of the TimingBuildup army's field units count for nothing. 22% of the BigArmy armies at their first declaration
+/// were Warriors and Scouts, counted as army and paid for like the rest.
+int CvMilitaryAI::GetArmyQualityFloor(bool bRanged) const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iArmyQualityTurn != iTurn)
+	{
+		m_iArmyQualityTurn = iTurn;
+		m_iArmyQualityFloor = 0;
+		m_iArmyQualityRangedFloor = 0;
+		const CvCity* pCapital = m_pPlayer->getCapitalCity();
+		int iBest = 0, iBestRanged = 0;
+		for (int iUnit = 0; pCapital && iUnit < GC.getNumUnitInfos(); iUnit++)
+		{
+			const UnitTypes eUnit = (UnitTypes)iUnit;
+			const CvUnitEntry* pkEntry = GC.getUnitInfo(eUnit);
+			if (!pkEntry || pkEntry->GetDomainType() != DOMAIN_LAND || pkEntry->GetDefaultUnitAIType() == UNITAI_EXPLORE ||
+				pkEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)	// siege is counted apart
+				continue;
+			const bool bIsRanged = pkEntry->GetRangedCombat() > 0;
+			const int iStrength = bIsRanged ? pkEntry->GetRangedCombat() : pkEntry->GetCombat();
+			if (iStrength <= (bIsRanged ? iBestRanged : iBest) || !pCapital->canTrain(eUnit))
+				continue;
+			if (bIsRanged) iBestRanged = iStrength; else iBest = iStrength;
+		}
+		m_iArmyQualityFloor = iBest * 70 / 100;
+		m_iArmyQualityRangedFloor = iBestRanged * 70 / 100;
+	}
+	return bRanged ? m_iArmyQualityRangedFloor : m_iArmyQualityFloor;
+}
+
+/// melee units against the best melee unit, ranged ones against the best ranged unit
+bool CvMilitaryAI::IsArmyQualityUnit(const CvUnitEntry* pkUnitEntry) const
+{
+	if (!pkUnitEntry || pkUnitEntry->GetDomainType() != DOMAIN_LAND || pkUnitEntry->GetDefaultUnitAIType() == UNITAI_EXPLORE)
+		return false;
+	const bool bRanged = pkUnitEntry->GetRangedCombat() > 0;
+	return (bRanged ? pkUnitEntry->GetRangedCombat() : pkUnitEntry->GetCombat()) >= GetArmyQualityFloor(bRanged);
+}
+
+/// the TimingBuildup army's field units: land military units that aren't siege (ArmyQuality: only those above the floor)
+static int TimingBuildupFieldUnits(const CvPlayer* pPlayer, const CvMilitaryAI* pMilitary, int iSiege)
+{
+	if (!pPlayer->UsesCandidateAI(FIX_ARMY_QUALITY))
+		return pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true) - iSiege;
+	int iCount = 0, iLoop = 0;
+	for (const CvUnit* pLoopUnit = pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD || !pLoopUnit->IsCombatUnit())
+			continue;
+		if (pMilitary->IsArmyQualityUnit(&pLoopUnit->getUnitInfo()))
+			iCount++;
+	}
+	return iCount;
+}
+
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-	return iSiege >= GetTimingBuildupSiegeTarget() && iLand - iSiege >= GetTimingBuildupFieldTarget();
+	return iSiege >= GetTimingBuildupSiegeTarget() && TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= GetTimingBuildupFieldTarget();
 }
 
 /// AI_AB_TEST (diagnostic flag BigArmy, the user and the lead): is the attack failing because the army is too small, or
@@ -2051,8 +2111,7 @@ int CvMilitaryAI::GetTimingBuildupUnitsWanted() const
 	if (!IsTimingBuildupPlayer())
 		return 0;
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-	return max(0, GetTimingBuildupSiegeTarget() - iSiege) + max(0, GetTimingBuildupFieldTarget() - (iLand - iSiege));
+	return max(0, GetTimingBuildupSiegeTarget() - iSiege) + max(0, GetTimingBuildupFieldTarget() - TimingBuildupFieldUnits(m_pPlayer, this, iSiege));
 }
 
 /// the unit the build-up would build or buy now (at the capital): siege or attack
@@ -2975,6 +3034,10 @@ void CvMilitaryAI::DisbandObsoleteUnits()
 
 	CvUnit* pScrapUnit = FindUselessShip();
 
+	//AI_AB_TEST (candidate, flag ArmyScrap, War): a timing attacker short of gold drops a unit too weak to count as army
+	if (!pScrapUnit && m_pPlayer->UsesCandidateAI(FIX_ARMY_SCRAP))
+		pScrapUnit = FindArmyScrapUnit();
+
 	//if we don't have an easy candidate but are forced to act
 	if (!pScrapUnit && (bInDeficit||bOverSupplyCap))
 	{
@@ -3081,6 +3144,43 @@ CvUnit* CvMilitaryAI::FindUselessShip()
 }
 
 /// Score the strength of the units for a domain; best candidate to scrap (with lowest score) is returned. Only supports land and naval units
+/// AI_AB_TEST (candidate, flag ArmyScrap, War): without BigArmy's waiver the attacker's gold holds its army at 9 to 10 land
+/// units through 40 turns of war (f6d1e84, 850e142), while 22% of the armies were Warriors and Scouts (BigArmy, at the first
+/// declaration). In the window or at war, when the treasury would run dry in under 9 turns (the window's pause test), give
+/// away or disband one land unit a turn below ArmyQuality's floor: not siege, not a garrison, not in an army; the weakest.
+CvUnit* CvMilitaryAI::FindArmyScrapUnit() const
+{
+	if (!IsTimingBuildupPlayer() || GetTimingBuildupPhase() < TIMING_BUILDUP_WINDOW)
+		return NULL;
+	const int iAverageGoldPerUnit = m_pPlayer->GetTreasury()->GetExpensePerTurnUnitMaintenance() / max(1, m_pPlayer->getNumUnits());
+	if (m_pPlayer->getTurnsToBankruptcy(iAverageGoldPerUnit) >= 9)
+		return NULL;
+	const bool bReconNeeded = m_pPlayer->GetEconomicAI()->GetReconState() == RECON_STATE_NEEDED;
+	CvUnit* pBest = NULL;
+	int iBestScore = MAX_INT, iLoop = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || !pLoopUnit->canScrap() || pLoopUnit->isDelayedDeath())
+			continue;
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD || pLoopUnit->IsGarrisoned() || pLoopUnit->getArmyID() != -1 || pLoopUnit->IsNoMaintenance())
+			continue;
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE && bReconNeeded)
+			continue;
+		if (IsArmyQualityUnit(&pLoopUnit->getUnitInfo()))
+			continue;
+		const int iScore = pLoopUnit->GetPower() * pLoopUnit->getUnitInfo().GetProductionCost() + pLoopUnit->getLevel();
+		if (iScore < iBestScore)
+		{
+			iBestScore = iScore;
+			pBest = pLoopUnit;
+		}
+	}
+	if (pBest && GC.getLogging() && GC.getAILogging())
+		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("ArmyScrap: dropping %s at (%d:%d), below the army floor (%d melee, %d ranged), gold %d",
+			pBest->getName().c_str(), pBest->getX(), pBest->getY(), GetArmyQualityFloor(false), GetArmyQualityFloor(true), m_pPlayer->GetTreasury()->GetGold()));
+	return pBest;
+}
+
 CvUnit* CvMilitaryAI::FindUnitToScrap(DomainTypes eDomain, bool bCheckObsolete, int& iReturnedScore, bool bOverSupplyCap, bool bInDeficit)
 {
 	int iUnitLoop = 0;

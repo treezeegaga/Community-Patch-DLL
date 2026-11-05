@@ -218,6 +218,9 @@ public:
 	// AI_AB_TEST (diagnostic flag BigArmy): the ready army's size, doubled under BigArmy, and a log of the army
 	bool IsTimingBuildupBigArmy() const;
 	bool IsBigArmyUpkeepWaived() const;
+	// AI_AB_TEST (flag ArmyQuality): the strength floor for the TimingBuildup army (70% of the best trainable melee / ranged land unit)
+	int GetArmyQualityFloor(bool bRanged) const;
+	bool IsArmyQualityUnit(const CvUnitEntry* pkUnitEntry) const;
 	int GetTimingBuildupSiegeTarget() const;
 	int GetTimingBuildupFieldTarget() const;
 	void LogBigArmy(const char* szWhen) const;
@@ -241,6 +244,7 @@ public:
 		return m_iNumAirUnits > 0;
 	};
 	CvUnit* FindUselessShip();
+	CvUnit* FindArmyScrapUnit() const;	// AI_AB_TEST (flag ArmyScrap)
 	CvUnit* FindUnitToScrap(DomainTypes eDomain, bool bCheckObsolete, int& iReturnedScore, bool bOverSupplyCap, bool bInDeficit);
 	bool IsBuildingArmy(ArmyType eType) const;
 	UnitTypes GetUnitTypeForArmy(CvCity* pCity) const;
@@ -374,6 +378,9 @@ private:
 	PlayerTypes m_eTimingBuildupTarget;
 	bool m_bTimingBuildupSaving;
 	int m_iTimingBuildupPausedTurns;	// turns this window was paused while units were unaffordable
+	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
+	mutable int m_iArmyQualityFloor;
+	mutable int m_iArmyQualityRangedFloor;
 	void DoTimingBuildup();
 	int m_iNumFreeCarriers;
 

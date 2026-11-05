@@ -277,6 +277,12 @@ enum CandidateFixTypes
 	FIX_PEACE_HURRY,		// Economy (Diplomacy's finding): at peace and out of danger, gold doesn't hurry combat units. Off in the bundle
 	FIX_WARMONGER_HURRY,	// Economy (the user's rule): a candidate warmonger spends gold on production only for settlers and siege units.
 							// In the bundle (the user's call, untested)
+	FIX_ARMY_QUALITY,		// War: a TimingBuildup civ builds no land unit weaker than 70% of the best of its kind (melee or ranged) it can
+							// train, and such units don't count toward its army (22% of BigArmy's first-declaration armies were Warriors and
+							// Scouts). Off in the bundle
+	FIX_ARMY_SCRAP,			// War: a TimingBuildup civ short of gold in the window or at war gives away or disbands one land unit a turn
+							// below ArmyQuality's floor (not a garrison, not in an army), freeing upkeep for units that fight.
+							// Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
