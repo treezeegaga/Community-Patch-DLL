@@ -13297,7 +13297,17 @@ void CvGame::LogABTestResults(bool bFinal) const
 	strPath += ".csv";
 	std::wstring wstrPath = CvStringUtils::FromUTF8ToUTF16(strPath);
 	FILE* pFile = NULL;
-	if (_wfopen_s(&pFile, wstrPath.c_str(), L"ab") != 0 || pFile == NULL)
+	// the test runner reads this file while games run; if its read handle denies writers, the open fails and the snapshot
+	// was lost (missing 10-turn rows; a lost T150 row let a game run on to T160). Retry for up to a second. Writing a
+	// results row changes no game state, so waiting here can't change the game
+	for (int iTry = 0; iTry < 40; iTry++)
+	{
+		if (_wfopen_s(&pFile, wstrPath.c_str(), L"ab") == 0 && pFile != NULL)
+			break;
+		pFile = NULL;
+		Sleep(25);
+	}
+	if (pFile == NULL)
 		return;
 
 	fseek(pFile, 0, SEEK_END);
