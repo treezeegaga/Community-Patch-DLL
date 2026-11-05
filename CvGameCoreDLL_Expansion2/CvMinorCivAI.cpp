@@ -14018,6 +14018,11 @@ int CvMinorCivAI::GetBullyGoldAmount(PlayerTypes eBullyPlayer, bool bIgnoreScali
 	if (!bIgnoreScaling)
 	{
 		int iFactor = CalculateBullyScore(eBullyPlayer, bForUnit);
+		// FIX_WAR_CHEST_TRIBUTE: a successful tribute (score 0 or more in CP) pays at least half the base amount; CP
+		// scaled it by the score itself, so a bully that barely passed got almost nothing
+		if (!bForUnit && iFactor >= 0 && eBullyPlayer >= 0 && eBullyPlayer < MAX_MAJOR_CIVS && GET_PLAYER(eBullyPlayer).isMajorCiv() &&
+			GET_PLAYER(eBullyPlayer).UsesCandidateAI(FIX_WAR_CHEST_TRIBUTE))
+			iFactor = max(iFactor, 50);
 		iGold *= iFactor;
 		iGold /= 100;
 	}

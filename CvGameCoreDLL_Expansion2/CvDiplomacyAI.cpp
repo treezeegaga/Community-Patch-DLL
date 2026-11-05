@@ -32854,6 +32854,17 @@ bool CvDiplomacyAI::IsOpenBordersExchangeAcceptable(PlayerTypes ePlayer)
 ///   we don't produce ourselves (we'd lose it).
 /// AI_AB_TEST FIX_GREEDY_WIDE_DEALS (Personality's request, the user's "greedy wide" design): a greedy civ of the wide
 /// kind expands as fast as happiness allows; once it's out of room it grows vertically and seeks trade deals.
+/// AI_AB_TEST FIX_WAR_CHEST_TRIBUTE (the user's idea): a civ preparing or fighting a war funds it with tribute from
+/// city-states. Preparing or fighting: an aggressive strategy profile (meta position +50 or more), TimingBuildup's
+/// build-up window, a committed conquest target, or a war with a major civ.
+bool CvDiplomacyAI::IsWarChestSeeker() const
+{
+	if (!GetPlayer()->isMajorCiv() || !GetPlayer()->UsesCandidateAI(FIX_WAR_CHEST_TRIBUTE))
+		return false;
+	return GetPlayer()->GetGrandStrategyAI()->GetMetaPosition() >= 50 || GetPlayer()->IsAtWarAnyMajor() ||
+		GetCommittedConquestTarget() != NO_PLAYER || GetPlayer()->GetMilitaryAI()->IsInTimingBuildupWindow();
+}
+
 bool CvDiplomacyAI::IsGreedyWideDealSeeker() const
 {
 	return GetPlayer()->isMajorCiv() && GetPlayer()->UsesCandidateAI(FIX_GREEDY_WIDE_DEALS) && GetPlayer()->IsGreedyWide() &&
@@ -36652,6 +36663,11 @@ void CvDiplomacyAI::DoContactMinorCivs()
 		bWantsToMakeGoldGift = false;
 	}
 
+	// FIX_WAR_CHEST_TRIBUTE: a civ preparing or fighting a war always looks for tribute to fund it
+	const bool bWarChestSeeker = IsWarChestSeeker();
+	if (bWarChestSeeker)
+		bWantsToBullyGold = true;
+
 	// Loop through all (known) Minors
 	for (int iMinorLoop = MAX_MAJOR_CIVS; iMinorLoop < MAX_CIV_PLAYERS; iMinorLoop++)
 	{
@@ -37330,11 +37346,33 @@ void CvDiplomacyAI::DoContactMinorCivs()
 				if (iValue <= 0)
 					continue;
 
-				if(eApproach == CIV_APPROACH_HOSTILE)
+				// FIX_WAR_CHEST_TRIBUTE: a war-chest seeker doesn't need to be hostile to the city-state, but leaves alone
+				// those allied to one of its friends and those protected by a friend or by a civ stronger than it
+				bool bWarChestTarget = false;
+				if (bWarChestSeeker && eApproach != CIV_APPROACH_HOSTILE)
+				{
+					bWarChestTarget = true;
+					const PlayerTypes eMinorAlly = pMinor->GetMinorCivAI()->GetAlly();
+					if (eMinorAlly != NO_PLAYER && eMinorAlly != eID && GET_PLAYER(eMinorAlly).isMajorCiv() && IsDoFAccepted(eMinorAlly))
+						bWarChestTarget = false;
+					for (int iMajorLoop = 0; iMajorLoop < MAX_MAJOR_CIVS && bWarChestTarget; iMajorLoop++)
+					{
+						const PlayerTypes eProtector = (PlayerTypes)iMajorLoop;
+						if (eProtector == eID || !GET_PLAYER(eProtector).isAlive() || !pMinor->GetMinorCivAI()->IsProtectedByMajor(eProtector))
+							continue;
+						if (IsDoFAccepted(eProtector) || GetMilitaryStrengthComparedToUs(eProtector) >= STRENGTH_STRONG)
+							bWarChestTarget = false;
+					}
+				}
+
+				if(eApproach == CIV_APPROACH_HOSTILE || bWarChestTarget)
 				{
 					// Only bother if we can successfully bully
 					if (pMinor->GetMinorCivAI()->CanMajorBullyGold(eID, MOD_BALANCE_HEAVY_TRIBUTE ? iValue - 25 : 0))
 					{
+						// FIX_WAR_CHEST_TRIBUTE: prefer city-states close to us (and our army)
+						if (bWarChestTarget && GetPlayer()->GetProximityToPlayer(eMinor) >= PLAYER_PROXIMITY_CLOSE)
+							iValue += 20;
 						iValue += (GET_PLAYER(eMinor).GetMinorCivAI()->GetBullyGoldAmount(GetID()) * iGoldFlavor) / 10;
 						// We like to keep bullying the same minor
 						if(pMinor->GetMinorCivAI()->IsEverBulliedByMajor(eID))

@@ -268,6 +268,8 @@ enum CandidateFixTypes
 	FIX_BIG_ARMY,			// War, DIAGNOSTIC ONLY (the user and the lead, 2026-11-05): a TimingBuildup aggressor builds twice the ready army
 							// (4 siege, 2 x (cities + 4) others) with the window's build caps lifted, to test whether size is the lever.
 							// Never in the bundle or a style
+	FIX_WAR_CHEST_TRIBUTE,	// Diplomacy (the user's idea): a civ preparing or fighting a war demands gold tribute from city-states its
+							// army can intimidate (not only hostile ones), and a successful tribute pays at least half. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
