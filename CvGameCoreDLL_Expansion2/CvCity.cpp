@@ -30697,6 +30697,12 @@ bool CvCity::IsCanPurchase(const std::vector<int>& vPreExistingBuildings, bool b
 		return false;
 	}
 
+	// AI_AB_TEST candidate (WarmongerHurry, Economy): a warmonger buys only settlers and siege units with gold
+	if (ePurchaseYield == YIELD_GOLD && !CvEconomicAI::IsGoldPurchaseAllowed(this, eUnitType, eBuildingType, eProjectType, bTestPurchaseCost))
+	{
+		return false;
+	}
+
 	// Check situational reasons we can't purchase now (similar to not having enough gold or faith)
 	if (bTestPurchaseCost)
 	{

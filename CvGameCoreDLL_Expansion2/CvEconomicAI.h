@@ -219,6 +219,8 @@ public:
 
 	// AI_AB_TEST: the new AI saving gold to buy its next settler
 	bool IsSavingForExpansionSettler();
+	// AI_AB_TEST candidate (WarmongerHurry): may this city's owner buy this item with gold? (CvCity::IsCanPurchase)
+	static bool IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, BuildingTypes eBuilding, ProjectTypes eProject, bool bLog);
 	void StartSaveForPurchase(PurchaseType ePurchase, int iAmount, int iPriority);
 	bool IsSavingForThisPurchase(PurchaseType ePurchase);
 	void CancelSaveForPurchase(PurchaseType ePurchase);
@@ -282,6 +284,9 @@ public:
 private:
 
 	CvString GetLogFileName(CvString& playerName) const;
+
+	// AI_AB_TEST (WarmongerHurry): last turn a blocked purchase was logged, per city and item (logging only, not saved)
+	std::map<int, int> m_mWarmongerHurryLogTurn;
 
 	// DoTurn() sub-functions
 	void DoHurry();
