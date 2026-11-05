@@ -25607,7 +25607,23 @@ void CvDiplomacyAI::SelectBestApproachTowardsMinorCiv(PlayerTypes ePlayer)
 	// it fears is guarding. CP's own weights almost never choose war on a city-state (a test bully picked CONQUEST once in
 	// 959 city-state updates), and GetNewAIConquestTarget only looks at major civs.
 	////////////////////////////////////
-	if (GetPlayer()->UsesCandidateAI(FIX_CS_CONQUEST) && GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) && !GetPlayer()->IsAtWarAnyMajor() &&
+	// AI_AB_TEST (candidate, flag CSAfterWar, the lead's request): city-states wait while the war on the committed major is
+	// building (TimingBuildup's window or attack phase, an attack on it gathering) or on. A test aggressor's attacks on a
+	// city-state got 6-7 units while those on its committed target got 3 (0E42C140). Between wars CSConquest works as before.
+	bool bMainWarFirst = false;
+	if (GetPlayer()->UsesCandidateAI(FIX_CS_AFTER_WAR) && !IsAtWar(ePlayer))
+	{
+		const PlayerTypes eMainTarget = GetCommittedConquestTarget();
+		const CvMilitaryAI::TimingBuildupPhase eMainPhase = GetPlayer()->GetMilitaryAI()->GetTimingBuildupPhase();
+		if (eMainTarget != NO_PLAYER && GET_PLAYER(eMainTarget).isAlive() &&
+			(eMainPhase == CvMilitaryAI::TIMING_BUILDUP_WINDOW || eMainPhase == CvMilitaryAI::TIMING_BUILDUP_ATTACK ||
+			 IsAtWar(eMainTarget) || GetPlayer()->getFirstOffensiveAIOperation(eMainTarget) != NULL))
+		{
+			bMainWarFirst = true;
+			vApproachScores[CIV_APPROACH_WAR] = 0;
+		}
+	}
+	if (!bMainWarFirst && GetPlayer()->UsesCandidateAI(FIX_CS_CONQUEST) && GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) && !GetPlayer()->IsAtWarAnyMajor() &&
 		GetPlayer()->GetProximityToPlayer(ePlayer) >= PLAYER_PROXIMITY_CLOSE &&
 		GET_TEAM(GetTeam()).canDeclareWar(eTeam, eMyPlayer) && GetPlayer()->GetMilitaryAI()->HavePossibleAttackTarget(ePlayer) &&
 		(int)GetMilitaryStrengthComparedToUs(ePlayer) <= ((GetPlayer()->UsesCandidateAI(FIX_CONQUEST_TRAIT_TARGETS) &&
