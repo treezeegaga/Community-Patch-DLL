@@ -10658,7 +10658,18 @@ bool CvUnit::pillage()
 					iPillageGold *= GC.getGame().getGameSpeedInfo().getInstantYieldPercent();
 					iPillageGold /= 100;
 					kPlayer.GetTreasury()->ChangeGold(iPillageGold);
+				}
 
+				//AI_AB_TEST War (logging only, the user: "could pillaging help to keep attacking armies in positive money?"): every
+				//pillaged improvement and the gold it paid, in the pillager's tactical log
+				if (GC.getLogging() && GC.getAILogging() && kPlayer.isMajorCiv())
+					kPlayer.GetTacticalAI()->LogTacticalMessage(CvString::format("Pillage gold: %d from %s at (%d:%d), owner %s, gold now %d",
+						max(0, iPillageGold), pkImprovement->GetDescription(), pPlot->getX(), pPlot->getY(),
+						pPlot->getOwner() != NO_PLAYER ? GET_PLAYER(pPlot->getOwner()).getCivilizationShortDescription() : "none",
+						kPlayer.GetTreasury()->GetGold()));
+
+				if (iPillageGold > 0)
+				{
 					if(getOwner() == GC.getGame().getActivePlayer())
 					{
 						strBuffer = GetLocalizedText("TXT_KEY_MISC_PLUNDERED_GOLD_FROM_IMP", iPillageGold, pkImprovement->GetTextKey());

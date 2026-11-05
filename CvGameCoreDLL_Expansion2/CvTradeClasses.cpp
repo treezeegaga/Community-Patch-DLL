@@ -5015,6 +5015,11 @@ bool CvPlayerTrade::PlunderTradeRoute(int iTradeConnectionID, CvUnit* pUnit)
 	iPlunderGoldValue /= 100;
 	m_pPlayer->GetTreasury()->ChangeGold(iPlunderGoldValue);
 
+	//AI_AB_TEST War (logging only): the gold a plundered trade route paid, in the plunderer's tactical log
+	if (GC.getLogging() && GC.getAILogging() && m_pPlayer->isMajorCiv())
+		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Plunder gold: %d from a trade route at (%d:%d), gold now %d",
+			iPlunderGoldValue, pPlunderPlot ? pPlunderPlot->getX() : -1, pPlunderPlot ? pPlunderPlot->getY() : -1, m_pPlayer->GetTreasury()->GetGold()));
+
 	// do the floating popup
 	if (GC.getGame().getActivePlayer() == m_pPlayer->GetID())
 	{
