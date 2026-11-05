@@ -327,6 +327,9 @@ void CvGame::ReadABTestSettings()
 	// init) and before InitPlayers and the map script (init2), so the map and the start come out the same.
 	if (GetPrivateProfileIntW(L"ABTest", L"Flip", 0, wstrPath.c_str()) != 0)
 		m_iABTestFlags |= 1;
+	// Human = 1: a person plays a slot (HUMAN_GAME.md); the test doesn't hand their civ to the AI at turn 0
+	if (GetPrivateProfileIntW(L"ABTest", L"Human", 0, wstrPath.c_str()) != 0)
+		m_iABTestFlags |= 4;
 	m_iABTestStopTurn = (int)GetPrivateProfileIntW(L"ABTest", L"StopTurn", 0, wstrPath.c_str());
 
 	// The bully and builders tests (lead job 10): Mode = bully | builders (anything else: the usual split). The
@@ -2033,7 +2036,7 @@ void CvGame::update()
 	// AI_AB_TEST: test games are AI only, so at the start of a single player test game hand the player's civ to the
 	// AI, the same as pressing Ctrl+Shift+O (CONTROL_TOGGLE_OBSERVER_MODE). Only on the first turn, so the player
 	// can still leave observer mode later.
-	if (MOD_AI_AB_TEST && !isNetworkMultiPlayer() && getGameState() == GAMESTATE_ON && getElapsedGameTurns() == 0 &&
+	if (MOD_AI_AB_TEST && (m_iABTestFlags & 4) == 0 && !isNetworkMultiPlayer() && getGameState() == GAMESTATE_ON && getElapsedGameTurns() == 0 &&
 		getAIAutoPlay() == 0 && getObserverUIOverridePlayer() == NO_PLAYER)
 	{
 		PlayerTypes eActivePlayer = getActivePlayer();
