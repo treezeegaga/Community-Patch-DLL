@@ -2005,7 +2005,7 @@ bool CvMilitaryAI::IsArmyQualityUnit(const CvUnitEntry* pkUnitEntry) const
 static int TimingBuildupFieldUnits(const CvPlayer* pPlayer, const CvMilitaryAI* pMilitary, int iSiege)
 {
 	if (!pPlayer->UsesCandidateAI(FIX_ARMY_QUALITY))
-		return pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true) - iSiege;
+		return const_cast<CvPlayer*>(pPlayer)->GetNumUnitsWithDomain(DOMAIN_LAND, true) - iSiege;	// GetNumUnitsWithDomain isn't const
 	int iCount = 0, iLoop = 0;
 	for (const CvUnit* pLoopUnit = pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = pPlayer->nextUnit(&iLoop))
 	{
