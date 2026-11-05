@@ -218,6 +218,7 @@ public:
 	// AI_AB_TEST (diagnostic flag BigArmy): the ready army's size, doubled under BigArmy, and a log of the army
 	bool IsTimingBuildupBigArmy() const;
 	bool IsTimingBuildupWarBudget() const;	// AI_AB_TEST (flag WarBudget): the army target is what gold pays for
+	int GetTimingBuildupFieldUnits() const;	// the field units the ready test counts (ArmyQuality's floor when on)
 	bool IsBigArmyUpkeepWaived() const;
 	// AI_AB_TEST (flag ArmyQuality): the strength floor for the TimingBuildup army (70% of the best trainable melee / ranged land unit)
 	int GetArmyQualityFloor(bool bRanged) const;

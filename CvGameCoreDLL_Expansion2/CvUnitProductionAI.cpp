@@ -421,9 +421,17 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	}
 	const bool bDialTimingQuiet = bDialLandUnit && iDialMeta >= 50 && !kPlayer.IsInWarBuildup();
 
+	// AI_AB_TEST (candidate, flag SiegeSlots, War): in the build-up window, while the siege train is short of its target,
+	// a siege unit isn't refused for the land army size. Over 28 BigArmy declarations the field target was met in 16 and
+	// siege in 5 (median 2 of 4); in the windows siege was refused 180 times as over that size ("nosupply"), the cheaper
+	// units having filled it, and picked in 69 of 490 military choices.
+	const bool bSiegeShort = bCombat && !bFree && pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD &&
+		kPlayer.UsesCandidateAI(FIX_SIEGE_SLOTS) && kPlayer.GetMilitaryAI()->IsInTimingBuildupWindow() &&
+		kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < kPlayer.GetMilitaryAI()->GetTimingBuildupSiegeTarget();
+
 	if (bNeedsSupply)
 	{
-		if (pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && iNumLandUnits >= iRecommendLandArmySize)
+		if (pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE && iNumLandUnits >= iRecommendLandArmySize && !bSiegeShort)
 			return SR_UNITSUPPLY;
 		else if (pkUnitEntry->GetDomainType() == DOMAIN_SEA && iNumSeaUnits >= kPlayer.GetMilitaryAI()->GetRecommendNavySize())
 			return SR_UNITSUPPLY;
@@ -1873,7 +1881,9 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		const bool bSiege = pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD;
 		if (bSiege && kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < kPlayer.GetMilitaryAI()->GetTimingBuildupSiegeTarget())
 			iBonus += 4000;
-		else if (!bSiege)
+		//SiegeSlots: other land units only while the field target isn't met; past it they are not what the army lacks
+		else if (!bSiege && (!kPlayer.UsesCandidateAI(FIX_SIEGE_SLOTS) ||
+			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldUnits() < kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget()))
 			iBonus += 3000;
 	}
 
