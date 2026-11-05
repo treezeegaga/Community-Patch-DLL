@@ -23771,11 +23771,28 @@ void CvDiplomacyAI::DoUpdateWarTargets()
 	const char* szConquestReason = "";
 	PlayerTypes eConquestTarget = GetNewAIConquestTarget(szConquestReason);
 
+	// AI_AB_TEST (candidate, flag TargetHold, second part): the committed target stays a war plan while an attack on it is under
+	// way, even on turns GetNewAIConquestTarget doesn't return it (TimingBuildup returns no one while a window runs and the army
+	// isn't ready). Otherwise CP's filters below (conflict limit, sanity) reset its approach one turn, which cancels the attack
+	// being gathered; a test aggressor's sneak attacks on its target ended "War goal changed" with the approach WAR every turn
+	// (0E42C140). A war still needs the army in place, which SiegeArmy's peace bar and the window gate.
+	PlayerTypes eHeldConquestTarget = NO_PLAYER;
+	if (eConquestTarget == NO_PLAYER && m_eNewAIConquestTarget != NO_PLAYER && GetPlayer()->UsesCandidateAI(FIX_TARGET_HOLD) &&
+		GetPlayer()->IsCandidateWarmonger(FIX_TIMING_ATTACK) && IsPlayerValid(m_eNewAIConquestTarget) && !IsAtWar(m_eNewAIConquestTarget) &&
+		GET_TEAM(GetTeam()).canDeclareWar(GET_PLAYER(m_eNewAIConquestTarget).getTeam(), GetID()) &&
+		(GetPlayer()->getFirstOffensiveAIOperation(m_eNewAIConquestTarget) != NULL || IsArmyInPlaceForAttack(m_eNewAIConquestTarget)))
+	{
+		eHeldConquestTarget = m_eNewAIConquestTarget;
+		if (GC.getLogging() && GC.getAILogging())
+			GetPlayer()->GetHomelandAI()->LogHomelandMessage(CvString::format("CONQUEST: holding %s as a war plan, attack under way",
+				GET_PLAYER(eHeldConquestTarget).getCivilizationShortDescription()));
+	}
+
 	// Who are we PLANNING war against?
 	for (std::vector<PlayerTypes>::iterator it = vNotAtWarPlayers.begin(); it != vNotAtWarPlayers.end(); ++it)
 	{
 		vector<PlayerTypes> vTeam = GET_TEAM(GET_PLAYER(*it).getTeam()).getPlayers();
-		bool bWarPlans = (*it == eConquestTarget);
+		bool bWarPlans = (*it == eConquestTarget) || (*it == eHeldConquestTarget);
 
 		for (size_t i=0; i<vMyTeam.size(); i++)
 		{
