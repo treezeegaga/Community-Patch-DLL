@@ -497,8 +497,61 @@ void CvEconomicAI::LogEconomyMessage(const CvString& strMsg)
 // Do Turn & Strategy Trigger Functions beneath this line
 
 /// Called every turn to see what Strategies this player should using (or not)
+/// AI_AB_TEST (logging only): where each major AI's gold comes from and goes, every 5 turns, so the aggressor's income can
+/// be compared with the other civs' (the lead, Nov 5: WarBudget's honest army stops at ~10 land units because the
+/// aggressor's net income is +0 to +6 a turn). GoldBreakdown_Log.csv, one row per civ:
+/// turn, civ, cities, units, gross, city gold (tiles, flat building gold, specialists, gold processes, the rest from
+/// modifiers), trade routes, city connections, diplomacy+religion+minors+other, building upkeep, improvement upkeep
+/// (roads), unit upkeep (real, ignoring any BigArmy waiver), net, treasury, gold buildings (+gold or +gold%), trade units
+static void LogGoldBreakdown(CvPlayer* pPlayer)
+{
+	if (!(GC.getLogging() && GC.getAILogging()) || !pPlayer->isMajorCiv() || pPlayer->isHuman() || pPlayer->getNumCities() == 0)
+		return;
+	const int iTurn = GC.getGame().getGameTurn();
+	if (iTurn % 5 != 0)
+		return;
+	FILogFile* pLog = LOGFILEMGR.GetLog("GoldBreakdown_Log.csv", FILogFile::kDontTimeStamp);
+	if (!pLog)
+		return;
+
+	CvTreasury* pTreasury = pPlayer->GetTreasury();
+	int iTiles = 0, iFlat = 0, iSpecialists = 0, iProcess100 = 0, iGoldBuildings = 0, iLoop = 0;
+	for (CvCity* pCity = pPlayer->firstCity(&iLoop); pCity != NULL; pCity = pPlayer->nextCity(&iLoop))
+	{
+		iTiles += pCity->GetBaseYieldRateFromTerrain(YIELD_GOLD);
+		iFlat += pCity->GetBaseYieldRateFromBuildings(YIELD_GOLD);
+		iSpecialists += pCity->GetBaseYieldRateFromSpecialists(YIELD_GOLD);
+		iProcess100 += pCity->GetBaseYieldRateFromProcessTimes100(YIELD_GOLD);
+		const std::vector<BuildingTypes>& vBuildings = pCity->GetCityBuildings()->GetAllBuildingsHere();
+		for (size_t i = 0; i < vBuildings.size(); i++)
+		{
+			CvBuildingEntry* pkInfo = GC.getBuildingInfo(vBuildings[i]);
+			if (pkInfo && (pkInfo->GetYieldChange(YIELD_GOLD) > 0 || pkInfo->GetYieldModifier(YIELD_GOLD) > 0))
+				iGoldBuildings++;
+		}
+	}
+	const int iGross = pTreasury->CalculateGrossGold();
+	const int iCities = pTreasury->GetGoldFromCitiesTimes100(/*bExcludeTradeRoutes*/ true) / 100;
+	const int iTrade = pTreasury->GetGoldPerTurnFromTradeRoutes();
+	const int iConnections = pTreasury->GetCityConnectionGold();
+	const int iOther = iGross - iCities - iTrade - iConnections;
+	const int iModifiers = iCities - iTiles - iFlat - iSpecialists - iProcess100 / 100;
+
+	// no header row (a header written once per process would be missing from the next game's file); the columns are:
+	// Turn,Civ,Cities,Units,Gross,CityGold,Tiles,FlatBuildings,Specialists,Process,Modifiers,TradeRoutes,Connections,Other,
+	// BuildingUpkeep,ImprovementUpkeep,UnitUpkeep,Net,Treasury,GoldBuildings,TradeUnits
+	CvString strOut;
+	strOut.Format("%03d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+		iTurn, pPlayer->getCivilizationShortDescription(), pPlayer->getNumCities(), pPlayer->getNumUnits(),
+		iGross, iCities, iTiles, iFlat, iSpecialists, iProcess100 / 100, iModifiers, iTrade, iConnections, iOther,
+		pTreasury->GetBuildingGoldMaintenance(), pTreasury->GetImprovementGoldMaintenance(), pTreasury->CalculateUnitCost(-1, /*bIgnoreBigArmyWaiver*/ true),
+		pTreasury->CalculateBaseNetGold(), pTreasury->GetGold(), iGoldBuildings, pPlayer->GetTrade()->GetNumTradeUnits(false));
+	pLog->Msg(strOut);
+}
+
 void CvEconomicAI::DoTurn()
 {
+	LogGoldBreakdown(m_pPlayer); // AI_AB_TEST, logging only
 	LogMonitor();
 	LogCityMonitor();
 	LogBuildingYields();
