@@ -251,6 +251,8 @@ enum CandidateFixTypes
 	FIX_WAR_GOLD,			// Economy: a warmonger short of gold researches Currency and builds gold buildings before its window. Off in the bundle
 	FIX_SIEGE_CLOSE,		// War: at an enemy major's city we're at war with, dominating the zone doesn't stop the tactical AI moving units
 							// in reach up around the city (an army handed over 2-5 tiles out was sent home). Off in the bundle
+	FIX_TARGET_HOLD,		// War: a committed conquest target isn't dropped for failing the strength, bankruptcy or CanWin check while
+							// an attack on it is under way (one failed turn cancelled the attack being gathered). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

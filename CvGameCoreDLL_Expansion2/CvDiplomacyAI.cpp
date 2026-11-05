@@ -23568,12 +23568,23 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			continue;
 
 		const bool bCommitted = (eLoopPlayer == eCommitted);
+		// AI_AB_TEST (candidate, flag TargetHold): while an attack on the committed target is under way, the checks that swing
+		// from turn to turn (strength, bankruptcy, CanWin) don't drop it. One failed turn cleared the commitment, the WAR approach
+		// went with it and the attack being gathered was cancelled; a test aggressor started ten attacks on one city and never
+		// declared (0D03FDB9). The hard checks below (can't declare, not close, defensive allies) still apply.
+		const bool bHoldCommitted = bCommitted && !bExpansionist && pPlayer->UsesCandidateAI(FIX_TARGET_HOLD) &&
+			pPlayer->getFirstOffensiveAIOperation(eLoopPlayer) != NULL;
+		const char* szSoftFail = NULL;
 		StrengthTypes eTheirStrength = GetMilitaryStrengthComparedToUs(eLoopPlayer);
 		int iMaxStrength = (bExpansionist ? STRENGTH_AVERAGE : STRENGTH_POOR) + (bCommitted ? 1 : 0) + (bBuildupPlanning ? 1 : 0);
 		if ((int)eTheirStrength > iMaxStrength)
-			continue;
+			szSoftFail = "strength";
 
-		if (!pPlayer->GetMilitaryAI()->HavePossibleAttackTarget(eLoopPlayer) || IsWarWouldBankruptUs(eLoopPlayer))
+		if (!szSoftFail && !pPlayer->GetMilitaryAI()->HavePossibleAttackTarget(eLoopPlayer))
+			szSoftFail = "no attack target";
+		if (!szSoftFail && IsWarWouldBankruptUs(eLoopPlayer))
+			szSoftFail = "war would bankrupt us";
+		if (szSoftFail && !bHoldCommitted)
 			continue;
 
 		// One front: not a civ whose defensive allies would join in (a test game's first timing attack pulled a
@@ -23582,8 +23593,25 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 			continue;
 
 		// c7c: and only a war we can win (flag CanWin)
-		if (pPlayer->UsesCandidateAI(FIX_CAN_WIN) && !bBuildupPlanning && !CanTakeNearestCity(pPlayer, eLoopPlayer))
-			continue;
+		if (pPlayer->UsesCandidateAI(FIX_CAN_WIN) && !bBuildupPlanning && !szSoftFail && !CanTakeNearestCity(pPlayer, eLoopPlayer))
+		{
+			szSoftFail = "CanWin";
+			if (!bHoldCommitted)
+				continue;
+		}
+
+		if (szSoftFail && GC.getLogging() && GC.getAILogging())
+		{
+			// called once per other major each turn: log once
+			static int s_iLastHoldLog = -1;
+			const int iKey = GC.getGame().getGameTurn() * MAX_PLAYERS + pPlayer->GetID();
+			if (s_iLastHoldLog != iKey)
+			{
+				s_iLastHoldLog = iKey;
+				pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("CONQUEST: holding %s, attack under way (failed: %s)",
+					GET_PLAYER(eLoopPlayer).getCivilizationShortDescription(), szSoftFail));
+			}
+		}
 
 		if (bCommitted)
 		{
