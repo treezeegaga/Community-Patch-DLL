@@ -253,6 +253,8 @@ enum CandidateFixTypes
 							// in reach up around the city (an army handed over 2-5 tiles out was sent home). Off in the bundle
 	FIX_TARGET_HOLD,		// War: a committed conquest target isn't dropped for failing the strength, bankruptcy or CanWin check while
 							// an attack on it is under way (one failed turn cancelled the attack being gathered). Off in the bundle
+	FIX_SIEGE_DOMINATED,	// War: at an enemy major's city, an enemy-dominated zone doesn't stop a capture attempt when 3+ units can strike
+							// and would take the city within 3 turns (the lead: "that check throws the war away"). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

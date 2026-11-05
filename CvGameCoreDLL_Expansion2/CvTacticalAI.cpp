@@ -899,14 +899,28 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 
 			//first try the land zone
 			CvTacticalDominanceZone* pZone = GetTacticalAnalysisMap()->GetZoneByCity(pCity, false);
+			//AI_AB_TEST (candidate, flag SiegeDominated): set when the zone check would skip the city but the units at the walls
+			//get a look first (below)
+			bool bDominatedTry = false;
 
 			//does it look good there?
 			if (!pZone || (pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY && !pCity->isInDangerOfFalling()))
 			{
+				CvTacticalDominanceZone* pLandZone = pZone;
 				//try again with the water zone
 				pZone = GetTacticalAnalysisMap()->GetZoneByCity(pCity, true);
 
-				if (!pZone || (pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY && !pCity->isInDangerOfFalling()))
+				//AI_AB_TEST (candidate, flag SiegeDominated): the zone counts the city as enemy strength and only nearby units, so a siege
+				//army at the walls of a defended city reads as outnumbered and the city was skipped every turn (Beijing, Nanjing,
+				//Addis Ababa in test games). At an enemy major's city, look at what can strike it before giving up.
+				if ((!pZone || (pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY && !pCity->isInDangerOfFalling())) &&
+					pLandZone && m_pPlayer->UsesCandidateAI(FIX_SIEGE_DOMINATED) && pCity->getOwner() < MAX_MAJOR_CIVS &&
+					GET_PLAYER(pCity->getOwner()).isMajorCiv() && GET_TEAM(m_pPlayer->getTeam()).isAtWar(pCity->getTeam()))
+				{
+					bDominatedTry = true;
+					pZone = pLandZone;
+				}
+				else if (!pZone || (pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY && !pCity->isInDangerOfFalling()))
 				{
 					if (GC.getLogging() && GC.getAILogging())
 					{
@@ -925,6 +939,22 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 			{
 				int iRequiredDamage = pCity->GetMaxHitPoints() - pCity->getDamage();
 				int iExpectedDamagePerTurn = ComputeTotalExpectedDamage(*pTarget);
+
+				//AI_AB_TEST (candidate, flag SiegeDominated): attack from an enemy-dominated zone only if at least 3 units can strike
+				//and their expected damage, less the city's healing, takes its HP within 3 turns (strict: the estimate runs high)
+				if (bDominatedTry)
+				{
+					int iHeal = !pCity->IsBlockadedWaterAndLand() ? /*20 in CP, 8 in VP*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) : 0;
+					if (MOD_BALANCE_VP)
+						iHeal += pCity->getPopulation();
+					const int iStrikers = (int)m_CurrentMoveUnits.size();
+					const bool bGo = iStrikers >= 3 && (iExpectedDamagePerTurn - iHeal) * 3 >= iRequiredDamage;
+					if (GC.getLogging() && GC.getAILogging())
+						LogTacticalMessage(CvString::format("SiegeDominated: %s %s in an enemy-dominated zone (%d units, expected %d a turn, heals %d, %d HP to go)",
+							bGo ? "attacking" : "stays skipped,", pCity->getNameNoSpace().c_str(), iStrikers, iExpectedDamagePerTurn, iHeal, iRequiredDamage));
+					if (!bGo)
+						continue;
+				}
 
 				if (iExpectedDamagePerTurn < iRequiredDamage)
 				{
