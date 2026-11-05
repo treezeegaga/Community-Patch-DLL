@@ -11,6 +11,7 @@
 #include "CvGameCoreUtils.h"
 #include "CvInfosSerializationHelper.h"
 #include "CvEconomicAI.h"
+#include "CvGrandStrategyAI.h"
 #include "SqliteLoggerRegistrations.h"
 
 #include "LintFree.h"
@@ -155,6 +156,55 @@ void CvTechAI::AddPriorityWeights(int iPropagationPercent)
 	}
 }
 
+
+/// AI_AB_TEST candidate (Personality, VictoryTechPath; the user, 2026-11-05, on Economy's finding): after the opening
+/// book, research followed the target victory only loosely (science civs reached Education by T150 in 69% of games,
+/// diplomats Banking in 40%, warmongers Physics at T138 median). Each target victory's key techs get extra weight, passed
+/// on to their prerequisites like flavour weight, not forced: the average weight of the techs in reach, times the
+/// victory's weight in the strategy profile / 50 (the weights add up to 100).
+void CvTechAI::AddVictoryPathWeights(int iPropagationPercent)
+{
+	CvPlayer* pPlayer = m_pCurrentTechs->GetPlayer();
+	if (!pPlayer || !pPlayer->isMajorCiv() || pPlayer->isHuman() || !pPlayer->UsesCandidateAI(FIX_VICTORY_TECH_PATH) ||
+		pPlayer->IsOpeningBookActive())
+		return;
+
+	// the average weight of the techs in reach (not known, not in the far future)
+	long long llSum = 0;
+	int iCount = 0;
+	for (int iTech = 0; iTech < m_pCurrentTechs->GetTechs()->GetNumTechs(); iTech++)
+	{
+		CvTechEntry* entry = m_pCurrentTechs->GetTechs()->GetEntry(iTech);
+		if (!entry || pPlayer->HasTech((TechTypes)iTech) || entry->GetEra() - pPlayer->GetCurrentEra() > GD_INT_GET(NUM_OR_TECH_PREREQS))
+			continue;
+		llSum += max(0, m_TechAIWeights.GetWeight(iTech));
+		iCount++;
+	}
+	if (iCount == 0 || llSum <= 0)
+		return;
+	const int iAverage = (int)(llSum / iCount);
+
+	static const char* const aszPath[NUM_STRATEGY_VICTORY_WEIGHTS][4] = {
+		{ "TECH_CONSTRUCTION", "TECH_IRON_WORKING", "TECH_PHYSICS", "TECH_STEEL" },	// domination
+		{ "TECH_PHILOSOPHY", "TECH_EDUCATION", "TECH_ASTRONOMY", NULL },			// science
+		{ "TECH_DRAMA", "TECH_THEOLOGY", "TECH_ACOUSTICS", NULL },				// culture
+		{ "TECH_CURRENCY", "TECH_BANKING", NULL, NULL },					// diplomacy
+	};
+	const CvStrategyProfile kProfile = pPlayer->GetGrandStrategyAI()->GetStrategyProfile();
+	for (int iVictory = 0; iVictory < NUM_STRATEGY_VICTORY_WEIGHTS; iVictory++)
+	{
+		const int iBonus = iAverage * kProfile.aiVictoryWeight[iVictory] / 50;
+		if (iBonus <= 0)
+			continue;
+		for (int i = 0; i < 4 && aszPath[iVictory][i]; i++)
+		{
+			const TechTypes eTech = (TechTypes)GC.getInfoTypeForString(aszPath[iVictory][i], true);
+			if (eTech == NO_TECH || pPlayer->HasTech(eTech))
+				continue;
+			PropagateWeights((int)eTech, iBonus, iPropagationPercent, 0);
+		}
+	}
+}
 
 /// Choose a player's next tech research project
 TechTypes CvTechAI::ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech)

@@ -41,6 +41,7 @@ public:
 	void AddFlavorWeights(FlavorTypes eFlavor, int iWeight, int iPropagationPercent);
 	// AI_AB_TEST: civ/locale/grand strategy priorities, once per tech (new AI)
 	void AddPriorityWeights(int iPropagationPercent);
+	void AddVictoryPathWeights(int iPropagationPercent);
 
 	// Choose a player's next tech to research
 	TechTypes ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech = false);

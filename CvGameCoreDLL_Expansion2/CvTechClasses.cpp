@@ -2039,6 +2039,9 @@ void CvPlayerTechs::AddFlavorAsStrategies(int iPropagatePercent)
 	if (m_pPlayer->UsesNewAI())
 		m_pTechAI->AddPriorityWeights(iPropagatePercent);
 
+	// AI_AB_TEST candidate (Personality, VictoryTechPath): the target victory's key techs, after the opening book
+	m_pTechAI->AddVictoryPathWeights(iPropagatePercent);
+
 	//don't care about minors.
 	if (m_pPlayer->isMinorCiv())
 		return;
