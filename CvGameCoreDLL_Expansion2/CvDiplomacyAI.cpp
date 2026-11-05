@@ -37591,8 +37591,10 @@ void CvDiplomacyAI::DoContactMinorCivs()
 		{
 			GC.getGame().DoMinorBullyGold(eID, eLoopMinor);
 		}
-		else
+		else if (!GetPlayer()->UsesCandidateAI(FIX_WAR_CHEST_TRIBUTE))
 		{
+			// FIX_WAR_CHEST_TRIBUTE: picks are made with the bully score threshold (CanMajorBullyGold(eID, iValue - 25)) and can
+			// fail the plain check here; skip quietly instead of raising an assert dialog that stops automated test games
 			ASSERT(false, "Chose a minor to bully gold from that cannot actually be bullied!");
 		}
 	}
