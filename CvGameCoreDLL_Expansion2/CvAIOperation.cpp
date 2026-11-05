@@ -478,6 +478,11 @@ bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog, bool bIgn
 	//the muster point, but at the city the siege peaked at 92 of 200 a turn and the city held
 	const int iHPDivisor = false /*retired flag SiegeBar*/ ? 3 : 5;
 	int iNeeded = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) + pCity->GetMaxHitPoints() / iHPDivisor;
+	//once at war with the target the bar's job (no weak army declaring a war) is done: the tactical AI's own rule applies,
+	//13 turns of damage beating the city's healing (a test attack at 45 of 60 a turn sat 20 turns in recruiting at war, its
+	//units hidden from the tactical AI, and was aborted)
+	if (m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy))
+		iNeeded = /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) + (pCity->GetMaxHitPoints() + 12) / 13;
 	int iExpected = GetArmyExpectedCityDamage(pArmy);
 	if (iExpected >= iNeeded)
 		return false;
@@ -1650,7 +1655,9 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 				//an army close to the bar (85% or more) marches instead: a test attack at 57 of 60 a turn waited 20 turns and was
 				//thrown away, though the city would have fallen in about 7; the tactical AI's own 13-turn check still applies
 				CvCity* pBarCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
-				const int iBarNeeded = pBarCity ? /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) + pBarCity->GetMaxHitPoints() / 5 : 0;
+				const bool bBarAtWar = m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy);
+				const int iBarNeeded = pBarCity ? /*20*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) +
+					(bBarAtWar ? (pBarCity->GetMaxHitPoints() + 12) / 13 : pBarCity->GetMaxHitPoints() / 5) : 0;
 				const int iBarExpected = GetArmyExpectedCityDamage(pThisArmy);
 				if (iBarNeeded > 0 && iBarExpected * 100 >= iBarNeeded * 85)
 				{
