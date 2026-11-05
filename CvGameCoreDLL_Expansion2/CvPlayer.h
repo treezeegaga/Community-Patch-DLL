@@ -261,6 +261,8 @@ enum CandidateFixTypes
 							// we're not already fighting (a test aggressor sent 6-7 units at a city-state, 3 at its target). Off in the bundle
 	FIX_SIEGE_FEED,			// War: no new attack operation against a city we're already besieging (zone ours, 3+ of our units); the units go
 							// in as tactical reinforcements instead of a gathering army beside the walls. Off in the bundle
+	FIX_COOP_WHEN_READY,	// War: an agreed coop war waits while a partner that is a TimingBuildup attacker has no army ready (at most 30
+							// turns, Standard); a coop war took a test aggressor to war with 3 Warriors and 2 Archers. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

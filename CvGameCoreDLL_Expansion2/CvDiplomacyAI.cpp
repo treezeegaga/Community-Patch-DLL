@@ -9585,7 +9585,11 @@ void CvDiplomacyAI::DoUpdateCoopWarStates()
 				{
 					if (iTurnDifference >= /*10*/ GD_INT_GET(COOP_WAR_SOON_COUNTER))
 					{
-						DoStartCoopWar(eLoopPlayer, eThirdParty);
+						//AI_AB_TEST (candidate, flag CoopWhenReady): either partner's turn starts the war for both, so ask both
+						const bool bWaitForArmy = IsCoopWarWaitingForArmy(eThirdParty, iTurnDifference) ||
+							(GET_PLAYER(eLoopPlayer).isMajorCiv() && GET_PLAYER(eLoopPlayer).GetDiplomacyAI()->IsCoopWarWaitingForArmy(eThirdParty, iTurnDifference));
+						if (!bWaitForArmy)
+							DoStartCoopWar(eLoopPlayer, eThirdParty);
 					}
 				}
 				else
@@ -9614,6 +9618,34 @@ void CvDiplomacyAI::DoUpdateCoopWarStates()
 			}
 		}
 	}
+}
+
+/// AI_AB_TEST (candidate, flag CoopWhenReady): an agreed coop war waits while we are a TimingBuildup attacker without the army
+/// (2 siege units, cities + 4 others). CP starts it 10 turns after it is agreed, whatever the armies; a test aggressor went to war
+/// on its target with 3 Warriors, 2 Archers and a general and lost 8 units (0DB01EF0). At most 30 turns (Standard) after it was
+/// agreed it goes ahead anyway, so an ally isn't held forever.
+bool CvDiplomacyAI::IsCoopWarWaitingForArmy(PlayerTypes eTargetPlayer, int iTurnsSinceAgreed) const
+{
+	CvPlayer* pPlayer = m_pPlayer;
+	if (!pPlayer->UsesCandidateAI(FIX_COOP_WHEN_READY) || !pPlayer->GetMilitaryAI()->IsTimingBuildupPlayer())
+		return false;
+	if (IsAtWar(eTargetPlayer) || pPlayer->GetMilitaryAI()->IsTimingBuildupArmyReady())
+		return false;
+	if (iTurnsSinceAgreed >= 30 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100)
+		return false;
+	if (GC.getLogging() && GC.getAILogging())
+	{
+		// both partners ask every turn: log once a turn
+		static int s_iLastCoopWaitLog = -1;
+		const int iKey = GC.getGame().getGameTurn() * MAX_PLAYERS + pPlayer->GetID();
+		if (s_iLastCoopWaitLog != iKey)
+		{
+			s_iLastCoopWaitLog = iKey;
+			pPlayer->GetHomelandAI()->LogHomelandMessage(CvString::format("CoopWhenReady: coop war on %s waits for the army (%d turns since agreed)",
+				GET_PLAYER(eTargetPlayer).getCivilizationShortDescription(), iTurnsSinceAgreed));
+		}
+	}
+	return true;
 }
 
 /// Can we initiate our planned coop war with eAllyPlayer against eTargetPlayer?
