@@ -217,6 +217,7 @@ public:
 	bool IsTimingBuildupArmyReady() const;
 	// AI_AB_TEST (diagnostic flag BigArmy): the ready army's size, doubled under BigArmy, and a log of the army
 	bool IsTimingBuildupBigArmy() const;
+	bool IsBigArmyUpkeepWaived() const;
 	int GetTimingBuildupSiegeTarget() const;
 	int GetTimingBuildupFieldTarget() const;
 	void LogBigArmy(const char* szWhen) const;

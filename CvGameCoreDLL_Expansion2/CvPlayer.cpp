@@ -37779,6 +37779,15 @@ void CvPlayer::DoBankruptcy()
 	if (GAMEEVENTINVOKE_TESTALL(GAMEEVENT_PlayerCanDisband, GetID()) == GAMEEVENTRETURN_FALSE)
 		return;
 
+	// AI_AB_TEST (diagnostic flag BigArmy, the lead): no bankruptcy gifting or disbanding while the BigArmy plan runs (the
+	// treasury is already floored at 0); test only
+	if (GetMilitaryAI()->IsBigArmyUpkeepWaived())
+	{
+		if (GC.getLogging() && GC.getAILogging())
+			GetTacticalAI()->LogTacticalMessage("BigArmy: bankruptcy skipped (no gifting or disbanding), treasury at 0");
+		return;
+	}
+
 	if (!isMajorCiv())
 		return;
 

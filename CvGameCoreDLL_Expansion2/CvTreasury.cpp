@@ -445,10 +445,15 @@ int CvTreasury::CalculateBaseNetGoldTimes100()
 }
 
 /// Compute unit maintenance cost for the turn
-int CvTreasury::CalculateUnitCost(int iUnits)
+int CvTreasury::CalculateUnitCost(int iUnits, bool bIgnoreBigArmyWaiver)
 {
 	// If player has 0 Cities then no Unit cost
 	if (m_pPlayer->getNumCities() == 0)
+		return 0;
+
+	// AI_AB_TEST (diagnostic flag BigArmy, the lead): no unit upkeep from the build-up window's start to the end of the war, so
+	// debt can't destroy the army it measures (a test aggressor gave away 37 warriors and its siege train when bankrupt). Test only
+	if (!bIgnoreBigArmyWaiver && m_pPlayer->GetMilitaryAI() && m_pPlayer->GetMilitaryAI()->IsBigArmyUpkeepWaived())
 		return 0;
 
 	const CvHandicapInfo& playerHandicap = m_pPlayer->getHandicapInfo();

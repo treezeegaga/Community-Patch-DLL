@@ -1972,6 +1972,12 @@ bool CvMilitaryAI::IsTimingBuildupBigArmy() const
 	return IsTimingBuildupPlayer() && m_pPlayer->UsesCandidateAI(FIX_BIG_ARMY);
 }
 
+/// BigArmy: gold is made irrelevant from the window's start to the end of the war (the lead): no unit upkeep, no bankruptcy
+bool CvMilitaryAI::IsBigArmyUpkeepWaived() const
+{
+	return IsTimingBuildupBigArmy() && GetTimingBuildupPhase() >= TIMING_BUILDUP_WINDOW;
+}
+
 int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
 {
 	return IsTimingBuildupBigArmy() ? 4 : 2;
@@ -2075,6 +2081,12 @@ void CvMilitaryAI::DoTimingBuildup()
 	const int iTurn = GC.getGame().getGameTurn();
 	CvTacticalAI* pTactical = m_pPlayer->GetTacticalAI();
 	const bool bLog = GC.getLogging() && GC.getAILogging();
+
+	//AI_AB_TEST (diagnostic flag BigArmy): say each turn what the upkeep waiver saved
+	if (bLog && IsBigArmyUpkeepWaived())
+		pTactical->LogTacticalMessage(CvString::format("BigArmy: upkeep waived %d (phase %d, gold %d, %d a turn)",
+			m_pPlayer->GetTreasury()->CalculateUnitCost(-1, true), (int)GetTimingBuildupPhase(), m_pPlayer->GetTreasury()->GetGold(),
+			m_pPlayer->GetTreasury()->CalculateBaseNetGold()));
 
 	// at war: the window has done its job; savings go back to the economy
 	if (m_pPlayer->IsAtWarAnyMajor())
