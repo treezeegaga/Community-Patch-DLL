@@ -1935,12 +1935,21 @@ bool CvMilitaryAI::IsTimingBuildupPeace() const
 
 bool CvMilitaryAI::IsInTimingBuildupWindow() const
 {
-	return m_iTimingBuildupStartTurn >= 0 && GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn < TimingBuildupWindowTurns();
+	if (m_iTimingBuildupStartTurn < 0)
+		return false;
+	const int iElapsed = GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn;
+	if (iElapsed < TimingBuildupWindowTurns())
+		return true;
+	//AI_AB_TEST (candidate, flag WindowUntilReady): the window goes on until the army is ready, up to 2 windows, which leaves the
+	//attack phase one window before the plan goes back to peace (3 windows) as the fallback. A test window of 10 turns built 2
+	//Warriors and an Archer, then its army target and unit weights ended and units were skipped as over the army size; a coop
+	//war took that army to war and lost it (0DB01EF0).
+	return m_pPlayer->UsesCandidateAI(FIX_WINDOW_UNTIL_READY) && iElapsed < 2 * TimingBuildupWindowTurns() && !IsTimingBuildupArmyReady();
 }
 
 bool CvMilitaryAI::HasTimingBuildupWindowEnded() const
 {
-	return m_iTimingBuildupStartTurn >= 0 && GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn >= TimingBuildupWindowTurns();
+	return m_iTimingBuildupStartTurn >= 0 && !IsInTimingBuildupWindow();
 }
 
 /// ready to attack: 2 siege units and 4 field units on top of a garrison per city (DeclareTiming's army)
@@ -2032,6 +2041,12 @@ void CvMilitaryAI::DoTimingBuildup()
 		m_bTimingBuildupSaving = false;
 		return;
 	}
+
+	//AI_AB_TEST (candidate, flag WindowUntilReady): say when the window runs past its turns for want of an army
+	if (bLog && m_pPlayer->UsesCandidateAI(FIX_WINDOW_UNTIL_READY) && m_iTimingBuildupStartTurn >= 0 &&
+		iTurn - m_iTimingBuildupStartTurn == TimingBuildupWindowTurns() && !IsTimingBuildupArmyReady())
+		pTactical->LogTacticalMessage(CvString::format("TimingBuildup: army not ready (%d siege, %d land), the window goes on",
+			m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true), m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true)));
 
 	// the attack never came: back to peace
 	if (m_iTimingBuildupStartTurn >= 0 && iTurn - m_iTimingBuildupStartTurn > 3 * TimingBuildupWindowTurns())
