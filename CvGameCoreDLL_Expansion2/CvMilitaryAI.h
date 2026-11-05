@@ -244,6 +244,7 @@ public:
 		return m_iNumAirUnits > 0;
 	};
 	CvUnit* FindUselessShip();
+	CvUnit* FindArmyScrapUnit() const;	// AI_AB_TEST (flag ArmyScrap)
 	CvUnit* FindUnitToScrap(DomainTypes eDomain, bool bCheckObsolete, int& iReturnedScore, bool bOverSupplyCap, bool bInDeficit);
 	bool IsBuildingArmy(ArmyType eType) const;
 	UnitTypes GetUnitTypeForArmy(CvCity* pCity) const;

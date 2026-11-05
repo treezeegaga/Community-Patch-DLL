@@ -3034,6 +3034,10 @@ void CvMilitaryAI::DisbandObsoleteUnits()
 
 	CvUnit* pScrapUnit = FindUselessShip();
 
+	//AI_AB_TEST (candidate, flag ArmyScrap, War): a timing attacker short of gold drops a unit too weak to count as army
+	if (!pScrapUnit && m_pPlayer->UsesCandidateAI(FIX_ARMY_SCRAP))
+		pScrapUnit = FindArmyScrapUnit();
+
 	//if we don't have an easy candidate but are forced to act
 	if (!pScrapUnit && (bInDeficit||bOverSupplyCap))
 	{
@@ -3140,6 +3144,43 @@ CvUnit* CvMilitaryAI::FindUselessShip()
 }
 
 /// Score the strength of the units for a domain; best candidate to scrap (with lowest score) is returned. Only supports land and naval units
+/// AI_AB_TEST (candidate, flag ArmyScrap, War): without BigArmy's waiver the attacker's gold holds its army at 9 to 10 land
+/// units through 40 turns of war (f6d1e84, 850e142), while 22% of the armies were Warriors and Scouts (BigArmy, at the first
+/// declaration). In the window or at war, when the treasury would run dry in under 9 turns (the window's pause test), give
+/// away or disband one land unit a turn below ArmyQuality's floor: not siege, not a garrison, not in an army; the weakest.
+CvUnit* CvMilitaryAI::FindArmyScrapUnit() const
+{
+	if (!IsTimingBuildupPlayer() || GetTimingBuildupPhase() < TIMING_BUILDUP_WINDOW)
+		return NULL;
+	const int iAverageGoldPerUnit = m_pPlayer->GetTreasury()->GetExpensePerTurnUnitMaintenance() / max(1, m_pPlayer->getNumUnits());
+	if (m_pPlayer->getTurnsToBankruptcy(iAverageGoldPerUnit) >= 9)
+		return NULL;
+	const bool bReconNeeded = m_pPlayer->GetEconomicAI()->GetReconState() == RECON_STATE_NEEDED;
+	CvUnit* pBest = NULL;
+	int iBestScore = MAX_INT, iLoop = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || !pLoopUnit->canScrap() || pLoopUnit->isDelayedDeath())
+			continue;
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD || pLoopUnit->IsGarrisoned() || pLoopUnit->getArmyID() != -1 || pLoopUnit->IsNoMaintenance())
+			continue;
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE && bReconNeeded)
+			continue;
+		if (IsArmyQualityUnit(&pLoopUnit->getUnitInfo()))
+			continue;
+		const int iScore = pLoopUnit->GetPower() * pLoopUnit->getUnitInfo().GetProductionCost() + pLoopUnit->getLevel();
+		if (iScore < iBestScore)
+		{
+			iBestScore = iScore;
+			pBest = pLoopUnit;
+		}
+	}
+	if (pBest && GC.getLogging() && GC.getAILogging())
+		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("ArmyScrap: dropping %s at (%d:%d), below the army floor (%d melee, %d ranged), gold %d",
+			pBest->getName().c_str(), pBest->getX(), pBest->getY(), GetArmyQualityFloor(false), GetArmyQualityFloor(true), m_pPlayer->GetTreasury()->GetGold()));
+	return pBest;
+}
+
 CvUnit* CvMilitaryAI::FindUnitToScrap(DomainTypes eDomain, bool bCheckObsolete, int& iReturnedScore, bool bOverSupplyCap, bool bInDeficit)
 {
 	int iUnitLoop = 0;
