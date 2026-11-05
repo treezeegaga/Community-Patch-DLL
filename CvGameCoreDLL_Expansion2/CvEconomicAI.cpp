@@ -3107,7 +3107,20 @@ bool CvEconomicAI::IsSavingForExpansionSettler()
 	UnitTypes eSettler = NO_UNIT;
 	CvCity* pBuyCity = NULL;
 	int iCost = 0;
-	return GetWantedExpansionSettler(m_pPlayer, eSettler, pBuyCity, iCost, true) && m_pPlayer->GetTreasury()->GetGold() < iCost;
+	if (!GetWantedExpansionSettler(m_pPlayer, eSettler, pBuyCity, iCost, true) || m_pPlayer->GetTreasury()->GetGold() >= iCost)
+		return false;
+
+	// AI_AB_TEST candidate (SettlerSaveRealistic, Diplomacy's finding): in 865 civ-games no saving stretch ever reached the
+	// price (6 settlers bought in 112 games); production always finished the settler first, and meanwhile DoHurry spent
+	// nothing for a median 50 turns. Save only when the gold can get there before the city builds the settler.
+	if (m_pPlayer->UsesCandidateAI(FIX_SETTLER_SAVE_REALISTIC))
+	{
+		const int iTurnsLeft = max(1, pBuyCity->getProductionTurnsLeft(eSettler, 0));
+		const int iNet = m_pPlayer->GetTreasury()->CalculateBaseNetGold();
+		if (m_pPlayer->GetTreasury()->GetGold() + max(0, iNet) * iTurnsLeft < iCost)
+			return false;
+	}
+	return true;
 }
 
 /// AI_AB_TEST: buys the wanted settler as soon as the new AI can pay for it
@@ -3387,6 +3400,32 @@ void CvEconomicAI::DoHurry()
 			// AI_AB_TEST: CP's AI often spends its first 100 gold on a scout; the new AI saves it for a settler
 			if (pkUnitInfo && m_pPlayer->UsesNewAI() && pkUnitInfo->GetDefaultUnitAIType() == UNITAI_EXPLORE)
 				continue;
+			// AI_AB_TEST candidate (NoObsoleteHurry, Diplomacy's finding): no gold for a unit whose upgrade we can already
+			// train (104 Warriors bought at 140 gold in 112 games, then upgraded for 55 more). CP's own check in
+			// CheckUnitBuildSanity only covers unit classes unlocked by buildings, not by techs.
+			if (pkUnitInfo && m_pPlayer->UsesCandidateAI(FIX_NO_OBSOLETE_HURRY))
+			{
+				bool bObsolete = false;
+				for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && !bObsolete; iClass++)
+				{
+					if (!pkUnitInfo->GetUpgradeUnitClass(iClass))
+						continue;
+					UnitTypes eUpgrade = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
+					bObsolete = eUpgrade != NO_UNIT && m_pPlayer->canTrainUnit(eUpgrade, false, false, /*bIgnoreCost*/ true);
+				}
+				if (bObsolete)
+					continue;
+			}
+			// AI_AB_TEST candidate (PeaceHurry, Diplomacy's finding): at peace and out of danger, no gold for combat units
+			// (104 Warriors bought at 140 gold in 112 games, median T40, then upkeep and upgrades). Units for armies and
+			// operations, and a timing attack's window or march, are unchanged.
+			if (pkUnitInfo && selection.m_eBuildableType == CITY_BUILDABLE_UNIT && m_pPlayer->UsesCandidateAI(FIX_PEACE_HURRY) &&
+				(pkUnitInfo->GetCombat() > 0 || pkUnitInfo->GetRangedCombat() > 0) && pMostThreatenedCity == NULL && !m_pPlayer->IsAtWarAnyMajor())
+			{
+				const CvMilitaryAI::TimingBuildupPhase eHurryPhase = m_pPlayer->GetMilitaryAI()->GetTimingBuildupPhase();
+				if (eHurryPhase != CvMilitaryAI::TIMING_BUILDUP_WINDOW && eHurryPhase != CvMilitaryAI::TIMING_BUILDUP_ATTACK)
+					continue;
+			}
 			if (pkUnitInfo)
 			{
 				int iGoldCost = pSelectedCity->GetPurchaseCost(eUnitType);

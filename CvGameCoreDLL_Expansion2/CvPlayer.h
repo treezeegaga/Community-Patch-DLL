@@ -270,6 +270,10 @@ enum CandidateFixTypes
 							// Never in the bundle or a style
 	FIX_WAR_CHEST_TRIBUTE,	// Diplomacy (the user's idea): a civ preparing or fighting a war demands gold tribute from city-states its
 							// army can intimidate (not only hostile ones), and a successful tribute pays at least half. Off in the bundle
+	FIX_SETTLER_SAVE_REALISTIC,	// Economy (Diplomacy's finding): save for a settler purchase only when gold + income can reach the price before
+							// the city builds it. Off in the bundle
+	FIX_NO_OBSOLETE_HURRY,	// Economy (Diplomacy's finding): gold doesn't hurry a unit whose upgrade the civ can already train. Off in the bundle
+	FIX_PEACE_HURRY,		// Economy (Diplomacy's finding): at peace and out of danger, gold doesn't hurry combat units. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
