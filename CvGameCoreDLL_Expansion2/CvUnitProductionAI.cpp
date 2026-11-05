@@ -208,7 +208,11 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// AI_AB_TEST: settlers and workers are exempt for the new AI. The Palace doesn't count as a building,
 	// so the capital otherwise had to finish two buildings before its first settler or worker.
 	bool bExemptCivilian = kPlayer.UsesNewAI() && (pkUnitEntry->IsFound() || pkUnitEntry->IsFoundAbroad() || pkUnitEntry->GetWorkRate() > 0);
-	if (m_pCity->GetCityBuildings()->GetNumBuildings() < 2 && !bDesperate && !bForPurchase && !bExemptCivilian)
+	//AI_AB_TEST (diagnostic flag BigArmy): in the build-up window, until the doubled army is ready, its land combat units skip
+	//the window's build caps (young cities, the upkeep guard); test only
+	const bool bBigArmyWindow = bCombat && !bFree && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
+		kPlayer.GetMilitaryAI()->IsTimingBuildupBigArmy() && kPlayer.GetMilitaryAI()->IsInTimingBuildupWindow() && !kPlayer.GetMilitaryAI()->IsTimingBuildupArmyReady();
+	if (m_pCity->GetCityBuildings()->GetNumBuildings() < 2 && !bDesperate && !bForPurchase && !bExemptCivilian && !bBigArmyWindow)
 	{
 		return SR_STRATEGY;
 	}
@@ -226,7 +230,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		}
 	}
 
-	if (!bDesperate && !bFree)
+	if (!bDesperate && !bFree && !bBigArmyWindow)
 	{
 		if (bCombat && !pkUnitEntry->IsNoMaintenance() && !pkUnitEntry->IsTrade())
 		{
@@ -1857,7 +1861,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		kPlayer.GetMilitaryAI()->IsInTimingBuildupWindow() && !kPlayer.GetMilitaryAI()->IsTimingBuildupArmyReady())
 	{
 		const bool bSiege = pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD;
-		if (bSiege && kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < 2)
+		if (bSiege && kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < kPlayer.GetMilitaryAI()->GetTimingBuildupSiegeTarget())
 			iBonus += 4000;
 		else if (!bSiege)
 			iBonus += 3000;

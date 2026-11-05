@@ -362,6 +362,7 @@ public:
 	// Public logging
 	FILogFile* GetLogFile();
 	void LogTacticalMessage(const CvString& strMsg);
+	std::set<int> m_BigArmyLoggedCities; // AI_AB_TEST (diagnostic flag BigArmy): cities whose first capture attempt was logged (not saved)
 
 	// Other people want to know this too
 	const vector<CvTacticalTarget>& GetTacticalTargets() const { return m_AllTargets; }

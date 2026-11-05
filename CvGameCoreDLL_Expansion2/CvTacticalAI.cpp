@@ -1039,6 +1039,20 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 					if (pU && pU->TurnProcessed())
 						iMovedBefore++;
 				}
+				//AI_AB_TEST (diagnostic flag BigArmy): the army, and the units in reach, at the first capture attempt on each city
+				if (m_pPlayer->GetMilitaryAI()->IsTimingBuildupBigArmy() && GC.getLogging() && GC.getAILogging() &&
+					m_BigArmyLoggedCities.insert(pPlot->GetPlotIndex()).second)
+				{
+					CvString strReach;
+					for (unsigned int iU = 0; iU < m_CurrentMoveUnits.size(); iU++)
+					{
+						CvUnit* pU = m_pPlayer->getUnit(m_CurrentMoveUnits[iU].GetID());
+						if (pU)
+							strReach += CvString::format("%s%s", strReach.empty() ? "" : ", ", pU->getUnitInfo().GetDescription());
+					}
+					m_pPlayer->GetMilitaryAI()->LogBigArmy(CvString::format("at the first capture attempt on %s (in reach: %s)",
+						strCityName.c_str(), strReach.c_str()).c_str());
+				}
 				ExecuteAttackWithUnits(pPlot, eAggLvl);
 				if (GC.getLogging() && GC.getAILogging())
 				{

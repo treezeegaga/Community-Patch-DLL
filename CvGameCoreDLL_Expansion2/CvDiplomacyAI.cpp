@@ -28343,6 +28343,9 @@ bool CvDiplomacyAI::DeclareWar(PlayerTypes ePlayer)
 		}
 
 		LogWarDeclaration(ePlayer);
+		//AI_AB_TEST (diagnostic flag BigArmy): the army at the declaration
+		if (GET_PLAYER(ePlayer).isMajorCiv())
+			m_pPlayer->GetMilitaryAI()->LogBigArmy(CvString::format("at the declaration on %s", GET_PLAYER(ePlayer).getCivilizationShortDescription()).c_str());
 		return true;
 	}
 	return false;

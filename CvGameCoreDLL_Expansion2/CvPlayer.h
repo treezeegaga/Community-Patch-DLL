@@ -263,8 +263,11 @@ enum CandidateFixTypes
 							// in as tactical reinforcements instead of a gathering army beside the walls. Off in the bundle
 	FIX_COOP_WHEN_READY,	// War: an agreed coop war waits while a partner that is a TimingBuildup attacker has no army ready (at most 30
 							// turns, Standard); a coop war took a test aggressor to war with 3 Warriors and 2 Archers. Off in the bundle
-	FIX_WINDOW_UNTIL_READY,	// War: TimingBuildup's window lasts until the army is ready, up to 3 windows (a 10-turn window built 2 Warriors
+	FIX_WINDOW_UNTIL_READY,	// War: TimingBuildup's window lasts until the army is ready, up to 2 windows (a 10-turn window built 2 Warriors
 							// and an Archer, then the army target and unit weights ended with it). Off in the bundle
+	FIX_BIG_ARMY,			// War, DIAGNOSTIC ONLY (the user and the lead, 2026-11-05): a TimingBuildup aggressor builds twice the ready army
+							// (4 siege, 2 x (cities + 4) others) with the window's build caps lifted, to test whether size is the lever.
+							// Never in the bundle or a style
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

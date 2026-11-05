@@ -1908,7 +1908,7 @@ void CvMilitaryAI::SetRecommendedArmyNavySize()
 		const int iCities = max(1, m_pPlayer->getNumCities());
 		const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 		if (IsInTimingBuildupWindow())
-			m_iRecLandUnits = max(m_iRecLandUnits, iCities + 6);
+			m_iRecLandUnits = max(m_iRecLandUnits, IsTimingBuildupBigArmy() ? GetTimingBuildupSiegeTarget() + GetTimingBuildupFieldTarget() + 2 : iCities + 6);
 		else if (IsTimingBuildupPeace())
 			m_iRecLandUnits = min(m_iRecLandUnits, GetTimingBuildupPeaceCap() + min(3, iSiege));
 	}
@@ -1944,6 +1944,9 @@ bool CvMilitaryAI::IsInTimingBuildupWindow() const
 	//attack phase one window before the plan goes back to peace (3 windows) as the fallback. A test window of 10 turns built 2
 	//Warriors and an Archer, then its army target and unit weights ended and units were skipped as over the army size; a coop
 	//war took that army to war and lost it (0DB01EF0).
+	//AI_AB_TEST (diagnostic flag BigArmy): the doubled army gets up to 4 windows to be built (WindowUntilReady or not)
+	if (IsTimingBuildupBigArmy())
+		return iElapsed < 4 * TimingBuildupWindowTurns() && !IsTimingBuildupArmyReady();
 	return m_pPlayer->UsesCandidateAI(FIX_WINDOW_UNTIL_READY) && iElapsed < 2 * TimingBuildupWindowTurns() && !IsTimingBuildupArmyReady();
 }
 
@@ -1957,7 +1960,50 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-	return iSiege >= 2 && iLand - iSiege >= max(1, m_pPlayer->getNumCities()) + 4;
+	return iSiege >= GetTimingBuildupSiegeTarget() && iLand - iSiege >= GetTimingBuildupFieldTarget();
+}
+
+/// AI_AB_TEST (diagnostic flag BigArmy, the user and the lead): is the attack failing because the army is too small, or
+/// because of how it fights at the walls? Under BigArmy the ready army is twice as big (4 siege units, 2 x (cities + 4)
+/// others), the window lasts until it is built (up to 4 windows) and the window's build caps are lifted (CvUnitProductionAI).
+/// Nothing else changes. Test only: never in the bundle or a style.
+bool CvMilitaryAI::IsTimingBuildupBigArmy() const
+{
+	return IsTimingBuildupPlayer() && m_pPlayer->UsesCandidateAI(FIX_BIG_ARMY);
+}
+
+int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
+{
+	return IsTimingBuildupBigArmy() ? 4 : 2;
+}
+
+int CvMilitaryAI::GetTimingBuildupFieldTarget() const
+{
+	return (max(1, m_pPlayer->getNumCities()) + 4) * (IsTimingBuildupBigArmy() ? 2 : 1);
+}
+
+/// BigArmy's log: the land army by unit type, with the gold
+void CvMilitaryAI::LogBigArmy(const char* szWhen) const
+{
+	if (!IsTimingBuildupBigArmy() || !(GC.getLogging() && GC.getAILogging()))
+		return;
+	map<CvString, int> mTypes;
+	int iLand = 0, iSiege = 0, iLoop = 0;
+	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || (!pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged()))
+			continue;
+		iLand++;
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD)
+			iSiege++;
+		mTypes[pLoopUnit->getUnitInfo().GetDescription()]++;
+	}
+	CvString strTypes;
+	for (map<CvString, int>::const_iterator it = mTypes.begin(); it != mTypes.end(); ++it)
+		strTypes += CvString::format("%s%s %d", strTypes.empty() ? "" : ", ", it->first.c_str(), it->second);
+	m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("BigArmy: army %s: %d land (%d siege; target %d siege, %d others), gold %d, %d a turn: %s",
+		szWhen, iLand, iSiege, GetTimingBuildupSiegeTarget(), GetTimingBuildupFieldTarget(), m_pPlayer->GetTreasury()->GetGold(),
+		m_pPlayer->GetTreasury()->CalculateBaseNetGold(), strTypes.c_str()));
 }
 
 /// non-siege land combat units at peace: a garrison per city and one escort
@@ -2000,7 +2046,7 @@ int CvMilitaryAI::GetTimingBuildupUnitsWanted() const
 		return 0;
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 	const int iLand = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-	return max(0, 2 - iSiege) + max(0, max(1, m_pPlayer->getNumCities()) + 4 - (iLand - iSiege));
+	return max(0, GetTimingBuildupSiegeTarget() - iSiege) + max(0, GetTimingBuildupFieldTarget() - (iLand - iSiege));
 }
 
 /// the unit the build-up would build or buy now (at the capital): siege or attack
@@ -2049,7 +2095,7 @@ void CvMilitaryAI::DoTimingBuildup()
 			m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true), m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true)));
 
 	// the attack never came: back to peace
-	if (m_iTimingBuildupStartTurn >= 0 && iTurn - m_iTimingBuildupStartTurn > 3 * TimingBuildupWindowTurns())
+	if (m_iTimingBuildupStartTurn >= 0 && iTurn - m_iTimingBuildupStartTurn > (IsTimingBuildupBigArmy() ? 5 : 3) * TimingBuildupWindowTurns())
 	{
 		if (bLog)
 			pTactical->LogTacticalMessage("TimingBuildup: no war 3 windows after the build-up, back to the peace army");
@@ -2059,7 +2105,10 @@ void CvMilitaryAI::DoTimingBuildup()
 	// the window pauses while units are unaffordable: CP's upkeep guard refuses every combat unit when the treasury goes
 	// bankrupt in under 9 turns (a test window refused 82 units as "too expensive" and ran out with no army); at most 10
 	// paused turns a window
-	if (IsInTimingBuildupWindow() && m_iTimingBuildupPausedTurns < 10)
+	//AI_AB_TEST (diagnostic flag BigArmy): no pause for gold; it may go into debt for the test, so log the army and the gold
+	if (IsTimingBuildupBigArmy() && IsInTimingBuildupWindow())
+		LogBigArmy(CvString::format("in the window (turn %d)", iTurn - m_iTimingBuildupStartTurn + 1).c_str());
+	else if (IsInTimingBuildupWindow() && m_iTimingBuildupPausedTurns < 10)
 	{
 		const int iAverageGoldPerUnit = m_pPlayer->GetTreasury()->GetExpensePerTurnUnitMaintenance() / max(1, m_pPlayer->getNumUnits());
 		if (m_pPlayer->getTurnsToBankruptcy(iAverageGoldPerUnit) < 9)
