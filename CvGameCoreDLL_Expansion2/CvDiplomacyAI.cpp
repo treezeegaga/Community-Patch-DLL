@@ -23780,7 +23780,16 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// (CvMilitaryAI::FindStrikeCityState). Its build-up window opens against it in BUILDUP; the war itself comes from the
 	// city-state approach (SelectBestApproachTowardsMinorCiv) once the army is ready. No major war from here meanwhile.
 	const PlayerTypes eStrikeCS = bStrikeCiv ? pPlayer->GetMilitaryAI()->GetStrikeCityStateTarget() : NO_PLAYER;
-	if (eStrikeCS != NO_PLAYER)
+	// a re-target to a major (the strike's target walled up; CvMilitaryAI::FindStrikeRetarget): that major becomes the committed
+	// target, and the normal flow below opens the window and declares on it
+	if (eStrikeCS != NO_PLAYER && GET_PLAYER(eStrikeCS).isMajorCiv() && GET_PLAYER(eStrikeCS).isAlive() &&
+		(IsAtWar(eStrikeCS) || GET_TEAM(pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eStrikeCS).getTeam(), pPlayer->GetID())))
+	{
+		eBest = eStrikeCS;
+		m_eNewAIConquestTarget = eBest;
+		szReason = "strike re-target: an unwalled city in reach";
+	}
+	else if (eStrikeCS != NO_PLAYER && GET_PLAYER(eStrikeCS).isMinorCiv())
 	{
 		if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && pPlayer->GetMilitaryAI()->IsStrikeArmyBuildable())
 			pPlayer->GetMilitaryAI()->StartTimingBuildup(eStrikeCS);

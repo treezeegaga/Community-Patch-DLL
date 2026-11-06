@@ -325,6 +325,7 @@ void CvMilitaryAI::Reset()
 	m_iStrikeCapturedMark = 0;
 	m_iStrikeArmyAtWar = 0;
 	m_iStrikeCityState = NO_PLAYER;
+	m_iStrikeSiege = 0;
 	m_iArmyQualityTurn = -1;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
@@ -390,6 +391,7 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iStrikeCapturedMark);
 	visitor(militaryAI.m_iStrikeArmyAtWar);
 	visitor(militaryAI.m_iStrikeCityState);
+	visitor(militaryAI.m_iStrikeSiege);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -2101,7 +2103,7 @@ static bool StrikeCityHasWalls(const CvCity* pCity)
 /// AI_AB_TEST (EarlyStrike; the user: "when no major civ is in reach, the early strike may target a city-state"): the nearest
 /// city-state whose city is within 12 tiles of our capital that we can declare on, with no ally (or one we're at war with),
 /// no protector at peace with us, no recent peace, and not a walled hill city
-PlayerTypes CvMilitaryAI::FindStrikeCityState() const
+PlayerTypes CvMilitaryAI::FindStrikeCityState(bool bUnwalledOnly, PlayerTypes eExclude) const
 {
 	const CvCity* pCapital = m_pPlayer->getCapitalCity();
 	if (!pCapital)
@@ -2113,7 +2115,7 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState() const
 	{
 		const PlayerTypes eMinor = (PlayerTypes)iMinor;
 		CvPlayer& kMinor = GET_PLAYER(eMinor);
-		if (!kMinor.isAlive() || !kMinor.isMinorCiv() || !GET_TEAM(eOurTeam).isHasMet(kMinor.getTeam()))
+		if (eMinor == eExclude || !kMinor.isAlive() || !kMinor.isMinorCiv() || !GET_TEAM(eOurTeam).isHasMet(kMinor.getTeam()))
 			continue;
 		if (!GET_TEAM(eOurTeam).isAtWar(kMinor.getTeam()) && !GET_TEAM(eOurTeam).canDeclareWar(kMinor.getTeam(), m_pPlayer->GetID()))
 			continue;
@@ -2136,7 +2138,7 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState() const
 		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eMinor);
 		if (!pCity || !pCity->plot()->isRevealed(eOurTeam))
 			continue;
-		if (StrikeCityHasWalls(pCity) && pCity->plot()->isHills())
+		if (StrikeCityHasWalls(pCity) && (bUnwalledOnly || pCity->plot()->isHills()))
 			continue;
 		const int iDistance = plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY());
 		if (iDistance < iBestDistance)
@@ -2144,6 +2146,48 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState() const
 			iBestDistance = iDistance;
 			eBest = eMinor;
 		}
+	}
+	return eBest;
+}
+
+/// AI_AB_TEST (EarlyStrike; the lead, Nov 6: the walled exit was too eager, Aztec 14E7F3A0 gave up on a walled Ur at T60 with
+/// 5 units): when the strike's target walls up, the nearest other unwalled city within 12 tiles of our capital, a major's
+/// (one we can declare on, at war with already or with no defensive allies to pull in) or a city-state's (FindStrikeCityState)
+PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude) const
+{
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (!pCapital)
+		return NO_PLAYER;
+	const TeamTypes eOurTeam = m_pPlayer->getTeam();
+	PlayerTypes eBest = NO_PLAYER;
+	int iBestDistance = 13;
+	for (int iMajor = 0; iMajor < MAX_MAJOR_CIVS; iMajor++)
+	{
+		const PlayerTypes eMajor = (PlayerTypes)iMajor;
+		const CvPlayer& kMajor = GET_PLAYER(eMajor);
+		if (eMajor == eExclude || eMajor == m_pPlayer->GetID() || !kMajor.isAlive() || !kMajor.isMajorCiv() || kMajor.getTeam() == eOurTeam ||
+			!GET_TEAM(eOurTeam).isHasMet(kMajor.getTeam()))
+			continue;
+		const bool bAtWar = GET_TEAM(eOurTeam).isAtWar(kMajor.getTeam());
+		if (!bAtWar && (!GET_TEAM(eOurTeam).canDeclareWar(kMajor.getTeam(), m_pPlayer->GetID()) ||
+			!m_pPlayer->GetDiplomacyAI()->GetDefensiveWarAllies(eMajor, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty()))
+			continue;
+		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eMajor);
+		if (!pCity || !pCity->plot()->isRevealed(eOurTeam) || StrikeCityHasWalls(pCity))
+			continue;
+		const int iDistance = plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY());
+		if (iDistance < iBestDistance)
+		{
+			iBestDistance = iDistance;
+			eBest = eMajor;
+		}
+	}
+	const PlayerTypes eCS = FindStrikeCityState(/*bUnwalledOnly*/ true, eExclude);
+	if (eCS != NO_PLAYER)
+	{
+		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
+		if (pCity && plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) < iBestDistance)
+			eBest = eCS;
 	}
 	return eBest;
 }
@@ -2214,6 +2258,8 @@ void CvMilitaryAI::UpdateStrikeState()
 	CvEarlyStrikePlan kEarlyPlan;
 	if (bEarly && m_pPlayer->GetEarlyStrikePlan(kEarlyPlan))
 		bPlanSiege = kEarlyPlan.eSiege != NO_UNITCLASS && kEarlyPlan.iSiegeTotal > 0;
+	if (m_iStrikeSiege > 0)	// the build-up switched to bring siege (a walled target, nothing unwalled in reach)
+		bPlanSiege = true;
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	const UnitClassTypes eCoreClass = bEarly ? GetEarlyStrikeCore() : kPlan.eCoreClass;
 	const UnitTypes eCore = (eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eCoreClass) : NO_UNIT;
@@ -2230,8 +2276,34 @@ void CvMilitaryAI::UpdateStrikeState()
 		// normal plan runs (Japan, 1468D9F4: LateStrike in PREP from T1 declared on Spain at T102, BUILDUP came at T149)
 		else if (eNew == STRIKE_PREP && iWarsDeclared > m_iStrikeWarsDeclaredMark)
 			eNew = STRIKE_OVER, strWhy = "we declared a war outside the strike, before its build-up";
+		// the target walled up (the lead): first another unwalled city in reach, a major's or a city-state's; else, if the plan
+		// allows siege against walls, the build-up brings siege; OVER only when neither works
 		else if (eNew == STRIKE_BUILDUP && bWalled && !bPlanSiege)
-			eNew = STRIKE_OVER, strWhy = "the target's nearest city has walls and the plan brings no siege";
+		{
+			const PlayerTypes eRetarget = FindStrikeRetarget(eTarget);
+			const CvStrikePlan& kStrikePlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+			if (eRetarget != NO_PLAYER)
+			{
+				const CvCity* pNewCity = m_pPlayer->GetClosestCityToUsByPlots(eRetarget);
+				if (GC.getLogging() && GC.getAILogging())
+					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: re-target from %s (%s walled) to %s (%s, unwalled, %d tiles from our capital; %s)",
+						eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "none", pTargetCity ? pTargetCity->getNameNoSpace().c_str() : "-",
+						GET_PLAYER(eRetarget).getCivilizationShortDescription(), pNewCity ? pNewCity->getNameNoSpace().c_str() : "-",
+						(pNewCity && pCapital) ? plotDistance(pCapital->getX(), pCapital->getY(), pNewCity->getX(), pNewCity->getY()) : -1,
+						bEarly ? "EarlyStrike" : "LateStrike"));
+				m_iStrikeCityState = eRetarget;
+				m_eTimingBuildupTarget = eRetarget;
+			}
+			else if (kStrikePlan.bValid && kStrikePlan.bSiegeOnlyIfWalled)
+			{
+				m_iStrikeSiege = 1;
+				if (GC.getLogging() && GC.getAILogging())
+					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s walled, no unwalled city in reach; the build-up brings siege (%s)",
+						pTargetCity ? pTargetCity->getNameNoSpace().c_str() : "-", bEarly ? "EarlyStrike" : "LateStrike"));
+			}
+			else
+				eNew = STRIKE_OVER, strWhy = "the target's nearest city has walls, no unwalled city in reach, and the plan brings no siege";
+		}
 		else if (eNew == STRIKE_BUILDUP && pTargetCity && pkCore && pkCore->GetUnitCombatType() != NO_UNITCOMBAT)
 		{
 			int iCounters = 0, iLoop = 0;
@@ -2399,6 +2471,9 @@ int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
 {
 	if (IsEarlyStrikeBuildup() && IsEarlyStrikeTargetUnwalled())
 		return 0;
+	//EarlyStrike switched to siege against a walled target: CP's 2, or the plan's siege count if larger
+	if (IsEarlyStrikeBuildup() && m_iStrikeSiege > 0)
+		return max(2, m_pPlayer->GetGrandStrategyAI()->GetStrikePlan().iSiegeTarget);
 	//LateStrike: the plan's siege (always brought), plus CP's 2 against a walled target unless the plan says siege only if walled
 	if (IsLateStrikeBuildup())
 	{
