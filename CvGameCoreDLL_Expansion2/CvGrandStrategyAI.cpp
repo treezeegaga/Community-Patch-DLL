@@ -2156,6 +2156,9 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.eFirstPolicyBranch = NO_POLICY_BRANCH_TYPE;
 	kPlan.bSiegeOnlyIfWalled = true;
 	kPlan.bBarbarianHunt = false;
+	kPlan.bLateStrike = false;
+	kPlan.ePreBuildClass = NO_UNITCLASS;
+	kPlan.iPreBuildTarget = 0;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
 		return;
 
@@ -2168,6 +2171,9 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		const char* szUpgradeTech;
 		int iN, iK, iOpen, iDeclareBy, iFallback;	// Standard turns
 		const char* szPolicy;
+		const char* szPreBuild; int iPreBuild;		// late strike: built beforehand, upgrades into the core
+		int iUpgradeGold;
+		bool bLate, bBarbarians;
 	};
 	// Quick = Standard x0.67. Huns: army ready ~T30, capitals T40-50 (S4, S11); no upgrades at the strike.
 	// Aztec: 2-3 Jaguars first, ~6 Jaguars + 3-4 Composite Bowmen; the user declared T41-50 Quick. Inca: no source shows
@@ -2176,11 +2182,22 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	// city, T50-65. Celts: 4-6 Pictish Warriors + 2-3 Archers or Composite Bowmen. Policy per the lead (the research:
 	// Honor where kills pay and for the Huns, Liberty for a plain Composite Bowman rush).
 	static const ExpertRow kRows[] = {
-		{ "CIVILIZATION_HUNS",   "UNITCLASS_CHARIOT_ARCHER", 5, "UNITCLASS_WARRIOR",  1, "UNITCLASS_SPEARMAN", 2, NULL,                 2, 2, 30, 50, 55, "POLICY_BRANCH_HONOR" },
-		{ "CIVILIZATION_AZTEC",  "UNITCLASS_WARRIOR",        6, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_CONSTRUCTION",  3, 2, 52, 70, 75, "POLICY_BRANCH_HONOR" },
-		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY" },
-		{ "CIVILIZATION_GREECE", "UNITCLASS_SPEARMAN",       3, "UNITCLASS_ARCHER",   5, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 50, 65, 75, "POLICY_BRANCH_LIBERTY" },
-		{ "CIVILIZATION_CELTS",  "UNITCLASS_SPEARMAN",       5, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 52, 67, 75, "POLICY_BRANCH_HONOR" },
+		{ "CIVILIZATION_HUNS",   "UNITCLASS_CHARIOT_ARCHER", 5, "UNITCLASS_WARRIOR",  1, "UNITCLASS_SPEARMAN", 2, NULL,                 2, 2, 30, 50, 55, "POLICY_BRANCH_HONOR", NULL, 0, 75, false, true },
+		{ "CIVILIZATION_AZTEC",  "UNITCLASS_WARRIOR",        6, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_CONSTRUCTION",  3, 2, 52, 70, 75, "POLICY_BRANCH_HONOR", NULL, 0, 75, false, true },
+		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY", NULL, 0, 75, false, true },
+		{ "CIVILIZATION_GREECE", "UNITCLASS_SPEARMAN",       3, "UNITCLASS_ARCHER",   5, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 50, 65, 75, "POLICY_BRANCH_LIBERTY", NULL, 0, 75, false, true },
+		{ "CIVILIZATION_CELTS",  "UNITCLASS_SPEARMAN",       5, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 52, 67, 75, "POLICY_BRANCH_HONOR", NULL, 0, 75, false, true },
+		// LateStrikePlans (off): economy first, pre-build, save the gold, upgrade the turn the tech lands and strike.
+		// Zulu (glory7, Deity Challenge #1): a ranged-led wave at T90-100 with Spearmen upgraded to Impi at Civil Service.
+		// Mongolia (Deity Challenge #8): Chariot Archers kept alive and upgraded to Keshiks at Chivalry, T92-105, 8+ Keshiks
+		// and 2 Horsemen to capture. Assyria (imMapex): Composite Bowmen with 1-2 Siege Towers and 1-2 melee, T80-110.
+		// Japan (low confidence): Swordsmen upgraded to Samurai at Steel, T95-105. Songhai (low confidence): Horsemen
+		// clearing camps for triple gold, upgraded to Mandekalu at Chivalry.
+		{ "CIVILIZATION_ZULU",     "UNITCLASS_PIKEMAN",        5, "UNITCLASS_ARCHER",   8, NULL,                 0, "TECH_CIVIL_SERVICE", 0, 4, 90, 100, 120, "POLICY_BRANCH_LIBERTY",   "UNITCLASS_SPEARMAN",       5,  90, true, true },
+		{ "CIVILIZATION_MONGOL",   "UNITCLASS_KNIGHT",         8, "UNITCLASS_HORSEMAN", 2, NULL,                 0, "TECH_CHIVALRY",      0, 3, 95, 105, 120, "POLICY_BRANCH_HONOR",     "UNITCLASS_CHARIOT_ARCHER", 8, 140, true, true },
+		{ "CIVILIZATION_ASSYRIA",  "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  0, 3, 80,  95, 110, "POLICY_BRANCH_TRADITION", NULL,                       0,  75, true, false },
+		{ "CIVILIZATION_JAPAN",    "UNITCLASS_LONGSWORDSMAN",  7, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_STEEL",         0, 3, 100, 105, 120, "POLICY_BRANCH_TRADITION", "UNITCLASS_SWORDSMAN",      7, 100, true, true },
+		{ "CIVILIZATION_SONGHAI",  "UNITCLASS_KNIGHT",         6, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CHIVALRY",      0, 2, 85,  95, 115, "POLICY_BRANCH_HONOR",     "UNITCLASS_HORSEMAN",       6, 100, true, true },
 	};
 	const int iSpeed = max(1, GC.getGame().getGameSpeedInfo().getTrainPercent());
 	const char* szCiv = m_pPlayer->getCivilizationTypeKey();
@@ -2188,6 +2205,8 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	{
 		const ExpertRow& kRow = kRows[i];
 		if (!szCiv || strcmp(szCiv, kRow.szCiv) != 0)
+			continue;
+		if (kRow.bLate && !m_pPlayer->UsesCandidateAI(FIX_LATE_STRIKE_PLANS))
 			continue;
 		kPlan.bValid = true;
 		kPlan.bExpert = true;
@@ -2205,7 +2224,11 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		kPlan.iFallbackTurn = kRow.iFallback * iSpeed / 100;
 		kPlan.eFirstPolicyBranch = (PolicyBranchTypes)GC.getInfoTypeForString(kRow.szPolicy, true);
 		kPlan.bSiegeOnlyIfWalled = true;
-		kPlan.bBarbarianHunt = true;
+		kPlan.bBarbarianHunt = kRow.bBarbarians;
+		kPlan.iUpgradeGoldPerUnit = kRow.iUpgradeGold;
+		kPlan.bLateStrike = kRow.bLate;
+		kPlan.ePreBuildClass = kRow.szPreBuild ? (UnitClassTypes)GC.getInfoTypeForString(kRow.szPreBuild, true) : NO_UNITCLASS;
+		kPlan.iPreBuildTarget = kRow.iPreBuild;
 		return;
 	}
 
@@ -2244,6 +2267,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.eFirstPolicyBranch = kProfile.bMilitaryFirst ? (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_LIBERTY", true) : NO_POLICY_BRANCH_TYPE;
 	kPlan.bSiegeOnlyIfWalled = true;
 	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
+	kPlan.bLateStrike = !kProfile.bMilitaryFirst;
 }
 
 /// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research
@@ -2561,7 +2585,7 @@ void CvGrandStrategyAI::LogStrategyProfile()
 	if (kPlan.bValid)
 	{
 		CvString strPlan;
-		strPlan.Format("%03d, %s, strike plan %s: core %s x%d, support %s x%d, siege %s x%d, upgrade %s (%d gold each), N %d, K %d, open T%d, declare by T%d, fallback T%d, policy %s%s",
+		strPlan.Format("%03d, %s, strike plan %s: core %s x%d, support %s x%d, siege %s x%d, upgrade %s (%d gold each), N %d, K %d, open T%d, declare by T%d, fallback T%d, policy %s%s%s",
 			iTurn, m_pPlayer->getCivilizationShortDescription(), kPlan.bExpert ? "expert" : "default",
 			(kPlan.eCoreClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eCoreClass)->GetType() : "none", kPlan.iCoreTarget,
 			(kPlan.eSupportClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSupportClass)->GetType() : "none", kPlan.iSupportTarget,
@@ -2569,7 +2593,8 @@ void CvGrandStrategyAI::LogStrategyProfile()
 			(kPlan.eUpgradeTech != NO_TECH) ? GC.getTechInfo(kPlan.eUpgradeTech)->GetType() : "none", kPlan.iUpgradeGoldPerUnit,
 			kPlan.iCoreBeforeSettler, kPlan.iMaxCitiesBeforeStrike, kPlan.iOpenTurn, kPlan.iDeclareByTurn, kPlan.iFallbackTurn,
 			(kPlan.eFirstPolicyBranch != NO_POLICY_BRANCH_TYPE) ? GC.getPolicyBranchInfo(kPlan.eFirstPolicyBranch)->GetType() : "CP's choice",
-			kPlan.bBarbarianHunt ? ", barbarian hunt first" : "");
+			kPlan.bBarbarianHunt ? ", barbarian hunt first" : "",
+			kPlan.bLateStrike ? (kPlan.ePreBuildClass != NO_UNITCLASS ? CvString::format(", late strike, pre-build %s x%d", GC.getUnitClassInfo(kPlan.ePreBuildClass)->GetType(), kPlan.iPreBuildTarget).c_str() : ", late strike") : "");
 		pLog->Msg(strPlan);
 	}
 }

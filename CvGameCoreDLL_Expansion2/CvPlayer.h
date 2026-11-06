@@ -317,6 +317,8 @@ enum CandidateFixTypes
 	FIX_SPOILER,			// Diplomacy (the user's design): a civ that has fallen too far behind to be first picks the one civ it blames
 							// for its downfall and, while that civ contends for first, helps its enemies (better deals, joint wars) and
 							// sells it nothing. Off in the bundle
+	FIX_LATE_STRIKE_PLANS,	// Personality (the user's expert plans, the late-strike civs): Zulu, Mongolia, Assyria, Japan and Songhai get the
+							// researched strike plan (pre-build, upgrade and go at the tech) instead of the data default. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

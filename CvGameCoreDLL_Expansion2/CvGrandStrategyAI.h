@@ -94,6 +94,9 @@ struct CvStrikePlan
 	PolicyBranchTypes eFirstPolicyBranch;	// NO_POLICY_BRANCH_TYPE: CP's choice
 	bool bSiegeOnlyIfWalled;	// beyond eSiegeClass, siege only against a walled target
 	bool bBarbarianHunt;		// the first units hunt barbarians before the window opens
+	bool bLateStrike;			// economy first (the late-strike civs): no units before the first settler, pre-build, upgrade and go
+	UnitClassTypes ePreBuildClass;	// late strike: the class built beforehand that upgrades into the core at eUpgradeTech
+	int iPreBuildTarget;		// (NO_UNITCLASS and 0: none, the core is built directly)
 };
 struct CvStrategyProfile
 {
