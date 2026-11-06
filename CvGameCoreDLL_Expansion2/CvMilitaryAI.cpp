@@ -2644,6 +2644,32 @@ static bool StrikeClassTrainableButForUse(const CvPlayer* pPlayer, UnitClassType
 	return bNeedsResource;
 }
 
+/// every unit on this class's upgrade line (the class and every class it upgrades into, for this civ) is obsolete for our
+/// team. A class with no unit for this civ counts as obsolete. NO_UNITCLASS: false (no core, no exit here)
+bool CvMilitaryAI::IsStrikeCoreLineObsolete(UnitClassTypes eCoreClass) const
+{
+	if (eCoreClass == NO_UNITCLASS)
+		return false;
+	std::vector<UnitClassTypes> vLine;
+	vLine.push_back(eCoreClass);
+	for (size_t i = 0; i < vLine.size() && vLine.size() <= 32; i++)
+	{
+		const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(vLine[i]);
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (!pkUnit)
+			continue;
+		const TechTypes eObsolete = (TechTypes)pkUnit->GetObsoleteTech();
+		if (eObsolete == NO_TECH || !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eObsolete))
+			return false;	// this one isn't obsolete: the line goes on
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+		{
+			if (pkUnit->GetUpgradeUnitClass(iClass) && std::find(vLine.begin(), vLine.end(), (UnitClassTypes)iClass) == vLine.end())
+				vLine.push_back((UnitClassTypes)iClass);
+		}
+	}
+	return true;
+}
+
 /// the lead's review: an early civ whose core can't be trained (a resource missing) sat in PREP for good, every declaration
 /// blocked. Its tech is in and we own none of a resource it needs; the same for the plan's pre-build, if any
 bool CvMilitaryAI::IsStrikeCoreUntrainable() const
@@ -2847,9 +2873,11 @@ void CvMilitaryAI::UpdateStrikeState()
 
 	if (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP)
 	{
-		const TechTypes eObsolete = pkCore ? (TechTypes)pkCore->GetObsoleteTech() : NO_TECH;
-		if (eObsolete != NO_TECH && GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eObsolete))
-			eNew = STRIKE_OVER, strWhy = "the core unit is obsolete";
+		// the core's whole upgrade line, not the core alone (the lead, bullygreedy24 1762140E: Assyria's late strike, core Archer,
+		// upgrade Construction, went OVER at T61 because Construction obsoletes the Archer, which is the plan: upgrade and go to
+		// Composite Bowmen; the same rule as Economy 0047's list). OVER only once every unit on the line is obsolete
+		if (pkCore && IsStrikeCoreLineObsolete(eCoreClass))
+			eNew = STRIKE_OVER, strWhy = "every unit on the core's upgrade line is obsolete";
 		// the core can't be trained though its tech is in (a resource missing; the lead's review: an early civ sat in PREP for
 		// good with every declaration blocked)
 		else if (IsStrikeCoreUntrainable())
