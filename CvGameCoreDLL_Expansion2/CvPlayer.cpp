@@ -33977,8 +33977,8 @@ bool CvPlayer::IsEarlyStrikeCityCapReached() const
 	return GetEarlyStrikePlan(kPlan) && getNumCities() >= kPlan.iMaxCities;
 }
 
-/// EarlyStrike: units first while a barbarian camp or another major's city is within 8 tiles of the capital (as far as
-/// we've seen). Once a turn.
+/// EarlyStrike: units first while a barbarian camp, another major's city or a city-state's is within 8 tiles of the
+/// capital (as far as we've seen). Once a turn.
 bool CvPlayer::IsEarlyStrikeTargetInReach() const
 {
 	const int iTurn = GC.getGame().getGameTurn();
@@ -34000,7 +34000,9 @@ bool CvPlayer::IsEarlyStrikeTargetInReach() const
 				continue;
 			if (eCamp != NO_IMPROVEMENT && pPlot->getRevealedImprovementType(getTeam(), false) == eCamp)
 				m_bEarlyStrikeReach = true;
-			else if (pPlot->isCity() && pPlot->getOwner() != GetID() && GET_PLAYER(pPlot->getOwner()).isMajorCiv())
+			// a major's city, or a city-state's (the user, Nov 6: city-states are early-strike targets too; War picks them)
+			else if (pPlot->isCity() && pPlot->getOwner() != GetID() &&
+				(GET_PLAYER(pPlot->getOwner()).isMajorCiv() || GET_PLAYER(pPlot->getOwner()).isMinorCiv()))
 				m_bEarlyStrikeReach = true;
 		}
 	}
