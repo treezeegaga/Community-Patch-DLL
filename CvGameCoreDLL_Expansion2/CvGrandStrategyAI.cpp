@@ -2170,14 +2170,15 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		const char* szPolicy;
 	};
 	// Quick = Standard x0.67. Huns: army ready ~T30, capitals T40-50 (S4, S11); no upgrades at the strike.
-	// Aztec: 2-3 Jaguars first, ~6 Jaguars + 3-4 Composite Bowmen; the user declared T41-50 Quick. Inca (low confidence):
-	// a plain Composite Bowman timing with Slingers, 2 melee. Greece: Composite Bowmen drop the walls, Hoplites take the
+	// Aztec: 2-3 Jaguars first, ~6 Jaguars + 3-4 Composite Bowmen; the user declared T41-50 Quick. Inca: no source shows
+	// an Inca rush, so (the user, 2026-11-06) "they should just use catapults": Slingers and 2 melee with 2 Catapults
+	// (Mathematics) whatever the walls. Greece: Composite Bowmen drop the walls, Hoplites take the
 	// city, T50-65. Celts: 4-6 Pictish Warriors + 2-3 Archers or Composite Bowmen. Policy per the lead (the research:
 	// Honor where kills pay and for the Huns, Liberty for a plain Composite Bowman rush).
 	static const ExpertRow kRows[] = {
 		{ "CIVILIZATION_HUNS",   "UNITCLASS_CHARIOT_ARCHER", 5, "UNITCLASS_WARRIOR",  1, "UNITCLASS_SPEARMAN", 2, NULL,                 2, 2, 30, 50, 55, "POLICY_BRANCH_HONOR" },
 		{ "CIVILIZATION_AZTEC",  "UNITCLASS_WARRIOR",        6, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_CONSTRUCTION",  3, 2, 52, 70, 75, "POLICY_BRANCH_HONOR" },
-		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         6, "UNITCLASS_SPEARMAN", 2, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY" },
+		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY" },
 		{ "CIVILIZATION_GREECE", "UNITCLASS_SPEARMAN",       3, "UNITCLASS_ARCHER",   5, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 50, 65, 75, "POLICY_BRANCH_LIBERTY" },
 		{ "CIVILIZATION_CELTS",  "UNITCLASS_SPEARMAN",       5, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 52, 67, 75, "POLICY_BRANCH_HONOR" },
 	};
