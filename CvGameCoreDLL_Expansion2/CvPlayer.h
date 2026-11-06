@@ -320,6 +320,8 @@ enum CandidateFixTypes
 	FIX_LATE_STRIKE,		// Economy (the book) and War (the window): a warmonger whose spike comes late (not bMilitaryFirst) plays economy first,
 							// researches its spike and upgrade techs and saves for the upgrades; its build-up opens at Personality's strike plan,
 							// builds the plan's core, support and siege, and declares by the plan's turn. Off in the bundle
+	FIX_LATE_STRIKE_PLANS,	// Personality (the user's expert plans, the late-strike civs): Zulu, Mongolia, Assyria, Japan and Songhai get the
+							// researched strike plan (pre-build, upgrade and go at the tech) instead of the data default. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
