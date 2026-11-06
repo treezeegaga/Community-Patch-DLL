@@ -292,9 +292,9 @@ enum CandidateFixTypes
 							// field target met in 16, siege in 5). Off in the bundle
 	FIX_WAR_TRADE_ROUTES,	// Economy (the lead's go): a timing attacker before its war trains caravans even in small cities until its trade
 							// slots are full, sends them on gold routes, and never to its war target. Off in the bundle
-	FIX_EARLY_STRIKE,		// Economy and War (the user's Aztec game): a warmonger whose unique unit comes by turn 30 (Standard) opens
-							// military first (UU x3, Worker, Settler, ranged x4, UU x2), keeps a small empire until its strike, and
-							// strikes early (War's half). Off in the bundle
+	FIX_EARLY_STRIKE,		// Economy (the book) and War (the window): a warmonger whose power spike comes early (Personality's strike
+							// window, bMilitaryFirst) opens military first (UU x3, Worker, Settler, ranged x4, UU x2), keeps a small empire,
+							// opens its build-up in the window, leads with the spike unit, 8+ field units, no siege vs an unwalled target. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
