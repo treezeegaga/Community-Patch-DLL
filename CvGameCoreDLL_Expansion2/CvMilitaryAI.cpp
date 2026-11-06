@@ -2141,6 +2141,28 @@ void CvMilitaryAI::UpdateStrikeState()
 			if (iCounters >= 3)
 				eNew = STRIKE_OVER, strWhy = CvString::format("the target fields the counter (%d units with a bonus against our core)", iCounters);
 		}
+		// Personality's plan exits (China's from the research): the target city too strong, the plan's counter units seen near
+		// it, or the city on a hill
+		if (eNew == STRIKE_BUILDUP && pTargetCity && kPlan.bValid)
+		{
+			int iPlanCounters = 0, iLoop = 0;
+			if (kPlan.eExitCounterClass1 != NO_UNITCLASS || kPlan.eExitCounterClass2 != NO_UNITCLASS)
+			{
+				for (const CvUnit* pLoopUnit = GET_PLAYER(eTarget).firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = GET_PLAYER(eTarget).nextUnit(&iLoop))
+				{
+					const UnitClassTypes eClass = pLoopUnit->getUnitClassType();
+					if ((eClass == kPlan.eExitCounterClass1 || eClass == kPlan.eExitCounterClass2) &&
+						plotDistance(pLoopUnit->getX(), pLoopUnit->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 8)
+						iPlanCounters++;
+				}
+			}
+			if (kPlan.iExitCityStrength > 0 && pTargetCity->getStrengthValue() / 100 >= kPlan.iExitCityStrength)
+				eNew = STRIKE_OVER, strWhy = CvString::format("the target city's defence %d is at the plan's limit %d", pTargetCity->getStrengthValue() / 100, kPlan.iExitCityStrength);
+			else if (iPlanCounters >= 2)
+				eNew = STRIKE_OVER, strWhy = CvString::format("the plan's counter units near the target (%d)", iPlanCounters);
+			else if (kPlan.bExitRoughTarget && pTargetCity->plot()->isHills())
+				eNew = STRIKE_OVER, strWhy = "the target city is on a hill (the plan's rough-target exit)";
+		}
 		if (eNew == STRIKE_PREP && bEarly && !bInReach && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN &&
 			TimingBuildupFieldUnits(m_pPlayer, this, m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true)) >= 8)
 			eNew = STRIKE_OVER, strWhy = "the army is built and no target is in reach";
@@ -2148,12 +2170,15 @@ void CvMilitaryAI::UpdateStrikeState()
 
 	if (eNew == STRIKE_PREP)
 	{
-		const bool bTrigger = bEarly ? (bInReach && (!bWalled || bPlanSiege) && IsStrikeArmyBuildable()) :
-			(m_pPlayer->getNumCities() >= max(1, kPlan.iMaxCitiesBeforeStrike) && !m_pPlayer->IsOpeningBookActive());
+		// Personality's economy-ready (CvGrandStrategyAI::IsStrikeEconomyReady: early, the core trainable, N core units out and
+		// K cities; late, the upgrade tech in reach, K cities and half the upgrade bill saved); EarlyStrike also wants a target
+		// in reach that its plan can take
+		const bool bEconomyReady = m_pPlayer->GetGrandStrategyAI()->IsStrikeEconomyReady();
+		const bool bTrigger = bEconomyReady && (bEarly ? (bInReach && (!bWalled || bPlanSiege) && IsStrikeArmyBuildable()) : true);
 		if (bTrigger)
 		{
 			eNew = STRIKE_BUILDUP;
-			strWhy = bEarly ? CvString::format("target %s in reach, core trainable", pTargetCity->getNameNoSpace().c_str()) : CvString("economy-ready (K cities, book done)");
+			strWhy = bEarly ? CvString::format("economy-ready, target %s in reach, core trainable", pTargetCity->getNameNoSpace().c_str()) : CvString("economy-ready");
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
@@ -2196,13 +2221,16 @@ bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
-	if (!IsTimingBuildupArmyBuilt())
+	//a strike's build-up: Personality's plan army (CvGrandStrategyAI::IsStrikeArmyReady: core, support and siege at their
+	//targets, the upgrade tech in, gold for the upgrades) also counts as built
+	const bool bStrike = IsStrikeBuildup();
+	if (!IsTimingBuildupArmyBuilt() && !(bStrike && m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady()))
 		return false;
 	//EarlyStrike, upgrade and go (the user: "i upgraded 3 archers to composite archers. that was part of the timing attack.
 	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
 	//length (WindowUntilReady) still bounds the wait.
 	//and, the expert strike, 3 melee units that can take the city (2 at the city, 1 spare)
-	return !IsStrikeBuildup() || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN);
+	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN);
 }
 
 /// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,
