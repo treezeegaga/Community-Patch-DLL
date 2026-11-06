@@ -19,6 +19,25 @@
 // must be included after all other headers
 #include "LintFree.h"
 
+/// AI_AB_TEST (strike; the lead's second review): a team with an AI strike civ before its strike (PREP, BUILDUP). Such a civ
+/// declares only the strike's own war, so it takes no Defensive Pact or voluntary vassalage, which would drag it into others'
+static bool IsStrikeAIBeforeStrikeOnTeam(TeamTypes eTeam)
+{
+	if (eTeam == NO_TEAM)
+		return false;
+	const vector<PlayerTypes>& vPlayers = GET_TEAM(eTeam).getPlayers();
+	for (size_t i = 0; i < vPlayers.size(); i++)
+	{
+		const CvPlayer& kPlayer = GET_PLAYER(vPlayers[i]);
+		if (!kPlayer.isAlive() || kPlayer.isHuman() || !kPlayer.isMajorCiv() || !kPlayer.GetMilitaryAI())
+			continue;
+		const CvMilitaryAI::StrikeStateTypes eState = kPlayer.GetMilitaryAI()->GetStrikeState();
+		if (eState == CvMilitaryAI::STRIKE_PREP || eState == CvMilitaryAI::STRIKE_BUILDUP)
+			return true;
+	}
+	return false;
+}
+
 //=====================================
 // TradeableItems
 //====================================
@@ -747,6 +766,10 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 			if (pFromTeam->IsVassalOfSomeone() || pToTeam->IsVassalOfSomeone())
 				return false;
 
+			// AI_AB_TEST (strike): nor a strike AI before its strike (it would be dragged into a war that isn't the strike's)
+			if (IsStrikeAIBeforeStrikeOnTeam(eFromTeam) || IsStrikeAIBeforeStrikeOnTeam(eToTeam))
+				return false;
+
 			// Not valid if vassalage is in the trade
 			if (ContainsItemType(TRADE_ITEM_VASSALAGE))
 				return false;
@@ -1294,6 +1317,11 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 
 			// Can we become the vassal of this team?
 			if (!pFromTeam->canBecomeVassal(eToTeam))
+				return false;
+
+			// AI_AB_TEST (strike): no voluntary vassalage with a strike AI before its strike (a vassal goes to its master's wars).
+			// Capitulation in a peace deal is the loser's choice and stays
+			if (!bPeaceDeal && (IsStrikeAIBeforeStrikeOnTeam(eFromTeam) || IsStrikeAIBeforeStrikeOnTeam(eToTeam)))
 				return false;
 
 			// Not valid if a Defensive Pact or Vassal Revocation is in the deal
@@ -2825,6 +2853,12 @@ CvString CvDeal::GetReasonsItemUntradeable(PlayerTypes ePlayer, PlayerTypes eToP
 			if (pFromTeam->isAtWar(eTargetTeam))
 			{
 				return GetLocalizedText("TXT_KEY_DIPLO_ALREADY_AT_WAR");
+			}
+
+			// AI_AB_TEST (strike): a strike AI before its strike declares no war but its own (see IsPossibleToTradeItem)
+			if (!bFromHuman && pFromPlayer->GetMilitaryAI()->IsStrikeDeclarationBlocked(GET_TEAM(eTargetTeam).getLeaderID()))
+			{
+				return GetLocalizedText("TXT_KEY_DIPLO_BLOCKED_GAME_RULE");
 			}
 
 			// Not allowed by Deal AI Options

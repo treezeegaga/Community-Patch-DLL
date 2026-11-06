@@ -255,6 +255,7 @@ public:
 	// strike's state, from game state only (no turns), worked out once a turn and saved. Economy's book reads it (patch 0034).
 	enum StrikeStateTypes { STRIKE_NONE, STRIKE_PREP, STRIKE_BUILDUP, STRIKE_WAR, STRIKE_OVER };
 	StrikeStateTypes GetStrikeState() const { return (StrikeStateTypes)m_iStrikeState; }
+	void SetStrikeDeclared() { m_iStrikeDeclared = 1; }	// CvDiplomacyAI::DeclareWar: a declaration of ours (the lead's review: a city-state's war on us isn't one)
 	bool HasStrikeDeclared() const { return m_iStrikeDeclared != 0; }	// we have declared a war: the strike's (BUILDUP -> WAR, its city-state) or any of our own since the game began (Economy's bans end here; public for CvPlayer, Economy 0045)
 	bool IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// can the plan's (upgraded) army take the city (the game's damage math)
 	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city

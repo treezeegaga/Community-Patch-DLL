@@ -23549,7 +23549,12 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	szReason = "";
 	CvPlayer* pPlayer = GetPlayer();
 	// (majors only: CanWin and BoxedInWar are in the bundle, which city-states run too)
-	if (!pPlayer->isMajorCiv() || pPlayer->getNumCities() == 0 || pPlayer->IsAtWarAnyMajor() || pPlayer->isHuman())
+	// AI_AB_TEST (strike; the lead's second review): a strike in BUILDUP goes on through a third party's war (103bd11d), so
+	// its own target passes the at-war return: no new target is looked for (the loop below is skipped), only the strike's
+	// pinned one (CvMilitaryAI::UpdateStrikeState pins it while we're at war) gets its window and its war
+	const bool bStrikeThroughWar = pPlayer->IsAtWarAnyMajor() && !pPlayer->isHuman() &&
+		pPlayer->GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_BUILDUP && pPlayer->GetMilitaryAI()->GetStrikeCityStateTarget() != NO_PLAYER;
+	if (!pPlayer->isMajorCiv() || pPlayer->getNumCities() == 0 || (pPlayer->IsAtWarAnyMajor() && !bStrikeThroughWar) || pPlayer->isHuman())
 		return NO_PLAYER;
 
 	// flags TimingAttack (warmongers) and BoxedInWar (other wide civs)
@@ -23611,7 +23616,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	const char* szVulnerableReason = "warmonger timing attack, most vulnerable city";
 	PlayerTypes eBest = NO_PLAYER;
 	int iBestScore = INT_MIN;
-	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	for (int iPlayerLoop = 0; iPlayerLoop < (bStrikeThroughWar ? 0 : MAX_MAJOR_CIVS); iPlayerLoop++)
 	{
 		PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
 		if (!IsPlayerValid(eLoopPlayer) || !GET_PLAYER(eLoopPlayer).isMajorCiv() || GET_PLAYER(eLoopPlayer).getTeam() == pPlayer->getTeam())
@@ -28425,6 +28430,9 @@ bool CvDiplomacyAI::DeclareWar(PlayerTypes ePlayer)
 	if (!kMyTeam.isAtWar(eTheirTeam))
 	{
 		kMyTeam.declareWar(eTheirTeam, false, GetID());
+		// AI_AB_TEST (strike; Economy's bans): a declaration of ours (HasStrikeDeclared)
+		if (kMyTeam.isAtWar(eTheirTeam))
+			m_pPlayer->GetMilitaryAI()->SetStrikeDeclared();
 		m_pPlayer->GetCitySpecializationAI()->SetSpecializationsDirty(SPECIALIZATION_UPDATE_NOW_AT_WAR);
 
 		// Show scene to human

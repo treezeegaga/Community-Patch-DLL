@@ -2152,10 +2152,7 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState(bool bUnwalledOnly, PlayerTypes eE
 				!GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eMajor).getTeam()))
 				bProtected = true;
 		}
-		if (bProtected)
-			continue;
-		const int iPeaceTurn = GET_TEAM(eOurTeam).GetTurnMadePeaceTreatyWithTeam(kMinor.getTeam());
-		if (iPeaceTurn >= 0 && GC.getGame().getGameTurn() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns())
+		if (bProtected)	// no peace-treaty turns (the user's no-turn rule): canDeclareWar enforces the treaty
 			continue;
 		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eMinor);
 		if (!pCity || !pCity->plot()->isRevealed(eOurTeam))
@@ -2380,8 +2377,7 @@ PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude, const CvCity*
 					!GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eMajor).getTeam()))
 					bProtected = true;
 			}
-			const int iPeaceTurn = GET_TEAM(eOurTeam).GetTurnMadePeaceTreatyWithTeam(kOther.getTeam());
-			if (bProtected || (iPeaceTurn >= 0 && GC.getGame().getGameTurn() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns()))
+			if (bProtected)	// no peace-treaty turns (the user's no-turn rule): canDeclareWar enforces the treaty
 				continue;
 		}
 		else
@@ -2442,9 +2438,7 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 					!GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eMajor).getTeam()))
 					return false;
 			}
-			const int iPeaceTurn = GET_TEAM(eOurTeam).GetTurnMadePeaceTreatyWithTeam(kOther.getTeam());
-			if (iPeaceTurn >= 0 && GC.getGame().getGameTurn() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns())
-				return false;
+			// no peace-treaty turns here (the user's no-turn rule): canDeclareWar (above) enforces the treaty itself
 		}
 	}
 	else
@@ -2479,26 +2473,63 @@ PlayerTypes CvMilitaryAI::FindStrikeMajorInReach() const
 	return eBest;
 }
 
-/// a unit class whose tech we have (or that needs none); NO_UNIT counts as known (nothing to wait for)
-static bool StrikeClassTechKnown(const CvPlayer* pPlayer, UnitClassTypes eClass)
+/// a unit class whose tech we have and that needs a resource we own none of (imports count). Not the free count: the army
+/// spends its Horses or Iron as it is built (the lead's second review: IsStrikeArmyBuildable counts only free resources, so a
+/// strike whose core uses them went OVER right before its declaration)
+static bool StrikeClassLacksResource(const CvPlayer* pPlayer, UnitClassTypes eClass)
 {
 	const UnitTypes eUnit = (eClass != NO_UNITCLASS) ? pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
 	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
-	const TechTypes eTech = pkUnit ? (TechTypes)pkUnit->GetPrereqAndTech() : NO_TECH;
-	return eTech == NO_TECH || GET_TEAM(pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech);
+	if (!pkUnit)
+		return false;
+	const TechTypes eTech = (TechTypes)pkUnit->GetPrereqAndTech();
+	if (eTech != NO_TECH && !GET_TEAM(pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech))
+		return false;	// not yet: its tech isn't in
+	for (int iResource = 0; iResource < GC.getNumResourceInfos(); iResource++)
+	{
+		const ResourceTypes eResource = (ResourceTypes)iResource;
+		if ((pkUnit->GetResourceType() == iResource || pkUnit->GetResourceQuantityRequirement(iResource) > 0) &&
+			pPlayer->getNumResourceTotal(eResource, /*bIncludeImport*/ true) <= 0)
+			return true;
+	}
+	return false;
+}
+
+/// a unit class whose tech we have, that needs a resource, and whose resources we own but have in use (the army built from
+/// them): canTrainUnit says no, the strike's army is still buildable (the lead's second review: the free count isn't the test)
+static bool StrikeClassTrainableButForUse(const CvPlayer* pPlayer, UnitClassTypes eClass)
+{
+	const UnitTypes eUnit = (eClass != NO_UNITCLASS) ? pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
+	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (!pkUnit)
+		return false;
+	const TechTypes eTech = (TechTypes)pkUnit->GetPrereqAndTech();
+	if (eTech != NO_TECH && !GET_TEAM(pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech))
+		return false;
+	bool bNeedsResource = false;
+	for (int iResource = 0; iResource < GC.getNumResourceInfos(); iResource++)
+	{
+		if (pkUnit->GetResourceType() == iResource || pkUnit->GetResourceQuantityRequirement(iResource) > 0)
+		{
+			bNeedsResource = true;
+			if (pPlayer->getNumResourceTotal((ResourceTypes)iResource, /*bIncludeImport*/ true) <= 0)
+				return false;
+		}
+	}
+	return bNeedsResource;
 }
 
 /// the lead's review: an early civ whose core can't be trained (a resource missing) sat in PREP for good, every declaration
-/// blocked. The core (and the plan's pre-build, if any) can't be trained though its tech is in
+/// blocked. Its tech is in and we own none of a resource it needs; the same for the plan's pre-build, if any
 bool CvMilitaryAI::IsStrikeCoreUntrainable() const
 {
-	if (IsStrikeArmyBuildable() || !m_pPlayer->GetGrandStrategyAI())
+	if (!m_pPlayer->GetGrandStrategyAI())
 		return false;
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	const UnitClassTypes eCoreClass = IsEarlyStrikeCiv() ? GetEarlyStrikeCore() : kPlan.eCoreClass;
 	if (eCoreClass == NO_UNITCLASS)
 		return false;
-	return StrikeClassTechKnown(m_pPlayer, eCoreClass) && (kPlan.ePreBuildClass == NO_UNITCLASS || StrikeClassTechKnown(m_pPlayer, kPlan.ePreBuildClass));
+	return StrikeClassLacksResource(m_pPlayer, eCoreClass) && (kPlan.ePreBuildClass == NO_UNITCLASS || StrikeClassLacksResource(m_pPlayer, kPlan.ePreBuildClass));
 }
 
 void CvMilitaryAI::UpdateStrikeState()
@@ -2507,8 +2538,9 @@ void CvMilitaryAI::UpdateStrikeState()
 	const bool bLate = !bEarly && IsLateStrikeCiv();
 	const StrikeStateTypes eOld = GetStrikeState();
 	// Economy's request: an exact "we have declared" (its wonder and gift bans hold until then, also after an OVER). Our own
-	// declarations on majors (the game's counter), a war on a city-state (only we start those), or the strike's own (below)
-	if (m_iStrikeDeclared == 0 && (GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED) > 0 || m_pPlayer->IsAtWarAnyMinor()))
+	// declarations on majors (the game's counter), and every declaration of ours through CvDiplomacyAI::DeclareWar
+	// (SetStrikeDeclared). Not a city-state war as such: allied city-states declare on us with their major (the lead's review)
+	if (m_iStrikeDeclared == 0 && GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED) > 0)
 		m_iStrikeDeclared = 1;
 	if (!bEarly && !bLate)
 	{
@@ -2642,6 +2674,13 @@ void CvMilitaryAI::UpdateStrikeState()
 			eTarget = eKeep;
 			pTargetCity = m_pPlayer->GetClosestCityToUsByPlots(eKeep);
 			bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+		}
+		// at war with a third party: the target is pinned, so the diplomacy (CvDiplomacyAI::GetNewAIConquestTarget, which looks
+		// for no new target while we're at war) still opens its window and declares on it
+		if (eKeep != NO_PLAYER && m_pPlayer->IsAtWarAnyMajor() && GetStrikeCityStateTarget() != eKeep)
+		{
+			m_iStrikeCityState = eKeep;
+			eCS = eKeep;
 		}
 	}
 	const bool bAtCSWar = eCS != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam());
@@ -2811,7 +2850,8 @@ void CvMilitaryAI::UpdateStrikeState()
 		strWhy = IsTimingBuildupArmyReady() ? "declared, the army ready" : "declared, as ready as it got";
 		m_iStrikeCapturedMark = iCaptured;
 		m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
-		m_iStrikeDeclared = 1;
+		// (HasStrikeDeclared: set by our own declaration, CvDiplomacyAI::DeclareWar; not here, a city-state's war on us also
+		// lands here)
 	}
 	else if (eNew == STRIKE_WAR)
 	{
@@ -3002,12 +3042,12 @@ bool CvMilitaryAI::IsStrikeArmyBuildable() const
 	if (eCoreClass == NO_UNITCLASS)
 		return false;
 	const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(eCoreClass);
-	if (eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true))
+	if (eCore != NO_UNIT && (m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true) || StrikeClassTrainableButForUse(m_pPlayer, eCoreClass)))
 		return true;
 	//a plan with a pre-build (China's Composite Bowmen, upgraded to Chu-Ko-Nu at Machinery) opens on its turn: the pre-build
 	//is the window's army, and the declaration waits for the upgrade (the upgrade bill)
 	const UnitTypes ePreBuild = kPlan.ePreBuildClass != NO_UNITCLASS ? m_pPlayer->GetSpecificUnitType(kPlan.ePreBuildClass) : NO_UNIT;
-	return ePreBuild != NO_UNIT && m_pPlayer->canTrainUnit(ePreBuild, false, false, /*bIgnoreCost*/ true);
+	return ePreBuild != NO_UNIT && (m_pPlayer->canTrainUnit(ePreBuild, false, false, /*bIgnoreCost*/ true) || StrikeClassTrainableButForUse(m_pPlayer, kPlan.ePreBuildClass));
 }
 
 bool CvMilitaryAI::IsLateStrikeBuildup() const
