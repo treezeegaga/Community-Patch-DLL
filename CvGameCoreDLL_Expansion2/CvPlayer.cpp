@@ -33973,6 +33973,24 @@ bool CvPlayer::IsStrikeNoWonders() const
 	return !GetMilitaryAI()->HasStrikeDeclared();
 }
 
+/// AI_AB_TEST (flag LateStrike; Economy 0046). A late strike's PREP once all but the gold of Personality's BUILDUP condition
+/// (CvGrandStrategyAI::IsStrikeEconomyReady: K cities, the upgrade tech in reach, iEconomyGoldTarget saved) is met: the
+/// treasury is kept, like BUILDUP's, until the target is saved. bullyabort22 15286C56: Songhai's gold peaked at 283 of its
+/// 300 (T60), then drained to 0 (T100), and the strike stayed in PREP to the end. Purchases only: the beeline and the
+/// pre-build (IsLateStrikeSaving) still wait for BUILDUP
+bool CvPlayer::IsLateStrikePrepSaving() const
+{
+	if (!IsLateStrikeCiv() || IsAtWarAnyMajor() || !GetMilitaryAI() || GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_PREP)
+		return false;
+	const CvStrikePlan& kPlan = GetGrandStrategyAI()->GetStrikePlan();
+	if (kPlan.iEconomyGoldTarget <= 0 || GetTreasury()->GetGold() >= kPlan.iEconomyGoldTarget)
+		return false;
+	if (getNumCities() < kPlan.iMaxCitiesBeforeStrike && !IsBoxedInForSettling())
+		return false;
+	return kPlan.eUpgradeTech == NO_TECH || GET_TEAM(getTeam()).GetTeamTechs()->HasTech(kPlan.eUpgradeTech) ||
+		GetPlayerTechs()->CanResearch(kPlan.eUpgradeTech);
+}
+
 bool CvPlayer::IsLateStrikeSaving() const
 {
 	// War's strike state BUILDUP (Personality's economy-ready condition fired), to the declaration; no turns
@@ -35267,6 +35285,17 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 				CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
 				if (!pkUnitInfo)
 					continue;
+				// (0046) a late strike's PREP is economy first: a combat unit waits while the income couldn't keep one more
+				// (net under +2 a turn) and the list goes on to its economy items. bullyabort22 15286C56: Songhai's list built
+				// 6 Horsemen and 3 Archers in PREP (T42-T88), its upkeep went from 13 to 30 a turn, net -7 to -12, and the
+				// treasury never reached the 300 its BUILDUP waits for
+				if (kPlan.bLateStrike && GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_PREP &&
+					(pkUnitInfo->GetCombat() > 0 || pkUnitInfo->GetRangedCombat() > 0) && GetTreasury()->CalculateBaseNetGold() < 2)
+				{
+					if (strWait.IsEmpty())
+						strWait.Format("(item %d %s, LIST HOLD: net gold %d)", i + 1, pkUnitInfo->GetDescription(), GetTreasury()->CalculateBaseNetGold());
+					continue;
+				}
 				if (!pCity->canTrain(eUnit))
 				{
 					if (strWait.IsEmpty())
