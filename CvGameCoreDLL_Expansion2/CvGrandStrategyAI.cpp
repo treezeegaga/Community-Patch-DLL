@@ -2159,6 +2159,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bLateStrike = false;
 	kPlan.ePreBuildClass = NO_UNITCLASS;
 	kPlan.iPreBuildTarget = 0;
+	kPlan.iReadyGraceTurns = 15 * max(1, GC.getGame().getGameSpeedInfo().getTrainPercent()) / 100;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
 		return;
 
@@ -2233,6 +2234,8 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		kPlan.bLateStrike = kRow.bLate;
 		kPlan.ePreBuildClass = kRow.szPreBuild ? (UnitClassTypes)GC.getInfoTypeForString(kRow.szPreBuild, true) : NO_UNITCLASS;
 		kPlan.iPreBuildTarget = kRow.iPreBuild;
+		// a late strike has more units to upgrade and a longer march: 20 turns Standard to get ready, 15 for an early one
+		kPlan.iReadyGraceTurns = (kRow.bLate ? 20 : 15) * iSpeed / 100;
 		return;
 	}
 
@@ -2272,6 +2275,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bSiegeOnlyIfWalled = true;
 	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
 	kPlan.bLateStrike = !kProfile.bMilitaryFirst;
+	kPlan.iReadyGraceTurns = (kPlan.bLateStrike ? 20 : 15) * iSpeed / 100;
 }
 
 /// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research

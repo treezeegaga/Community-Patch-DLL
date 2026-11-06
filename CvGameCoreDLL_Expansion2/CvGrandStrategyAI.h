@@ -97,6 +97,13 @@ struct CvStrikePlan
 	bool bLateStrike;			// economy first (the late-strike civs): no units before the first settler, pre-build, upgrade and go
 	UnitClassTypes ePreBuildClass;	// late strike: the class built beforehand that upgrades into the core at eUpgradeTech
 	int iPreBuildTarget;		// (NO_UNITCLASS and 0: none, the core is built directly)
+	// Readiness (the user, 2026-11-05: "because the ai is not a high level player, some of the windows will be hard to hit";
+	// for the next block, War reads it): declare when ready, not on a turn. Ready = the upgrade tech known (or none), core
+	// units (counting pre-built ones the upgrade turns into core) at iCoreTarget, support at iSupportTarget, siege at
+	// iSiegeTarget when it's always brought, and gold for the upgrades left (iUpgradeGoldPerUnit each). The turns above stay
+	// as soft limits; the hard one is measured from the AI's own progress: fall back if not ready within iReadyGraceTurns
+	// of the strike becoming possible (the upgrade tech known, or the core trainable when there's no upgrade).
+	int iReadyGraceTurns;		// this game's speed
 };
 struct CvStrategyProfile
 {
