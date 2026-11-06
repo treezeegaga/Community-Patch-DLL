@@ -2022,10 +2022,26 @@ int CvMilitaryAI::GetTimingBuildupFieldUnits() const
 	return TimingBuildupFieldUnits(m_pPlayer, this, m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true));
 }
 
-bool CvMilitaryAI::IsTimingBuildupArmyReady() const
+bool CvMilitaryAI::IsTimingBuildupArmyBuilt() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	if (iSiege < GetTimingBuildupSiegeTarget() || TimingBuildupFieldUnits(m_pPlayer, this, iSiege) < GetTimingBuildupFieldTarget())
+	return iSiege >= GetTimingBuildupSiegeTarget() && TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= GetTimingBuildupFieldTarget();
+}
+
+/// AI_AB_TEST (flag EarlyStrike, upgrade and go; Economy keeps the treasury for it, patch 0029): until the strike an
+/// EarlyStrike civ upgrades nothing (CP upgrades whenever it can pay, so the reserve went on early Warrior to Spearman
+/// upgrades). The upgrades come once the strike's army is built (or its window is over), and the declaration waits for
+/// them. At war, or past turn 90 (Standard), CP upgrades as usual. Read by CvUnit::CanUpgradeRightNow, every AI upgrade path.
+bool CvMilitaryAI::IsEarlyStrikeHoldingUpgrades() const
+{
+	if (!m_pPlayer->IsEarlyStrikeSmallEmpire() || !IsTimingBuildupPlayer())
+		return false;
+	return !(IsEarlyStrikeBuildup() && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
+}
+
+bool CvMilitaryAI::IsTimingBuildupArmyReady() const
+{
+	if (!IsTimingBuildupArmyBuilt())
 		return false;
 	//EarlyStrike, upgrade and go (the user: "i upgraded 3 archers to composite archers. that was part of the timing attack.
 	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
@@ -3307,9 +3323,13 @@ CvUnit* CvMilitaryAI::FindArmyScrapUnit() const
 			continue;
 		//not a unit waiting for its upgrade (the lead: Archers waiting for Composite Bowmen are the strike's army)
 		const UnitTypes eUpgrade = pLoopUnit->GetUpgradeUnitType();
-		if (eUpgrade != NO_UNIT && (pLoopUnit->CanUpgradeRightNow(true) ||
-			(TechTypes)GC.getUnitInfo(eUpgrade)->GetPrereqAndTech() == m_pPlayer->GetPlayerTechs()->GetCurrentResearch()))
-			continue;
+		if (eUpgrade != NO_UNIT && m_pPlayer->HasResourceForNewUnit(eUpgrade, false, true, pLoopUnit->getUnitType()))
+		{
+			const TechTypes eUpgradeTech = (TechTypes)GC.getUnitInfo(eUpgrade)->GetPrereqAndTech();
+			if (eUpgradeTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eUpgradeTech) ||
+				eUpgradeTech == m_pPlayer->GetPlayerTechs()->GetCurrentResearch())
+				continue;
+		}
 		const int iScore = pLoopUnit->GetPower() * pLoopUnit->getUnitInfo().GetProductionCost() + pLoopUnit->getLevel();
 		if (iScore < iBestScore)
 		{
