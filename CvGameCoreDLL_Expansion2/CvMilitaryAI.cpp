@@ -2227,7 +2227,8 @@ int CvMilitaryAI::GetTimingBuildupFieldTarget() const
 /// BigArmy's log: the land army by unit type, with the gold
 void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 {
-	if (!(IsTimingBuildupBigArmy() || IsTimingBuildupWarBudget()) || !(GC.getLogging() && GC.getAILogging()))
+	//EarlyStrike civs log it too (the expert block's read: promotions and melee in reach), whatever the army target flags
+	if (!(IsTimingBuildupBigArmy() || IsTimingBuildupWarBudget() || IsEarlyStrikeCiv()) || !(GC.getLogging() && GC.getAILogging()))
 		return;
 	map<CvString, int> mTypes;
 	int iLand = 0, iSiege = 0, iLoop = 0;
@@ -2251,7 +2252,7 @@ void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 	//WarBudget writes the same line under its own name, with what gold still pays for (20 turns)
 	const CvString strAffordable = IsTimingBuildupWarBudget() ? CvString::format(", affordable %d more", m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20)) : CvString("");
 	m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("%s: army %s: %d land (%d siege; target %d siege, %d others), gold %d, %d a turn%s, promoted %d (%d promotions, %d XP): %s",
-		IsTimingBuildupBigArmy() ? "BigArmy" : "WarBudget", szWhen, iLand, iSiege, GetTimingBuildupSiegeTarget(), GetTimingBuildupFieldTarget(), m_pPlayer->GetTreasury()->GetGold(),
+		IsTimingBuildupBigArmy() ? "BigArmy" : IsTimingBuildupWarBudget() ? "WarBudget" : "EarlyStrike", szWhen, iLand, iSiege, GetTimingBuildupSiegeTarget(), GetTimingBuildupFieldTarget(), m_pPlayer->GetTreasury()->GetGold(),
 		m_pPlayer->GetTreasury()->CalculateBaseNetGold(), strAffordable.c_str(), iPromoted, iPromotions, iXPTimes100 / 100, strTypes.c_str()));
 }
 
