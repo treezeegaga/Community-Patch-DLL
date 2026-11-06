@@ -78,7 +78,7 @@ struct CvStrikeBuildItem
 	bool bUnit;
 	int iClass;	// UnitClassTypes when bUnit, else BuildingClassTypes
 };
-#define STRIKE_LIST_MAX 16
+#define STRIKE_LIST_MAX 32
 #define STRIKE_TECH_LUXURY ((TechTypes)-2)	// in a research list: one luxury tech (Economy's pick)
 // AI_AB_TEST (Personality, EarlyStrike; the user, 2026-11-06: "use the experts ideas right away and we will know if they
 // are good by if they take cities"): the civ's strike plan, from the civfanatics research (tools/ab/STRIKE_PLANS_RESEARCH.md
@@ -245,6 +245,7 @@ private:
 	void MakeStrikePlan(const CvStrategyProfile& kProfile, CvStrikePlan& kPlan) const;
 	void SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) const;
 	static void AddStrikeBuild(CvStrikePlan& kPlan, bool bUnit, int iClass);
+	void CompleteStrikeLists(CvStrikePlan& kPlan) const;
 	void DoStyleCityStateUnitGifts();
 	void DoGreedyDisbandToCap();
 
