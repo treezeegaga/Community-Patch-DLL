@@ -207,6 +207,12 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// AI_AB_TEST (candidate, flag ArmyQuality, War): a timing attacker builds no land combat unit (not scouts or siege) weaker
 	// than 70% of the best one it can train, unless the city is under siege; such units no longer count toward the army
 	// (CvMilitaryAI::IsArmyQualityUnit). 22% of BigArmy's first-declaration armies were Warriors and Scouts.
+	// AI_AB_TEST (LateStrike, Economy 0048): a late strike's PREP is economy first. No new combat unit while net gold is under
+	// +2 a turn, unless the city is in danger (CvPlayer::IsLateStrikeUnitHold)
+	if (bCombat && !bFree && !bDesperate && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
+		kPlayer.IsLateStrikeUnitHold() && !m_pCity->isInDangerOfFalling())
+		return SR_STRATEGY;
+
 	if (bCombat && !bFree && !bDesperate && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
 		pkUnitEntry->GetDefaultUnitAIType() != UNITAI_CITY_BOMBARD && kPlayer.UsesCandidateAI(FIX_ARMY_QUALITY) &&
 		kPlayer.GetMilitaryAI()->IsTimingBuildupPlayer() && !kPlayer.GetMilitaryAI()->IsArmyQualityUnit(pkUnitEntry))
