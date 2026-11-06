@@ -2048,6 +2048,10 @@ bool CvMilitaryAI::IsTimingBuildupArmyBuilt() const
 /// them. At war, or past turn 90 (Standard), CP upgrades as usual. Read by CvUnit::CanUpgradeRightNow, every AI upgrade path.
 bool CvMilitaryAI::IsEarlyStrikeHoldingUpgrades() const
 {
+	//LateStrike (Economy's ask): the same hold while Economy keeps the treasury for the upgrades (CvPlayer::IsLateStrikeSaving,
+	//15 turns Standard before the plan's window to the declaration), until the late strike's army is built
+	if (m_pPlayer->IsLateStrikeSaving() && IsTimingBuildupPlayer())
+		return !(IsLateStrikeBuildup() && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
 	if (!m_pPlayer->IsEarlyStrikeSmallEmpire() || !IsTimingBuildupPlayer())
 		return false;
 	return !(IsEarlyStrikeBuildup() && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
@@ -2181,10 +2185,10 @@ UnitClassTypes CvMilitaryAI::GetEarlyStrikeCore() const
 /// no build-up before the plan's window, then the plan's army and upgrade, then the declaration.
 bool CvMilitaryAI::IsLateStrikeCiv() const
 {
-	if (!m_pPlayer->UsesCandidateAI(FIX_LATE_STRIKE) || !IsTimingBuildupPlayer() || IsEarlyStrikeCiv() || !m_pPlayer->GetGrandStrategyAI())
+	//the same civs as Economy's book half (CvPlayer::IsLateStrikeCiv, patch 0033), as timing attackers with a core unit
+	if (!IsTimingBuildupPlayer() || !m_pPlayer->IsLateStrikeCiv())
 		return false;
-	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-	return kPlan.bValid && kPlan.iOpenTurn >= 0 && kPlan.eCoreClass != NO_UNITCLASS;
+	return m_pPlayer->GetGrandStrategyAI()->GetStrikePlan().eCoreClass != NO_UNITCLASS;
 }
 
 bool CvMilitaryAI::IsLateStrikeOpen() const
