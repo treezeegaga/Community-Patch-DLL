@@ -136,6 +136,7 @@ CvGrandStrategyAI::CvGrandStrategyAI():
 	m_bCachedMilitaryFirst(false),
 	m_iCachedUpgradeTech(NO_TECH),
 	m_iCachedUpgradeTurn(-1),
+	m_iCachedStrikePlanTurn(-1),
 	m_iCachedOutOfRoom(0),
 	m_iCachedOutOfRoomTurn(-1),
 	m_iCachedWarDefenceCap(0),
@@ -211,6 +212,7 @@ void CvGrandStrategyAI::Reset()
 	m_bCachedMilitaryFirst = false;
 	m_iCachedUpgradeTech = NO_TECH;
 	m_iCachedUpgradeTurn = -1;
+	m_iCachedStrikePlanTurn = -1;
 	m_iCachedOutOfRoom = 0;
 	m_iCachedOutOfRoomTurn = -1;
 	m_iCachedWarDefenceCap = 0;
@@ -240,6 +242,7 @@ void CvGrandStrategyAI::Read(FDataStream& kStream)
 	// AI_AB_TEST (Personality): the meta position and war defence cap are worked out again from the loaded game
 	m_iCachedMetaTurn = -1;
 	m_iCachedOutOfRoomTurn = -1;
+	m_iCachedStrikePlanTurn = -1;
 	m_iCachedWarDefenceTurn = -1;
 }
 
@@ -2116,6 +2119,133 @@ bool CvGrandStrategyAI::GetStrikeWindow(CvStrikeWindow& kWindow) const
 	return kWindow.iOpenTurn >= 0;
 }
 
+/// AI_AB_TEST (Personality, EarlyStrike): the civ's strike plan, worked out once per turn (the profile needs string lookups)
+const CvStrikePlan& CvGrandStrategyAI::GetStrikePlan() const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iCachedStrikePlanTurn != iTurn)
+	{
+		MakeStrikePlan(GetStrategyProfile(), m_kCachedStrikePlan);
+		m_iCachedStrikePlanTurn = iTurn;
+	}
+	return m_kCachedStrikePlan;
+}
+
+/// The strike plan (the user, 2026-11-06: "use the experts ideas right away"; the lead's civfanatics research,
+/// STRIKE_PLANS_RESEARCH.md in the pack repo, BNW Deity/Immortal threads at Standard pace). Expert rows for the five most
+/// common early aggressors; a data default for every other civ with a unique land combat unit. Turns are Standard here,
+/// scaled to the game speed at the end. The research's general rules: Archer to Composite Bowman "upgrade and go" at
+/// Construction with 70-80 gold saved per Archer; at least 2 melee units to take a city; 2-3 cities before the strike.
+void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStrikePlan& kPlan) const
+{
+	kPlan.bValid = false;
+	kPlan.bExpert = false;
+	kPlan.eCoreClass = NO_UNITCLASS;
+	kPlan.eSupportClass = NO_UNITCLASS;
+	kPlan.eSiegeClass = NO_UNITCLASS;
+	kPlan.iCoreTarget = 0;
+	kPlan.iSupportTarget = 0;
+	kPlan.iSiegeTarget = 0;
+	kPlan.eUpgradeTech = NO_TECH;
+	kPlan.iUpgradeGoldPerUnit = 75;
+	kPlan.iCoreBeforeSettler = 0;
+	kPlan.iMaxCitiesBeforeStrike = 0;
+	kPlan.iOpenTurn = -1;
+	kPlan.iDeclareByTurn = -1;
+	kPlan.iFallbackTurn = -1;
+	kPlan.eFirstPolicyBranch = NO_POLICY_BRANCH_TYPE;
+	kPlan.bSiegeOnlyIfWalled = true;
+	kPlan.bBarbarianHunt = false;
+	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
+		return;
+
+	struct ExpertRow
+	{
+		const char* szCiv;
+		const char* szCore; int iCore;
+		const char* szSupport; int iSupport;
+		const char* szSiege; int iSiege;
+		const char* szUpgradeTech;
+		int iN, iK, iOpen, iDeclareBy, iFallback;	// Standard turns
+		const char* szPolicy;
+	};
+	// Quick = Standard x0.67. Huns: army ready ~T30, capitals T40-50 (S4, S11); no upgrades at the strike.
+	// Aztec: 2-3 Jaguars first, ~6 Jaguars + 3-4 Composite Bowmen; the user declared T41-50 Quick. Inca: no source shows
+	// an Inca rush, so (the user, 2026-11-06) "they should just use catapults": Slingers and 2 melee with 2 Catapults
+	// (Mathematics) whatever the walls. Greece: Composite Bowmen drop the walls, Hoplites take the
+	// city, T50-65. Celts: 4-6 Pictish Warriors + 2-3 Archers or Composite Bowmen. Policy per the lead (the research:
+	// Honor where kills pay and for the Huns, Liberty for a plain Composite Bowman rush).
+	static const ExpertRow kRows[] = {
+		{ "CIVILIZATION_HUNS",   "UNITCLASS_CHARIOT_ARCHER", 5, "UNITCLASS_WARRIOR",  1, "UNITCLASS_SPEARMAN", 2, NULL,                 2, 2, 30, 50, 55, "POLICY_BRANCH_HONOR" },
+		{ "CIVILIZATION_AZTEC",  "UNITCLASS_WARRIOR",        6, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_CONSTRUCTION",  3, 2, 52, 70, 75, "POLICY_BRANCH_HONOR" },
+		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY" },
+		{ "CIVILIZATION_GREECE", "UNITCLASS_SPEARMAN",       3, "UNITCLASS_ARCHER",   5, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 50, 65, 75, "POLICY_BRANCH_LIBERTY" },
+		{ "CIVILIZATION_CELTS",  "UNITCLASS_SPEARMAN",       5, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 52, 67, 75, "POLICY_BRANCH_HONOR" },
+	};
+	const int iSpeed = max(1, GC.getGame().getGameSpeedInfo().getTrainPercent());
+	const char* szCiv = m_pPlayer->getCivilizationTypeKey();
+	for (int i = 0; i < (int)(sizeof(kRows) / sizeof(kRows[0])); i++)
+	{
+		const ExpertRow& kRow = kRows[i];
+		if (!szCiv || strcmp(szCiv, kRow.szCiv) != 0)
+			continue;
+		kPlan.bValid = true;
+		kPlan.bExpert = true;
+		kPlan.eCoreClass = (UnitClassTypes)GC.getInfoTypeForString(kRow.szCore, true);
+		kPlan.iCoreTarget = kRow.iCore;
+		kPlan.eSupportClass = (UnitClassTypes)GC.getInfoTypeForString(kRow.szSupport, true);
+		kPlan.iSupportTarget = kRow.iSupport;
+		kPlan.eSiegeClass = kRow.szSiege ? (UnitClassTypes)GC.getInfoTypeForString(kRow.szSiege, true) : NO_UNITCLASS;
+		kPlan.iSiegeTarget = kRow.iSiege;
+		kPlan.eUpgradeTech = kRow.szUpgradeTech ? (TechTypes)GC.getInfoTypeForString(kRow.szUpgradeTech, true) : NO_TECH;
+		kPlan.iCoreBeforeSettler = kRow.iN;
+		kPlan.iMaxCitiesBeforeStrike = kRow.iK;
+		kPlan.iOpenTurn = kRow.iOpen * iSpeed / 100;
+		kPlan.iDeclareByTurn = kRow.iDeclareBy * iSpeed / 100;
+		kPlan.iFallbackTurn = kRow.iFallback * iSpeed / 100;
+		kPlan.eFirstPolicyBranch = (PolicyBranchTypes)GC.getInfoTypeForString(kRow.szPolicy, true);
+		kPlan.bSiegeOnlyIfWalled = true;
+		kPlan.bBarbarianHunt = true;
+		return;
+	}
+
+	// The data default: the spike unit is the core (a siege unique unit is the siege, with Archers as the core); support
+	// is ranged with a melee core, melee with a ranged core. The window opens when the later of the spike and the upgrade
+	// tech lands (every researched plan pre-builds and strikes then), declare within 10 turns.
+	CvUnitEntry* pkSpike = GC.getUnitInfo(kProfile.eSpikeUnit);
+	if (!pkSpike)
+		return;
+	const UnitClassTypes eArcher = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_ARCHER", true);
+	const UnitClassTypes eSpearman = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SPEARMAN", true);
+	kPlan.bValid = true;
+	if (pkSpike->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD)
+	{
+		kPlan.eSiegeClass = (UnitClassTypes)pkSpike->GetUnitClassType();
+		kPlan.iSiegeTarget = 2;
+		kPlan.eCoreClass = eArcher;
+		kPlan.eSupportClass = eSpearman;
+	}
+	else
+	{
+		kPlan.eCoreClass = (UnitClassTypes)pkSpike->GetUnitClassType();
+		kPlan.eSupportClass = (pkSpike->GetRangedCombat() > 0) ? eSpearman : eArcher;
+	}
+	kPlan.iCoreTarget = 5;
+	kPlan.iSupportTarget = 3;
+	kPlan.eUpgradeTech = kProfile.eUpgradeTech;
+	kPlan.iCoreBeforeSettler = 2;
+	kPlan.iMaxCitiesBeforeStrike = 3;
+	const int iSpikeStd = kProfile.iSpikeTurn * 100 / iSpeed;
+	const int iUpgradeStd = (kProfile.iUpgradeTurn >= 0) ? kProfile.iUpgradeTurn * 100 / iSpeed : -1;
+	const int iOpenStd = max(iSpikeStd, iUpgradeStd) + 5;
+	kPlan.iOpenTurn = iOpenStd * iSpeed / 100;
+	kPlan.iDeclareByTurn = (iOpenStd + 10) * iSpeed / 100;
+	kPlan.iFallbackTurn = (iOpenStd + 15) * iSpeed / 100;
+	kPlan.eFirstPolicyBranch = kProfile.bMilitaryFirst ? (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_LIBERTY", true) : NO_POLICY_BRANCH_TYPE;
+	kPlan.bSiegeOnlyIfWalled = true;
+	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
+}
+
 /// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research
 /// runs late)
 bool CvGrandStrategyAI::IsInStrikeWindow() const
@@ -2426,6 +2556,22 @@ void CvGrandStrategyAI::LogStrategyProfile()
 		kProfile.iStrikeStart, kProfile.iStrikeEnd, kProfile.iStrikeDeclareBy, kProfile.iCoreSharePercent,
 		(kProfile.eUpgradeTech != NO_TECH) ? GC.getTechInfo(kProfile.eUpgradeTech)->GetType() : "none", kProfile.iUpgradeTurn);
 	pLog->Msg(strOut);
+
+	const CvStrikePlan& kPlan = GetStrikePlan();
+	if (kPlan.bValid)
+	{
+		CvString strPlan;
+		strPlan.Format("%03d, %s, strike plan %s: core %s x%d, support %s x%d, siege %s x%d, upgrade %s (%d gold each), N %d, K %d, open T%d, declare by T%d, fallback T%d, policy %s%s",
+			iTurn, m_pPlayer->getCivilizationShortDescription(), kPlan.bExpert ? "expert" : "default",
+			(kPlan.eCoreClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eCoreClass)->GetType() : "none", kPlan.iCoreTarget,
+			(kPlan.eSupportClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSupportClass)->GetType() : "none", kPlan.iSupportTarget,
+			(kPlan.eSiegeClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSiegeClass)->GetType() : "none", kPlan.iSiegeTarget,
+			(kPlan.eUpgradeTech != NO_TECH) ? GC.getTechInfo(kPlan.eUpgradeTech)->GetType() : "none", kPlan.iUpgradeGoldPerUnit,
+			kPlan.iCoreBeforeSettler, kPlan.iMaxCitiesBeforeStrike, kPlan.iOpenTurn, kPlan.iDeclareByTurn, kPlan.iFallbackTurn,
+			(kPlan.eFirstPolicyBranch != NO_POLICY_BRANCH_TYPE) ? GC.getPolicyBranchInfo(kPlan.eFirstPolicyBranch)->GetType() : "CP's choice",
+			kPlan.bBarbarianHunt ? ", barbarian hunt first" : "");
+		pLog->Msg(strPlan);
+	}
 }
 
 /// Returns the Active Grand Strategy for this Player: how am I trying to win right now?
