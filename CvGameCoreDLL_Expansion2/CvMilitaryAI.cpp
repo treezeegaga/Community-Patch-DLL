@@ -2424,6 +2424,9 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 	{
 		if (!bAtWar && !m_pPlayer->GetDiplomacyAI()->GetDefensiveWarAllies(eTarget, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty())
 			return false;
+		// nor a declared friend (a backstab)
+		if (!bAtWar && m_pPlayer->GetDiplomacyAI()->IsDoFAccepted(eTarget))
+			return false;
 	}
 	else if (kOther.isMinorCiv())
 	{
@@ -2533,17 +2536,32 @@ void CvMilitaryAI::UpdateStrikeState()
 	PlayerTypes eTarget = m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
 	const CvCity* pTargetCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
 	bool bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
-	// EarlyStrike with no major in reach: a city-state (the user). Kept once the build-up against it is open; dropped when a
-	// major comes in reach before that, or when it no longer qualifies
+	// EarlyStrike with no committed major in reach: a pinned target (the user: a city-state when no major is in reach). In PREP
+	// the same targets, in the same order, as BUILDUP's check below (the lead's trial23 164B7CEA: Persia's city-state target
+	// Sydney stopped qualifying, was dropped silently, and PREP ended "no target in reach" at T45 with Denmark, a major in
+	// reach, picked by CP the next turn): the pinned target while it stays valid (IsStrikeTargetValid), else the nearest
+	// major in reach, else the nearest city-state. Dropped when CP commits to a major in reach. Through BUILDUP and WAR it is
+	// kept while alive (BUILDUP's own check re-validates it)
 	const PlayerTypes eOldCS = GetStrikeCityStateTarget();
 	PlayerTypes eCS = NO_PLAYER;
 	if (bEarly && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
 	{
-		if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && (eNew != STRIKE_PREP || !bInReach) &&
-			(GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOldCS).getTeam()) || FindStrikeCityState() == eOldCS || eNew != STRIKE_PREP))
-			eCS = eOldCS;
-		else if (!bInReach && eNew == STRIKE_PREP)
-			eCS = FindStrikeCityState();
+		if (eNew != STRIKE_PREP)
+		{
+			if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive())
+				eCS = eOldCS;
+		}
+		else if (!bInReach)
+		{
+			if (IsStrikeTargetValid(eOldCS, /*bNewTarget*/ false))
+				eCS = eOldCS;
+			else
+			{
+				eCS = FindStrikeMajorInReach();
+				if (eCS == NO_PLAYER)
+					eCS = FindStrikeCityState();
+			}
+		}
 	}
 	// LateStrike: a pinned target (a re-target, or the BUILDUP target check below) holds through BUILDUP and WAR
 	else if (bLate && (eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR) && eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive())
@@ -2551,12 +2569,18 @@ void CvMilitaryAI::UpdateStrikeState()
 	if (eCS != eOldCS)
 	{
 		m_iStrikeCityState = eCS;
-		if (eCS != NO_PLAYER && GC.getLogging() && GC.getAILogging())
+		if (GC.getLogging() && GC.getAILogging())
 		{
-			const CvCity* pCSCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
-			m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: city-state target %s (%s, %d tiles from our capital; no major in reach)",
-				GET_PLAYER(eCS).getCivilizationShortDescription(), pCSCity ? pCSCity->getNameNoSpace().c_str() : "no city",
-				(pCSCity && pCapital) ? plotDistance(pCapital->getX(), pCapital->getY(), pCSCity->getX(), pCSCity->getY()) : -1));
+			if (eCS != NO_PLAYER)
+			{
+				const CvCity* pCSCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: %s target %s (%s, %d tiles from our capital; no committed major in reach)",
+					GET_PLAYER(eCS).isMinorCiv() ? "city-state" : "major", GET_PLAYER(eCS).getCivilizationShortDescription(), pCSCity ? pCSCity->getNameNoSpace().c_str() : "no city",
+					(pCSCity && pCapital) ? plotDistance(pCapital->getX(), pCapital->getY(), pCSCity->getX(), pCSCity->getY()) : -1));
+			}
+			else
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s dropped (%s)", GET_PLAYER(eOldCS).getCivilizationShortDescription(),
+					!GET_PLAYER(eOldCS).isAlive() ? "dead" : bInReach ? "a committed major in reach" : "no longer qualifies, no other target in reach"));
 		}
 	}
 	if (eCS != NO_PLAYER)
@@ -2588,7 +2612,7 @@ void CvMilitaryAI::UpdateStrikeState()
 		else
 		{
 			eKeep = FindStrikeCityState();
-			if (!IsStrikeTargetValid(eKeep))
+			if (!IsStrikeTargetValid(eKeep, /*bNewTarget*/ false))	// the city-state picker's own definition (no attack-target check)
 				eKeep = NO_PLAYER;
 			szHow = "the nearest city-state in reach";
 		}
