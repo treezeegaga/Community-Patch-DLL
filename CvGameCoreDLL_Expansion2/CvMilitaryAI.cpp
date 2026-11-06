@@ -2668,18 +2668,22 @@ void CvMilitaryAI::DoTimingBuildup()
 	if (iUpgradeBill > 0 && bLog)
 		pTactical->LogTacticalMessage(CvString::format("EarlyStrike: upgrade and go, %d units to upgrade for %d gold (gold %d)%s",
 			iUpgradeUnits, iUpgradeBill, m_pPlayer->GetTreasury()->GetGold(), bUpgradeTechSoon ? ", upgrade tech a few turns off" : ""));
-	if (!bWarChest && iUpgradeBill == 0 && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
+	//a strike's build-up keeps the upgrade bill in reserve and buys with the gold above it (Persia, 13E9ECC9: 350 gold idle
+	//against a 165 bill while 5 units short); otherwise no purchase while a bill is due
+	const bool bStrikeBuys = IsStrikeBuildup();
+	if (!bWarChest && (iUpgradeBill == 0 || bStrikeBuys) && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
 	{
 		CvCity* pTheirCity = m_eTimingBuildupTarget != NO_PLAYER ? m_pPlayer->GetClosestCityToUsByPlots(m_eTimingBuildupTarget) : NULL;
 		CvCity* pBuyCity = pTheirCity ? m_pPlayer->GetClosestCityByPathLength(pTheirCity->plot()) : pCapital;
 		if (pBuyCity && !pBuyCity->IsPuppet())
 		{
-			const bool bNeedSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < 2;
+			const int iSiegeWanted = bStrikeBuys ? GetTimingBuildupSiegeTarget() : 2;	// a strike without siege buys none
+			const bool bNeedSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < iSiegeWanted;
 			UnitTypes eType = pBuyCity->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(bNeedSiege ? UNITAI_CITY_BOMBARD : UNITAI_ATTACK, true);
 			if (eType != NO_UNIT && pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eType, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
 			{
 				const int iCost = pBuyCity->GetPurchaseCost(eType);
-				if (m_pPlayer->GetEconomicAI()->CanWithdrawMoneyForPurchase(PURCHASE_TYPE_UNIT, iCost, 400))
+				if (m_pPlayer->GetEconomicAI()->CanWithdrawMoneyForPurchase(PURCHASE_TYPE_UNIT, iCost + iUpgradeBill, 400))
 				{
 					CvUnit* pUnit = pBuyCity->PurchaseUnit(eType, YIELD_GOLD);
 					if (pUnit)
