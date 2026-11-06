@@ -57,6 +57,18 @@ enum StrategyGreedyKindTypes
 	STRATEGY_GREEDY_WIDE,	// Liberty, settles as fast as happiness and growth allow; out of room, grows tall and trades
 	NUM_STRATEGY_GREEDY_KINDS
 };
+// AI_AB_TEST (Personality, power spike; the interface War asked for, 2026-11-06): when and with what a civ strikes
+struct CvStrikeWindow
+{
+	TechTypes eSpikeTech;		// the tech that unlocks the core unit (NO_TECH: from the start)
+	UnitClassTypes eCoreUnitClass;	// the unique unit's class: build it through GetSpecificUnitType
+	int iCoreSharePercent;		// the share of the attack army's land units that should be the core unit
+	int iOpenTurn;				// the window opens (elapsed turns, this game's speed): the first core units are out
+	int iDeclareByTurn;			// declare by this turn, while the spike is fresh
+	int iCloseTurn;				// the window closes: walls, counters and castles, or the unit is obsolete
+	bool bSiegeOnlyIfWalled;	// an early spike takes unwalled cities without siege (the user's Aztec took Marrakesh at T54)
+	bool bMilitaryFirst;		// the opening that serves the spike: military first and a small empire
+};
 struct CvStrategyProfile
 {
 	StrategyArchetypeTypes eArchetype;
@@ -75,6 +87,8 @@ struct CvStrategyProfile
 	bool bMilitaryFirst;	// the opening that serves the spike: military first and a small empire (a spike by turn 30 Standard)
 	int iStrikeStart;		// the strike window, turns (this game's speed): the spike's army ready, before counters and castles;
 	int iStrikeEnd;			// -1 when there's no spike
+	int iStrikeDeclareBy;	// declare by this turn (-1 when there's no spike)
+	int iCoreSharePercent;	// the share of the attack army that should be the spike unit
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -129,6 +143,7 @@ public:
 	StrategyGreedyKindTypes GetGreedyKind() const;
 	// AI_AB_TEST (Personality, power spike; for War's TimingBuildup): the strike window, and are we in it now?
 	bool GetStrikeWindow(int& iStartTurn, int& iEndTurn) const;
+	bool GetStrikeWindow(CvStrikeWindow& kWindow) const;
 	bool IsInStrikeWindow() const;
 	bool IsGreedyWideOutOfRoom() const;
 	int GetWarDefenceLandUnitCap() const;
@@ -200,6 +215,10 @@ private:
 	mutable int m_iCachedStrikeStart;	// the strike window, worked out with the meta position, once per turn
 	mutable int m_iCachedStrikeEnd;
 	mutable int m_iCachedSpikeTech;
+	mutable int m_iCachedStrikeDeclareBy;
+	mutable int m_iCachedCoreUnitClass;
+	mutable int m_iCachedCoreSharePercent;
+	mutable bool m_bCachedMilitaryFirst;
 	mutable int m_iCachedOutOfRoom;	// GreedyWide: -1 not worked out this turn, else 0 or 1
 	mutable int m_iCachedOutOfRoomTurn;
 	// AI_AB_TEST (Personality, GreedyWarArmy): not saved, worked out again from the game state
