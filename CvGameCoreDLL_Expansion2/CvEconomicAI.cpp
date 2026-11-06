@@ -3128,6 +3128,9 @@ static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, Cv
 
 	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->IsBoxedInForSettling())
 		return false;
+	// AI_AB_TEST candidate (EarlyStrike): no settler bought past the book's one until the strike
+	if (pPlayer->getNumCities() >= 2 && pPlayer->IsEarlyStrikeSmallEmpire())
+		return false;
 
 	UnitClassTypes eSettlerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
 	if (eSettlerClass == NO_UNITCLASS)
