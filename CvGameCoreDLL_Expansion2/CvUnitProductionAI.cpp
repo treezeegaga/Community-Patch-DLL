@@ -1881,6 +1881,22 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			iBonus += 300;
 	}
 
+	// AI_AB_TEST (candidate, flag LateStrike, Personality's half): pre-build. While the treasury is kept for the strike
+	// (CvPlayer::IsLateStrikeSaving: from 15 turns Standard before the plan's window) and before the upgrade tech, the plan's
+	// pre-build class comes first, up to its count (core units already out count too), so they upgrade into the core the
+	// turn the tech lands: Spearmen into Impis, Chariot Archers into Keshiks, Swordsmen into Samurai, Horsemen into
+	// Mandekalu, Composite Bowmen into Chu-Ko-Nus (the research: "upgrade and go")
+	if (bCombat && !bFree && pkUnitEntry->GetDomainType() == DOMAIN_LAND && kPlayer.IsLateStrikeSaving() &&
+		!kPlayer.GetMilitaryAI()->IsInTimingBuildupWindow())
+	{
+		const CvStrikePlan& kStrikePlan = kPlayer.GetGrandStrategyAI()->GetStrikePlan();
+		if (kStrikePlan.ePreBuildClass != NO_UNITCLASS && (UnitClassTypes)pkUnitEntry->GetUnitClassType() == kStrikePlan.ePreBuildClass &&
+			(kStrikePlan.eUpgradeTech == NO_TECH || !GET_TEAM(kPlayer.getTeam()).GetTeamTechs()->HasTech(kStrikePlan.eUpgradeTech)) &&
+			kPlayer.getUnitClassCountPlusMaking(kStrikePlan.ePreBuildClass) +
+			(kStrikePlan.eCoreClass != NO_UNITCLASS ? kPlayer.getUnitClassCountPlusMaking(kStrikePlan.eCoreClass) : 0) < kStrikePlan.iPreBuildTarget)
+			iBonus += 3500;
+	}
+
 	// AI_AB_TEST (candidate, flag TimingBuildup): in the build-up window, until the attack army is ready, its units come
 	// first, about as strongly as units an attack operation asks for (a test window built 2 archers and 2 warriors in 10
 	// turns, and a sneak attack on a major civ forms only from units that already exist)
@@ -1892,13 +1908,22 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			iBonus += 4000;
 		//EarlyStrike, the expert strike: 3 melee units that can take the city first ("bring two in case one dies"), then the
 		//spike unit (Economy's core class) up to Personality's core share of the field target (50%, 33% for a siege core)
-		else if (kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() && pkUnitEntry->GetCombat() > 0 && pkUnitEntry->GetRangedCombat() == 0 &&
+		else if (kPlayer.GetMilitaryAI()->IsStrikeBuildup() && pkUnitEntry->GetCombat() > 0 && pkUnitEntry->GetRangedCombat() == 0 &&
 			pkUnitEntry->GetDefaultUnitAIType() != UNITAI_CITY_BOMBARD && kPlayer.GetMilitaryAI()->GetEarlyStrikeMeleeUnits() < CvMilitaryAI::EARLY_STRIKE_MELEE_MIN)
 			iBonus += 5000;
 		else if ((UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetMilitaryAI()->GetEarlyStrikeCore() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 100 <
 			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget() * kPlayer.GetMilitaryAI()->GetEarlyStrikeCoreSharePercent())
 			iBonus += 4500;
+		//LateStrike: the strike plan's core up to its count, then its support (Personality's CvStrikePlan)
+		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
+			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eCoreClass &&
+			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iCoreTarget)
+			iBonus += 4500;
+		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
+			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eSupportClass &&
+			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iSupportTarget)
+			iBonus += 3500;
 		//SiegeSlots: other land units only while the field target isn't met; past it they are not what the army lacks
 		else if (!bSiege && (!kPlayer.UsesCandidateAI(FIX_SIEGE_SLOTS) ||
 			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldUnits() < kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget()))

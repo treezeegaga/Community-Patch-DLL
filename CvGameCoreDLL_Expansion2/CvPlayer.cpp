@@ -33453,7 +33453,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"EarlyStrike", false},
 	{"EarlyStrikeAggressor", false},
 	{"Spoiler", false},
-	{"LateStrikePlans", false},
+	{"LateStrike", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33909,6 +33909,59 @@ bool CvPlayer::GetEarlyStrikePlan(CvEarlyStrikePlan& kPlan) const
 	kPlan.eFirstTree = kStrike.eFirstPolicyBranch;
 	kPlan.eUpgradeTech = kStrike.eUpgradeTech;
 	return true;
+}
+
+static TechTypes GetOpeningBookTechStep(const CvPlayer& kPlayer, TechTypes eTech, int iDepth); // defined with the book below
+
+/// AI_AB_TEST candidate (LateStrike, Economy's half; the user: "with other warmonger civs like zulu, maybe you build up more
+/// of an infrastructure and then try to time an impi attack"): a candidate warmonger whose spike comes after turn 30
+/// Standard (not Personality's bMilitaryFirst) and has a strike plan (CvGrandStrategyAI::GetStrikePlan). It keeps the
+/// normal book and its expansion (no city cap: Personality's K = no limit for late-spike civs).
+bool CvPlayer::IsLateStrikeCiv() const
+{
+	if (!MOD_AI_AB_TEST || !IsCandidateWarmonger(FIX_LATE_STRIKE) || !GetGrandStrategyAI() || getNumCities() == 0)
+		return false;
+	if (GetEarlyStrikeCoreClass() != NO_UNITCLASS) // an early-spike civ: EarlyStrike's book
+		return false;
+	// Personality's plan says late strike (economy first): its expert late rows, or the data default for a spike after T30
+	const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
+	return kStrike.bValid && kStrike.bLateStrike && kStrike.iOpenTurn > 0;
+}
+
+/// LateStrike: from the build-up (15 turns Standard before the window opens) to the declaration (or the plan's
+/// declare-by turn), no hurries and no tiles: the treasury pays for the upgrade and go (the research: 70-80 gold per unit)
+bool CvPlayer::IsLateStrikeSaving() const
+{
+	if (!IsLateStrikeCiv() || IsAtWarAnyMajor())
+		return false;
+	const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
+	const int iTurn = GC.getGame().getElapsedGameTurns();
+	const int iBuildup = kStrike.iOpenTurn - 15 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+	return iTurn >= iBuildup && iTurn <= max(kStrike.iDeclareByTurn, kStrike.iOpenTurn);
+}
+
+/// LateStrike: economy first, then a straight line to the strike. From 30 turns (Standard) before the window opens, the
+/// spike unit's tech, then the plan's upgrade tech (the late-spike table: Metal Casting for Denmark's Berserkers,
+/// Chivalry for Keshiks and Mandekalu, Civil Service for Impis, Steel for Samurai). After the opening book.
+TechTypes CvPlayer::GetLateStrikeTech() const
+{
+	if (IsOpeningBookActive() || !IsLateStrikeCiv() || IsAtWarAnyMajor())
+		return NO_TECH;
+	const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
+	const int iTurn = GC.getGame().getElapsedGameTurns();
+	if (iTurn < kStrike.iOpenTurn - 30 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100 ||
+		iTurn > max(kStrike.iDeclareByTurn, kStrike.iOpenTurn))
+		return NO_TECH;
+	const UnitTypes eCore = (kStrike.eCoreClass != NO_UNITCLASS) ? GetSpecificUnitType(kStrike.eCoreClass) : NO_UNIT;
+	if (eCore != NO_UNIT)
+	{
+		const TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getUnitInfo(eCore)->GetPrereqAndTech(), 0);
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	if (kStrike.eUpgradeTech != NO_TECH)
+		return GetOpeningBookTechStep(*this, kStrike.eUpgradeTech, 0);
+	return NO_TECH;
 }
 
 /// EarlyStrike: K cities before the strike; past K, no settlers until it's over
@@ -34876,6 +34929,11 @@ PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 	CvEarlyStrikePlan kPlan;
 	if (IsEarlyStrikeBook() && GetEarlyStrikePlan(kPlan) && kPlan.eFirstTree != NO_POLICY_BRANCH_TYPE)
 		return kPlan.eFirstTree;
+	// AI_AB_TEST candidate (LateStrike): the strike plan's first tree when it names one (Personality's late-spike table:
+	// Tradition for the Zulu, Japan and China, Liberty for Denmark, the Ottomans and England, Honor for Mongolia, Songhai
+	// and Germany); NO_POLICY_BRANCH_TYPE keeps the book's own
+	if (IsLateStrikeCiv() && GetGrandStrategyAI()->GetStrikePlan().eFirstPolicyBranch != NO_POLICY_BRANCH_TYPE)
+		return GetGrandStrategyAI()->GetStrikePlan().eFirstPolicyBranch;
 
 	switch (GetOpeningBook())
 	{

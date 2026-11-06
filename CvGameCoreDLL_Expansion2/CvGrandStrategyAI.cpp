@@ -2187,7 +2187,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY", NULL, 0, 75, false, true },
 		{ "CIVILIZATION_GREECE", "UNITCLASS_SPEARMAN",       3, "UNITCLASS_ARCHER",   5, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 50, 65, 75, "POLICY_BRANCH_LIBERTY", NULL, 0, 75, false, true },
 		{ "CIVILIZATION_CELTS",  "UNITCLASS_SPEARMAN",       5, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 52, 67, 75, "POLICY_BRANCH_HONOR", NULL, 0, 75, false, true },
-		// LateStrikePlans (off): economy first, pre-build, save the gold, upgrade the turn the tech lands and strike.
+		// LateStrike (off; one flag with War's window and Economy's book): economy first, pre-build, save the gold, upgrade the turn the tech lands and strike.
 		// Zulu (glory7, Deity Challenge #1): a ranged-led wave at T90-100 with Spearmen upgraded to Impi at Civil Service.
 		// Mongolia (Deity Challenge #8): Chariot Archers kept alive and upgraded to Keshiks at Chivalry, T92-105, 8+ Keshiks
 		// and 2 Horsemen to capture. Assyria (imMapex): Composite Bowmen with 1-2 Siege Towers and 1-2 melee, T80-110.
@@ -2210,7 +2210,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		const ExpertRow& kRow = kRows[i];
 		if (!szCiv || strcmp(szCiv, kRow.szCiv) != 0)
 			continue;
-		if (kRow.bLate && !m_pPlayer->UsesCandidateAI(FIX_LATE_STRIKE_PLANS))
+		if (kRow.bLate && !m_pPlayer->UsesCandidateAI(FIX_LATE_STRIKE))
 			continue;
 		kPlan.bValid = true;
 		kPlan.bExpert = true;

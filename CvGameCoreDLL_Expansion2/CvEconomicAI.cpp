@@ -3444,6 +3444,11 @@ void CvEconomicAI::DoHurry()
 
 	DoWarChest(m_pPlayer);
 
+	// AI_AB_TEST candidate (LateStrike): from the build-up to the declaration, the treasury is for the upgrades; only
+	// WarChest's siege purchases (above) spend it
+	if (m_pPlayer->IsLateStrikeSaving())
+		return;
+
 	if (m_pPlayer->UsesNewAI())
 	{
 		BuyExpansionSettler(m_pPlayer);
@@ -3805,6 +3810,9 @@ void CvEconomicAI::DoPlotPurchases()
 
 	// AI_AB_TEST candidate (EarlyStrike): no tiles bought before the strike, the gold is for the upgrades
 	if (m_pPlayer->IsEarlyStrikeSmallEmpire())
+		return;
+	// AI_AB_TEST candidate (LateStrike): nor in a late strike's build-up
+	if (m_pPlayer->IsLateStrikeSaving())
 		return;
 
 	// AI_AB_TEST: CP never cancels a tile savings request, so after one unaffordable plot the amount stays
