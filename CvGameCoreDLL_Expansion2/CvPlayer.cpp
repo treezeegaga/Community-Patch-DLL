@@ -35179,6 +35179,23 @@ static int CountStrikeListUnits(const CvPlayer& kPlayer, UnitClassTypes eClass, 
 	return iCount;
 }
 
+/// StrikeList (0047): the unit this city trains for eClass. The class itself, else the first trainable class on its upgrade
+/// line (an obsolete Archer once Composite Bowmen can be trained; the upgraded unit counts toward the item, see
+/// CountStrikeListUnits). NO_UNIT: nothing on the line can be trained here yet (its tech isn't in). The Zulu's 162667AE
+/// (ab-103bd11) waited on obsolete Archer items from T80 to T106 after losing units
+static UnitTypes GetStrikeListTrainableOnLine(const CvPlayer& kPlayer, UnitClassTypes eClass, const CvCity* pCity)
+{
+	std::vector<UnitClassTypes> vClasses;
+	AddStrikeListUpgradeClasses(kPlayer, eClass, vClasses);
+	for (size_t i = 0; i < vClasses.size(); i++)
+	{
+		const UnitTypes eUnit = kPlayer.GetSpecificUnitType(vClasses[i]);
+		if (eUnit != NO_UNIT && pCity->canTrain(eUnit))
+			return eUnit;
+	}
+	return NO_UNIT;
+}
+
 /// StrikeList: the plan's army unit this city should train next: the core, support and siege below the plan's counts (the
 /// core first, then the support, then the siege), then more core. A class the city can't train yet gives way to a unit
 /// that upgrades into it (the late strike's pre-build). NO_UNIT: nothing trainable
@@ -35196,11 +35213,11 @@ static UnitTypes GetStrikeListArmyUnit(const CvPlayer& kPlayer, const CvStrikePl
 				continue;
 			if (iPass == 0)
 				bShort = true;
-			UnitTypes eUnit = kPlayer.GetSpecificUnitType(aeClass[i]);
-			if (eUnit == NO_UNIT || !pCity->canTrain(eUnit))
+			// the class, or its upgrade once it's obsolete (0047)
+			UnitTypes eUnit = GetStrikeListTrainableOnLine(kPlayer, aeClass[i], pCity);
+			if (eUnit == NO_UNIT)
 			{
 				// the pre-build: a unit that upgrades into this class
-				eUnit = NO_UNIT;
 				if (i == 0 && kPlan.ePreBuildClass != NO_UNITCLASS)
 				{
 					const UnitTypes ePre = kPlayer.GetSpecificUnitType(kPlan.ePreBuildClass);
@@ -35296,16 +35313,21 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 						strWait.Format("(item %d %s, LIST HOLD: net gold %d)", i + 1, pkUnitInfo->GetDescription(), GetTreasury()->CalculateBaseNetGold());
 					continue;
 				}
-				if (!pCity->canTrain(eUnit))
+				// the item's class, or its upgrade once it's obsolete (0047; the upgraded unit counts toward the item)
+				const UnitTypes eTrain = GetStrikeListTrainableOnLine(*this, eClass, pCity);
+				if (eTrain == NO_UNIT)
 				{
 					if (strWait.IsEmpty())
 						strWait.Format("(item %d %s)", i + 1, pkUnitInfo->GetDescription());
 					continue;
 				}
 				eOrder = ORDER_TRAIN;
-				iData = eUnit;
+				iData = eTrain;
 				CvString strItem;
-				strItem.Format("item %d/%d %s%s%s", i + 1, kPlan.iNumBuilds, pkUnitInfo->GetDescription(), strWait.IsEmpty() ? "" : ", LIST WAIT ", strWait.c_str());
+				if (eTrain != eUnit)
+					strItem.Format("item %d/%d %s (for %s, obsolete)%s%s", i + 1, kPlan.iNumBuilds, GC.getUnitInfo(eTrain)->GetDescription(), pkUnitInfo->GetDescription(), strWait.IsEmpty() ? "" : ", LIST WAIT ", strWait.c_str());
+				else
+					strItem.Format("item %d/%d %s%s%s", i + 1, kPlan.iNumBuilds, pkUnitInfo->GetDescription(), strWait.IsEmpty() ? "" : ", LIST WAIT ", strWait.c_str());
 				LogStrikeList(*this, pCity, strItem.c_str(), NULL);
 				return true;
 			}
