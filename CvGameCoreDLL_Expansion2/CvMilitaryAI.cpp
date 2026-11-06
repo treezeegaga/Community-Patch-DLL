@@ -2058,7 +2058,13 @@ bool CvMilitaryAI::IsEarlyStrikeHoldingUpgrades() const
 		return IsEarlyStrikeCiv();
 	if (eState != STRIKE_BUILDUP)
 		return false;
-	return !(m_iTimingBuildupStartTurn >= 0 && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
+	//lift it as soon as the army is otherwise ready to go by any measure the declaration uses (the normal army, Personality's
+	//plan army, or as ready as it gets), so the upgrades happen before the declaration and not after it (Greece, 1464B588,
+	//declared at T63 with 289 gold and 2 Archers held; its first upgrade came at T99, in the field)
+	if (m_iTimingBuildupStartTurn < 0)
+		return true;
+	return !(IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded() || m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady() ||
+		IsStrikeAsReadyAsItGets());
 }
 
 static bool StrikeCityHasWalls(const CvCity* pCity)
