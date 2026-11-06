@@ -2350,7 +2350,9 @@ int CvMilitaryAI::GetEarlyStrikeUpgradeBill(int* piUnits, bool* pbTechSoon) cons
 	const bool bResearchSoon = false;	// no turn horizon (the user): units count when their upgrade's tech is known, or is the strike's own
 	CvStrikeWindow kWindow;
 	TechTypes eStrikeUpgradeTech = GetEarlyStrikeWindow(kWindow) ? kWindow.eUpgradeTech : NO_TECH;
-	if (IsLateStrikeCiv())	// LateStrike: the strike plan's upgrade
+	//LateStrike, or an early strike without a profile spike (Personality's generic Composite Bowman rush, bGenericRush: no
+	//window): the strike plan's upgrade
+	if (IsLateStrikeCiv() || (eStrikeUpgradeTech == NO_TECH && m_pPlayer->GetGrandStrategyAI()->GetStrikePlan().bValid))
 		eStrikeUpgradeTech = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan().eUpgradeTech;
 	int iBill = 0, iLoop = 0;
 	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
