@@ -414,8 +414,9 @@ private:
 	int m_iStrikeCityState;			// EarlyStrike's city-state target (PlayerTypes; the user: with no major in reach), saved
 	void UpdateStrikeState();
 	PlayerTypes FindStrikeCityState(bool bUnwalledOnly = false, PlayerTypes eExclude = NO_PLAYER) const;
-	PlayerTypes FindStrikeRetarget(PlayerTypes eExclude) const;	// an unwalled city in reach, a major's or a city-state's
-	int m_iStrikeSiege;				// the build-up brings siege (the target walled up, no unwalled city in reach), saved
+	PlayerTypes FindStrikeRetarget(PlayerTypes eExclude, const CvCity* pCurrent) const;	// a clearly easier city in reach, a major's or a city-state's
+	bool IsStrikeArmyStrongEnough(const CvCity* pCity) const;	// the plan's (upgraded) army against the city's defence
+	int m_iStrikeSiege;				// the build-up brings siege (the army too weak for the target, no easier city in reach), saved
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;

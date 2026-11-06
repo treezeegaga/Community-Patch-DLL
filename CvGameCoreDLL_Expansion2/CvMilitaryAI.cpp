@@ -2150,44 +2150,107 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState(bool bUnwalledOnly, PlayerTypes eE
 	return eBest;
 }
 
-/// AI_AB_TEST (EarlyStrike; the lead, Nov 6: the walled exit was too eager, Aztec 14E7F3A0 gave up on a walled Ur at T60 with
-/// 5 units): when the strike's target walls up, the nearest other unwalled city within 12 tiles of our capital, a major's
-/// (one we can declare on, at war with already or with no defensive allies to pull in) or a city-state's (FindStrikeCityState)
-PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude) const
+/// AI_AB_TEST (EarlyStrike, LateStrike; the user: "i think i brute forced through marrakeshs walls when i attacked"): can the
+/// strike plan's army take this city? The plan's core and support at their counts, as the units they become at the strike's
+/// own upgrade (upgrade and go); a unit's attack is its ranged strength if ranged, else its melee strength, and counts only
+/// at 40% or more of the city's defence (walls and garrison included); the counted attack must be 3x the defence. 7 Composite
+/// Bowmen (11 ranged) make 77, 3.1x a city of 25: the research's "fine up to about 23-25". No plan: no check.
+bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity) const
+{
+	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+	if (!pCity || !kPlan.bValid)
+		return true;
+	const int iDefence = max(1, pCity->getStrengthValue() / 100);
+	const UnitClassTypes aeClass[2] = { kPlan.eCoreClass, kPlan.eSupportClass };
+	const int aiCount[2] = { kPlan.iCoreTarget, kPlan.iSupportTarget };
+	int iAttack = 0;
+	for (int i = 0; i < 2; i++)
+	{
+		UnitTypes eUnit = (aeClass[i] != NO_UNITCLASS && aiCount[i] > 0) ? m_pPlayer->GetSpecificUnitType(aeClass[i]) : NO_UNIT;
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (!pkUnit)
+			continue;
+		if (kPlan.eUpgradeTech != NO_TECH)	// as the unit it becomes at the strike's upgrade
+		{
+			for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+			{
+				if (!pkUnit->GetUpgradeUnitClass(iClass))
+					continue;
+				const UnitTypes eTo = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
+				CvUnitEntry* pkTo = (eTo != NO_UNIT) ? GC.getUnitInfo(eTo) : NULL;
+				if (pkTo && pkTo->GetPrereqAndTech() == (int)kPlan.eUpgradeTech)
+				{
+					pkUnit = pkTo;
+					break;
+				}
+			}
+		}
+		const int iUnitAttack = pkUnit->GetRangedCombat() > 0 ? pkUnit->GetRangedCombat() : pkUnit->GetCombat();
+		if (iUnitAttack * 100 >= iDefence * 40)
+			iAttack += iUnitAttack * aiCount[i];
+	}
+	return iAttack >= 3 * iDefence;
+}
+
+/// AI_AB_TEST (EarlyStrike, LateStrike; the lead, Nov 6): with the strike's army too weak for its target, a clearly easier city
+/// within 12 tiles of our capital: at most 75% of the target's defence and one the plan's army can take. A major's (one we can
+/// declare on with no defensive allies to pull in, or are at war with) or a city-state's (no ally or one we're at war with,
+/// no protector at peace with us, no recent peace). The weakest such city
+PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude, const CvCity* pCurrent) const
 {
 	const CvCity* pCapital = m_pPlayer->getCapitalCity();
-	if (!pCapital)
+	if (!pCapital || !pCurrent)
 		return NO_PLAYER;
 	const TeamTypes eOurTeam = m_pPlayer->getTeam();
+	const int iCurrentDefence = max(1, pCurrent->getStrengthValue() / 100);
 	PlayerTypes eBest = NO_PLAYER;
-	int iBestDistance = 13;
-	for (int iMajor = 0; iMajor < MAX_MAJOR_CIVS; iMajor++)
+	int iBestDefence = INT_MAX;
+	for (int iLoop = 0; iLoop < MAX_CIV_PLAYERS; iLoop++)
 	{
-		const PlayerTypes eMajor = (PlayerTypes)iMajor;
-		const CvPlayer& kMajor = GET_PLAYER(eMajor);
-		if (eMajor == eExclude || eMajor == m_pPlayer->GetID() || !kMajor.isAlive() || !kMajor.isMajorCiv() || kMajor.getTeam() == eOurTeam ||
-			!GET_TEAM(eOurTeam).isHasMet(kMajor.getTeam()))
+		const PlayerTypes eOther = (PlayerTypes)iLoop;
+		CvPlayer& kOther = GET_PLAYER(eOther);
+		if (eOther == eExclude || eOther == m_pPlayer->GetID() || !kOther.isAlive() || kOther.getTeam() == eOurTeam ||
+			kOther.isBarbarian() || !GET_TEAM(eOurTeam).isHasMet(kOther.getTeam()))
 			continue;
-		const bool bAtWar = GET_TEAM(eOurTeam).isAtWar(kMajor.getTeam());
-		if (!bAtWar && (!GET_TEAM(eOurTeam).canDeclareWar(kMajor.getTeam(), m_pPlayer->GetID()) ||
-			!m_pPlayer->GetDiplomacyAI()->GetDefensiveWarAllies(eMajor, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty()))
+		const bool bAtWar = GET_TEAM(eOurTeam).isAtWar(kOther.getTeam());
+		if (!bAtWar && !GET_TEAM(eOurTeam).canDeclareWar(kOther.getTeam(), m_pPlayer->GetID()))
 			continue;
-		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eMajor);
-		if (!pCity || !pCity->plot()->isRevealed(eOurTeam) || StrikeCityHasWalls(pCity))
-			continue;
-		const int iDistance = plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY());
-		if (iDistance < iBestDistance)
+		if (kOther.isMajorCiv())
 		{
-			iBestDistance = iDistance;
-			eBest = eMajor;
+			if (!bAtWar && !m_pPlayer->GetDiplomacyAI()->GetDefensiveWarAllies(eOther, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty())
+				continue;
 		}
-	}
-	const PlayerTypes eCS = FindStrikeCityState(/*bUnwalledOnly*/ true, eExclude);
-	if (eCS != NO_PLAYER)
-	{
-		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
-		if (pCity && plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) < iBestDistance)
-			eBest = eCS;
+		else if (kOther.isMinorCiv())
+		{
+			const PlayerTypes eAlly = kOther.GetMinorCivAI()->GetAlly();
+			if (eAlly == m_pPlayer->GetID() || (eAlly != NO_PLAYER && !GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eAlly).getTeam())))
+				continue;
+			bool bProtected = false;
+			for (int iMajor = 0; iMajor < MAX_MAJOR_CIVS && !bProtected; iMajor++)
+			{
+				const PlayerTypes eMajor = (PlayerTypes)iMajor;
+				if (eMajor != m_pPlayer->GetID() && GET_PLAYER(eMajor).isAlive() && kOther.GetMinorCivAI()->IsProtectedByMajor(eMajor) &&
+					!GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eMajor).getTeam()))
+					bProtected = true;
+			}
+			const int iPeaceTurn = GET_TEAM(eOurTeam).GetTurnMadePeaceTreatyWithTeam(kOther.getTeam());
+			if (bProtected || (iPeaceTurn >= 0 && GC.getGame().getGameTurn() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns()))
+				continue;
+		}
+		else
+			continue;
+		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eOther);
+		if (!pCity || pCity == pCurrent || !pCity->plot()->isRevealed(eOurTeam) ||
+			plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) > 12)
+			continue;
+		const int iDefence = max(1, pCity->getStrengthValue() / 100);
+		if (iDefence * 100 > iCurrentDefence * 75 || !IsStrikeArmyStrongEnough(pCity))
+			continue;
+		if (iDefence < iBestDefence)
+		{
+			iBestDefence = iDefence;
+			eBest = eOther;
+		}
 	}
 	return eBest;
 }
@@ -2253,13 +2316,6 @@ void CvMilitaryAI::UpdateStrikeState()
 		bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
 	}
 	const bool bAtCSWar = eCS != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam());
-	const bool bWalled = StrikeCityHasWalls(pTargetCity);
-	bool bPlanSiege = bLate;	// LateStrike brings siege against walls; EarlyStrike only if its plan has siege (Huns' Rams, Inca's Catapults)
-	CvEarlyStrikePlan kEarlyPlan;
-	if (bEarly && m_pPlayer->GetEarlyStrikePlan(kEarlyPlan))
-		bPlanSiege = kEarlyPlan.eSiege != NO_UNITCLASS && kEarlyPlan.iSiegeTotal > 0;
-	if (m_iStrikeSiege > 0)	// the build-up switched to bring siege (a walled target, nothing unwalled in reach)
-		bPlanSiege = true;
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	const UnitClassTypes eCoreClass = bEarly ? GetEarlyStrikeCore() : kPlan.eCoreClass;
 	const UnitTypes eCore = (eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eCoreClass) : NO_UNIT;
@@ -2276,33 +2332,31 @@ void CvMilitaryAI::UpdateStrikeState()
 		// normal plan runs (Japan, 1468D9F4: LateStrike in PREP from T1 declared on Spain at T102, BUILDUP came at T149)
 		else if (eNew == STRIKE_PREP && iWarsDeclared > m_iStrikeWarsDeclaredMark)
 			eNew = STRIKE_OVER, strWhy = "we declared a war outside the strike, before its build-up";
-		// the target walled up (the lead): first another unwalled city in reach, a major's or a city-state's; else, if the plan
-		// allows siege against walls, the build-up brings siege; OVER only when neither works
-		else if (eNew == STRIKE_BUILDUP && bWalled && !bPlanSiege)
+		// walls are not an exit (the user: "i think i brute forced through marrakeshs walls"): a strength check. Strong enough,
+		// go, walls or not; too weak, a clearly easier city in reach (a major's or a city-state's) is the new target, else the
+		// build-up brings siege. Never OVER for this
+		else if (eNew == STRIKE_BUILDUP && pTargetCity && m_iStrikeSiege == 0 && !IsStrikeArmyStrongEnough(pTargetCity))
 		{
-			const PlayerTypes eRetarget = FindStrikeRetarget(eTarget);
-			const CvStrikePlan& kStrikePlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+			const PlayerTypes eRetarget = FindStrikeRetarget(eTarget, pTargetCity);
 			if (eRetarget != NO_PLAYER)
 			{
 				const CvCity* pNewCity = m_pPlayer->GetClosestCityToUsByPlots(eRetarget);
 				if (GC.getLogging() && GC.getAILogging())
-					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: re-target from %s (%s walled) to %s (%s, unwalled, %d tiles from our capital; %s)",
-						eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "none", pTargetCity ? pTargetCity->getNameNoSpace().c_str() : "-",
-						GET_PLAYER(eRetarget).getCivilizationShortDescription(), pNewCity ? pNewCity->getNameNoSpace().c_str() : "-",
+					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: re-target from %s (%s, defence %d, too strong for the plan's army) to %s (%s, defence %d, %d tiles from our capital; %s)",
+						eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "none", pTargetCity->getNameNoSpace().c_str(), pTargetCity->getStrengthValue() / 100,
+						GET_PLAYER(eRetarget).getCivilizationShortDescription(), pNewCity ? pNewCity->getNameNoSpace().c_str() : "-", pNewCity ? pNewCity->getStrengthValue() / 100 : -1,
 						(pNewCity && pCapital) ? plotDistance(pCapital->getX(), pCapital->getY(), pNewCity->getX(), pNewCity->getY()) : -1,
 						bEarly ? "EarlyStrike" : "LateStrike"));
 				m_iStrikeCityState = eRetarget;
 				m_eTimingBuildupTarget = eRetarget;
 			}
-			else if (kStrikePlan.bValid && kStrikePlan.bSiegeOnlyIfWalled)
+			else
 			{
 				m_iStrikeSiege = 1;
 				if (GC.getLogging() && GC.getAILogging())
-					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s walled, no unwalled city in reach; the build-up brings siege (%s)",
-						pTargetCity ? pTargetCity->getNameNoSpace().c_str() : "-", bEarly ? "EarlyStrike" : "LateStrike"));
+					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s (defence %d) too strong for the plan's army, no easier city in reach; the build-up brings siege (%s)",
+						pTargetCity->getNameNoSpace().c_str(), pTargetCity->getStrengthValue() / 100, bEarly ? "EarlyStrike" : "LateStrike"));
 			}
-			else
-				eNew = STRIKE_OVER, strWhy = "the target's nearest city has walls, no unwalled city in reach, and the plan brings no siege";
 		}
 		else if (eNew == STRIKE_BUILDUP && pTargetCity && pkCore && pkCore->GetUnitCombatType() != NO_UNITCOMBAT)
 		{
@@ -2349,7 +2403,7 @@ void CvMilitaryAI::UpdateStrikeState()
 		// K cities; late, the upgrade tech in reach, K cities and half the upgrade bill saved); EarlyStrike also wants a target
 		// in reach that its plan can take
 		const bool bEconomyReady = m_pPlayer->GetGrandStrategyAI()->IsStrikeEconomyReady();
-		const bool bTrigger = bEconomyReady && (bEarly ? (bInReach && (!bWalled || bPlanSiege) && IsStrikeArmyBuildable()) : true);
+		const bool bTrigger = bEconomyReady && (bEarly ? (bInReach && IsStrikeArmyBuildable()) : true);
 		if (bTrigger)
 		{
 			eNew = STRIKE_BUILDUP;
@@ -2469,16 +2523,19 @@ bool CvMilitaryAI::IsBigArmyUpkeepWaived() const
 
 int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
 {
-	if (IsEarlyStrikeBuildup() && IsEarlyStrikeTargetUnwalled())
-		return 0;
-	//EarlyStrike switched to siege against a walled target: CP's 2, or the plan's siege count if larger
-	if (IsEarlyStrikeBuildup() && m_iStrikeSiege > 0)
-		return max(2, m_pPlayer->GetGrandStrategyAI()->GetStrikePlan().iSiegeTarget);
+	//EarlyStrike: siege only when the strength check found the army too weak for the target (walls alone don't call for it):
+	//then CP's 2, or the plan's siege count if larger; otherwise the plan's always-brought siege (Huns' Rams), if any
+	if (IsEarlyStrikeBuildup())
+	{
+		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+		const int iPlanSiege = (kPlan.bValid && kPlan.eSiegeClass != NO_UNITCLASS) ? kPlan.iSiegeTarget : 0;
+		return m_iStrikeSiege > 0 ? max(2, iPlanSiege) : iPlanSiege;
+	}
 	//LateStrike: the plan's siege (always brought), plus CP's 2 against a walled target unless the plan says siege only if walled
 	if (IsLateStrikeBuildup())
 	{
 		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-		return (kPlan.bSiegeOnlyIfWalled && IsEarlyStrikeTargetUnwalled()) ? kPlan.iSiegeTarget : max(2, kPlan.iSiegeTarget);
+		return (kPlan.bSiegeOnlyIfWalled && m_iStrikeSiege == 0) ? kPlan.iSiegeTarget : max(2, kPlan.iSiegeTarget);
 	}
 	return IsTimingBuildupBigArmy() ? 4 : 2;
 }
