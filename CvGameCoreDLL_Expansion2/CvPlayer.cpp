@@ -35410,14 +35410,19 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 
 	bool bShort = false;
 	const UnitTypes eArmy = GetStrikeListArmyUnit(*this, kPlan, pCity, bShort);
-	if (eArmy != NO_UNIT && (bShort || GetEconomicAI()->GetAffordableWarUnits(10) >= 1))
+	// (0050) the plan's counts met: more core only in WAR (its losses). Before the declaration a complete army waits; extra
+	// units only cost upkeep. bullygreedy23 167DE984: the Celts met their counts at T63, built 6 more Pictish Warriors
+	// while BUILDUP waited, and net gold went from -9 to -14 a turn
+	const bool bMoreCore = GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_WAR && GetEconomicAI()->GetAffordableWarUnits(10) >= 1;
+	if (eArmy != NO_UNIT && (bShort || bMoreCore))
 	{
 		eOrder = ORDER_TRAIN;
 		iData = eArmy;
 		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : "the army (the plan's counts met, more core):", GC.getUnitInfo(eArmy)->GetDescription());
 		return true;
 	}
-	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" : "LIST NORMAL (army complete, no more affordable)", NULL);
+	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" :
+		(GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_WAR ? "LIST NORMAL (army complete, no more affordable)" : "LIST NORMAL (army complete, waiting for the declaration)"), NULL);
 	return false;
 }
 
