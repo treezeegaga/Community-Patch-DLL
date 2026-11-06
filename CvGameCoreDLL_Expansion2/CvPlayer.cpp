@@ -33931,6 +33931,19 @@ bool CvPlayer::IsLateStrikeCiv() const
 
 /// LateStrike: from the build-up (15 turns Standard before the window opens) to the declaration (or the plan's
 /// declare-by turn), no hurries and no tiles: the treasury pays for the upgrade and go (the research: 70-80 gold per unit)
+/// AI_AB_TEST (flags EarlyStrike, LateStrike; Economy 0040; the user: "if civs are stopping to build wonders and donate to
+/// citystates before an early strike, the test needs to stop and code has to be rewritten"). Any strike civ, early or late,
+/// from PREP to its declaration: no world wonders and no gold to city-states. bullyabort19 game 1 (1468D9F4): LateStrike
+/// Japan sat in PREP T1-T149, built the Great Library and Hanging Gardens and gave 1,250 gold to city-states, which also
+/// held back the upgrade bill its own BUILDUP trigger waits for
+bool CvPlayer::IsStrikePending() const
+{
+	if (!isMajorCiv() || !GetMilitaryAI())
+		return false;
+	const CvMilitaryAI::StrikeStateTypes eState = GetMilitaryAI()->GetStrikeState();
+	return eState == CvMilitaryAI::STRIKE_PREP || eState == CvMilitaryAI::STRIKE_BUILDUP;
+}
+
 bool CvPlayer::IsLateStrikeSaving() const
 {
 	// War's strike state BUILDUP (Personality's economy-ready condition fired), to the declaration; no turns

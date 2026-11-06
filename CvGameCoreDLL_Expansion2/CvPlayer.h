@@ -1929,6 +1929,7 @@ public:
 	TechTypes GetEarlyStrikeLuxuryTech() const; // AI_AB_TEST Economy, flag EarlyStrike: the one luxury tech before the upgrade
 	bool IsLateStrikeCiv() const; // AI_AB_TEST Economy, flag LateStrike: a warmonger with a late spike and a strike plan
 	bool IsLateStrikeSaving() const; // AI_AB_TEST Economy, flag LateStrike: from the build-up to the declaration, gold kept for upgrades
+	bool IsStrikePending() const; // AI_AB_TEST Economy, flags EarlyStrike/LateStrike (0040): a strike civ before its strike (state PREP or BUILDUP) // AI_AB_TEST Economy, flag LateStrike: from the build-up to the declaration, gold kept for upgrades
 	TechTypes GetLateStrikeTech() const; // AI_AB_TEST Economy, flag LateStrike: the spike's and the upgrade's techs before the window
 	bool IsWarGoldShort() const; // AI_AB_TEST Economy, flag WarGold
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
