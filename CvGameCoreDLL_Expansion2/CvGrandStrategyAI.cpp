@@ -2164,6 +2164,15 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.eExitCounterClass1 = NO_UNITCLASS;
 	kPlan.eExitCounterClass2 = NO_UNITCLASS;
 	kPlan.bExitRoughTarget = false;
+	kPlan.iNumBuilds = 0;
+	kPlan.iNumTechs = 0;
+	kPlan.bListInferred = false;
+	for (int iItem = 0; iItem < STRIKE_LIST_MAX; iItem++)
+	{
+		kPlan.aBuilds[iItem].bUnit = false;
+		kPlan.aBuilds[iItem].iClass = -1;
+		kPlan.aeTechs[iItem] = NO_TECH;
+	}
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
 		return;
 
@@ -2250,6 +2259,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 			kPlan.eExitCounterClass2 = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_MUSKETMAN", true);
 			kPlan.bExitRoughTarget = true;
 		}
+		SetStrikeLists(kPlan, kRow.szCiv);
 		return;
 	}
 
@@ -2289,6 +2299,163 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bSiegeOnlyIfWalled = true;
 	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
 	kPlan.bLateStrike = !kProfile.bMilitaryFirst;
+
+	// The data default's lists [I], in the expert style: N core units, a worker and a settler, then support and core in
+	// turn with a second settler when K allows; research the core's tech, a luxury, then the upgrade tech
+	kPlan.bListInferred = true;
+	const UnitClassTypes eWorker = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_WORKER", true);
+	const UnitClassTypes eSettler = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
+	const BuildingClassTypes eMonument = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_MONUMENT", true);
+	if (kPlan.bLateStrike)
+	{
+		// economy first: monument, worker, settlers; the pre-build comes from the plan's targets, not this list
+		AddStrikeBuild(kPlan, false, eMonument);
+		AddStrikeBuild(kPlan, true, eWorker);
+		AddStrikeBuild(kPlan, true, eSettler);
+		AddStrikeBuild(kPlan, true, eSettler);
+	}
+	else
+	{
+		for (int iItem = 0; iItem < kPlan.iCoreBeforeSettler; iItem++)
+			AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
+		AddStrikeBuild(kPlan, true, eWorker);
+		AddStrikeBuild(kPlan, true, eSettler);
+		AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
+		AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
+		AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
+		if (kPlan.iMaxCitiesBeforeStrike >= 3)
+			AddStrikeBuild(kPlan, true, eSettler);
+		AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
+		AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
+		AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
+	}
+	const UnitTypes eCoreUnit = (kPlan.eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass) : NO_UNIT;
+	const TechTypes eCoreTech = (eCoreUnit != NO_UNIT) ? (TechTypes)GC.getUnitInfo(eCoreUnit)->GetPrereqAndTech() : NO_TECH;
+	if (eCoreTech != NO_TECH && kPlan.iNumTechs < STRIKE_LIST_MAX)
+		kPlan.aeTechs[kPlan.iNumTechs++] = eCoreTech;
+	if (kPlan.iNumTechs < STRIKE_LIST_MAX)
+		kPlan.aeTechs[kPlan.iNumTechs++] = STRIKE_TECH_LUXURY;
+	if (kPlan.eUpgradeTech != NO_TECH && kPlan.eUpgradeTech != eCoreTech && kPlan.iNumTechs < STRIKE_LIST_MAX)
+		kPlan.aeTechs[kPlan.iNumTechs++] = kPlan.eUpgradeTech;
+}
+
+/// AI_AB_TEST (Personality, the expert lists): append one build to the plan's list (NO class: skipped)
+void CvGrandStrategyAI::AddStrikeBuild(CvStrikePlan& kPlan, bool bUnit, int iClass)
+{
+	if (iClass < 0 || kPlan.iNumBuilds >= STRIKE_LIST_MAX)
+		return;
+	kPlan.aBuilds[kPlan.iNumBuilds].bUnit = bUnit;
+	kPlan.aBuilds[kPlan.iNumBuilds].iClass = iClass;
+	kPlan.iNumBuilds++;
+}
+
+/// AI_AB_TEST (Personality; the user, 2026-11-06: "this is why we looked up expert build orders. literally just follow the
+/// list"; the lead: the capital's first ~10-12 builds and the research to the upgrade tech, straight from
+/// STRIKE_PLANS_RESEARCH.md). Source per row; [I] where the research gives no full list and this is the closest
+/// expert-style list. Tokens: UNITCLASS_x / BUILDINGCLASS_x for builds, TECH_x or LUXURY (a luxury tech) for research.
+void CvGrandStrategyAI::SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) const
+{
+	struct ListRow
+	{
+		const char* szCiv;
+		bool bInferred;
+		const char* szBuilds;
+		const char* szTechs;
+	};
+	static const ListRow kLists[] = {
+		// Huns (S4 Cromagnus): Scout, Monument, then Horse Archers continuously, a Warrior or Ram as needed; 1-2 cities
+		// ([I]: the one settler's place). Research: The Wheel, a luxury, Bronze Working, Horseback Riding, then Writing/Math
+		{ "CIVILIZATION_HUNS", true,
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_CHARIOT_ARCHER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SPEARMAN UNITCLASS_CHARIOT_ARCHER UNITCLASS_SPEARMAN UNITCLASS_WARRIOR UNITCLASS_CHARIOT_ARCHER",
+			"TECH_THE_WHEEL LUXURY TECH_BRONZE_WORKING TECH_HORSEBACK_RIDING TECH_WRITING TECH_MATHEMATICS" },
+		// Aztec (the user's game, which the sources fit): Jaguar x3, Worker, Settler, Archer x4, Jaguar x2.
+		// Research: a luxury, Archery, Construction
+		{ "CIVILIZATION_AZTEC", false,
+			"UNITCLASS_WARRIOR UNITCLASS_WARRIOR UNITCLASS_WARRIOR UNITCLASS_WORKER UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_WARRIOR UNITCLASS_WARRIOR",
+			"LUXURY TECH_ARCHERY TECH_CONSTRUCTION" },
+		// Inca ([I] + S19: Scout, Monument or Scout, Granary, Settler, Slingers from build 4-5; the user's Catapults).
+		// Research: Pottery/Mining, a luxury, Archery, Mathematics (Catapults), Construction
+		{ "CIVILIZATION_INCA", true,
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_WORKER UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_CATAPULT UNITCLASS_CATAPULT UNITCLASS_SPEARMAN",
+			"TECH_POTTERY TECH_MINING LUXURY TECH_ARCHERY TECH_MATHEMATICS TECH_CONSTRUCTION" },
+		// Greece ([I] + S21: Monuments first, then units, no Granaries; 2-3 cities). Research: Bronze Working, Archery,
+		// Horseback Riding, Construction
+		{ "CIVILIZATION_GREECE", true,
+			"BUILDINGCLASS_MONUMENT UNITCLASS_SPEARMAN UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_ARCHER",
+			"TECH_BRONZE_WORKING TECH_ARCHERY LUXURY TECH_HORSEBACK_RIDING TECH_CONSTRUCTION" },
+		// Celts (S7/S22 + [I]: Scout, Monument, Pictish Warrior x2 for barbarians, Settler, then Pictish Warriors and
+		// Archers). Research: Bronze Working early, Archery, Construction
+		{ "CIVILIZATION_CELTS", true,
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_SPEARMAN UNITCLASS_SPEARMAN UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SPEARMAN",
+			"TECH_BRONZE_WORKING LUXURY TECH_ARCHERY TECH_CONSTRUCTION" },
+		// Zulu (S24 glory7): Scout, Monument, Scout, Granary, Shrine, Archer x3, Worker, Pyramids, Archer, Settler; then
+		// Ikanda (Barracks), Spearmen. Research: Pottery, Archery, Mining, Animal Husbandry, Masonry, luxury, Construction,
+		// Bronze Working, Horseback Riding, Writing, Currency, Machinery, Civil Service
+		{ "CIVILIZATION_ZULU", false,
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_SCOUT BUILDINGCLASS_GRANARY BUILDINGCLASS_SHRINE UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_WORKER BUILDINGCLASS_PYRAMID UNITCLASS_ARCHER UNITCLASS_SETTLER BUILDINGCLASS_BARRACKS UNITCLASS_SPEARMAN",
+			"TECH_POTTERY TECH_ARCHERY TECH_MINING TECH_ANIMAL_HUSBANDRY TECH_MASONRY LUXURY TECH_CONSTRUCTION TECH_BRONZE_WORKING TECH_HORSEBACK_RIDING TECH_WRITING TECH_CURRENCY TECH_MACHINERY TECH_CIVIL_SERVICE" },
+		// Mongolia (S26 fils): Scout, Scout, Granary, Shrine, Caravan, Chariot Archer, Settler, Chariot Archer, Settler.
+		// Research (hicks53081): Pottery, Writing, Animal Husbandry, Mining, Archery, Trapping, The Wheel, Bronze Working,
+		// Philosophy, Civil Service, Currency, Chivalry
+		{ "CIVILIZATION_MONGOL", false,
+			"UNITCLASS_SCOUT UNITCLASS_SCOUT BUILDINGCLASS_GRANARY BUILDINGCLASS_SHRINE UNITCLASS_CARAVAN UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_CHARIOT_ARCHER",
+			"TECH_POTTERY TECH_WRITING TECH_ANIMAL_HUSBANDRY TECH_MINING TECH_ARCHERY TECH_TRAPPING TECH_THE_WHEEL TECH_BRONZE_WORKING TECH_PHILOSOPHY TECH_CIVIL_SERVICE TECH_CURRENCY TECH_CHIVALRY" },
+		// Assyria (S28 imMapex): Scout, Scout, Temple of Artemis, Shrine, Worker, Archer, Settler, Granary, Composite Bowman
+		// x2, Siege Tower, Composite Bowman, Royal Library (Library), Caravan, National College. Research: Archery, Mining,
+		// luxury, Construction, luxury, Mathematics, Writing, Philosophy
+		{ "CIVILIZATION_ASSYRIA", false,
+			"UNITCLASS_SCOUT UNITCLASS_SCOUT BUILDINGCLASS_TEMPLE_ARTEMIS BUILDINGCLASS_SHRINE UNITCLASS_WORKER UNITCLASS_ARCHER UNITCLASS_SETTLER BUILDINGCLASS_GRANARY UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_CATAPULT UNITCLASS_ARCHER BUILDINGCLASS_LIBRARY UNITCLASS_CARAVAN BUILDINGCLASS_NATIONAL_COLLEGE",
+			"TECH_ARCHERY TECH_MINING LUXURY TECH_CONSTRUCTION LUXURY TECH_MATHEMATICS TECH_WRITING TECH_PHILOSOPHY" },
+		// Japan ([I] + S3: Tradition, 3 cities, National College around T70, pre-built Swordsmen). Research: a luxury,
+		// Bronze Working, Iron Working, Writing, Mathematics, Construction, Civil Service, Machinery, Steel
+		{ "CIVILIZATION_JAPAN", true,
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_SETTLER UNITCLASS_WORKER UNITCLASS_SETTLER BUILDINGCLASS_LIBRARY UNITCLASS_SWORDSMAN UNITCLASS_SWORDSMAN BUILDINGCLASS_NATIONAL_COLLEGE UNITCLASS_SWORDSMAN UNITCLASS_SWORDSMAN UNITCLASS_ARCHER",
+			"LUXURY TECH_BRONZE_WORKING TECH_IRON_WORKING TECH_WRITING TECH_MATHEMATICS TECH_CONSTRUCTION TECH_CIVIL_SERVICE TECH_MACHINERY TECH_STEEL" },
+		// Songhai (S33 Redaxe: Scout, Warrior, Warrior, Scout, Warrior, Settler; then [I] Horsemen for the camps).
+		// Research (S27): Animal Husbandry, Horseback Riding, Writing, Philosophy, Civil Service, Currency, Chivalry
+		{ "CIVILIZATION_SONGHAI", true,
+			"UNITCLASS_SCOUT UNITCLASS_WARRIOR UNITCLASS_WARRIOR UNITCLASS_SCOUT UNITCLASS_WARRIOR UNITCLASS_SETTLER UNITCLASS_HORSEMAN UNITCLASS_WORKER UNITCLASS_HORSEMAN UNITCLASS_SETTLER UNITCLASS_HORSEMAN UNITCLASS_HORSEMAN",
+			"TECH_ANIMAL_HUSBANDRY TECH_HORSEBACK_RIDING TECH_WRITING TECH_PHILOSOPHY TECH_CIVIL_SERVICE TECH_CURRENCY TECH_CHIVALRY" },
+		// China ([I] + S36: Bimblecrumbs built 5 Archers then 2 more; Paper Maker (Library); 2-4 cities). Research
+		// (S36 Bimblecrumbs, Gustavus Rex): Archery, a luxury, Writing, Philosophy, Construction, Machinery
+		{ "CIVILIZATION_CHINA", true,
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_WORKER UNITCLASS_ARCHER BUILDINGCLASS_LIBRARY UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SPEARMAN",
+			"TECH_ARCHERY LUXURY TECH_WRITING TECH_PHILOSOPHY TECH_CONSTRUCTION TECH_MACHINERY" },
+	};
+	for (int iRow = 0; iRow < (int)(sizeof(kLists) / sizeof(kLists[0])); iRow++)
+	{
+		if (strcmp(kLists[iRow].szCiv, szCiv) != 0)
+			continue;
+		kPlan.bListInferred = kLists[iRow].bInferred;
+		const char* aszLists[2] = { kLists[iRow].szBuilds, kLists[iRow].szTechs };
+		for (int iList = 0; iList < 2; iList++)
+		{
+			const std::string strList(aszLists[iList]);
+			size_t iPos = 0;
+			while (iPos < strList.size())
+			{
+				size_t iEnd = strList.find(' ', iPos);
+				if (iEnd == std::string::npos)
+					iEnd = strList.size();
+				const std::string strToken = strList.substr(iPos, iEnd - iPos);
+				iPos = iEnd + 1;
+				if (strToken.empty())
+					continue;
+				if (iList == 0)
+				{
+					const bool bUnit = strToken.compare(0, 10, "UNITCLASS_") == 0;
+					AddStrikeBuild(kPlan, bUnit, GC.getInfoTypeForString(strToken.c_str(), true));
+				}
+				else if (kPlan.iNumTechs < STRIKE_LIST_MAX)
+				{
+					const TechTypes eTech = (strToken == "LUXURY") ? STRIKE_TECH_LUXURY : (TechTypes)GC.getInfoTypeForString(strToken.c_str(), true);
+					if (eTech != NO_TECH)
+						kPlan.aeTechs[kPlan.iNumTechs++] = eTech;
+				}
+			}
+		}
+		return;
+	}
 }
 
 /// AI_AB_TEST (Personality, strike plan; War's strike state): units of a class plus those of the classes it upgrades into
@@ -2710,6 +2877,26 @@ void CvGrandStrategyAI::LogStrategyProfile()
 			kPlan.bBarbarianHunt ? ", barbarian hunt first" : "",
 			kPlan.bLateStrike ? (kPlan.ePreBuildClass != NO_UNITCLASS ? CvString::format(", late strike, pre-build %s x%d", GC.getUnitClassInfo(kPlan.ePreBuildClass)->GetType(), kPlan.iPreBuildTarget).c_str() : ", late strike") : "");
 		pLog->Msg(strPlan);
+
+		// the expert lists, item by item
+		CvString strBuilds, strTechs;
+		for (int iItem = 0; iItem < kPlan.iNumBuilds; iItem++)
+		{
+			const CvStrikeBuildItem& kItem = kPlan.aBuilds[iItem];
+			const char* szType = kItem.bUnit ? (GC.getUnitClassInfo((UnitClassTypes)kItem.iClass) ? GC.getUnitClassInfo((UnitClassTypes)kItem.iClass)->GetType() : "?") :
+				(GC.getBuildingClassInfo((BuildingClassTypes)kItem.iClass) ? GC.getBuildingClassInfo((BuildingClassTypes)kItem.iClass)->GetType() : "?");
+			strBuilds += CvString::format("%s%s", iItem > 0 ? " " : "", szType);
+		}
+		for (int iItem = 0; iItem < kPlan.iNumTechs; iItem++)
+		{
+			const TechTypes eTech = kPlan.aeTechs[iItem];
+			const char* szTech = (eTech == STRIKE_TECH_LUXURY) ? "LUXURY" : (eTech != NO_TECH && GC.getTechInfo(eTech)) ? GC.getTechInfo(eTech)->GetType() : "?";
+			strTechs += CvString::format("%s%s", iItem > 0 ? " " : "", szTech);
+		}
+		CvString strLists;
+		strLists.Format("%03d, %s, strike lists%s: builds [%s], research [%s]", iTurn, m_pPlayer->getCivilizationShortDescription(),
+			kPlan.bListInferred ? " (partly inferred)" : "", strBuilds.c_str(), strTechs.c_str());
+		pLog->Msg(strLists);
 	}
 }
 

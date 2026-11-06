@@ -71,6 +71,15 @@ struct CvStrikeWindow
 	TechTypes eUpgradeTech;		// the upgrade the strike waits for (NO_TECH: none); time the declaration on it
 	int iUpgradeTurn;			// when that tech usually comes (elapsed turns, this game's speed; -1: none)
 };
+// AI_AB_TEST (Personality, the expert lists; the user, 2026-11-06: "this is why we looked up expert build orders. literally
+// just follow the list"): one item of the capital's build list, a unit class or a building class
+struct CvStrikeBuildItem
+{
+	bool bUnit;
+	int iClass;	// UnitClassTypes when bUnit, else BuildingClassTypes
+};
+#define STRIKE_LIST_MAX 16
+#define STRIKE_TECH_LUXURY ((TechTypes)-2)	// in a research list: one luxury tech (Economy's pick)
 // AI_AB_TEST (Personality, EarlyStrike; the user, 2026-11-06: "use the experts ideas right away and we will know if they
 // are good by if they take cities"): the civ's strike plan, from the civfanatics research (tools/ab/STRIKE_PLANS_RESEARCH.md
 // in the pack repo) for the researched civs, a data default for the rest. Economy's book and War's strike read it.
@@ -106,6 +115,14 @@ struct CvStrikePlan
 	UnitClassTypes eExitCounterClass1;	// exit: these units seen near the target (the core's counters); NO_UNITCLASS: none
 	UnitClassTypes eExitCounterClass2;
 	bool bExitRoughTarget;		// exit: the target city is on a hill or behind rough ground
+	// The expert lists (Economy's book follows them item by item, with no CP fill-in before the strike): the capital's
+	// first builds and the research to the upgrade tech. A tech item is a target: research its prerequisites first.
+	// STRIKE_TECH_LUXURY is a luxury tech. bListInferred: some of it is [I] (the research gives no full list).
+	int iNumBuilds;
+	CvStrikeBuildItem aBuilds[STRIKE_LIST_MAX];
+	int iNumTechs;
+	TechTypes aeTechs[STRIKE_LIST_MAX];
+	bool bListInferred;
 };
 struct CvStrategyProfile
 {
@@ -226,6 +243,8 @@ private:
 	void LogStrategyProfile();
 	void GetPowerSpike(CvStrategyProfile& kProfile) const;
 	void MakeStrikePlan(const CvStrategyProfile& kProfile, CvStrikePlan& kPlan) const;
+	void SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) const;
+	static void AddStrikeBuild(CvStrikePlan& kPlan, bool bUnit, int iClass);
 	void DoStyleCityStateUnitGifts();
 	void DoGreedyDisbandToCap();
 
