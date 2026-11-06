@@ -234,6 +234,8 @@ public:
 	bool IsLateStrikeBuildup() const;	// the build-up under way is the late strike's
 	bool IsStrikeBuildup() const;		// EarlyStrike's or LateStrike's build-up
 	int GetLateStrikeFieldFloor() const;	// the plan's core + support
+	static const int STRIKE_TAKE_DAMAGE_PERCENT = 80;	// IsStrikeArmyStrongEnough's buffer: our damage counted at 80%
+	static const int STRIKE_TAKE_LOSS_PERCENT = 125;	// and the city's damage to us at 125%
 	static const int EARLY_STRIKE_MELEE_MIN = 3;	// "bring two in case one dies" (the strike-plans research): 2 at the city, 1 spare
 	int GetEarlyStrikeUpgradeBill(int* piUnits = NULL, bool* pbTechSoon = NULL) const;	// upgrade-and-go (the user's Composite Bowmen)
 	bool IsEarlyStrikeHoldingUpgrades() const;	// no upgrades until the strike's army is built (Economy: keep the reserve)

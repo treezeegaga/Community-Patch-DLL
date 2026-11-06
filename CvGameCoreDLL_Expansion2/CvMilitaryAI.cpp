@@ -2235,6 +2235,10 @@ bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNee
 	}
 	if (iUnits == 0)
 		return true;
+	// a buffer (the user: "you probably want a little buffer"): expected values leave out the garrison soaking damage, turns
+	// out of position and bad rolls, so our damage counts at 80% and what the city does to us at 125%
+	iDamage100 = iDamage100 * STRIKE_TAKE_DAMAGE_PERCENT / 100;
+	iSelfDamage100 = iSelfDamage100 * STRIKE_TAKE_LOSS_PERCENT / 100;
 	const int iNet100 = iDamage100 - iCityHeal * 100;
 	if (iNet100 <= 0)
 		return false;	// the city heals faster than we hurt it
@@ -2244,7 +2248,7 @@ bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNee
 	// the city strikes one unit a turn (at our best melee defence)
 	const int iCityStrikeDamage100 = CvUnitCombat::DoDamageMath(iCityStrike100, max(100, iDefence100ForStrike),
 		GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
-	const int iLoss = iTurns * (iCityStrikeDamage100 + iSelfDamage100) / 100;
+	const int iLoss = iTurns * (iCityStrikeDamage100 * STRIKE_TAKE_LOSS_PERCENT / 100 + iSelfDamage100) / 100;
 	return iLoss < iArmyHP - iUnitHP;
 }
 
