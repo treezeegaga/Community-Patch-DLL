@@ -214,6 +214,10 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		return SR_STRATEGY;
 	}
 
+	// AI_AB_TEST candidate (EarlyStrike): a small empire until the strike (the book's settler is its only one)
+	if (!bFree && pkUnitEntry->IsFound() && kPlayer.getNumCities() >= 2 && kPlayer.IsEarlyStrikeSmallEmpire())
+		return SR_STRATEGY;
+
 	// Don't build units in underdeveloped cities
 	// AI_AB_TEST: settlers and workers are exempt for the new AI. The Palace doesn't count as a building,
 	// so the capital otherwise had to finish two buildings before its first settler or worker.

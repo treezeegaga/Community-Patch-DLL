@@ -292,9 +292,9 @@ enum CandidateFixTypes
 							// field target met in 16, siege in 5). Off in the bundle
 	FIX_WAR_TRADE_ROUTES,	// Economy (the lead's go): a timing attacker before its war trains caravans even in small cities until its trade
 							// slots are full, sends them on gold routes, and never to its war target. Off in the bundle
-	FIX_EARLY_STRIKE,		// War (the user: "every civ builds to its strengths"): a timing attacker whose strike window (Personality's
-							// power spike) opens before the normal window opens its build-up then, leads the army with the spike unit, wants
-							// 8+ field units and no siege against an unwalled target. Off in the bundle
+	FIX_EARLY_STRIKE,		// Economy and War (the user's Aztec game): a warmonger whose unique unit comes by turn 30 (Standard) opens
+							// military first (UU x3, Worker, Settler, ranged x4, UU x2), keeps a small empire until its strike, and
+							// strikes early (War's half). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1893,6 +1893,9 @@ public:
 	TechTypes GetCandidateGrowthTech() const;
 	TechTypes GetTimingBuildupTech() const; // AI_AB_TEST War, flag TimingBuildup
 	TechTypes GetWarGoldTech() const; // AI_AB_TEST Economy, flag WarGold
+	UnitClassTypes GetEarlyStrikeCoreClass() const; // AI_AB_TEST Economy, flag EarlyStrike: the spike unit's class, if military first
+	bool IsEarlyStrikeBook() const; // AI_AB_TEST Economy, flag EarlyStrike
+	bool IsEarlyStrikeSmallEmpire() const; // AI_AB_TEST Economy, flag EarlyStrike: no settlers past the book's one until the strike
 	bool IsWarGoldShort() const; // AI_AB_TEST Economy, flag WarGold
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
@@ -4076,6 +4079,7 @@ protected:
 
 	mutable int m_iNumUnitsSuppliedCached; //not serialized
 	mutable int m_iNumUnitsSuppliedCachedWarWeariness; //not serialized
+	mutable int m_iEarlyStrikeCoreClass; // AI_AB_TEST (EarlyStrike), not serialized: -2 not worked out yet, -1 none
 
 	int m_iNumMilitarySeaUnits;
 	int m_iNumMilitaryAirUnits;
