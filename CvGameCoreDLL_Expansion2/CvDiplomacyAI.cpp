@@ -28461,7 +28461,7 @@ bool CvDiplomacyAI::DeclareWar(PlayerTypes ePlayer)
 		kMyTeam.declareWar(eTheirTeam, false, GetID());
 		// AI_AB_TEST (strike; Economy's bans): a declaration of ours (HasStrikeDeclared)
 		if (kMyTeam.isAtWar(eTheirTeam))
-			m_pPlayer->GetMilitaryAI()->SetStrikeDeclared();
+			m_pPlayer->GetMilitaryAI()->SetStrikeDeclared(ePlayer);
 		m_pPlayer->GetCitySpecializationAI()->SetSpecializationsDirty(SPECIALIZATION_UPDATE_NOW_AT_WAR);
 
 		// Show scene to human

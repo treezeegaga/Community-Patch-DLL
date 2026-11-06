@@ -2634,6 +2634,18 @@ bool CvMilitaryAI::IsStrikeCoreUntrainable() const
 	return StrikeClassLacksResource(m_pPlayer, eCoreClass) && (kPlan.ePreBuildClass == NO_UNITCLASS || StrikeClassLacksResource(m_pPlayer, kPlan.ePreBuildClass));
 }
 
+/// AI_AB_TEST (Economy 0052): a declaration of ours. On a major it counts at once (CP doesn't undo those). On a city-state it
+/// waits for the next strike update, and counts if the war still stands then. An earlier confirmed declaration is kept
+void CvMilitaryAI::SetStrikeDeclared(PlayerTypes eTarget)
+{
+	if (m_iStrikeDeclared == 1)
+		return;
+	if (eTarget != NO_PLAYER && eTarget >= 0 && eTarget < MAX_PLAYERS && GET_PLAYER(eTarget).isMinorCiv())
+		m_iStrikeDeclared = 2 + (int)eTarget;
+	else
+		m_iStrikeDeclared = 1;
+}
+
 void CvMilitaryAI::UpdateStrikeState()
 {
 	const bool bEarly = IsEarlyStrikeCiv();
@@ -2642,8 +2654,21 @@ void CvMilitaryAI::UpdateStrikeState()
 	// Economy's request: an exact "we have declared" (its wonder and gift bans hold until then, also after an OVER). Our own
 	// declarations on majors (the game's counter), and every declaration of ours through CvDiplomacyAI::DeclareWar
 	// (SetStrikeDeclared). Not a city-state war as such: allied city-states declare on us with their major (the lead's review)
-	if (m_iStrikeDeclared == 0 && GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED) > 0)
+	if (m_iStrikeDeclared != 1 && GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED) > 0)
 		m_iStrikeDeclared = 1;
+	// (Economy 0052; the user: "a civ that never fights stays banned from wonders and gifts all game") a declaration on a
+	// city-state counts only if the war still stands now. bullygreedy23 16DAE4CC (ab-0cb5402): the Aztecs "declared" on
+	// Singapore every turn T48-T71, CP's city-state peace undid each one (fixed in 5fe900a1), the flag was set anyway, and
+	// after the OVER at T106 the bans lifted: four wonders and city-state gold with no war fought all game
+	if (m_iStrikeDeclared >= 2)
+	{
+		const PlayerTypes eDeclared = (PlayerTypes)(m_iStrikeDeclared - 2);
+		const bool bStands = eDeclared >= 0 && eDeclared < MAX_PLAYERS && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eDeclared).getTeam());
+		m_iStrikeDeclared = bStands ? 1 : 0;
+		if (GC.getLogging() && GC.getAILogging() && eDeclared >= 0 && eDeclared < MAX_PLAYERS)
+			m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaration on the city-state %s %s",
+				GET_PLAYER(eDeclared).getCivilizationShortDescription(), bStands ? "confirmed (the war stands)" : "not counted (no war a turn later)"));
+	}
 	if (!bEarly && !bLate)
 	{
 		if (eOld != STRIKE_OVER)
@@ -2931,7 +2956,7 @@ void CvMilitaryAI::UpdateStrikeState()
 					GET_PLAYER(eCS).getCivilizationShortDescription(), bReady ? "the army ready" : "as ready as it gets"));
 			const bool bDeclared = m_pPlayer->GetDiplomacyAI()->DeclareWar(eCS);
 			if (bDeclared)
-				m_iStrikeDeclared = 1;
+				SetStrikeDeclared(eCS);	// (0052: pending until the war still stands at the next update)
 			// the outcome (the lead: 22 "declaring" lines and no war in 167DE984)
 			if (GC.getLogging() && GC.getAILogging())
 				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaration on the city-state %s %s", GET_PLAYER(eCS).getCivilizationShortDescription(),
