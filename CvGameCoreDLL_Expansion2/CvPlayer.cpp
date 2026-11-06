@@ -34702,6 +34702,12 @@ PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 	if (!IsOpeningBookActive())
 		return NO_POLICY_BRANCH_TYPE;
 
+	// AI_AB_TEST candidate (EarlyStrike, the user's Aztec game: "i also decided to go honor instead of liberty because of
+	// the barb hunting"): the strike civ opens Honor. Its opener's bonus against barbarians and culture from kills pay
+	// while the book's first units hunt camps before the war. Without this, warmongers open Liberty (WidePlans: the wide book)
+	if (IsEarlyStrikeBook())
+		return (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_HONOR", true);
+
 	switch (GetOpeningBook())
 	{
 	case OPENING_BOOK_TALL:
