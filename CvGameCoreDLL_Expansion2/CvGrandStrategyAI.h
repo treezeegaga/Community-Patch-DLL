@@ -68,6 +68,8 @@ struct CvStrikeWindow
 	int iCloseTurn;				// the window closes: walls, counters and castles, or the unit is obsolete
 	bool bSiegeOnlyIfWalled;	// an early spike takes unwalled cities without siege (the user's Aztec took Marrakesh at T54)
 	bool bMilitaryFirst;		// the opening that serves the spike: military first and a small empire
+	TechTypes eUpgradeTech;		// the upgrade the strike waits for (NO_TECH: none); time the declaration on it
+	int iUpgradeTurn;			// when that tech usually comes (elapsed turns, this game's speed; -1: none)
 };
 struct CvStrategyProfile
 {
@@ -89,6 +91,9 @@ struct CvStrategyProfile
 	int iStrikeEnd;			// -1 when there's no spike
 	int iStrikeDeclareBy;	// declare by this turn (-1 when there's no spike)
 	int iCoreSharePercent;	// the share of the attack army that should be the spike unit
+	TechTypes eUpgradeTech;	// the upgrade the strike waits for: the first tech after the spike, by the declare-by turn, that upgrades a
+	int iUpgradeTurn;		// unit the army already has (ranged line first): the user's Aztec beelined Construction and turned 3
+							// archers into composite bowmen, "upgrade and go". NO_TECH and -1 when there's none
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -219,6 +224,8 @@ private:
 	mutable int m_iCachedCoreUnitClass;
 	mutable int m_iCachedCoreSharePercent;
 	mutable bool m_bCachedMilitaryFirst;
+	mutable int m_iCachedUpgradeTech;
+	mutable int m_iCachedUpgradeTurn;
 	mutable int m_iCachedOutOfRoom;	// GreedyWide: -1 not worked out this turn, else 0 or 1
 	mutable int m_iCachedOutOfRoomTurn;
 	// AI_AB_TEST (Personality, GreedyWarArmy): not saved, worked out again from the game state

@@ -134,6 +134,8 @@ CvGrandStrategyAI::CvGrandStrategyAI():
 	m_iCachedCoreUnitClass(NO_UNITCLASS),
 	m_iCachedCoreSharePercent(0),
 	m_bCachedMilitaryFirst(false),
+	m_iCachedUpgradeTech(NO_TECH),
+	m_iCachedUpgradeTurn(-1),
 	m_iCachedOutOfRoom(0),
 	m_iCachedOutOfRoomTurn(-1),
 	m_iCachedWarDefenceCap(0),
@@ -207,6 +209,8 @@ void CvGrandStrategyAI::Reset()
 	m_iCachedCoreUnitClass = NO_UNITCLASS;
 	m_iCachedCoreSharePercent = 0;
 	m_bCachedMilitaryFirst = false;
+	m_iCachedUpgradeTech = NO_TECH;
+	m_iCachedUpgradeTurn = -1;
 	m_iCachedOutOfRoom = 0;
 	m_iCachedOutOfRoomTurn = -1;
 	m_iCachedWarDefenceCap = 0;
@@ -1756,6 +1760,8 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	kProfile.iStrikeEnd = -1;
 	kProfile.iStrikeDeclareBy = -1;
 	kProfile.iCoreSharePercent = 0;
+	kProfile.eUpgradeTech = NO_TECH;
+	kProfile.iUpgradeTurn = -1;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return kProfile;
 
@@ -2001,6 +2007,52 @@ void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
 		kProfile.iCoreSharePercent = (pkUnit->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD) ? 33 : 50;
 	}
 	kProfile.bMilitaryFirst = kProfile.iSpikeTurn >= 0 && iBestTurn <= 30;
+	if (kProfile.iSpikeTurn < 0)
+		return;
+
+	// The upgrade the strike waits for (the user, 2026-11-06: "i beelined to construction", "i upgraded 3 archers to
+	// composite archers. that was part of the timing attack. upgrade and go"). The army is the land combat units the civ
+	// can have by the time the window opens; the upgrade is the earliest tech after the spike, by the declare-by turn,
+	// that unlocks an upgrade of one of them. Ranged first on a tie: ranged units take cities without siege.
+	const int iOpenStd = max(60, iBestTurn + 20);
+	const int iDeclareByStd = iOpenStd + 15;
+	int iBestUpgradeTurn = MAX_INT;
+	bool bBestRanged = false;
+	for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+	{
+		const UnitTypes eUnit = (UnitTypes)kCiv.getCivilizationUnits(iClass);
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (!pkUnit || pkUnit->GetDomainType() != DOMAIN_LAND || (pkUnit->GetCombat() <= 0 && pkUnit->GetRangedCombat() <= 0) ||
+			pkUnit->GetDefaultUnitAIType() == UNITAI_EXPLORE)
+			continue;
+		const TechTypes eUnitTech = (TechTypes)pkUnit->GetPrereqAndTech();
+		CvTechEntry* pkUnitTech = (eUnitTech != NO_TECH) ? GC.getTechInfo(eUnitTech) : NULL;
+		const int iUnitColumn = pkUnitTech ? max(0, pkUnitTech->GetGridX()) : 0;
+		if (iUnitColumn >= iNumColumns || aiTurnByColumn[iUnitColumn] > iOpenStd)
+			continue;	// not in the army by the time the window opens
+		for (int iUpgradeClass = 0; iUpgradeClass < GC.getNumUnitClassInfos(); iUpgradeClass++)
+		{
+			if (!pkUnit->GetUpgradeUnitClass(iUpgradeClass))
+				continue;
+			const UnitTypes eUpgrade = (UnitTypes)kCiv.getCivilizationUnits(iUpgradeClass);
+			CvUnitEntry* pkUpgrade = (eUpgrade != NO_UNIT) ? GC.getUnitInfo(eUpgrade) : NULL;
+			const TechTypes eUpgradeTech = pkUpgrade ? (TechTypes)pkUpgrade->GetPrereqAndTech() : NO_TECH;
+			CvTechEntry* pkUpgradeTech = (eUpgradeTech != NO_TECH) ? GC.getTechInfo(eUpgradeTech) : NULL;
+			if (!pkUpgradeTech || pkUpgradeTech->GetGridX() < 0 || pkUpgradeTech->GetGridX() >= iNumColumns)
+				continue;
+			const int iUpgradeTurn = aiTurnByColumn[pkUpgradeTech->GetGridX()];
+			if (iUpgradeTurn <= iBestTurn || iUpgradeTurn > iDeclareByStd)
+				continue;
+			const bool bRanged = pkUpgrade->GetRangedCombat() > 0;
+			if (iUpgradeTurn < iBestUpgradeTurn || (iUpgradeTurn == iBestUpgradeTurn && bRanged && !bBestRanged))
+			{
+				iBestUpgradeTurn = iUpgradeTurn;
+				bBestRanged = bRanged;
+				kProfile.eUpgradeTech = eUpgradeTech;
+				kProfile.iUpgradeTurn = iUpgradeTurn * iSpeed / 100;
+			}
+		}
+	}
 }
 
 /// AI_AB_TEST (Personality, MetaDial): the meta position the dial reads, -100 greedy to +100 aggressive. The home
@@ -2021,6 +2073,8 @@ int CvGrandStrategyAI::GetMetaPosition() const
 		m_iCachedCoreUnitClass = (kProfile.eSpikeUnit != NO_UNIT) ? GC.getUnitInfo(kProfile.eSpikeUnit)->GetUnitClassType() : NO_UNITCLASS;
 		m_iCachedCoreSharePercent = kProfile.iCoreSharePercent;
 		m_bCachedMilitaryFirst = kProfile.bMilitaryFirst;
+		m_iCachedUpgradeTech = kProfile.eUpgradeTech;
+		m_iCachedUpgradeTurn = kProfile.iUpgradeTurn;
 		m_iCachedMetaTurn = iTurn;
 	}
 	return m_iCachedMetaPosition;
@@ -2057,6 +2111,8 @@ bool CvGrandStrategyAI::GetStrikeWindow(CvStrikeWindow& kWindow) const
 	// an early spike (military first: by T30 Standard, before catapults) takes unwalled cities without siege
 	kWindow.bMilitaryFirst = m_bCachedMilitaryFirst;
 	kWindow.bSiegeOnlyIfWalled = m_bCachedMilitaryFirst;
+	kWindow.eUpgradeTech = (TechTypes)m_iCachedUpgradeTech;
+	kWindow.iUpgradeTurn = m_iCachedUpgradeTurn;
 	return kWindow.iOpenTurn >= 0;
 }
 
@@ -2357,7 +2413,7 @@ void CvGrandStrategyAI::LogStrategyProfile()
 	if (!pLog)
 		return;
 	CvString strOut;
-	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s, spike %s at %s T%d%s, opening %s, strike window T%d-T%d declare by T%d, core share %d%%",
+	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s, spike %s at %s T%d%s, opening %s, strike window T%d-T%d declare by T%d, core share %d%%, upgrade %s T%d",
 		iTurn, m_pPlayer->getCivilizationShortDescription(), m_pPlayer->getLeaderTypeKey(), strTags.c_str(),
 		(int)m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit(), (int)m_pPlayer->GetDiplomacyAI()->GetSecondaryVictoryPursuit(),
 		GetStrategyArchetypeName(kProfile.eArchetype), kProfile.iHomeMeta,
@@ -2367,7 +2423,8 @@ void CvGrandStrategyAI::LogStrategyProfile()
 		(kProfile.eSpikeUnit != NO_UNIT) ? GC.getUnitInfo(kProfile.eSpikeUnit)->GetType() : "none",
 		(kProfile.eSpikeTech != NO_TECH) ? GC.getTechInfo(kProfile.eSpikeTech)->GetType() : "start", kProfile.iSpikeTurn,
 		kProfile.bSpikeTerrain ? " (forest/jungle)" : "", kProfile.bMilitaryFirst ? "military first" : "expansion first",
-		kProfile.iStrikeStart, kProfile.iStrikeEnd, kProfile.iStrikeDeclareBy, kProfile.iCoreSharePercent);
+		kProfile.iStrikeStart, kProfile.iStrikeEnd, kProfile.iStrikeDeclareBy, kProfile.iCoreSharePercent,
+		(kProfile.eUpgradeTech != NO_TECH) ? GC.getTechInfo(kProfile.eUpgradeTech)->GetType() : "none", kProfile.iUpgradeTurn);
 	pLog->Msg(strOut);
 }
 
