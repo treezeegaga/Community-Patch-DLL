@@ -836,6 +836,19 @@ bool CvMilitaryAI::HavePossibleAttackTarget(PlayerTypes eEnemy) const
 	return false;
 }
 
+/// AI_AB_TEST (the strike's reach; the lead, bullygreedy24 17A1A659: the Aztecs' strike chose Milan, 9 tiles away, which was
+/// never in their attack targets, and its city attack failed every turn for 90 turns): one of this player's cities is a land
+/// attack target (an army path CP scores; the strike's army is a land army). RequestCityAttack needs it
+bool CvMilitaryAI::HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const
+{
+	if (eEnemy == NO_PLAYER)
+		return false;
+	for (size_t i = 0; i < m_potentialAttackTargets.size(); i++)
+		if (m_potentialAttackTargets[i].m_armyType == ARMY_TYPE_LAND && m_potentialAttackTargets[i].GetTargetPlot()->getOwner() == eEnemy)
+			return true;
+	return false;
+}
+
 //override the diplo AI method so that it returns a sensible result for barbarians
 bool CvMilitaryAI::IsPlayerValid(PlayerTypes eOtherPlayer) const
 {
@@ -2177,6 +2190,9 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState(bool bUnwalledOnly, PlayerTypes eE
 		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eMinor);
 		if (!pCity || !pCity->plot()->isRevealed(eOurTeam))
 			continue;
+		// an army can get there (the lead, 17A1A659: Milan, 9 tiles away and no army path)
+		if (!HaveStrikeLandAttackTarget(eMinor))
+			continue;
 		if (StrikeCityHasWalls(pCity) && (bUnwalledOnly || pCity->plot()->isHills()))
 			continue;
 		const int iDistance = plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY());
@@ -2302,7 +2318,8 @@ bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
 	m_bTakeable = false;
 	const PlayerTypes eTarget = (m_eTimingBuildupTarget != NO_PLAYER) ? m_eTimingBuildupTarget : GetStrikeCityStateTarget();
 	const CvCity* pCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
-	if (!pCity)
+	// no army path to the target, nothing to take (the strike's reach, 17A1A659: no declaration on a city no army can reach)
+	if (!pCity || !HaveStrikeLandAttackTarget(eTarget))
 		return false;
 	// the field army: our land combat units but the garrisons (the lead's review: a city's garrison doesn't march)
 	std::vector<const CvUnit*> vUnits;
@@ -2618,7 +2635,7 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 	const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
 	if (!pCity || !pCity->plot()->isRevealed(eOurTeam) || plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) > 12)
 		return false;
-	return !bNewTarget || HavePossibleAttackTarget(eTarget);
+	return !bNewTarget || HaveStrikeLandAttackTarget(eTarget);
 }
 
 /// the nearest major the strike can go for (IsStrikeTargetValid), by its nearest city's distance to our capital
@@ -2862,13 +2879,17 @@ void CvMilitaryAI::UpdateStrikeState()
 			// lead's review: CP's committed target is cleared under a city-state pin, so the "committed major in reach" drop
 			// never fired)
 			const bool bMajorNow = eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isMinorCiv() && FindStrikeMajorInReach() != NO_PLAYER;
-			if (!bMajorNow && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ false))
+			// (the strike's reach, 17A1A659) the pin is kept while an army can reach it; unreachable, a reachable target takes
+			// over, and with none the pin stays (a turn out of the attack targets doesn't re-target)
+			if (!bMajorNow && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ true))
 				eCS = eOldCS;
 			else
 			{
 				eCS = FindStrikeMajorInReach();
 				if (eCS == NO_PLAYER)
 					eCS = FindStrikeCityState();
+				if (eCS == NO_PLAYER && !bMajorNow && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ false))
+					eCS = eOldCS;
 			}
 		}
 	}
@@ -2910,21 +2931,24 @@ void CvMilitaryAI::UpdateStrikeState()
 		const PlayerTypes eCommitted = m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
 		PlayerTypes eKeep = NO_PLAYER;
 		const char* szHow = "";
-		if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ false))
+		// (the strike's reach, 17A1A659) a held target first while an army can reach it; then the new ones (all reachable); a held
+		// target out of reach only when nothing reachable is left (a turn out of the attack targets doesn't re-target)
+		if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ true))
 			eKeep = eWindow, szHow = "the build-up's target";
-		else if (IsStrikeTargetValid(eTarget, /*bNewTarget*/ false))
+		else if (IsStrikeTargetValid(eTarget, /*bNewTarget*/ true))
 			eKeep = eTarget, szHow = "the current target";
 		else if (IsStrikeTargetValid(eCommitted))
 			eKeep = eCommitted, szHow = "the committed target";
 		else if ((eKeep = FindStrikeMajorInReach()) != NO_PLAYER)
 			szHow = "the nearest major in reach";
-		else
-		{
-			eKeep = FindStrikeCityState();
-			if (!IsStrikeTargetValid(eKeep, /*bNewTarget*/ false))	// the city-state picker's own definition (no attack-target check)
-				eKeep = NO_PLAYER;
+		else if ((eKeep = FindStrikeCityState()) != NO_PLAYER && IsStrikeTargetValid(eKeep, /*bNewTarget*/ false))
 			szHow = "the nearest city-state in reach";
-		}
+		else if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ false))
+			eKeep = eWindow, szHow = "the build-up's target (no army path this turn)";
+		else if (IsStrikeTargetValid(eTarget, /*bNewTarget*/ false))
+			eKeep = eTarget, szHow = "the current target (no army path this turn)";
+		else
+			eKeep = NO_PLAYER;
 		if (eKeep == NO_PLAYER)
 		{
 			eNew = STRIKE_OVER;
@@ -3174,7 +3198,8 @@ void CvMilitaryAI::UpdateStrikeState()
 				const bool bRequested = RequestCityAttack(eStrikeEnemy, 2, false);
 				if (GC.getLogging() && GC.getAILogging())
 					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: no attack under way on %s; city attack requested (%s)",
-						GET_PLAYER(eStrikeEnemy).getCivilizationShortDescription(), bRequested ? "started" : "not possible this turn"));
+						GET_PLAYER(eStrikeEnemy).getCivilizationShortDescription(), bRequested ? "started" :
+						HaveStrikeLandAttackTarget(eStrikeEnemy) ? "not possible this turn" : "not possible: no land attack target, no army path"));
 			}
 		}
 	}

@@ -195,6 +195,7 @@ public:
 
 	// Finding best cities to target
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
+	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
 	bool HavePreferredAttackTarget(PlayerTypes eEnemy) const;
 	bool IsPossibleAttackTarget(const CvCity* pCity, ArmyType eArmyType) const;
 	bool IsPreferredAttackTarget(const CvCity* pCity) const;
