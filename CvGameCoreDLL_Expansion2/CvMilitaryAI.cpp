@@ -2215,6 +2215,10 @@ void CvMilitaryAI::UpdateStrikeState()
 			eNew = STRIKE_OVER, strWhy = "the core unit is obsolete";
 		else if (iWarsOnUs > m_iStrikeWarsOnUsMark)
 			eNew = STRIKE_OVER, strWhy = "a major declared war on us first";
+		// a war of our own before the strike's build-up (CP's war approach, not the strike): the strike is pre-empted and the
+		// normal plan runs (Japan, 1468D9F4: LateStrike in PREP from T1 declared on Spain at T102, BUILDUP came at T149)
+		else if (eNew == STRIKE_PREP && iWarsDeclared > m_iStrikeWarsDeclaredMark)
+			eNew = STRIKE_OVER, strWhy = "we declared a war outside the strike, before its build-up";
 		else if (eNew == STRIKE_BUILDUP && bWalled && !bPlanSiege)
 			eNew = STRIKE_OVER, strWhy = "the target's nearest city has walls and the plan brings no siege";
 		else if (eNew == STRIKE_BUILDUP && pTargetCity && pkCore && pkCore->GetUnitCombatType() != NO_UNITCOMBAT)
