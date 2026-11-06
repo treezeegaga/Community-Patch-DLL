@@ -255,6 +255,7 @@ public:
 	// strike's state, from game state only (no turns), worked out once a turn and saved. Economy's book reads it (patch 0034).
 	enum StrikeStateTypes { STRIKE_NONE, STRIKE_PREP, STRIKE_BUILDUP, STRIKE_WAR, STRIKE_OVER };
 	StrikeStateTypes GetStrikeState() const { return (StrikeStateTypes)m_iStrikeState; }
+	bool HasStrikeDeclared() const { return m_iStrikeDeclared != 0; }	// we have declared a war: the strike's (BUILDUP -> WAR, its city-state) or any of our own since the game began (Economy's bans end here; public for CvPlayer, Economy 0045)
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
 	PlayerTypes GetStrikeCityStateTarget() const { return (PlayerTypes)m_iStrikeCityState; }	// EarlyStrike: a city-state when no major is in reach, or a re-target (major or city-state)
@@ -419,8 +420,7 @@ private:
 	PlayerTypes FindStrikeRetarget(PlayerTypes eExclude, const CvCity* pCurrent) const;	// a clearly easier city in reach, a major's or a city-state's
 	bool IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// can the plan's (upgraded) army take the city (the game's damage math)
 	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city
-	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;
-	bool HasStrikeDeclared() const { return m_iStrikeDeclared != 0; }	// we have declared a war: the strike's (BUILDUP -> WAR, its city-state) or any of our own since the game began (Economy's bans end here)	// the strike's war on this player, nothing taken yet: no peace, no abort
+	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;	// the strike's war on this player, nothing taken yet: no peace, no abort
 	int m_iStrikeDeclared;			// HasStrikeDeclared, saved
 	int m_iStrikeSiege;				// the build-up brings siege (the army too weak for the target, no easier city in reach), saved
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
