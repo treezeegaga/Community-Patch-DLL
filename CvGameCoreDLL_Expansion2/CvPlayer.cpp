@@ -33859,7 +33859,11 @@ UnitClassTypes CvPlayer::GetEarlyStrikeCoreClass() const
 		const CvStrategyProfile kProfile = GetGrandStrategyAI()->GetStrategyProfile();
 		CvUnitEntry* pkSpike = (kProfile.eSpikeUnit != NO_UNIT) ? GC.getUnitInfo(kProfile.eSpikeUnit) : NULL;
 		if (kProfile.bMilitaryFirst && pkSpike)
-			m_iEarlyStrikeCoreClass = pkSpike->GetUnitClassType();
+		{
+			// the strike plan's core when it has one (the Huns' Horse Archer, not the Battering Ram), else the spike unit
+			const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
+			m_iEarlyStrikeCoreClass = (kStrike.bValid && kStrike.eCoreClass != NO_UNITCLASS) ? kStrike.eCoreClass : pkSpike->GetUnitClassType();
+		}
 	}
 	return (UnitClassTypes)m_iEarlyStrikeCoreClass;
 }
@@ -33881,77 +33885,28 @@ bool CvPlayer::IsEarlyStrikeBook() const
 	return true;
 }
 
-/// AI_AB_TEST (EarlyStrike, the expert openings; the user: "use the experts ideas right away"): the civ's opening plan.
-/// Per-civ numbers from Personality's strike-plan table (its RESULTS.md, "Strike plans per civ: spec"; N, K and the
-/// fallback turn) for the Huns, Aztec, Inca, Greece and Celts; other early-spike civs get the user's Aztec opening
-/// (core x3 then x2 more, support x4, 2 cities). The fallback turn is T50 Quick (75 Standard). When Personality's
-/// profile carries these fields, they replace this table.
+/// AI_AB_TEST (EarlyStrike, the expert openings; the user: "use the experts ideas right away"): the civ's opening plan,
+/// read from Personality's strike plan (CvGrandStrategyAI::GetStrikePlan: the expert rows from STRIKE_PLANS_RESEARCH.md,
+/// else its data default), so the book, War's strike and the log share one source. False when the civ isn't an
+/// early-spike civ (GetEarlyStrikeCoreClass) or has no plan.
 bool CvPlayer::GetEarlyStrikePlan(CvEarlyStrikePlan& kPlan) const
 {
-	const UnitClassTypes eProfileCore = GetEarlyStrikeCoreClass();
-	if (eProfileCore == NO_UNITCLASS)
+	if (GetEarlyStrikeCoreClass() == NO_UNITCLASS || !GetGrandStrategyAI())
 		return false;
-	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
-	const UnitClassTypes eArcher = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_ARCHER", true);
-	const UnitClassTypes eSpearman = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SPEARMAN", true);
-
-	kPlan.eCore = eProfileCore;
-	kPlan.iCoreBeforeSettler = 3;
-	kPlan.iCoreTotal = 5;
-	const UnitTypes eCoreUnit = GetSpecificUnitType(eProfileCore);
-	const bool bRangedCore = eCoreUnit != NO_UNIT && GC.getUnitInfo(eCoreUnit)->GetRangedCombat() > 0;
-	kPlan.eSupport = bRangedCore ? eSpearman : eArcher;
-	kPlan.iSupportTotal = 4;
-	kPlan.eSiege = NO_UNITCLASS;
-	kPlan.iSiegeTotal = 0;
-	kPlan.iMaxCities = 2;
-	kPlan.iFallbackTurn = 75 * iSpeed / 100;
-	kPlan.eFirstTree = (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_HONOR", true);
-
-	const char* szCiv = getCivilizationTypeKey();
-	if (!szCiv)
-		return true;
-	if (strcmp(szCiv, "CIVILIZATION_HUNS") == 0)
-	{
-		// Horse Archers x2, settler, worker, Battering Rams x2, Horse Archer, Archer, settler (the Ram is the siege, not the core)
-		kPlan.eCore = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CHARIOT_ARCHER", true);
-		kPlan.iCoreBeforeSettler = 2;
-		kPlan.iCoreTotal = 4;
-		kPlan.eSupport = eArcher;
-		kPlan.iSupportTotal = 1;
-		kPlan.eSiege = eSpearman;
-		kPlan.iSiegeTotal = 2;
-		kPlan.iMaxCities = 3;
-	}
-	else if (strcmp(szCiv, "CIVILIZATION_AZTEC") == 0)
-	{
-		// the user's: Jaguar x3, Worker, Settler, Archer x4, Jaguar x2
-		kPlan.iCoreBeforeSettler = 3;
-		kPlan.iCoreTotal = 5;
-		kPlan.eSupport = eArcher;
-		kPlan.iSupportTotal = 4;
-		kPlan.iMaxCities = 2;
-	}
-	else if (strcmp(szCiv, "CIVILIZATION_INCA") == 0)
-	{
-		// Slingers x2, settler, worker, Slingers x2, a Spearman (or Warrior) in front, settler, Slinger
-		kPlan.eCore = eArcher;
-		kPlan.iCoreBeforeSettler = 2;
-		kPlan.iCoreTotal = 5;
-		kPlan.eSupport = eSpearman;
-		kPlan.iSupportTotal = 1;
-		kPlan.iMaxCities = 3;
-	}
-	else if (strcmp(szCiv, "CIVILIZATION_GREECE") == 0 || strcmp(szCiv, "CIVILIZATION_CELTS") == 0)
-	{
-		// Hoplites (Pictish Warriors) x3-4 with Archers x2; the Celts settle after one Pictish Warrior
-		kPlan.eCore = eSpearman;
-		kPlan.iCoreBeforeSettler = (strcmp(szCiv, "CIVILIZATION_CELTS") == 0) ? 1 : 2;
-		kPlan.iCoreTotal = 4;
-		kPlan.eSupport = eArcher;
-		kPlan.iSupportTotal = 2;
-		kPlan.iMaxCities = 3;
-	}
+	const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
+	if (!kStrike.bValid || kStrike.eCoreClass == NO_UNITCLASS)
+		return false;
+	kPlan.eCore = kStrike.eCoreClass;
+	kPlan.iCoreBeforeSettler = kStrike.iCoreBeforeSettler;
+	kPlan.iCoreTotal = kStrike.iCoreTarget;
+	kPlan.eSupport = kStrike.eSupportClass;
+	kPlan.iSupportTotal = kStrike.iSupportTarget;
+	kPlan.eSiege = kStrike.eSiegeClass;
+	kPlan.iSiegeTotal = kStrike.iSiegeTarget;
+	kPlan.iMaxCities = max(1, kStrike.iMaxCitiesBeforeStrike);
+	kPlan.iFallbackTurn = kStrike.iFallbackTurn;
+	kPlan.eFirstTree = kStrike.eFirstPolicyBranch;
+	kPlan.eUpgradeTech = kStrike.eUpgradeTech;
 	return true;
 }
 
@@ -34850,7 +34805,7 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 		CvUnitEntry* pkSupport = (eSupport != NO_UNIT) ? GC.getUnitInfo(eSupport) : NULL;
 		if (pkSupport)
 			vPath.push_back((TechTypes)pkSupport->GetPrereqAndTech());
-		const TechTypes eProfileUpgrade = GetGrandStrategyAI() ? GetGrandStrategyAI()->GetStrategyProfile().eUpgradeTech : NO_TECH;
+		const TechTypes eProfileUpgrade = kStrikePlan.eUpgradeTech;
 		if (eProfileUpgrade != NO_TECH)
 			vPath.push_back(eProfileUpgrade);
 		else

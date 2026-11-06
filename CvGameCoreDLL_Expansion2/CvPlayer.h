@@ -126,8 +126,8 @@ struct SPlayerActiveEspionageEvent
 	int iAmount;
 };
 
-// AI_AB_TEST (EarlyStrike, Economy): a strike civ's opening plan (the expert openings, STRIKE_PLANS_RESEARCH.md, with
-// Personality's per-civ numbers). Classes are unit classes (the civ's own unit is built through GetSpecificUnitType).
+// AI_AB_TEST (EarlyStrike, Economy): a strike civ's opening plan, filled from Personality's CvStrikePlan
+// (CvGrandStrategyAI::GetStrikePlan). Classes are unit classes (the civ's own unit is built through GetSpecificUnitType).
 struct CvEarlyStrikePlan
 {
 	UnitClassTypes eCore;		// the spike unit
@@ -139,7 +139,8 @@ struct CvEarlyStrikePlan
 	int iSiegeTotal;
 	int iMaxCities;				// K: cities before the strike
 	int iFallbackTurn;			// elapsed turns, this game's speed: no target in reach and no war by then, back to the normal plan
-	PolicyBranchTypes eFirstTree;
+	PolicyBranchTypes eFirstTree;	// NO_POLICY_BRANCH_TYPE: the book's own
+	TechTypes eUpgradeTech;		// upgrade and go (NO_TECH: none)
 };
 
 // AI_AB_TEST opening book: a scripted start for the new AI (see CvPlayer::GetOpeningBook)
