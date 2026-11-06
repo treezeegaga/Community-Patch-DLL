@@ -2260,6 +2260,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 			kPlan.bExitRoughTarget = true;
 		}
 		SetStrikeLists(kPlan, kRow.szCiv);
+		CompleteStrikeLists(kPlan);
 		return;
 	}
 
@@ -2300,19 +2301,62 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
 	kPlan.bLateStrike = !kProfile.bMilitaryFirst;
 
-	// The data default's lists [I], in the expert style: N core units, a worker and a settler, then support and core in
-	// turn with a second settler when K allows; research the core's tech, a luxury, then the upgrade tech
+	// Late data default: upgrade and go too. The pre-build is the class whose unit upgrades into the core (Germany's
+	// Spearmen into Landsknechts), the earliest one by tech, as many as the core target.
+	if (kPlan.bLateStrike && kPlan.eCoreClass != NO_UNITCLASS)
+	{
+		int iBestColumn = MAX_INT;
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+		{
+			if (iClass == (int)kPlan.eCoreClass)
+				continue;
+			const UnitTypes eFrom = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
+			CvUnitEntry* pkFrom = (eFrom != NO_UNIT) ? GC.getUnitInfo(eFrom) : NULL;
+			if (!pkFrom || pkFrom->GetDomainType() != DOMAIN_LAND || !pkFrom->GetUpgradeUnitClass((int)kPlan.eCoreClass))
+				continue;
+			CvTechEntry* pkFromTech = (pkFrom->GetPrereqAndTech() != NO_TECH) ? GC.getTechInfo((TechTypes)pkFrom->GetPrereqAndTech()) : NULL;
+			const int iColumn = pkFromTech ? pkFromTech->GetGridX() : 0;
+			if (iColumn < iBestColumn)
+			{
+				iBestColumn = iColumn;
+				kPlan.ePreBuildClass = (UnitClassTypes)iClass;
+				kPlan.iPreBuildTarget = kPlan.iCoreTarget;
+			}
+		}
+		if (kPlan.ePreBuildClass != NO_UNITCLASS)
+		{
+			const UnitTypes eCoreUnit = m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass);
+			if (eCoreUnit != NO_UNIT && GC.getUnitInfo(eCoreUnit)->GetPrereqAndTech() != NO_TECH)
+				kPlan.eUpgradeTech = (TechTypes)GC.getUnitInfo(eCoreUnit)->GetPrereqAndTech();
+		}
+	}
+
+	// The data default's lists [I], a generic warmonger in the expert style. Early: N core units, a worker and a settler,
+	// then support and core in turn. Late (economy first): scout, monument, worker, settler, granary, settler, library,
+	// shrine, barracks; research the economy's techs, then the core's and the upgrade's. CompleteStrikeLists runs both
+	// lists on to the strike (settlers to K, the economy buildings, the whole army, the core and upgrade techs).
 	kPlan.bListInferred = true;
 	const UnitClassTypes eWorker = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_WORKER", true);
 	const UnitClassTypes eSettler = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
-	const BuildingClassTypes eMonument = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_MONUMENT", true);
+	const UnitClassTypes eScout = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SCOUT", true);
 	if (kPlan.bLateStrike)
 	{
-		// economy first: monument, worker, settlers; the pre-build comes from the plan's targets, not this list
-		AddStrikeBuild(kPlan, false, eMonument);
+		static const char* const aszLateBuilds[] = { "BUILDINGCLASS_MONUMENT", "BUILDINGCLASS_GRANARY", "BUILDINGCLASS_LIBRARY", "BUILDINGCLASS_SHRINE", "BUILDINGCLASS_BARRACKS" };
+		AddStrikeBuild(kPlan, true, eScout);
+		AddStrikeBuild(kPlan, false, GC.getInfoTypeForString(aszLateBuilds[0], true));
 		AddStrikeBuild(kPlan, true, eWorker);
 		AddStrikeBuild(kPlan, true, eSettler);
+		AddStrikeBuild(kPlan, false, GC.getInfoTypeForString(aszLateBuilds[1], true));
 		AddStrikeBuild(kPlan, true, eSettler);
+		for (int iItem = 2; iItem < 5; iItem++)
+			AddStrikeBuild(kPlan, false, GC.getInfoTypeForString(aszLateBuilds[iItem], true));
+		static const char* const aszLateTechs[] = { "TECH_POTTERY", "LUXURY", "TECH_WRITING", "TECH_BRONZE_WORKING", "TECH_CURRENCY" };
+		for (int iItem = 0; iItem < 5 && kPlan.iNumTechs < STRIKE_LIST_MAX; iItem++)
+		{
+			const TechTypes eTech = (strcmp(aszLateTechs[iItem], "LUXURY") == 0) ? STRIKE_TECH_LUXURY : (TechTypes)GC.getInfoTypeForString(aszLateTechs[iItem], true);
+			if (eTech != NO_TECH)
+				kPlan.aeTechs[kPlan.iNumTechs++] = eTech;
+		}
 	}
 	else
 	{
@@ -2320,23 +2364,97 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 			AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
 		AddStrikeBuild(kPlan, true, eWorker);
 		AddStrikeBuild(kPlan, true, eSettler);
-		AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
-		AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
-		AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
-		if (kPlan.iMaxCitiesBeforeStrike >= 3)
-			AddStrikeBuild(kPlan, true, eSettler);
-		AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
-		AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
-		AddStrikeBuild(kPlan, true, kPlan.eCoreClass);
-	}
-	const UnitTypes eCoreUnit = (kPlan.eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass) : NO_UNIT;
-	const TechTypes eCoreTech = (eCoreUnit != NO_UNIT) ? (TechTypes)GC.getUnitInfo(eCoreUnit)->GetPrereqAndTech() : NO_TECH;
-	if (eCoreTech != NO_TECH && kPlan.iNumTechs < STRIKE_LIST_MAX)
-		kPlan.aeTechs[kPlan.iNumTechs++] = eCoreTech;
-	if (kPlan.iNumTechs < STRIKE_LIST_MAX)
+		// research: the core's tech first, then a luxury (CompleteStrikeLists adds the upgrade tech)
+		const UnitTypes eEarlyCore = (kPlan.eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass) : NO_UNIT;
+		if (eEarlyCore != NO_UNIT && GC.getUnitInfo(eEarlyCore)->GetPrereqAndTech() != NO_TECH)
+			kPlan.aeTechs[kPlan.iNumTechs++] = (TechTypes)GC.getUnitInfo(eEarlyCore)->GetPrereqAndTech();
 		kPlan.aeTechs[kPlan.iNumTechs++] = STRIKE_TECH_LUXURY;
-	if (kPlan.eUpgradeTech != NO_TECH && kPlan.eUpgradeTech != eCoreTech && kPlan.iNumTechs < STRIKE_LIST_MAX)
-		kPlan.aeTechs[kPlan.iNumTechs++] = kPlan.eUpgradeTech;
+	}
+	CompleteStrikeLists(kPlan);
+}
+
+/// AI_AB_TEST (Personality; the lead, 2026-11-06 8:12am ET: Germany's data-default list ran out after four items and CP
+/// built a wonder; the user: "literally follow the list"): every plan's lists run to the strike.
+/// - Builds: settlers up to K cities (K - 1 settlers); for a late strike the economy buildings (granary, library, market)
+///   if the list hasn't got them; then the whole army, interleaved: the pre-build (or core) units, support and siege up
+///   to their targets, counting what the list already has (a pre-build counts toward the core).
+/// - Research: the core unit's tech and the upgrade tech, if the list hasn't got them (each a target: prerequisites first).
+void CvGrandStrategyAI::CompleteStrikeLists(CvStrikePlan& kPlan) const
+{
+	if (!m_pPlayer || !kPlan.bValid)
+		return;
+	const UnitClassTypes eSettler = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
+	int iSettlers = 0, iCore = 0, iSupport = 0, iSiege = 0;
+	std::vector<int> viBuildings;
+	for (int iItem = 0; iItem < kPlan.iNumBuilds; iItem++)
+	{
+		const CvStrikeBuildItem& kItem = kPlan.aBuilds[iItem];
+		if (!kItem.bUnit)
+		{
+			viBuildings.push_back(kItem.iClass);
+			continue;
+		}
+		if (kItem.iClass == (int)eSettler)
+			iSettlers++;
+		else if (kItem.iClass == (int)kPlan.eCoreClass || (kPlan.ePreBuildClass != NO_UNITCLASS && kItem.iClass == (int)kPlan.ePreBuildClass))
+			iCore++;
+		else if (kItem.iClass == (int)kPlan.eSupportClass)
+			iSupport++;
+		else if (kPlan.eSiegeClass != NO_UNITCLASS && kItem.iClass == (int)kPlan.eSiegeClass)
+			iSiege++;
+	}
+	for (; iSettlers < kPlan.iMaxCitiesBeforeStrike - 1; iSettlers++)
+		AddStrikeBuild(kPlan, true, eSettler);
+	if (kPlan.bLateStrike)
+	{
+		static const char* const aszEconomy[] = { "BUILDINGCLASS_GRANARY", "BUILDINGCLASS_LIBRARY", "BUILDINGCLASS_MARKET" };
+		for (int i = 0; i < 3; i++)
+		{
+			const int iClass = GC.getInfoTypeForString(aszEconomy[i], true);
+			if (iClass >= 0 && std::find(viBuildings.begin(), viBuildings.end(), iClass) == viBuildings.end())
+				AddStrikeBuild(kPlan, false, iClass);
+		}
+	}
+	// the army: the late strike builds its pre-build class (it upgrades into the core at the upgrade tech)
+	const UnitClassTypes eArmyCore = (kPlan.bLateStrike && kPlan.ePreBuildClass != NO_UNITCLASS) ? kPlan.ePreBuildClass : kPlan.eCoreClass;
+	const int iCoreTarget = (kPlan.bLateStrike && kPlan.ePreBuildClass != NO_UNITCLASS) ? max(kPlan.iPreBuildTarget, kPlan.iCoreTarget) : kPlan.iCoreTarget;
+	const int iSiegeTarget = (kPlan.eSiegeClass != NO_UNITCLASS) ? kPlan.iSiegeTarget : 0;
+	while (kPlan.iNumBuilds < STRIKE_LIST_MAX && (iCore < iCoreTarget || iSupport < kPlan.iSupportTarget || iSiege < iSiegeTarget))
+	{
+		if (iCore < iCoreTarget)
+		{
+			AddStrikeBuild(kPlan, true, eArmyCore);
+			iCore++;
+		}
+		if (iSupport < kPlan.iSupportTarget)
+		{
+			AddStrikeBuild(kPlan, true, kPlan.eSupportClass);
+			iSupport++;
+		}
+		if (iSiege < iSiegeTarget && iCore * 2 >= iCoreTarget)	// siege in the second half, closer to the strike
+		{
+			AddStrikeBuild(kPlan, true, kPlan.eSiegeClass);
+			iSiege++;
+		}
+		else if (iSiege < iSiegeTarget && iCore >= iCoreTarget && iSupport >= kPlan.iSupportTarget)
+		{
+			AddStrikeBuild(kPlan, true, kPlan.eSiegeClass);
+			iSiege++;
+		}
+	}
+	// research: the core's tech and the upgrade tech
+	const UnitTypes eCoreUnit = (kPlan.eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass) : NO_UNIT;
+	const TechTypes aeNeeded[2] = { (eCoreUnit != NO_UNIT) ? (TechTypes)GC.getUnitInfo(eCoreUnit)->GetPrereqAndTech() : NO_TECH, kPlan.eUpgradeTech };
+	for (int i = 0; i < 2; i++)
+	{
+		if (aeNeeded[i] == NO_TECH || kPlan.iNumTechs >= STRIKE_LIST_MAX)
+			continue;
+		bool bListed = false;
+		for (int iItem = 0; iItem < kPlan.iNumTechs && !bListed; iItem++)
+			bListed = kPlan.aeTechs[iItem] == aeNeeded[i];
+		if (!bListed)
+			kPlan.aeTechs[kPlan.iNumTechs++] = aeNeeded[i];
+	}
 }
 
 /// AI_AB_TEST (Personality, the expert lists): append one build to the plan's list (NO class: skipped)
