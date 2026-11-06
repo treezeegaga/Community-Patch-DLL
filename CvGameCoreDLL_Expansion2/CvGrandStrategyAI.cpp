@@ -1976,8 +1976,9 @@ void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
 			continue;
 		// a spike out of reach is no spike (the user, 2026-11-06, on Germany's Panzer at T227: "you cant do a turn 227
 		// timing attack. germany would either need to use normal units for an attack earlier or not be aggressive at
-		// all"): units past about T175 Standard (T117 Quick, Gunpowder and later) don't count
-		if (iTurn > 175)
+		// all"): units past about T150 Standard don't count (the lead, 2026-11-06: America's Musketman core at Gunpowder
+		// reached BUILDUP at T128 Quick and never declared by T150; a core after about T100 Quick is out of reach)
+		if (iTurn > 150)
 			continue;
 		iBestTurn = iTurn;
 		kProfile.eSpikeUnit = eUnit;
@@ -2504,6 +2505,153 @@ void CvGrandStrategyAI::CompleteStrikeLists(CvStrikePlan& kPlan) const
 		if (!bListed)
 			kPlan.aeTechs[kPlan.iNumTechs++] = aeNeeded[i];
 	}
+	OrderStrikeLists(kPlan);
+}
+
+/// AI_AB_TEST (Personality): is eA a prerequisite of eB, at any depth? (a few levels: enough for the early tree)
+static bool IsStrikeTechPrereqOf(TechTypes eA, TechTypes eB, int iDepth)
+{
+	if (eA == NO_TECH || eB == NO_TECH || eA == eB)
+		return eA == eB && eA != NO_TECH;
+	if (iDepth > 12)
+		return false;
+	CvTechEntry* pkB = GC.getTechInfo(eB);
+	if (!pkB)
+		return false;
+	for (int i = 0; i < GD_INT_GET(NUM_AND_TECH_PREREQS); i++)
+	{
+		const TechTypes ePrereq = (TechTypes)pkB->GetPrereqAndTechs(i);
+		if (ePrereq == NO_TECH)
+			break;
+		if (ePrereq == eA || IsStrikeTechPrereqOf(eA, ePrereq, iDepth + 1))
+			return true;
+	}
+	return false;
+}
+
+/// AI_AB_TEST (Personality; the lead, 2026-11-06: America's list waited 45 turns on a Longswordsman whose tech wasn't in,
+/// and CP filled the gap; Economy: Songhai's late list built its Horseman pre-build before its Market, the upkeep drained
+/// the treasury and BUILDUP never came). Order the lists by when the items can be built:
+/// - every build's tech is in the research list (added if missing);
+/// - a build comes after the research item that brings its tech (the item itself, or the first item it's a prerequisite
+///   of); builds with a starting tech keep their place at the front; the expert order is kept within each step;
+/// - a late strike: Currency early in the research (after the first two items) and the Market before any combat unit,
+///   so the economy pays for the army's upkeep.
+/// Lists straight from a source (bListInferred false) keep their order; they only get missing techs added.
+void CvGrandStrategyAI::OrderStrikeLists(CvStrikePlan& kPlan) const
+{
+	if (!m_pPlayer)
+		return;
+	const TechTypes eCurrency = (TechTypes)GC.getInfoTypeForString("TECH_CURRENCY", true);
+	const int iMarket = GC.getInfoTypeForString("BUILDINGCLASS_MARKET", true);
+	// a list straight from a source (bListInferred false: the user's Aztec, glory7's Zulu, fils' Mongolia, imMapex's
+	// Assyria) is followed as written ("literally follow the list"): only a missing build tech is added to its research
+	const bool bReorder = kPlan.bListInferred;
+	// a late strike: Currency early
+	if (bReorder && kPlan.bLateStrike && eCurrency != NO_TECH)
+	{
+		int iAt = -1;
+		for (int i = 0; i < kPlan.iNumTechs; i++)
+			if (kPlan.aeTechs[i] == eCurrency)
+				iAt = i;
+		const int iWant = min(2, kPlan.iNumTechs);
+		if (iAt < 0 && kPlan.iNumTechs < STRIKE_LIST_MAX)
+		{
+			for (int i = kPlan.iNumTechs; i > iWant; i--)
+				kPlan.aeTechs[i] = kPlan.aeTechs[i - 1];
+			kPlan.aeTechs[iWant] = eCurrency;
+			kPlan.iNumTechs++;
+		}
+		else if (iAt > iWant)
+		{
+			for (int i = iAt; i > iWant; i--)
+				kPlan.aeTechs[i] = kPlan.aeTechs[i - 1];
+			kPlan.aeTechs[iWant] = eCurrency;
+		}
+	}
+	// each build's tech
+	TechTypes aeBuildTech[STRIKE_LIST_MAX];
+	for (int i = 0; i < kPlan.iNumBuilds; i++)
+	{
+		const CvStrikeBuildItem& kItem = kPlan.aBuilds[i];
+		aeBuildTech[i] = NO_TECH;
+		if (kItem.bUnit)
+		{
+			const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType((UnitClassTypes)kItem.iClass);
+			if (eUnit != NO_UNIT)
+				aeBuildTech[i] = (TechTypes)GC.getUnitInfo(eUnit)->GetPrereqAndTech();
+		}
+		else
+		{
+			const BuildingTypes eBuilding = (BuildingTypes)m_pPlayer->getCivilizationInfo().getCivilizationBuildings(kItem.iClass);
+			if (eBuilding != NO_BUILDING && GC.getBuildingInfo(eBuilding))
+				aeBuildTech[i] = (TechTypes)GC.getBuildingInfo(eBuilding)->GetPrereqAndTech();
+		}
+	}
+	// the step of each build: 0 = no tech or a starting tech; else 1 + the first research item that brings the tech
+	int aiStep[STRIKE_LIST_MAX];
+	for (int i = 0; i < kPlan.iNumBuilds; i++)
+	{
+		const TechTypes eTech = aeBuildTech[i];
+		if (eTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech) ||
+			(GC.getTechInfo(eTech) && GC.getTechInfo(eTech)->GetGridX() <= 0))
+		{
+			aiStep[i] = 0;
+			continue;
+		}
+		int iFound = -1;
+		for (int j = 0; j < kPlan.iNumTechs && iFound < 0; j++)
+		{
+			if (kPlan.aeTechs[j] != STRIKE_TECH_LUXURY && IsStrikeTechPrereqOf(eTech, kPlan.aeTechs[j], 0))
+				iFound = j;
+		}
+		if (iFound < 0 && kPlan.iNumTechs < STRIKE_LIST_MAX)
+		{
+			kPlan.aeTechs[kPlan.iNumTechs] = eTech;	// the build's tech wasn't on the research list
+			iFound = kPlan.iNumTechs++;
+		}
+		aiStep[i] = (iFound < 0) ? STRIKE_LIST_MAX + 1 : iFound + 1;
+	}
+	if (!bReorder)
+		return;
+	// a late strike: no combat unit before the Market
+	if (kPlan.bLateStrike && iMarket >= 0)
+	{
+		int iMarketStep = -1;
+		for (int i = 0; i < kPlan.iNumBuilds; i++)
+			if (!kPlan.aBuilds[i].bUnit && kPlan.aBuilds[i].iClass == iMarket)
+				iMarketStep = aiStep[i];
+		if (iMarketStep >= 0)
+		{
+			for (int i = 0; i < kPlan.iNumBuilds; i++)
+			{
+				const CvStrikeBuildItem& kItem = kPlan.aBuilds[i];
+				if (!kItem.bUnit)
+					continue;
+				const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType((UnitClassTypes)kItem.iClass);
+				CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+				const bool bCombat = pkUnit && (pkUnit->GetCombat() > 0 || pkUnit->GetRangedCombat() > 0) && pkUnit->GetDefaultUnitAIType() != UNITAI_EXPLORE;
+				if (bCombat && aiStep[i] <= iMarketStep)
+					aiStep[i] = iMarketStep;	// same step, and the Market keeps its place ahead of them below
+			}
+		}
+	}
+	// stable sort by step (insertion sort; a late strike's Market goes first within its step)
+	for (int i = 1; i < kPlan.iNumBuilds; i++)
+	{
+		const CvStrikeBuildItem kItem = kPlan.aBuilds[i];
+		const int iStep = aiStep[i];
+		const bool bMarket = kPlan.bLateStrike && !kItem.bUnit && kItem.iClass == iMarket;
+		int j = i - 1;
+		while (j >= 0 && (aiStep[j] > iStep || (bMarket && aiStep[j] == iStep && kPlan.aBuilds[j].bUnit)))
+		{
+			kPlan.aBuilds[j + 1] = kPlan.aBuilds[j];
+			aiStep[j + 1] = aiStep[j];
+			j--;
+		}
+		kPlan.aBuilds[j + 1] = kItem;
+		aiStep[j + 1] = iStep;
+	}
 }
 
 /// AI_AB_TEST (Personality, the expert lists): append one build to the plan's list (NO class: skipped)
@@ -2656,8 +2804,8 @@ int CvGrandStrategyAI::CountStrikeClassLine(UnitClassTypes eClass) const
 /// Economy-ready, PREP to BUILDUP (the lead, 10:41pm ET; game state only, no turn).
 /// - Early strike: the core unit can be trained, N core units are out (the opening's barbarian hunters), and the plan's K
 ///   cities are founded (or there's no room for more).
-/// - Late strike: the core's tech or the upgrade tech is known or can be researched now (its prerequisites in), the plan's
-///   K cities are founded (or no room), and the treasury holds half the upgrade bill.
+/// - Late strike: the upgrade tech is known or can be researched now (its prerequisites in), and the plan's K cities are
+///   founded (or no room). The gold comes in BUILDUP.
 bool CvGrandStrategyAI::IsStrikeEconomyReady() const
 {
 	const CvStrikePlan& kPlan = GetStrikePlan();
@@ -2674,7 +2822,10 @@ bool CvGrandStrategyAI::IsStrikeEconomyReady() const
 	bool bTechInReach = true;
 	if (eKeyTech != NO_TECH)
 		bTechInReach = GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eKeyTech) || m_pPlayer->GetPlayerTechs()->CanResearch(eKeyTech);
-	return bTechInReach && bCitiesDone && m_pPlayer->GetTreasury()->GetGold() >= kPlan.iEconomyGoldTarget;
+	// no gold condition here (War, 2026-11-06, Songhai in 15286C56: in PREP from T1 to T148, because Economy saves for the
+	// upgrades only from BUILDUP and the treasury never held iEconomyGoldTarget): the gold is BUILDUP's job (Economy's
+	// saving, War's upgrade hold, IsStrikeArmyReady's bill). iEconomyGoldTarget stays as a logged expectation.
+	return bTechInReach && bCitiesDone;
 }
 
 /// Army-ready, BUILDUP to WAR (game state only): the upgrade tech known (or none); core units at the target (pre-built units
