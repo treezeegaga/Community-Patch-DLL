@@ -37722,7 +37722,10 @@ void CvDiplomacyAI::DoContactMinorCivs()
 
 	// Do we want to give someone Gold enough to actually do it?
 	// AI_AB_TEST: not while the new AI is saving for its next settler
-	const bool bSavingForSettler = GetPlayer()->GetEconomicAI()->IsSavingForExpansionSettler();
+	// AI_AB_TEST candidates (EarlyStrike, LateStrike; Economy): nor while a strike civ saves for its upgrades (War's expert-block
+	// read: Greece, 1464B588, gave 500 gold to a city-state at T46 in its build-up)
+	const bool bSavingForSettler = GetPlayer()->GetEconomicAI()->IsSavingForExpansionSettler() ||
+		GetPlayer()->IsEarlyStrikeSmallEmpire() || GetPlayer()->IsLateStrikeSaving();
 	veMinorsToGiveGold.StableSortItems(); // Sort from highest desirability to lowest
 	for (int i = 0; i < veMinorsToGiveGold.size() && !bSavingForSettler; i++)
 	{
