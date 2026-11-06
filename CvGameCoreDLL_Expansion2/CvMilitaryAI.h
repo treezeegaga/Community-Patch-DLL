@@ -255,6 +255,7 @@ public:
 	StrikeStateTypes GetStrikeState() const { return (StrikeStateTypes)m_iStrikeState; }
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
+	PlayerTypes GetStrikeCityStateTarget() const { return (PlayerTypes)m_iStrikeCityState; }	// EarlyStrike: a city-state when no major is in reach
 	TimingBuildupPhase GetTimingBuildupPhase() const;
 	PlayerTypes GetTimingBuildupTarget() const;
 	int GetTimingBuildupUnitsWanted() const;
@@ -410,7 +411,9 @@ private:
 	int m_iStrikeWarsOnUsMark;		// and the land army at the declaration (saved): the exits compare against them
 	int m_iStrikeCapturedMark;
 	int m_iStrikeArmyAtWar;
+	int m_iStrikeCityState;			// EarlyStrike's city-state target (PlayerTypes; the user: with no major in reach), saved
 	void UpdateStrikeState();
+	PlayerTypes FindStrikeCityState() const;
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;

@@ -23776,6 +23776,17 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 
 	m_eNewAIConquestTarget = eBest;
 
+	// AI_AB_TEST (EarlyStrike, the user's ruling: a city-state when no major is in reach): the strike state chose a city-state
+	// (CvMilitaryAI::FindStrikeCityState). Its build-up window opens against it in BUILDUP; the war itself comes from the
+	// city-state approach (SelectBestApproachTowardsMinorCiv) once the army is ready. No major war from here meanwhile.
+	const PlayerTypes eStrikeCS = bStrikeCiv ? pPlayer->GetMilitaryAI()->GetStrikeCityStateTarget() : NO_PLAYER;
+	if (eStrikeCS != NO_PLAYER)
+	{
+		if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && pPlayer->GetMilitaryAI()->IsStrikeArmyBuildable())
+			pPlayer->GetMilitaryAI()->StartTimingBuildup(eStrikeCS);
+		return NO_PLAYER;
+	}
+
 	// AI_AB_TEST (candidate, flag TimingBuildup): a target opens the build-up window; the attack goes ahead once the army is
 	// ready or the window is over
 	if (bTimingBuildup && eBest != NO_PLAYER)
@@ -25725,6 +25736,24 @@ void CvDiplomacyAI::SelectBestApproachTowardsMinorCiv(PlayerTypes ePlayer)
 		}
 
 		if (bOk)
+		{
+			int iHighest = 0;
+			for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
+				iHighest = max(iHighest, vApproachScores[iApproachLoop]);
+			vApproachScores[CIV_APPROACH_WAR] = iHighest + 1000;
+			bPotentialWarTarget = true;
+		}
+	}
+
+	// AI_AB_TEST (EarlyStrike, the user's ruling): the strike's city-state target. War once the strike's build-up has its
+	// army (the window over: ready, or as ready as it gets), and kept through the strike's war
+	{
+		CvMilitaryAI* pStrikeMilitary = GetPlayer()->GetMilitaryAI();
+		const CvMilitaryAI::StrikeStateTypes eStrike = pStrikeMilitary->GetStrikeState();
+		if (pStrikeMilitary->GetStrikeCityStateTarget() == ePlayer &&
+			((eStrike == CvMilitaryAI::STRIKE_BUILDUP && pStrikeMilitary->GetTimingBuildupPhase() == CvMilitaryAI::TIMING_BUILDUP_ATTACK &&
+			  GET_TEAM(GetTeam()).canDeclareWar(eTeam, eMyPlayer)) ||
+			 (eStrike == CvMilitaryAI::STRIKE_WAR && IsAtWar(ePlayer))))
 		{
 			int iHighest = 0;
 			for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)

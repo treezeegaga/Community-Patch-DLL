@@ -324,6 +324,7 @@ void CvMilitaryAI::Reset()
 	m_iStrikeWarsOnUsMark = 0;
 	m_iStrikeCapturedMark = 0;
 	m_iStrikeArmyAtWar = 0;
+	m_iStrikeCityState = NO_PLAYER;
 	m_iArmyQualityTurn = -1;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
@@ -388,6 +389,7 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iStrikeWarsOnUsMark);
 	visitor(militaryAI.m_iStrikeCapturedMark);
 	visitor(militaryAI.m_iStrikeArmyAtWar);
+	visitor(militaryAI.m_iStrikeCityState);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -2085,6 +2087,56 @@ static bool StrikeCityHasWalls(const CvCity* pCity)
 ///            brings no siege; the target fields the counter (3+ units with a bonus against the core's combat class near its
 ///            city); the army built in PREP with no target in reach; at war, the army below half its size at the declaration
 ///            with no capture; peace
+/// AI_AB_TEST (EarlyStrike; the user: "when no major civ is in reach, the early strike may target a city-state"): the nearest
+/// city-state whose city is within 12 tiles of our capital that we can declare on, with no ally (or one we're at war with),
+/// no protector at peace with us, no recent peace, and not a walled hill city
+PlayerTypes CvMilitaryAI::FindStrikeCityState() const
+{
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (!pCapital)
+		return NO_PLAYER;
+	const TeamTypes eOurTeam = m_pPlayer->getTeam();
+	PlayerTypes eBest = NO_PLAYER;
+	int iBestDistance = 13;
+	for (int iMinor = MAX_MAJOR_CIVS; iMinor < MAX_CIV_PLAYERS; iMinor++)
+	{
+		const PlayerTypes eMinor = (PlayerTypes)iMinor;
+		CvPlayer& kMinor = GET_PLAYER(eMinor);
+		if (!kMinor.isAlive() || !kMinor.isMinorCiv() || !GET_TEAM(eOurTeam).isHasMet(kMinor.getTeam()))
+			continue;
+		if (!GET_TEAM(eOurTeam).isAtWar(kMinor.getTeam()) && !GET_TEAM(eOurTeam).canDeclareWar(kMinor.getTeam(), m_pPlayer->GetID()))
+			continue;
+		const PlayerTypes eAlly = kMinor.GetMinorCivAI()->GetAlly();
+		if (eAlly == m_pPlayer->GetID() || (eAlly != NO_PLAYER && !GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eAlly).getTeam())))
+			continue;
+		bool bProtected = false;
+		for (int iMajor = 0; iMajor < MAX_MAJOR_CIVS && !bProtected; iMajor++)
+		{
+			const PlayerTypes eMajor = (PlayerTypes)iMajor;
+			if (eMajor != m_pPlayer->GetID() && GET_PLAYER(eMajor).isAlive() && kMinor.GetMinorCivAI()->IsProtectedByMajor(eMajor) &&
+				!GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eMajor).getTeam()))
+				bProtected = true;
+		}
+		if (bProtected)
+			continue;
+		const int iPeaceTurn = GET_TEAM(eOurTeam).GetTurnMadePeaceTreatyWithTeam(kMinor.getTeam());
+		if (iPeaceTurn >= 0 && GC.getGame().getGameTurn() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns())
+			continue;
+		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eMinor);
+		if (!pCity || !pCity->plot()->isRevealed(eOurTeam))
+			continue;
+		if (StrikeCityHasWalls(pCity) && pCity->plot()->isHills())
+			continue;
+		const int iDistance = plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY());
+		if (iDistance < iBestDistance)
+		{
+			iBestDistance = iDistance;
+			eBest = eMinor;
+		}
+	}
+	return eBest;
+}
+
 void CvMilitaryAI::UpdateStrikeState()
 {
 	const bool bEarly = IsEarlyStrikeCiv();
@@ -2113,9 +2165,39 @@ void CvMilitaryAI::UpdateStrikeState()
 	CvString strWhy = (eOld == STRIKE_NONE) ? "a strike civ" : "";
 
 	const CvCity* pCapital = m_pPlayer->getCapitalCity();
-	const PlayerTypes eTarget = m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
+	PlayerTypes eTarget = m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
 	const CvCity* pTargetCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
-	const bool bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+	bool bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+	// EarlyStrike with no major in reach: a city-state (the user). Kept once the build-up against it is open; dropped when a
+	// major comes in reach before that, or when it no longer qualifies
+	const PlayerTypes eOldCS = GetStrikeCityStateTarget();
+	PlayerTypes eCS = NO_PLAYER;
+	if (bEarly && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
+	{
+		if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && (eNew != STRIKE_PREP || !bInReach) &&
+			(GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOldCS).getTeam()) || FindStrikeCityState() == eOldCS || eNew != STRIKE_PREP))
+			eCS = eOldCS;
+		else if (!bInReach && eNew == STRIKE_PREP)
+			eCS = FindStrikeCityState();
+	}
+	if (eCS != eOldCS)
+	{
+		m_iStrikeCityState = eCS;
+		if (eCS != NO_PLAYER && GC.getLogging() && GC.getAILogging())
+		{
+			const CvCity* pCSCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
+			m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: city-state target %s (%s, %d tiles from our capital; no major in reach)",
+				GET_PLAYER(eCS).getCivilizationShortDescription(), pCSCity ? pCSCity->getNameNoSpace().c_str() : "no city",
+				(pCSCity && pCapital) ? plotDistance(pCapital->getX(), pCapital->getY(), pCSCity->getX(), pCSCity->getY()) : -1));
+		}
+	}
+	if (eCS != NO_PLAYER)
+	{
+		eTarget = eCS;
+		pTargetCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
+		bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+	}
+	const bool bAtCSWar = eCS != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam());
 	const bool bWalled = StrikeCityHasWalls(pTargetCity);
 	bool bPlanSiege = bLate;	// LateStrike brings siege against walls; EarlyStrike only if its plan has siege (Huns' Rams, Inca's Catapults)
 	CvEarlyStrikePlan kEarlyPlan;
@@ -2189,7 +2271,7 @@ void CvMilitaryAI::UpdateStrikeState()
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
 	}
-	else if (eNew == STRIKE_BUILDUP && m_pPlayer->IsAtWarAnyMajor() && iWarsDeclared > m_iStrikeWarsDeclaredMark)
+	else if (eNew == STRIKE_BUILDUP && ((m_pPlayer->IsAtWarAnyMajor() && iWarsDeclared > m_iStrikeWarsDeclaredMark) || bAtCSWar))
 	{
 		eNew = STRIKE_WAR;
 		strWhy = IsTimingBuildupArmyReady() ? "declared, the army ready" : "declared, as ready as it got";
@@ -2198,7 +2280,7 @@ void CvMilitaryAI::UpdateStrikeState()
 	}
 	else if (eNew == STRIKE_WAR)
 	{
-		if (!m_pPlayer->IsAtWarAnyMajor())
+		if (!m_pPlayer->IsAtWarAnyMajor() && !bAtCSWar)
 			eNew = STRIKE_OVER, strWhy = (iCaptured > m_iStrikeCapturedMark) ? "peace after a capture" : "peace, nothing taken";
 		else if (iCaptured == m_iStrikeCapturedMark && m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true) * 2 < m_iStrikeArmyAtWar)
 			eNew = STRIKE_OVER, strWhy = "the army fell below half its size at the declaration, nothing taken";
@@ -2676,6 +2758,7 @@ void CvMilitaryAI::DoTimingBuildup()
 			iUpgradeUnits, iUpgradeBill, m_pPlayer->GetTreasury()->GetGold(), bUpgradeTechSoon ? ", upgrade tech a few turns off" : ""));
 	//a strike's build-up keeps the upgrade bill in reserve and buys with the gold above it (Persia, 13E9ECC9: 350 gold idle
 	//against a 165 bill while 5 units short); otherwise no purchase while a bill is due
+	//the user (Nov 6): a strike buys no core or melee units (WarmongerHurry and NoObsoleteHurry stand), so its path asks for siege only
 	const bool bStrikeBuys = IsStrikeBuildup();
 	if (!bWarChest && (iUpgradeBill == 0 || bStrikeBuys) && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
 	{
@@ -2685,7 +2768,8 @@ void CvMilitaryAI::DoTimingBuildup()
 		{
 			const int iSiegeWanted = bStrikeBuys ? GetTimingBuildupSiegeTarget() : 2;	// a strike without siege buys none
 			const bool bNeedSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true) < iSiegeWanted;
-			UnitTypes eType = pBuyCity->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(bNeedSiege ? UNITAI_CITY_BOMBARD : UNITAI_ATTACK, true);
+			UnitTypes eType = (bStrikeBuys && !bNeedSiege) ? NO_UNIT :
+				pBuyCity->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(bNeedSiege ? UNITAI_CITY_BOMBARD : UNITAI_ATTACK, true);
 			if (eType != NO_UNIT && pBuyCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eType, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
 			{
 				const int iCost = pBuyCity->GetPurchaseCost(eType);
