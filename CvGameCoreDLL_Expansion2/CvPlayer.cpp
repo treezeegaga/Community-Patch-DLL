@@ -35408,17 +35408,41 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 		}
 	}
 
+	const CvMilitaryAI::StrikeStateTypes eStrikeState = GetMilitaryAI()->GetStrikeState();
+	// (0053, the lead's review of 0050) BUILDUP with the plan's army too weak for its target and no easier city: War asks for
+	// siege (GetTimingBuildupSiegeTarget, from its m_iStrikeSiege). The list only knew the plan's own siege count, so the
+	// siege never came. Now the siege comes first, the plan's class or else the Catapult line
+	if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP)
+	{
+		const int iSiegeWanted = GetMilitaryAI()->GetTimingBuildupSiegeTarget();
+		if (iSiegeWanted > 0 && GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true) < iSiegeWanted)
+		{
+			const UnitClassTypes eSiegeClass = (kPlan.eSiegeClass != NO_UNITCLASS) ? kPlan.eSiegeClass : (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CATAPULT", true);
+			const UnitTypes eSiege = (eSiegeClass != NO_UNITCLASS) ? GetStrikeListTrainableOnLine(*this, eSiegeClass, pCity) : NO_UNIT;
+			if (eSiege != NO_UNIT)
+			{
+				eOrder = ORDER_TRAIN;
+				iData = eSiege;
+				LogStrikeList(*this, pCity, "the siege (the army too weak for the target):", GC.getUnitInfo(eSiege)->GetDescription());
+				return true;
+			}
+		}
+	}
+
 	bool bShort = false;
 	const UnitTypes eArmy = GetStrikeListArmyUnit(*this, kPlan, pCity, bShort);
 	// (0050) the plan's counts met: more core only in WAR (its losses). Before the declaration a complete army waits; extra
 	// units only cost upkeep. bullygreedy23 167DE984: the Celts met their counts at T63, built 6 more Pictish Warriors
-	// while BUILDUP waited, and net gold went from -9 to -14 a turn
-	const bool bMoreCore = GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_WAR && GetEconomicAI()->GetAffordableWarUnits(10) >= 1;
+	// while BUILDUP waited, and net gold went from -9 to -14 a turn.
+	// (0053) Unless the army can't take the target yet: then BUILDUP keeps building core until it can (the lead's review: a
+	// too-weak army and no easier city waited forever, and its cities fell to CP's picks before the strike)
+	const bool bTooWeak = eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && !GetMilitaryAI()->IsStrikeTargetTakeableNow();
+	const bool bMoreCore = (eStrikeState == CvMilitaryAI::STRIKE_WAR || bTooWeak) && GetEconomicAI()->GetAffordableWarUnits(10) >= 1;
 	if (eArmy != NO_UNIT && (bShort || bMoreCore))
 	{
 		eOrder = ORDER_TRAIN;
 		iData = eArmy;
-		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : "the army (the plan's counts met, more core):", GC.getUnitInfo(eArmy)->GetDescription());
+		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : (bTooWeak ? "the army (too weak for the target, more core):" : "the army (the plan's counts met, more core):"), GC.getUnitInfo(eArmy)->GetDescription());
 		return true;
 	}
 	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" :
@@ -35442,6 +35466,16 @@ bool CvPlayer::GetStrikeListProductionQuiet(CvCity* pCity, OrderTypes& eOrder, i
 TechTypes CvPlayer::GetStrikeListTech() const
 {
 	const CvStrikePlan* pPlan = GetStrikeListPlan();
+	// (0053) BUILDUP asking for siege the civ can't train yet: its tech comes before the rest of the list
+	if (pPlan && GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_BUILDUP && GetMilitaryAI()->GetTimingBuildupSiegeTarget() > 0)
+	{
+		const UnitClassTypes eSiegeClass = (pPlan->eSiegeClass != NO_UNITCLASS) ? pPlan->eSiegeClass : (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CATAPULT", true);
+		const UnitTypes eSiege = (eSiegeClass != NO_UNITCLASS) ? GetSpecificUnitType(eSiegeClass) : NO_UNIT;
+		const TechTypes eSiegeTech = (eSiege != NO_UNIT) ? (TechTypes)GC.getUnitInfo(eSiege)->GetPrereqAndTech() : NO_TECH;
+		const TechTypes eStep = (eSiegeTech != NO_TECH) ? GetOpeningBookTechStep(*this, eSiegeTech, 0) : NO_TECH;
+		if (eStep != NO_TECH)
+			return eStep;
+	}
 	for (int i = 0; pPlan && i < pPlan->iNumTechs; i++)
 	{
 		// STRIKE_TECH_LUXURY: one luxury tech, the book's pick (none needed: skipped)
