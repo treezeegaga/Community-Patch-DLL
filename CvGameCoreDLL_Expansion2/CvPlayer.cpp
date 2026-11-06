@@ -35310,6 +35310,29 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 		return false;
 	}
 
+	// (0054) a late strike's PREP held for income (net gold under +2, IsLateStrikeUnitHold): an income item comes first, a
+	// Market, else a Caravan where a trade route is free, so the hold lifts. Trial ab-791ab9d 172518A7: Karakorum's list
+	// waited on its held Chariot Archer from T29 to T85 with net gold at 0
+	if (IsLateStrikeUnitHold())
+	{
+		const BuildingTypes eMarket = GetSpecificBuildingType("BUILDINGCLASS_MARKET", true);
+		if (eMarket != NO_BUILDING && pCity->canConstruct(eMarket))
+		{
+			eOrder = ORDER_CONSTRUCT;
+			iData = eMarket;
+			LogStrikeList(*this, pCity, CvString::format("income first (net gold %d):", GetTreasury()->CalculateBaseNetGold()).c_str(), GC.getBuildingInfo(eMarket)->GetDescription());
+			return true;
+		}
+		const UnitTypes eCaravan = GetSpecificUnitType("UNITCLASS_CARAVAN", true);
+		if (eCaravan != NO_UNIT && pCity->canTrain(eCaravan))
+		{
+			eOrder = ORDER_TRAIN;
+			iData = eCaravan;
+			LogStrikeList(*this, pCity, CvString::format("income first (net gold %d):", GetTreasury()->CalculateBaseNetGold()).c_str(), GC.getUnitInfo(eCaravan)->GetDescription());
+			return true;
+		}
+	}
+
 	// the capital's list in PREP and BUILDUP; in WAR every city builds the army (0049)
 	if (pCity->isCapital() && GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_WAR)
 	{
@@ -35475,6 +35498,41 @@ TechTypes CvPlayer::GetStrikeListTech() const
 		const TechTypes eStep = (eSiegeTech != NO_TECH) ? GetOpeningBookTechStep(*this, eSiegeTech, 0) : NO_TECH;
 		if (eStep != NO_TECH)
 			return eStep;
+	}
+	// (0054) research serves the build list: the first item the capital hasn't built yet whose tech we don't have gets that tech
+	// first (the pre-build's Horseback Riding, a Market's Currency). 172518A7: Mongolia's list waited for its Horsemen while
+	// Horseback Riding came late
+	const CvCity* pCapital = pPlan ? getCapitalCity() : NULL;
+	if (pCapital && GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_WAR)
+	{
+		std::map<int, int> unitsWanted;
+		for (int i = 0; i < pPlan->iNumBuilds; i++)
+		{
+			const CvStrikeBuildItem& kItem = pPlan->aBuilds[i];
+			TechTypes eItemTech = NO_TECH;
+			if (kItem.bUnit)
+			{
+				const UnitClassTypes eClass = (UnitClassTypes)kItem.iClass;
+				if (CountStrikeListUnits(*this, eClass, true) >= ++unitsWanted[eClass])
+					continue;
+				const UnitTypes eUnit = GetSpecificUnitType(eClass);
+				eItemTech = (eUnit != NO_UNIT) ? (TechTypes)GC.getUnitInfo(eUnit)->GetPrereqAndTech() : NO_TECH;
+			}
+			else
+			{
+				const BuildingClassTypes eClass = (BuildingClassTypes)kItem.iClass;
+				if (pCapital->GetCityBuildings()->HasBuildingClass(eClass))
+					continue;
+				const BuildingTypes eBuilding = (BuildingTypes)getCivilizationInfo().getCivilizationBuildings(eClass);
+				CvBuildingEntry* pkBuilding = (eBuilding != NO_BUILDING) ? GC.getBuildingInfo(eBuilding) : NULL;
+				eItemTech = pkBuilding ? (TechTypes)pkBuilding->GetPrereqAndTech() : NO_TECH;
+			}
+			// the first unfinished item, in list order, whose tech we lack (a held or obsolete item with its tech known doesn't stop
+			// the search: Mongolia's held Chariot Archer and the Horsemen after it)
+			const TechTypes eStep = (eItemTech != NO_TECH) ? GetOpeningBookTechStep(*this, eItemTech, 0) : NO_TECH;
+			if (eStep != NO_TECH)
+				return eStep;
+		}
 	}
 	for (int i = 0; pPlan && i < pPlan->iNumTechs; i++)
 	{
