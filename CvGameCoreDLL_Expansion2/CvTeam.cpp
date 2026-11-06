@@ -25,6 +25,7 @@
 #include "CvGrandStrategyAI.h"
 #include "CvDiplomacyAI.h"
 #include "CvMilitaryAI.h"
+#include "CvTacticalAI.h"
 #include "CvImprovementClasses.h"
 #include "CvEnumSerialization.h"
 #include "CvNotifications.h"
@@ -1197,10 +1198,63 @@ bool CvTeam::canDeclareWar(TeamTypes eTeam, PlayerTypes eOriginatingPlayer)
 }
 
 //	-----------------------------------------------------------------------------------------------
+/// AI_AB_TEST (the strike's ownership, gate 1; the lead's audit): an AI strike civ on this team, before its strike, refuses this
+/// declaration (CvMilitaryAI::IsStrikeDeclarationBlocked for every member of the target team: none is the strike's target, or
+/// the army isn't ready)
+static bool IsStrikeDeclarationRefused(CvTeam& kTeam, TeamTypes eTarget)
+{
+	const vector<PlayerTypes>& vMembers = kTeam.getPlayers();
+	const vector<PlayerTypes>& vTargets = GET_TEAM(eTarget).getPlayers();
+	for (size_t i = 0; i < vMembers.size(); i++)
+	{
+		const CvPlayer& kMember = GET_PLAYER(vMembers[i]);
+		if (!kMember.isAlive() || kMember.isHuman() || !kMember.isMajorCiv())
+			continue;
+		bool bAllBlocked = true;
+		for (size_t j = 0; j < vTargets.size() && bAllBlocked; j++)
+		{
+			if (GET_PLAYER(vTargets[j]).isAlive() && !kMember.GetMilitaryAI()->IsStrikeDeclarationBlocked(vTargets[j]))
+				bAllBlocked = false;
+		}
+		if (bAllBlocked)
+			return true;
+	}
+	return false;
+}
+
+/// AI_AB_TEST (the strike's ownership, gate 2; the lead's audit): an AI strike civ on either team refuses peace with a member
+/// of the other (CvMilitaryAI::IsStrikeRefusingPeace: no retreat until a city is taken)
+static bool IsStrikePeaceRefused(CvTeam& kTeam, TeamTypes eOther)
+{
+	const vector<PlayerTypes>& vMembers = kTeam.getPlayers();
+	const vector<PlayerTypes>& vOthers = GET_TEAM(eOther).getPlayers();
+	for (size_t i = 0; i < vMembers.size(); i++)
+	{
+		const CvPlayer& kMember = GET_PLAYER(vMembers[i]);
+		if (!kMember.isAlive() || kMember.isHuman() || !kMember.isMajorCiv())
+			continue;
+		for (size_t j = 0; j < vOthers.size(); j++)
+		{
+			if (GET_PLAYER(vOthers[j]).isAlive() && kMember.GetMilitaryAI()->IsStrikeRefusingPeace(vOthers[j]))
+				return true;
+		}
+	}
+	return false;
+}
+
 void CvTeam::declareWar(TeamTypes eTeam, bool bDefensivePact, PlayerTypes eOriginatingPlayer)
 {
 	if (GET_TEAM(eTeam).getNumMembers() == 0)
 		return;
+
+	// AI_AB_TEST (the strike's ownership, gate 1): every aggressor declaration passes here; a strike civ declares only its own
+	// war (game options and a capitulated vassal's wars don't come through here)
+	if (!bDefensivePact && !GC.getGame().isOption(GAMEOPTION_ALWAYS_WAR) && IsStrikeDeclarationRefused(*this, eTeam))
+	{
+		if (GC.getLogging() && GC.getAILogging() && getLeaderID() != NO_PLAYER)
+			GET_PLAYER(getLeaderID()).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: CvTeam::declareWar on team %d refused (gate 1: before the strike, only its own declaration)", (int)eTeam));
+		return;
+	}
 
 	DoDeclareWar(eOriginatingPlayer, true, eTeam, bDefensivePact);
 
@@ -2126,6 +2180,14 @@ void CvTeam::DoNowAtWarOrPeace(TeamTypes eTeam, bool bWar, vector<pair<PlayerTyp
 //	------------------------------------------------------------------------------------------------
 void CvTeam::makePeace(TeamTypes eTeam, bool bBumpUnits, bool bSuppressNotification, PlayerTypes eOriginatingPlayer)
 {
+	// AI_AB_TEST (the strike's ownership, gate 2): every peace passes here; a strike civ makes none with its target until a city
+	// is taken (the deal level, IsPeaceBlocked, refuses first, so a deal doesn't half-execute)
+	if (IsStrikePeaceRefused(*this, eTeam) || IsStrikePeaceRefused(GET_TEAM(eTeam), GetID()))
+	{
+		if (GC.getLogging() && GC.getAILogging() && getLeaderID() != NO_PLAYER && GET_PLAYER(getLeaderID()).isMajorCiv())
+			GET_PLAYER(getLeaderID()).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: CvTeam::makePeace with team %d refused (gate 2: no retreat until a city is taken)", (int)eTeam));
+		return;
+	}
 	DoMakePeace(eOriginatingPlayer, true, eTeam, bBumpUnits, bSuppressNotification);
 }
 

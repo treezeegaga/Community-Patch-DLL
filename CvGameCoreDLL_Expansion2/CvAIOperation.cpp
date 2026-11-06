@@ -748,6 +748,19 @@ bool CvAIOperation::ShouldAbort()
 /// Allows an outside class to terminate the operation
 void CvAIOperation::SetToAbort(AIOperationAbortReason eReason)
 {
+	// AI_AB_TEST (the strike's ownership, gate 4; the lead's audit): an offensive operation against a player the strike refuses
+	// peace with doesn't retreat. Every abort passes here; the retreat reasons are refused (CP's war-state, approach and
+	// danger judgements, half strength), the mechanical ends stay (no units, no target or path, timeout, the city taken)
+	if (m_eCurrentState != AI_OPERATION_STATE_ABORTED && IsOffensive() && m_eOwner != NO_PLAYER && m_eEnemy != NO_PLAYER &&
+		GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeRefusingPeace(m_eEnemy) &&
+		(eReason == AI_ABORT_HALF_STRENGTH || eReason == AI_ABORT_TARGET_NOT_VALID || eReason == AI_ABORT_TOO_DANGEROUS ||
+		 eReason == AI_ABORT_WAR_STATE_CHANGE || eReason == AI_ABORT_DIPLO_OPINION_CHANGE || eReason == AI_ABORT_CANCELLED))
+	{
+		if (GC.getLogging() && GC.getAILogging())
+			GET_PLAYER(m_eOwner).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: operation %d against %s keeps going (gate 4: abort reason %d refused, no retreat)",
+				m_iID, GET_PLAYER(m_eEnemy).getCivilizationShortDescription(), (int)eReason));
+		return;
+	}
 	if (m_eCurrentState != AI_OPERATION_STATE_ABORTED)
 	{
 		m_eCurrentState = AI_OPERATION_STATE_ABORTED;

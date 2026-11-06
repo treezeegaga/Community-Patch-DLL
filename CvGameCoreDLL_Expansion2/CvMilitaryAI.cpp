@@ -2327,6 +2327,33 @@ bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
 	return true;
 }
 
+/// the strike's ownership (the user's structural fix, the lead's audit in RESULTS): while the strike is at war with this
+/// player and has taken nothing from it (IsStrikeNoRetreat), or is in BUILDUP and already at war with its own target (the
+/// city-state's declaration lands here first), no peace (CvTeam::makePeace), the approach toward it is WAR
+/// (CvDiplomacyAI::SetCivApproach), and no operation against it retreats (CvAIOperation::SetToAbort)
+bool CvMilitaryAI::IsStrikeRefusingPeace(PlayerTypes eOther) const
+{
+	if (eOther == NO_PLAYER || m_pPlayer->isHuman() || !m_pPlayer->isMajorCiv())
+		return false;
+	if (IsStrikeNoRetreat(eOther))
+		return true;
+	return GetStrikeState() == STRIKE_BUILDUP && (eOther == m_eTimingBuildupTarget || eOther == GetStrikeCityStateTarget()) &&
+		GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOther).getTeam());
+}
+
+/// the strike's ownership (5): while the strike is on (PREP, BUILDUP, WAR), its land combat units are not CP's to disband or
+/// gift (the peace cap, deficit scrapping, ArmyScrap, the greedy cap, idle-unit scrapping, unit gifts). Real bankruptcy (gold
+/// below 0, the game's own rule) is exempt
+bool CvMilitaryAI::IsStrikeKeepingUnit(const CvUnit* pUnit) const
+{
+	if (!pUnit || m_pPlayer->isHuman() || !m_pPlayer->isMajorCiv() || pUnit->getDomainType() != DOMAIN_LAND || !pUnit->IsCombatUnit())
+		return false;
+	const StrikeStateTypes eState = GetStrikeState();
+	if (eState != STRIKE_PREP && eState != STRIKE_BUILDUP && eState != STRIKE_WAR)
+		return false;
+	return m_pPlayer->GetTreasury()->GetGold() >= 0;
+}
+
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
 /// strike's war against this player, until a city is taken from it. Read by the peace willingness and the operations' aborts
 bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
@@ -2869,6 +2896,19 @@ void CvMilitaryAI::UpdateStrikeState()
 	{
 		if (!m_pPlayer->IsAtWarAnyMajor() && !bAtCSWar)
 			eNew = STRIKE_OVER, strWhy = (iCaptured > m_iStrikeCapturedMark) ? "peace after a capture" : "peace, nothing taken";
+		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; while nothing is taken from the
+		// strike's target, an attack on it is always under way
+		else
+		{
+			const PlayerTypes eStrikeEnemy = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
+			if (eStrikeEnemy != NO_PLAYER && IsStrikeNoRetreat(eStrikeEnemy) && m_pPlayer->getFirstOffensiveAIOperation(eStrikeEnemy) == NULL)
+			{
+				const bool bRequested = RequestCityAttack(eStrikeEnemy, 2, false);
+				if (GC.getLogging() && GC.getAILogging())
+					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: no attack under way on %s; city attack requested (%s)",
+						GET_PLAYER(eStrikeEnemy).getCivilizationShortDescription(), bRequested ? "started" : "not possible this turn"));
+			}
+		}
 	}
 
 	if (eNew != eOld)
@@ -4348,6 +4388,8 @@ CvUnit* CvMilitaryAI::FindArmyScrapUnit() const
 	{
 		if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || !pLoopUnit->canScrap() || pLoopUnit->isDelayedDeath())
 			continue;
+		if (IsStrikeKeepingUnit(pLoopUnit))	// the strike's ownership, gate 5
+			continue;
 		if (pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD || pLoopUnit->IsGarrisoned() || pLoopUnit->getArmyID() != -1 || pLoopUnit->IsNoMaintenance())
 			continue;
 		if (pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE && bReconNeeded)
@@ -4391,6 +4433,11 @@ CvUnit* CvMilitaryAI::FindUnitToScrap(DomainTypes eDomain, bool bCheckObsolete, 
 			continue;
 
 		if (!pLoopUnit->canScrap())
+			continue;
+
+		// AI_AB_TEST (the strike's ownership, gate 5; the lead's audit): not a strike unit while the strike is on (real
+		// bankruptcy, gold below 0, is exempt in IsStrikeKeepingUnit)
+		if (IsStrikeKeepingUnit(pLoopUnit))
 			continue;
 
 		// don't delete no maintenance units if we're scrapping due to deficit

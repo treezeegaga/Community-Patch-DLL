@@ -39956,6 +39956,11 @@ void CvPlayer::AddIncomingUnit(PlayerTypes eFromPlayer, CvUnit* pUnit)
 	ASSERT(pUnit);
 	if (!pUnit) { return; }
 
+	// AI_AB_TEST (the strike's ownership, gate 5; the lead's audit): every unit gift passes here; a strike's units aren't given
+	// away while the strike is on (the peace cap, the deficit, Homeland's gifts, the greedy cap)
+	if (eFromPlayer != NO_PLAYER && isMinorCiv() && GET_PLAYER(eFromPlayer).isMajorCiv() && GET_PLAYER(eFromPlayer).GetMilitaryAI()->IsStrikeKeepingUnit(pUnit))
+		return;
+
 	// Gift to a minor civ for friendship
 	if(isMinorCiv() && GET_PLAYER(eFromPlayer).isMajorCiv())
 	{

@@ -3134,6 +3134,8 @@ void CvGrandStrategyAI::DoGreedyDisbandToCap()
 	{
 		if (!pUnit->IsCombatUnit() || pUnit->getDomainType() != DOMAIN_LAND || pUnit->isDelayedDeath() || !pUnit->canScrap())
 			continue;
+		if (m_pPlayer->GetMilitaryAI()->IsStrikeKeepingUnit(pUnit))	// AI_AB_TEST (the strike's ownership, gate 5)
+			continue;
 		if (pUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pUnit->getUnitInfo().GetDefaultUnitAIType() == UNITAI_EXPLORE)
 			continue;
 		if (pUnit->getArmyID() != -1)

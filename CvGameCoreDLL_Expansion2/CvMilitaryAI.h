@@ -259,6 +259,8 @@ public:
 	bool HasStrikeDeclared() const { return m_iStrikeDeclared != 0; }	// we have declared a war: the strike's (BUILDUP -> WAR, its city-state) or any of our own since the game began (Economy's bans end here; public for CvPlayer, Economy 0045)
 	bool IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// can the plan's (upgraded) army take the city (the game's damage math)
 	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city
+	bool IsStrikeRefusingPeace(PlayerTypes eOther) const;	// ownership gate (2-4): no peace, approach WAR, no retreat aborts toward this player
+	bool IsStrikeKeepingUnit(const CvUnit* pUnit) const;	// ownership gate (5): a strike unit no CP system disbands or gifts
 	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;	// the strike's war on this player, nothing taken yet: no peace, no abort
 	bool IsStrikeHomeSafe() const;	// none of our cities in danger of falling: a strike's declaration waits for it
 	bool IsStrikeDeclarationBlocked(PlayerTypes eOn) const;	// before the strike (PREP, BUILDUP) no declaration of ours but the strike's on its target, when ready

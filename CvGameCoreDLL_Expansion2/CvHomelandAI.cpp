@@ -2633,7 +2633,8 @@ void CvHomelandAI::ReviewUnassignedUnits()
 						pUnit->SetTurnProcessed(true);
 					}
 					//Stuck and not at home? Scrap it.
-					if (GC.getGame().getGameTurn() - pUnit->getLastMoveTurn() > 7)
+					//AI_AB_TEST (the strike's ownership, gate 5): not a strike unit while the strike is on
+					if (GC.getGame().getGameTurn() - pUnit->getLastMoveTurn() > 7 && !m_pPlayer->GetMilitaryAI()->IsStrikeKeepingUnit(pUnit))
 					{
 						CvString strTemp;
 						CvUnitEntry* pkUnitInfo = GC.getUnitInfo(pUnit->getUnitType());

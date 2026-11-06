@@ -3404,6 +3404,12 @@ void CvDiplomacyAI::SetCivApproach(PlayerTypes ePlayer, CivApproachTypes eApproa
 	PRECONDITION((ePlayer < MAX_MAJOR_CIVS) || (eApproach != CIV_APPROACH_DECEPTIVE && eApproach != CIV_APPROACH_GUARDED && eApproach != CIV_APPROACH_AFRAID), "Setting CivApproach towards City-State to a major approach");
 	ASSERT(NotTeam(ePlayer), "Updating static CivApproach value");
 
+	// AI_AB_TEST (the strike's ownership, gate 3; the lead's audit): toward a player the strike refuses peace with (its target,
+	// no city taken yet), every approach change passes here and the approach stays WAR. CP's zero-outs and filters can't
+	// turn it, and so can't abort its operations
+	if (eApproach != CIV_APPROACH_WAR && !GetPlayer()->isHuman() && GetPlayer()->GetMilitaryAI()->IsStrikeRefusingPeace(ePlayer))
+		eApproach = CIV_APPROACH_WAR;
+
 	m_aeCivApproach[ePlayer] = eApproach;
 
 	// Planning war? Pick a surface approach to disguise our war plans.
