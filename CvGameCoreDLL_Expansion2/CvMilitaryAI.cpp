@@ -322,6 +322,8 @@ void CvMilitaryAI::Reset()
 	m_iArmyQualityTurn = -1;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
+	m_iEarlyStrikeTurn = -1;
+	m_iEarlyStrikeUnit = NO_UNIT;
 	m_eLandDefenseState = NO_DEFENSE_STATE;
 	m_eNavalDefenseState = NO_DEFENSE_STATE;
 	m_iNumberOfTimesOpsBuildSkippedOver = 0;
@@ -2045,7 +2047,69 @@ bool CvMilitaryAI::IsBigArmyUpkeepWaived() const
 
 int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
 {
+	if (IsEarlyStrikeBuildup() && IsEarlyStrikeTargetUnwalled())
+		return 0;
 	return IsTimingBuildupBigArmy() ? 4 : 2;
+}
+
+/// AI_AB_TEST (candidate, flag EarlyStrike, War; the user: "every civ builds to its strengths"). The user's Aztec took
+/// Marrakesh at T54 (Quick) with 6 Jaguars and 4 Composite Bowmen and no siege. Over our games (also Quick), wars declared at
+/// T60-79 took a city in 31% of games against 6-13% later, unwalled cities fell twice as often as walled ones, and siege at
+/// the declaration predicted nothing; we declare a median of 29 turns after the unique unit is buildable.
+/// An EarlyStrike civ is a timing attacker whose strike window (CvGrandStrategyAI::GetStrikeWindow, Personality's power
+/// spike) opens before the normal build-up (turn 40, Standard). Civs with a later spike keep the normal timing.
+bool CvMilitaryAI::IsEarlyStrikeCiv() const
+{
+	if (!m_pPlayer->UsesCandidateAI(FIX_EARLY_STRIKE) || !IsTimingBuildupPlayer())
+		return false;
+	int iStart = -1, iEnd = -1;
+	if (!m_pPlayer->GetGrandStrategyAI()->GetStrikeWindow(iStart, iEnd))
+		return false;
+	return iStart < 40 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+}
+
+/// the build-up under way was opened in the strike window (it may run past the window's end)
+bool CvMilitaryAI::IsEarlyStrikeBuildup() const
+{
+	if (m_iTimingBuildupStartTurn < 0 || !IsEarlyStrikeCiv())
+		return false;
+	int iStart = -1, iEnd = -1;
+	m_pPlayer->GetGrandStrategyAI()->GetStrikeWindow(iStart, iEnd);
+	const int iStartElapsed = m_iTimingBuildupStartTurn - (GC.getGame().getGameTurn() - GC.getGame().getElapsedGameTurns());
+	return iStartElapsed <= iEnd;
+}
+
+/// the spike unit (the profile's earliest unique land combat unit), once a turn
+UnitTypes CvMilitaryAI::GetEarlyStrikeUnit() const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iEarlyStrikeTurn != iTurn)
+	{
+		m_iEarlyStrikeTurn = iTurn;
+		m_iEarlyStrikeUnit = m_pPlayer->GetGrandStrategyAI()->GetStrategyProfile().eSpikeUnit;
+	}
+	return (UnitTypes)m_iEarlyStrikeUnit;
+}
+
+/// the target's city nearest our capital has no walls
+bool CvMilitaryAI::IsEarlyStrikeTargetUnwalled() const
+{
+	static const BuildingClassTypes eWalls = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_WALLS", true);
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (m_eTimingBuildupTarget == NO_PLAYER || !pCapital || eWalls == NO_BUILDINGCLASS)
+		return false;
+	const CvCity* pNearest = NULL;
+	int iBest = MAX_INT, iLoop = 0;
+	for (const CvCity* pLoopCity = GET_PLAYER(m_eTimingBuildupTarget).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(m_eTimingBuildupTarget).nextCity(&iLoop))
+	{
+		const int iDistance = plotDistance(pCapital->getX(), pCapital->getY(), pLoopCity->getX(), pLoopCity->getY());
+		if (iDistance < iBest)
+		{
+			iBest = iDistance;
+			pNearest = pLoopCity;
+		}
+	}
+	return pNearest && !pNearest->GetCityBuildings()->HasBuildingClass(eWalls);
 }
 
 /// AI_AB_TEST (candidate, flag WarBudget, Economy and War; the lead's honest package): BigArmy's doubled army took cities in
@@ -2065,9 +2129,10 @@ int CvMilitaryAI::GetTimingBuildupFieldTarget() const
 	{
 		const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 		const int iAffordable = max(0, m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20));
-		return min(2 * iNormal, max(iNormal, TimingBuildupFieldUnits(m_pPlayer, this, iSiege) + iAffordable));
+		return max(IsEarlyStrikeBuildup() ? 8 : 0, min(2 * iNormal, max(iNormal, TimingBuildupFieldUnits(m_pPlayer, this, iSiege) + iAffordable)));
 	}
-	return iNormal * (IsTimingBuildupBigArmy() ? 2 : 1);
+	//EarlyStrike: at least 8 field units (the user's strike had about 10, from 2 cities; the normal target is cities + 4)
+	return max(IsEarlyStrikeBuildup() ? 8 : 0, iNormal * (IsTimingBuildupBigArmy() ? 2 : 1));
 }
 
 /// BigArmy's log: the land army by unit type, with the gold
@@ -2157,6 +2222,15 @@ void CvMilitaryAI::StartTimingBuildup(PlayerTypes eTarget)
 	if (m_iTimingBuildupStartTurn >= 0)
 		return;
 	m_iTimingBuildupStartTurn = GC.getGame().getGameTurn();
+	if (IsEarlyStrikeBuildup() && GC.getLogging() && GC.getAILogging())
+	{
+		int iStart = -1, iEnd = -1;
+		m_pPlayer->GetGrandStrategyAI()->GetStrikeWindow(iStart, iEnd);
+		m_eTimingBuildupTarget = eTarget;
+		const UnitTypes eSpike = GetEarlyStrikeUnit();
+		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("EarlyStrike: build-up opens in the strike window (T%d-%d), spike unit %s, target's nearest city %s",
+			iStart, iEnd, eSpike != NO_UNIT ? GC.getUnitInfo(eSpike)->GetDescription() : "none", IsEarlyStrikeTargetUnwalled() ? "unwalled (no siege)" : "walled"));
+	}
 	m_eTimingBuildupTarget = eTarget;
 	m_iTimingBuildupPausedTurns = 0;
 	if (GC.getLogging() && GC.getAILogging())
