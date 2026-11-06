@@ -1492,6 +1492,10 @@ void CvHomelandAI::ExecuteUnitGift()
 			for (vector<int>::iterator it = vUnitIDs.begin(); it != vUnitIDs.end(); ++it)
 			{
 				CvUnit* pUnit = m_pPlayer->getUnit(*it);
+				// AI_AB_TEST (the strike's ownership, gate 5; the lead's review): a strike unit isn't picked (the gift would be
+				// refused every turn)
+				if (m_pPlayer->GetMilitaryAI()->IsStrikeKeepingUnit(pUnit))
+					continue;
 				int iXP = pUnit->getExperienceTimes100();
 
 				if (iXP < iLowestXP)
@@ -1501,8 +1505,11 @@ void CvHomelandAI::ExecuteUnitGift()
 					GiftedUnitID = pUnit->GetID();
 				}
 			}
-			pMinor->AddIncomingUnit(ePlayer, pGiftedUnit);
-			UnitProcessed(GiftedUnitID);
+			if (pGiftedUnit)	// (none: every candidate was a strike unit)
+			{
+				pMinor->AddIncomingUnit(ePlayer, pGiftedUnit);
+				UnitProcessed(GiftedUnitID);
+			}
 			return;
 		}
 	}
@@ -1620,6 +1627,10 @@ bool CvHomelandAI::SendUnitGift(DomainTypes eDomain)
 
 				// Don't send weak units, we don't want them to be disbanded
 				if ((pkUnitInfo->GetPower() * 100) < iStrongestUnitComparison)
+					continue;
+
+				// AI_AB_TEST (the strike's ownership, gate 5): not a strike unit
+				if (m_pPlayer->GetMilitaryAI()->IsStrikeKeepingUnit(pUnit))
 					continue;
 
 				int iXP = pUnit->getExperienceTimes100();

@@ -324,6 +324,7 @@ void CvMilitaryAI::Reset()
 	m_iStrikeWarsDeclaredMark = 0;
 	m_iStrikeWarsOnUsMark = 0;
 	m_iStrikeCapturedMark = 0;
+	m_iStrikeLostMark = 0;
 	m_iStrikeArmyAtWar = 0;
 	m_iStrikeCityState = NO_PLAYER;
 	m_iStrikeSiege = 0;
@@ -396,6 +397,7 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iStrikeWarsDeclaredMark);
 	visitor(militaryAI.m_iStrikeWarsOnUsMark);
 	visitor(militaryAI.m_iStrikeCapturedMark);
+	visitor(militaryAI.m_iStrikeLostMark);
 	visitor(militaryAI.m_iStrikeArmyAtWar);
 	visitor(militaryAI.m_iStrikeCityState);
 	visitor(militaryAI.m_iStrikeSiege);
@@ -2354,15 +2356,36 @@ bool CvMilitaryAI::IsStrikeKeepingUnit(const CvUnit* pUnit) const
 	return m_pPlayer->GetTreasury()->GetGold() >= 0;
 }
 
+/// the strike's capture measure: cities taken from majors and from city-states (AB_COUNT_CITIES_CAPTURED counts majors only,
+/// so a city-state strike's capture never registered)
+int CvMilitaryAI::GetStrikeCaptureCount() const
+{
+	return GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_CAPTURED) + GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITY_STATES_CAPTURED);
+}
+
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
-/// strike's war against this player, until a city is taken from it. Read by the peace willingness and the operations' aborts
+/// strike's war against this player (alive, at war with us), until a city is taken from it. Read by the peace willingness,
+/// the operations' aborts and the ownership gates. Released on a game-state loss (the lead's review: no fight to the death):
+/// a city of ours lost since the war began, our capital in danger of falling, or the war nearly lost (CP's
+/// WAR_STATE_NEARLY_DEFEATED; not DEFENSIVE, which is the abort gate 4 refuses)
 bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 {
 	if (eEnemy == NO_PLAYER || GetStrikeState() != STRIKE_WAR)
 		return false;
 	if (eEnemy != m_eTimingBuildupTarget && eEnemy != GetStrikeCityStateTarget())
 		return false;
-	return GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_CAPTURED) == m_iStrikeCapturedMark;
+	if (!GET_PLAYER(eEnemy).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eEnemy).getTeam()))
+		return false;
+	if (GetStrikeCaptureCount() != m_iStrikeCapturedMark)
+		return false;
+	if (GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_LOST) > m_iStrikeLostMark)
+		return false;
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (pCapital && pCapital->isInDangerOfFalling())
+		return false;
+	if (GET_PLAYER(eEnemy).isMajorCiv() && m_pPlayer->GetDiplomacyAI()->GetWarState(eEnemy) == WAR_STATE_NEARLY_DEFEATED)
+		return false;
+	return true;
 }
 
 /// AI_AB_TEST (EarlyStrike, LateStrike; the lead, Nov 6): with the strike's army too weak for its target, a clearly easier city
@@ -2584,7 +2607,7 @@ void CvMilitaryAI::UpdateStrikeState()
 	const CvGame& kGame = GC.getGame();
 	const int iWarsDeclared = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED);
 	const int iWarsOnUs = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_ON_US);
-	const int iCaptured = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_CAPTURED);
+	const int iCaptured = GetStrikeCaptureCount();
 	StrikeStateTypes eNew = eOld;
 	if (eOld == STRIKE_NONE)
 	{
@@ -2741,6 +2764,7 @@ void CvMilitaryAI::UpdateStrikeState()
 				eNew = STRIKE_WAR;
 				strWhy = "the target declared war on us: the strike's war";
 				m_iStrikeCapturedMark = iCaptured;
+				m_iStrikeLostMark = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_LOST);
 				m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
 			}
 			else if (GC.getLogging() && GC.getAILogging())
@@ -2888,14 +2912,20 @@ void CvMilitaryAI::UpdateStrikeState()
 		eNew = STRIKE_WAR;
 		strWhy = IsTimingBuildupArmyReady() ? "declared, the army ready" : "declared, as ready as it got";
 		m_iStrikeCapturedMark = iCaptured;
+		m_iStrikeLostMark = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_LOST);
 		m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
 		// (HasStrikeDeclared: set by our own declaration, CvDiplomacyAI::DeclareWar; not here, a city-state's war on us also
 		// lands here)
 	}
 	else if (eNew == STRIKE_WAR)
 	{
-		if (!m_pPlayer->IsAtWarAnyMajor() && !bAtCSWar)
-			eNew = STRIKE_OVER, strWhy = (iCaptured > m_iStrikeCapturedMark) ? "peace after a capture" : "peace, nothing taken";
+		// the strike's war ends with its purpose (the lead's review: it outlived it, and its ownership of production, gold
+		// and research with it): a city taken (the war itself goes on, CP's), or peace with the target or the target gone
+		const PlayerTypes eWarTarget = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
+		if (iCaptured > m_iStrikeCapturedMark)
+			eNew = STRIKE_OVER, strWhy = "a city taken: the strike's job is done (the war goes on as CP's)";
+		else if (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
+			eNew = STRIKE_OVER, strWhy = "peace with the target (or it's gone), nothing taken";
 		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; while nothing is taken from the
 		// strike's target, an attack on it is always under way
 		else

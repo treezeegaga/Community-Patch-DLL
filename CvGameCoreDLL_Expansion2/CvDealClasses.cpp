@@ -464,6 +464,11 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 			if (!pFromTeam->canChangeWarPeace(eToTeam) || !pToTeam->canChangeWarPeace(eFromTeam))
 				return false;
 
+			// AI_AB_TEST (the strike's ownership, gate 2 at the deal; the lead's review): no peace with a strike's target until a
+			// city is taken (CvTeam::makePeace would refuse after the gold moved)
+			if (pFromTeam->IsStrikePeaceRefusedWith(eToTeam))
+				return false;
+
 			if (MOD_EVENTS_WAR_AND_PEACE) 
 			{
 				if (GAMEEVENTINVOKE_TESTALL(GAMEEVENT_IsAbleToMakePeace, ePlayer, eToTeam) == GAMEEVENTRETURN_FALSE) 
@@ -876,6 +881,10 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 
 			// Teams are not at war
 			if (!pFromTeam->isAtWar(eTargetTeam))
+				return false;
+
+			// AI_AB_TEST (the strike's ownership, gate 2 at the deal): nor paid peace with a strike's target (or for a strike civ)
+			if (pFromTeam->IsStrikePeaceRefusedWith(eTargetTeam))
 				return false;
 
 			vector<PlayerTypes> vMembers = GET_TEAM(eTargetTeam).getPlayers();

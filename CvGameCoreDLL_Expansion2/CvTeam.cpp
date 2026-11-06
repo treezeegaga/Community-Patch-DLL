@@ -1242,14 +1242,21 @@ static bool IsStrikePeaceRefused(CvTeam& kTeam, TeamTypes eOther)
 	return false;
 }
 
+bool CvTeam::IsStrikePeaceRefusedWith(TeamTypes eOther)
+{
+	return eOther != NO_TEAM && eOther != GetID() && (IsStrikePeaceRefused(*this, eOther) || IsStrikePeaceRefused(GET_TEAM(eOther), GetID()));
+}
+
 void CvTeam::declareWar(TeamTypes eTeam, bool bDefensivePact, PlayerTypes eOriginatingPlayer)
 {
 	if (GET_TEAM(eTeam).getNumMembers() == 0)
 		return;
 
 	// AI_AB_TEST (the strike's ownership, gate 1): every aggressor declaration passes here; a strike civ declares only its own
-	// war (game options and a capitulated vassal's wars don't come through here)
-	if (!bDefensivePact && !GC.getGame().isOption(GAMEOPTION_ALWAYS_WAR) && IsStrikeDeclarationRefused(*this, eTeam))
+	// war (game options and a capitulated vassal's wars don't come through here). Only an AI's own declaration on a team with
+	// no human (the lead's review: not Lua's Teams:DeclareWar, not a human teammate's, not the game's own wars)
+	if (!bDefensivePact && !GC.getGame().isOption(GAMEOPTION_ALWAYS_WAR) && eOriginatingPlayer != NO_PLAYER && !GET_PLAYER(eOriginatingPlayer).isHuman() &&
+		GET_PLAYER(eOriginatingPlayer).getTeam() == GetID() && !isHuman() && IsStrikeDeclarationRefused(*this, eTeam))
 	{
 		if (GC.getLogging() && GC.getAILogging() && getLeaderID() != NO_PLAYER)
 			GET_PLAYER(getLeaderID()).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: CvTeam::declareWar on team %d refused (gate 1: before the strike, only its own declaration)", (int)eTeam));
@@ -2181,8 +2188,11 @@ void CvTeam::DoNowAtWarOrPeace(TeamTypes eTeam, bool bWar, vector<pair<PlayerTyp
 void CvTeam::makePeace(TeamTypes eTeam, bool bBumpUnits, bool bSuppressNotification, PlayerTypes eOriginatingPlayer)
 {
 	// AI_AB_TEST (the strike's ownership, gate 2): every peace passes here; a strike civ makes none with its target until a city
-	// is taken (the deal level, IsPeaceBlocked, refuses first, so a deal doesn't half-execute)
-	if (IsStrikePeaceRefused(*this, eTeam) || IsStrikePeaceRefused(GET_TEAM(eTeam), GetID()))
+	// is taken. Deals are refused at their items first (IsStrikePeaceRefusedWith in CvDeal::IsPossibleToTradeItem), so none
+	// half-executes. Only an AI's own peace between teams with no human (the lead's review: not Lua's Teams:MakePeace, not
+	// the game's vassal liberation, not a human's)
+	if (eOriginatingPlayer != NO_PLAYER && !GET_PLAYER(eOriginatingPlayer).isHuman() && !isHuman() && !GET_TEAM(eTeam).isHuman() &&
+		IsStrikePeaceRefusedWith(eTeam))
 	{
 		if (GC.getLogging() && GC.getAILogging() && getLeaderID() != NO_PLAYER && GET_PLAYER(getLeaderID()).isMajorCiv())
 			GET_PLAYER(getLeaderID()).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: CvTeam::makePeace with team %d refused (gate 2: no retreat until a city is taken)", (int)eTeam));

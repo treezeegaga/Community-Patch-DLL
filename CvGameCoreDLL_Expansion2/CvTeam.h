@@ -53,6 +53,7 @@ public:
 	bool canDeclareWar(TeamTypes eTeam, PlayerTypes eOriginatingPlayer = NO_PLAYER);
 	void declareWar(TeamTypes eTeam, bool bDefensivePact = false, PlayerTypes eOriginatingPlayer = NO_PLAYER);
 	void makePeace(TeamTypes eTeam, bool bBumpUnits = true, bool bSuppressNotification = false, PlayerTypes eOriginatingPlayer = NO_PLAYER);
+	bool IsStrikePeaceRefusedWith(TeamTypes eOther);	// AI_AB_TEST: an AI strike civ on this team or eOther refuses peace with the other (the strike's ownership, gate 2)
 
 	int GetTurnMadePeaceTreatyWithTeam(TeamTypes eIndex) const;
 	void SetTurnMadePeaceTreatyWithTeam(TeamTypes eIndex, int iNewValue);
