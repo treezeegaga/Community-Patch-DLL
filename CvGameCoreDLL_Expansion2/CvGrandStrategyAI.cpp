@@ -2197,6 +2197,10 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		{ "CIVILIZATION_MONGOL",   "UNITCLASS_KNIGHT",         8, "UNITCLASS_HORSEMAN", 2, NULL,                 0, "TECH_CHIVALRY",      0, 3, 95, 105, 120, "POLICY_BRANCH_HONOR",     "UNITCLASS_CHARIOT_ARCHER", 8, 140, true, true },
 		{ "CIVILIZATION_ASSYRIA",  "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  0, 3, 80,  95, 110, "POLICY_BRANCH_TRADITION", NULL,                       0,  75, true, false },
 		{ "CIVILIZATION_JAPAN",    "UNITCLASS_LONGSWORDSMAN",  7, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_STEEL",         0, 3, 100, 105, 120, "POLICY_BRANCH_TRADITION", "UNITCLASS_SWORDSMAN",      7, 100, true, true },
+		// China (the user, 2026-11-05: "cho ko nu rush?"; not in the research file, from BNW play knowledge, moderate
+		// confidence): Archers to Composite Bowmen early, then upgraded to Chu-Ko-Nus (two attacks a turn) at Machinery;
+		// two Swordsmen to take the city; no siege, the Chu-Ko-Nus bring the walls down. China's Great General bonus fits Honor.
+		{ "CIVILIZATION_CHINA",    "UNITCLASS_CROSSBOWMAN",    6, "UNITCLASS_SWORDSMAN", 2, NULL,                0, "TECH_MACHINERY",     0, 3, 85,  95, 115, "POLICY_BRANCH_HONOR",     "UNITCLASS_COMPOSITE_BOWMAN", 6, 90, true, true },
 		{ "CIVILIZATION_SONGHAI",  "UNITCLASS_KNIGHT",         6, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CHIVALRY",      0, 2, 85,  95, 115, "POLICY_BRANCH_HONOR",     "UNITCLASS_HORSEMAN",       6, 100, true, true },
 	};
 	const int iSpeed = max(1, GC.getGame().getGameSpeedInfo().getTrainPercent());
