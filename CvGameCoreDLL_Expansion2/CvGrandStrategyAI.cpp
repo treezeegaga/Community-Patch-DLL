@@ -2537,14 +2537,18 @@ static bool IsStrikeTechPrereqOf(TechTypes eA, TechTypes eB, int iDepth)
 ///   of); builds with a starting tech keep their place at the front; the expert order is kept within each step;
 /// - a late strike: Currency early in the research (after the first two items) and the Market before any combat unit,
 ///   so the economy pays for the army's upkeep.
+/// Lists straight from a source (bListInferred false) keep their order; they only get missing techs added.
 void CvGrandStrategyAI::OrderStrikeLists(CvStrikePlan& kPlan) const
 {
 	if (!m_pPlayer)
 		return;
 	const TechTypes eCurrency = (TechTypes)GC.getInfoTypeForString("TECH_CURRENCY", true);
 	const int iMarket = GC.getInfoTypeForString("BUILDINGCLASS_MARKET", true);
+	// a list straight from a source (bListInferred false: the user's Aztec, glory7's Zulu, fils' Mongolia, imMapex's
+	// Assyria) is followed as written ("literally follow the list"): only a missing build tech is added to its research
+	const bool bReorder = kPlan.bListInferred;
 	// a late strike: Currency early
-	if (kPlan.bLateStrike && eCurrency != NO_TECH)
+	if (bReorder && kPlan.bLateStrike && eCurrency != NO_TECH)
 	{
 		int iAt = -1;
 		for (int i = 0; i < kPlan.iNumTechs; i++)
@@ -2608,6 +2612,8 @@ void CvGrandStrategyAI::OrderStrikeLists(CvStrikePlan& kPlan) const
 		}
 		aiStep[i] = (iFound < 0) ? STRIKE_LIST_MAX + 1 : iFound + 1;
 	}
+	if (!bReorder)
+		return;
 	// a late strike: no combat unit before the Market
 	if (kPlan.bLateStrike && iMarket >= 0)
 	{
