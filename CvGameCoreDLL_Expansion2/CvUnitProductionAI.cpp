@@ -1890,9 +1890,14 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		const bool bSiege = pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD;
 		if (bSiege && kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < kPlayer.GetMilitaryAI()->GetTimingBuildupSiegeTarget())
 			iBonus += 4000;
-		//EarlyStrike: the spike unit (Economy's core class) leads the army, first until it makes up half the field target
+		//EarlyStrike, the expert strike: 3 melee units that can take the city first ("bring two in case one dies"), then the
+		//spike unit (Economy's core class) up to Personality's core share of the field target (50%, 33% for a siege core)
+		else if (kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() && pkUnitEntry->GetCombat() > 0 && pkUnitEntry->GetRangedCombat() == 0 &&
+			pkUnitEntry->GetDefaultUnitAIType() != UNITAI_CITY_BOMBARD && kPlayer.GetMilitaryAI()->GetEarlyStrikeMeleeUnits() < CvMilitaryAI::EARLY_STRIKE_MELEE_MIN)
+			iBonus += 5000;
 		else if ((UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetEarlyStrikeCoreClass() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
-			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 2 < kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget())
+			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 100 <
+			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget() * kPlayer.GetMilitaryAI()->GetEarlyStrikeCoreSharePercent())
 			iBonus += 4500;
 		//SiegeSlots: other land units only while the field target isn't met; past it they are not what the army lacks
 		else if (!bSiege && (!kPlayer.UsesCandidateAI(FIX_SIEGE_SLOTS) ||

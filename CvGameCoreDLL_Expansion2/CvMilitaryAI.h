@@ -151,6 +151,7 @@ FDataStream& operator>>(FDataStream&, CvAttackTarget&);
 //!  - One instance for each civ (player or AI)
 //!  - Accessed by any class that needs to check a civ's AI strategy state
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+struct CvStrikeWindow;
 class CvMilitaryAI
 {
 public:
@@ -223,6 +224,10 @@ public:
 	bool IsEarlyStrikeCiv() const;
 	bool IsEarlyStrikeBuildup() const;
 	bool IsEarlyStrikeTargetUnwalled() const;
+	bool GetEarlyStrikeWindow(CvStrikeWindow& kWindow) const;	// Personality's per-civ plan (CvGrandStrategyAI)
+	int GetEarlyStrikeMeleeUnits() const;	// land units that can take a city (melee, not siege, not no-capture)
+	int GetEarlyStrikeCoreSharePercent() const;	// Personality's core share (50 if none)
+	static const int EARLY_STRIKE_MELEE_MIN = 3;	// "bring two in case one dies" (the strike-plans research): 2 at the city, 1 spare
 	int GetEarlyStrikeUpgradeBill(int* piUnits = NULL, bool* pbTechSoon = NULL) const;	// upgrade-and-go (the user's Composite Bowmen)
 	bool IsEarlyStrikeHoldingUpgrades() const;	// no upgrades until the strike's army is built (Economy: keep the reserve)
 	bool IsTimingBuildupArmyBuilt() const;		// the ready test's unit counts, without EarlyStrike's upgrades

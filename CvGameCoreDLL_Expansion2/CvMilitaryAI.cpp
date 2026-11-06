@@ -1940,6 +1940,13 @@ bool CvMilitaryAI::IsInTimingBuildupWindow() const
 {
 	if (m_iTimingBuildupStartTurn < 0)
 		return false;
+	//EarlyStrike: the window is over at Personality's declare-by turn, while the spike is fresh (the attack phase follows)
+	if (IsEarlyStrikeBuildup())
+	{
+		CvStrikeWindow kWindow;
+		if (GetEarlyStrikeWindow(kWindow) && kWindow.iDeclareByTurn >= 0 && GC.getGame().getElapsedGameTurns() > kWindow.iDeclareByTurn)
+			return false;
+	}
 	const int iElapsed = GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn;
 	if (iElapsed < TimingBuildupWindowTurns())
 		return true;
@@ -2046,7 +2053,8 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 	//EarlyStrike, upgrade and go (the user: "i upgraded 3 archers to composite archers. that was part of the timing attack.
 	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
 	//length (WindowUntilReady) still bounds the wait.
-	return !IsEarlyStrikeBuildup() || GetEarlyStrikeUpgradeBill() == 0;
+	//and, the expert strike, 3 melee units that can take the city (2 at the city, 1 spare)
+	return !IsEarlyStrikeBuildup() || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN);
 }
 
 /// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,
@@ -2061,6 +2069,8 @@ int CvMilitaryAI::GetEarlyStrikeUpgradeBill(int* piUnits, bool* pbTechSoon) cons
 	CvPlayerTechs* pTechs = m_pPlayer->GetPlayerTechs();
 	const TechTypes eResearch = pTechs->GetCurrentResearch();
 	const bool bResearchSoon = eResearch != NO_TECH && pTechs->GetResearchTurnsLeft(eResearch, true) <= max(2, 8 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
+	CvStrikeWindow kWindow;
+	const TechTypes eStrikeUpgradeTech = GetEarlyStrikeWindow(kWindow) ? kWindow.eUpgradeTech : NO_TECH;
 	int iBill = 0, iLoop = 0;
 	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
 	{
@@ -2073,7 +2083,10 @@ int CvMilitaryAI::GetEarlyStrikeUpgradeBill(int* piUnits, bool* pbTechSoon) cons
 			continue;
 		const TechTypes eTech = (TechTypes)pkUpgrade->GetPrereqAndTech();
 		const bool bKnown = eTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech);
-		if (!bKnown && !(bResearchSoon && eTech == eResearch))
+		//the strike's own upgrade (Personality's eUpgradeTech, e.g. Construction for Composite Bowmen): saved for from the
+		//start of the build-up, and the declaration waits for it (upgrade and go when the tech lands)
+		const bool bStrikeUpgrade = eTech != NO_TECH && eTech == eStrikeUpgradeTech;
+		if (!bKnown && !(bResearchSoon && eTech == eResearch) && !bStrikeUpgrade)
 			continue;
 		iBill += pLoopUnit->upgradePrice(eUpgrade);
 		if (piUnits)
@@ -2124,7 +2137,37 @@ bool CvMilitaryAI::IsEarlyStrikeBuildup() const
 	if (m_iTimingBuildupStartTurn < 0 || !IsEarlyStrikeCiv())
 		return false;
 	const int iStartElapsed = m_iTimingBuildupStartTurn - (GC.getGame().getGameTurn() - GC.getGame().getElapsedGameTurns());
+	//the expert strike's exit (the lead, 9:58pm ET): past Personality's close turn the strike is over and the late plan runs
+	CvStrikeWindow kWindow;
+	if (GetEarlyStrikeWindow(kWindow) && kWindow.iCloseTurn >= 0)
+		return iStartElapsed <= kWindow.iCloseTurn;
 	return iStartElapsed <= 60 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+}
+
+bool CvMilitaryAI::GetEarlyStrikeWindow(CvStrikeWindow& kWindow) const
+{
+	return m_pPlayer->GetGrandStrategyAI() && m_pPlayer->GetGrandStrategyAI()->GetStrikeWindow(kWindow);
+}
+
+int CvMilitaryAI::GetEarlyStrikeCoreSharePercent() const
+{
+	CvStrikeWindow kWindow;
+	return (GetEarlyStrikeWindow(kWindow) && kWindow.iCoreSharePercent > 0) ? kWindow.iCoreSharePercent : 50;
+}
+
+/// AI_AB_TEST (flag EarlyStrike, the expert strike): melee land units that can take a city. The research: "bring two in case
+/// one dies"; over 57 logged first capture attempts the city fell 5 of 24 times with 2+ such units in reach, 2 of 18 with 1,
+/// 1 of 15 with none.
+int CvMilitaryAI::GetEarlyStrikeMeleeUnits() const
+{
+	int iCount = 0, iLoop = 0;
+	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged() && !pLoopUnit->isNoCapture() &&
+			pLoopUnit->AI_getUnitAIType() != UNITAI_CITY_BOMBARD && pLoopUnit->AI_getUnitAIType() != UNITAI_EXPLORE && !pLoopUnit->isDelayedDeath())
+			iCount++;
+	}
+	return iCount;
 }
 
 /// the target's city nearest our capital has no walls
