@@ -103,6 +103,11 @@ void CvDiplomacyAI::Init(CvPlayer* pPlayer)
 	m_eCSWarTarget = NO_PLAYER;
 	m_eCSBullyTarget = NO_PLAYER;
 	m_eNewAIConquestTarget = NO_PLAYER;
+	m_eSpoilerGrudge = NO_PLAYER;
+	m_iSpoilerBehindTurns = 0;
+	m_iSpoilerBehindStartRatio = 0;
+	m_iSpoilerLastTurn = -1;
+	m_uiSpoilerHelpingMask = 0;
 
 	// Other Global Memory
 	m_bWasHumanLastUpdate = false;
@@ -703,6 +708,10 @@ void CvDiplomacyAI::Serialize(DiplomacyAI& diplomacyAI, Visitor& visitor)
 	// AI_AB_TEST (appended last, so the rest of the layout is unchanged)
 	visitor(diplomacyAI.m_eNewAIConquestTarget);
 	visitor(diplomacyAI.m_aiNumDealsBrokenByWar);
+	visitor(diplomacyAI.m_eSpoilerGrudge);
+	visitor(diplomacyAI.m_iSpoilerBehindTurns);
+	visitor(diplomacyAI.m_iSpoilerBehindStartRatio);
+	visitor(diplomacyAI.m_iSpoilerLastTurn);
 }
 
 /// Serialization read
@@ -9339,6 +9348,9 @@ void CvDiplomacyAI::DoTurn(DiplomacyMode eDiploMode, PlayerTypes ePlayer)
 	DoUpdateLandDisputeLevels();
 	DoUpdateWonderDisputeLevels();
 	DoUpdateMinorCivDisputeLevels();
+
+	// AI_AB_TEST FIX_SPOILER: after the disputes, which feed the blame
+	DoUpdateSpoiler();
 
 	// Look at the situation
 	TestBackstabbingPenalties(); // Have any backstabbing penalties expired?
@@ -32894,6 +32906,178 @@ bool CvDiplomacyAI::IsWarChestSeeker() const
 		GetCommittedConquestTarget() != NO_PLAYER || GetPlayer()->GetMilitaryAI()->IsInTimingBuildupWindow();
 }
 
+/// AI_AB_TEST FIX_SPOILER (the user's design). "Can't win": we've realized we won't be first, having fallen too far behind
+/// (our score under 60% of first place's for 20+ turns, and not catching up). Then we pick the one civ we blame for our
+/// downfall (cities it took from us, wars it declared on us, land and wonders it beat us to, denouncing us, racing us for
+/// the same victory) among those ahead of us and contending for first, and while it contends we help its enemies and
+/// sell it nothing. Uses only what a human sees: scores, wars, denouncements, our own history with it.
+void CvDiplomacyAI::DoUpdateSpoiler()
+{
+	if (!GetPlayer()->isAlive() || !GetPlayer()->isMajorCiv() || GetPlayer()->isHuman(ISHUMAN_AI_DIPLOMACY) || !GetPlayer()->UsesCandidateAI(FIX_SPOILER))
+	{
+		m_eSpoilerGrudge = NO_PLAYER;
+		m_iSpoilerBehindTurns = 0;
+		m_uiSpoilerHelpingMask = 0;
+		return;
+	}
+
+	// Once per game turn (DoTurn also runs for hotseat and multiplayer diplomacy passes)
+	if (m_iSpoilerLastTurn == GC.getGame().getGameTurn())
+		return;
+	m_iSpoilerLastTurn = GC.getGame().getGameTurn();
+
+	// First place among the civs we've met
+	const int iOurScore = GetPlayer()->GetScore();
+	int iTopScore = 0;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (eLoopPlayer == GetID() || !GET_PLAYER(eLoopPlayer).isAlive() || !GET_PLAYER(eLoopPlayer).isMajorCiv() || IsTeammate(eLoopPlayer) || !GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eLoopPlayer).getTeam()))
+			continue;
+		iTopScore = max(iTopScore, GET_PLAYER(eLoopPlayer).GetScore());
+	}
+	const int iRatio = iTopScore > 0 ? (iOurScore * 100) / iTopScore : 100;
+
+	// Fallen too far behind? Early scores swing too much to judge before turn 50.
+	if (iRatio < 60 && GC.getGame().getElapsedGameTurns() >= 50)
+	{
+		if (m_iSpoilerBehindTurns == 0)
+			m_iSpoilerBehindStartRatio = iRatio;
+		m_iSpoilerBehindTurns++;
+	}
+	else
+		m_iSpoilerBehindTurns = 0;
+	const bool bCantWin = m_iSpoilerBehindTurns >= 20 && iRatio <= m_iSpoilerBehindStartRatio + 5;
+
+	// Who do we blame?
+	const PlayerTypes eOldGrudge = m_eSpoilerGrudge;
+	PlayerTypes eNewGrudge = NO_PLAYER;
+	int iNewBlame = 0;
+	if (bCantWin)
+	{
+		for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+		{
+			const int iBlame = GetSpoilerBlame((PlayerTypes)iPlayerLoop);
+			if (iBlame > iNewBlame)
+			{
+				iNewBlame = iBlame;
+				eNewGrudge = (PlayerTypes)iPlayerLoop;
+			}
+		}
+		// A grudge is kept unless another civ is clearly more to blame
+		if (eOldGrudge != NO_PLAYER && eNewGrudge != eOldGrudge)
+		{
+			const int iOldBlame = GetSpoilerBlame(eOldGrudge);
+			if (iOldBlame > 0 && iOldBlame * 4 >= iNewBlame * 3)
+			{
+				eNewGrudge = eOldGrudge;
+				iNewBlame = iOldBlame;
+			}
+		}
+		// Falling behind on our own isn't anyone's fault
+		if (iNewBlame < 15)
+			eNewGrudge = NO_PLAYER;
+	}
+	m_eSpoilerGrudge = eNewGrudge;
+
+	CvString strMessage;
+	const CvString strUs = GetPlayer()->getCivilizationShortDescription();
+	if (eOldGrudge != NO_PLAYER && eOldGrudge != eNewGrudge)
+	{
+		strMessage.Format("Spoiler: %s drops its grudge against %s", strUs.c_str(), GET_PLAYER(eOldGrudge).getCivilizationShortDescription());
+		LogSpoiler(strMessage);
+	}
+	if (eNewGrudge != NO_PLAYER && eNewGrudge != eOldGrudge)
+	{
+		strMessage.Format("Spoiler: %s blames %s (blame %d; our score is %d%% of first place's)", strUs.c_str(), GET_PLAYER(eNewGrudge).getCivilizationShortDescription(), iNewBlame, iRatio);
+		LogSpoiler(strMessage);
+	}
+
+	// Who are we helping now? (logged when it changes)
+	unsigned int uiMask = 0;
+	CvString strHelping;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		if (IsSpoilerHelping((PlayerTypes)iPlayerLoop))
+		{
+			if (iPlayerLoop < 32) // the mask only drives the log
+				uiMask |= (1u << iPlayerLoop);
+			if (!strHelping.empty())
+				strHelping += ", ";
+			strHelping += GET_PLAYER((PlayerTypes)iPlayerLoop).getCivilizationShortDescription();
+		}
+	}
+	if (eNewGrudge != NO_PLAYER && uiMask != m_uiSpoilerHelpingMask)
+	{
+		strMessage.Format("Spoiler: %s blames %s, helping %s", strUs.c_str(), GET_PLAYER(eNewGrudge).getCivilizationShortDescription(), uiMask ? strHelping.c_str() : "nobody yet (no one is at war with it or denouncing it)");
+		LogSpoiler(strMessage);
+	}
+	m_uiSpoilerHelpingMask = uiMask;
+}
+
+/// AI_AB_TEST FIX_SPOILER: how much we blame ePlayer for our downfall. 0 unless it's ahead of us and contending for first.
+int CvDiplomacyAI::GetSpoilerBlame(PlayerTypes ePlayer) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || ePlayer == GetID() || !GET_PLAYER(ePlayer).isAlive() || !GET_PLAYER(ePlayer).isMajorCiv() || IsTeammate(ePlayer))
+		return 0;
+	if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(ePlayer).getTeam()))
+		return 0;
+	if (GET_PLAYER(ePlayer).GetScore() <= GetPlayer()->GetScore() || !IsSpoilerContender(ePlayer))
+		return 0;
+
+	int iBlame = 30 * GetNumCitiesCapturedBy(ePlayer);		// it took our cities
+	iBlame += 15 * GetNumWarsDeclaredOnUs(ePlayer);			// it attacked us
+	iBlame += 8 * (int)GetLandDisputeLevel(ePlayer);		// it took the land we wanted
+	iBlame += 5 * (int)GetWonderDisputeLevel(ePlayer);		// it beat us to wonders
+	iBlame += 8 * (int)GetVictoryDisputeLevel(ePlayer);		// it's racing us for the same victory
+	if (IsDenouncedByPlayer(ePlayer))
+		iBlame += 10;
+	return iBlame;
+}
+
+/// AI_AB_TEST FIX_SPOILER: is ePlayer first or close to it (80%+ of first place's score, among the civs we've met)?
+bool CvDiplomacyAI::IsSpoilerContender(PlayerTypes ePlayer) const
+{
+	if (ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || !GET_PLAYER(ePlayer).isAlive())
+		return false;
+	int iTopScore = 0;
+	for (int iPlayerLoop = 0; iPlayerLoop < MAX_MAJOR_CIVS; iPlayerLoop++)
+	{
+		const PlayerTypes eLoopPlayer = (PlayerTypes)iPlayerLoop;
+		if (eLoopPlayer == GetID() || !GET_PLAYER(eLoopPlayer).isAlive() || !GET_PLAYER(eLoopPlayer).isMajorCiv() || IsTeammate(eLoopPlayer) || !GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(eLoopPlayer).getTeam()))
+			continue;
+		iTopScore = max(iTopScore, GET_PLAYER(eLoopPlayer).GetScore());
+	}
+	return iTopScore > 0 && GET_PLAYER(ePlayer).GetScore() * 100 >= iTopScore * 80;
+}
+
+/// AI_AB_TEST FIX_SPOILER: is ePlayer one of our grudge's enemies, which we help? (visibly: at war with it or denouncing it)
+bool CvDiplomacyAI::IsSpoilerHelping(PlayerTypes ePlayer) const
+{
+	const PlayerTypes eGrudge = m_eSpoilerGrudge;
+	if (eGrudge == NO_PLAYER || ePlayer < 0 || ePlayer >= MAX_MAJOR_CIVS || ePlayer == GetID() || ePlayer == eGrudge)
+		return false;
+	if (!GET_PLAYER(ePlayer).isAlive() || !GET_PLAYER(ePlayer).isMajorCiv() || !GET_PLAYER(eGrudge).isAlive() || IsAtWar(ePlayer))
+		return false;
+	if (!GET_TEAM(GetTeam()).isHasMet(GET_PLAYER(ePlayer).getTeam()))
+		return false;
+	return GET_TEAM(GET_PLAYER(ePlayer).getTeam()).isAtWar(GET_PLAYER(eGrudge).getTeam()) || GET_PLAYER(ePlayer).GetDiplomacyAI()->IsDenouncedPlayer(eGrudge);
+}
+
+/// AI_AB_TEST FIX_SPOILER: one line in DiplomacyAI_Messages_Log.csv
+void CvDiplomacyAI::LogSpoiler(const CvString& strMessage) const
+{
+	if (!GC.getLogging() || !GC.getAILogging())
+		return;
+	const CvString playerName = GetPlayer()->getCivilizationShortDescription();
+	CvString strLogName = GC.getPlayerAndCityAILogSplit() ? "DiplomacyAI_Messages_Log_" + playerName + ".csv" : "DiplomacyAI_Messages_Log.csv";
+	FILogFile* pLog = LOGFILEMGR.GetLog(strLogName, FILogFile::kDontTimeStamp);
+	CvString strOut;
+	strOut.Format("%03d, %s, , %s", GC.getGame().getElapsedGameTurns(), GetPlayer()->getCivilizationShortDescription(), strMessage.c_str());
+	pLog->Msg(strOut);
+}
+
+
 bool CvDiplomacyAI::IsGreedyWideDealSeeker() const
 {
 	return GetPlayer()->isMajorCiv() && GetPlayer()->UsesCandidateAI(FIX_GREEDY_WIDE_DEALS) && GetPlayer()->IsGreedyWide() &&
@@ -43485,11 +43669,17 @@ int CvDiplomacyAI::GetCoopWarDesireScore(PlayerTypes eAllyPlayer, PlayerTypes eT
 		}
 	}
 
+	// FIX_SPOILER: the civ we blame for our downfall, while it contends for first: join its enemies' wars readily (the sanity
+	// and attack-target checks above still apply, so we don't throw ourselves at it)
+	const bool bSpoilerTarget = eTargetPlayer == GetSpoilerGrudge();
+	if (bSpoilerTarget)
+		iScore += 25;
+
 	if (iScore <= 0)
 		return 0;
 
 	// Scale weight by target value
-	if (IsMajorCompetitor(eTargetPlayer) || IsEarlyGameCompetitor(eTargetPlayer) || (bWeHaveGoodAttackTarget && IsEasyTarget(eTargetPlayer)))
+	if (IsMajorCompetitor(eTargetPlayer) || IsEarlyGameCompetitor(eTargetPlayer) || (bWeHaveGoodAttackTarget && IsEasyTarget(eTargetPlayer)) || bSpoilerTarget)
 	{
 		switch (GetTargetValue(eTargetPlayer))
 		{
@@ -43683,6 +43873,14 @@ CoopWarStates CvDiplomacyAI::RespondToCoopWarRequest(PlayerTypes eAskingPlayer, 
 		SetCivApproach(eTargetPlayer, CIV_APPROACH_WAR);
 		GET_PLAYER(eAskingPlayer).GetDiplomacyAI()->SetCivApproach(eTargetPlayer, CIV_APPROACH_WAR);
 		GC.getGame().ChangeABTestCountAgainst(eAskingPlayer, eTargetPlayer, AB_COUNT_COOP_WAR_AGREED, AB_COUNT_COOP_WAR_AGREED_VS_AGGRESSOR);
+
+		// FIX_SPOILER: log it when we join a war on the civ we blame
+		if (eTargetPlayer == GetSpoilerGrudge())
+		{
+			CvString strMessage;
+			strMessage.Format("Spoiler: %s blames %s, helping %s (agreed to a joint war)", GetPlayer()->getCivilizationShortDescription(), GET_PLAYER(eTargetPlayer).getCivilizationShortDescription(), GET_PLAYER(eAskingPlayer).getCivilizationShortDescription());
+			LogSpoiler(strMessage);
+		}
 	}
 
 	return eResponse;
