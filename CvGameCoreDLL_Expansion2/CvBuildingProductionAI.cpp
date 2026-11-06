@@ -267,6 +267,11 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			iBonus += 500;
 	}
 
+	// AI_AB_TEST candidate (EarlyStrike; the user: "fix their start"): no building while the strike army is short of the
+	// plan, unless the city is in danger
+	if (kPlayer.IsEarlyStrikeArmyShort() && !m_pCity->isInDangerOfFalling() && !m_pCity->isUnderSiege())
+		return SR_STRATEGY;
+
 	// AI_AB_TEST candidates (EarlyStrike, LateStrike): no world wonder before the strike (EarlyStrike's PREP and BUILDUP,
 	// LateStrike's BUILDUP). The expert block's Persia (13A89116) started Stonehenge at T39 while its book waited
 	if (isWorldWonderClass(kBuildingClassInfo) && (kPlayer.IsEarlyStrikeSmallEmpire() || kPlayer.IsLateStrikeSaving()))

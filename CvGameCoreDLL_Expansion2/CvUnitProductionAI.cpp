@@ -221,6 +221,10 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// Don't build units in underdeveloped cities
 	// AI_AB_TEST: settlers and workers are exempt for the new AI. The Palace doesn't count as a building,
 	// so the capital otherwise had to finish two buildings before its first settler or worker.
+	// AI_AB_TEST candidate (EarlyStrike): no worker beyond one while the strike army is short of the plan
+	if (!bFree && pkUnitEntry->GetWorkRate() > 0 && !pkUnitEntry->IsFound() && kPlayer.IsEarlyStrikeArmyShort() &&
+		kPlayer.GetNumUnitsWithUnitAI(UNITAI_WORKER, true) >= 1)
+		return SR_STRATEGY;
 	bool bExemptCivilian = kPlayer.UsesNewAI() && (pkUnitEntry->IsFound() || pkUnitEntry->IsFoundAbroad() || pkUnitEntry->GetWorkRate() > 0);
 	//AI_AB_TEST (diagnostic flag BigArmy): in the build-up window, until the doubled army is ready, its land combat units skip
 	//the window's build caps (young cities, the upkeep guard); test only

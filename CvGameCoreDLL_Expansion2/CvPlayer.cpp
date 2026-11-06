@@ -33977,6 +33977,60 @@ bool CvPlayer::IsEarlyStrikeCityCapReached() const
 	return GetEarlyStrikePlan(kPlan) && getNumCities() >= kPlan.iMaxCities;
 }
 
+/// AI_AB_TEST (EarlyStrike; the user: "if they were 4 units short, they need to fix their start"): before the strike (PREP,
+/// BUILDUP), the army is short of the plan's core or support count (empire-wide, units in training included; the starting
+/// warrior counts toward a warrior-class core). The expert block's strike civs had 1-3 land units when their build-up
+/// opened (T26-40) against plans of 8, and met the plan only at the declaration, 30-50 turns late.
+bool CvPlayer::IsEarlyStrikeArmyShort() const
+{
+	if (!IsEarlyStrikeSmallEmpire())
+		return false;
+	CvEarlyStrikePlan kPlan;
+	if (!GetEarlyStrikePlan(kPlan) || kPlan.eCore == NO_UNITCLASS)
+		return false;
+	CvUnitClassInfo* pkCore = GC.getUnitClassInfo(kPlan.eCore);
+	const int iCoreStart = (pkCore && strcmp(pkCore->GetType(), "UNITCLASS_WARRIOR") == 0) ? 1 : 0;
+	if (getUnitClassCountPlusMaking(kPlan.eCore) < kPlan.iCoreTotal + iCoreStart)
+		return true;
+	return kPlan.eSupport != NO_UNITCLASS && getUnitClassCountPlusMaking(kPlan.eSupport) < kPlan.iSupportTotal;
+}
+
+/// EarlyStrike: the army unit a city trains while the army is short. The core; before the core's tech, a unit that
+/// upgrades into it (a Warrior for a Spearman-class core: Hoplite, Immortal, Pictish Warrior); then the support.
+/// NO_UNIT when none can be trained here
+UnitTypes CvPlayer::GetEarlyStrikeArmyUnit(const CvCity* pCity) const
+{
+	CvEarlyStrikePlan kPlan;
+	if (!pCity || !GetEarlyStrikePlan(kPlan) || kPlan.eCore == NO_UNITCLASS)
+		return NO_UNIT;
+	CvUnitClassInfo* pkCore = GC.getUnitClassInfo(kPlan.eCore);
+	const int iCoreStart = (pkCore && strcmp(pkCore->GetType(), "UNITCLASS_WARRIOR") == 0) ? 1 : 0;
+	const bool bCoreShort = getUnitClassCountPlusMaking(kPlan.eCore) < kPlan.iCoreTotal + iCoreStart;
+	const bool bSupportShort = kPlan.eSupport != NO_UNITCLASS && getUnitClassCountPlusMaking(kPlan.eSupport) < kPlan.iSupportTotal;
+	if (bCoreShort)
+	{
+		const UnitTypes eCore = GetSpecificUnitType(kPlan.eCore);
+		if (eCore != NO_UNIT && pCity->canTrain(eCore))
+			return eCore;
+		// a unit that upgrades into the core, counted as part of it once it does (only while the core can't be trained)
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+		{
+			const UnitTypes eLower = GetSpecificUnitType((UnitClassTypes)iClass);
+			CvUnitEntry* pkLower = (eLower != NO_UNIT) ? GC.getUnitInfo(eLower) : NULL;
+			if (pkLower && pkLower->GetUpgradeUnitClass(kPlan.eCore) && (pkLower->GetCombat() > 0 || pkLower->GetRangedCombat() > 0) &&
+				pCity->canTrain(eLower))
+				return eLower;
+		}
+	}
+	if (bSupportShort)
+	{
+		const UnitTypes eSupport = GetSpecificUnitType(kPlan.eSupport);
+		if (eSupport != NO_UNIT && pCity->canTrain(eSupport))
+			return eSupport;
+	}
+	return NO_UNIT;
+}
+
 /// EarlyStrike: units first while a barbarian camp, another major's city or a city-state's is within 8 tiles of the
 /// capital (as far as we've seen). Once a turn.
 bool CvPlayer::IsEarlyStrikeTargetInReach() const
@@ -34589,6 +34643,18 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			}
 		}
 	}
+	// AI_AB_TEST candidate (EarlyStrike): the second city and the others train the plan's army first while it's short (the
+	// expert block's second cities built buildings); their Monument and the normal AI come once the counts are met
+	if (!pSteps && !bCapital && IsEarlyStrikeBook() && IsEarlyStrikeArmyShort())
+	{
+		const UnitTypes eArmy = GetEarlyStrikeArmyUnit(pCity);
+		if (eArmy != NO_UNIT && GetEconomicAI()->GetAffordableWarUnits(10) >= 1)
+		{
+			eOrder = ORDER_TRAIN;
+			iData = eArmy;
+			return true;
+		}
+	}
 	if (pSteps)
 	{
 		// EarlyStrike's steps, above
@@ -34739,6 +34805,20 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			eOrder = ORDER_CONSTRUCT;
 			iData = eBuilding;
 			LogOpeningBookSettlerHeld(*this, pCity, szSettlerHeld, GC.getBuildingInfo(eBuilding)->GetDescription());
+			return true;
+		}
+	}
+
+	// AI_AB_TEST candidate (EarlyStrike): when none of the steps can be done now, the capital's fill-in is the army while
+	// it's short, not CP's choice (the expert block's fill-ins were Monuments, Granaries, Barracks and Stonehenge)
+	if (bEarlyStrike && IsEarlyStrikeArmyShort() && GetEconomicAI()->GetAffordableWarUnits(10) >= 1)
+	{
+		const UnitTypes eArmy = GetEarlyStrikeArmyUnit(pCity);
+		if (eArmy != NO_UNIT)
+		{
+			eOrder = ORDER_TRAIN;
+			iData = eArmy;
+			LogOpeningBookSettlerHeld(*this, pCity, szSettlerHeld, GC.getUnitInfo(eArmy)->GetDescription());
 			return true;
 		}
 	}

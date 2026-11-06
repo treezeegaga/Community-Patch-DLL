@@ -1923,6 +1923,8 @@ public:
 	bool IsEarlyStrikeSmallEmpire() const; // AI_AB_TEST Economy, flag EarlyStrike: before the strike (no war with a major, to T90 Standard)
 	bool GetEarlyStrikePlan(CvEarlyStrikePlan& kPlan) const; // AI_AB_TEST Economy, flag EarlyStrike: the civ's opening plan
 	bool IsEarlyStrikeCityCapReached() const; // AI_AB_TEST Economy, flag EarlyStrike: K cities before the strike
+	bool IsEarlyStrikeArmyShort() const; // AI_AB_TEST Economy, flag EarlyStrike: before the strike, short of the plan's core or support
+	UnitTypes GetEarlyStrikeArmyUnit(const CvCity* pCity) const; // AI_AB_TEST Economy, flag EarlyStrike: the next army unit this city can train
 	bool IsEarlyStrikeTargetInReach() const; // AI_AB_TEST Economy, flag EarlyStrike: a barbarian camp or a major's city near the capital
 	TechTypes GetEarlyStrikeLuxuryTech() const; // AI_AB_TEST Economy, flag EarlyStrike: the one luxury tech before the upgrade
 	bool IsLateStrikeCiv() const; // AI_AB_TEST Economy, flag LateStrike: a warmonger with a late spike and a strike plan
