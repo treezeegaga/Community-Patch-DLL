@@ -14044,6 +14044,10 @@ bool CvUnit::CanUpgradeRightNow(bool bOnlyTestVisible) const
 	if (GET_PLAYER(getOwner()).IsGreedyUpgradeBlocked())
 		return false;
 
+	// AI_AB_TEST (flag EarlyStrike, upgrade and go): no upgrades until the strike's army is built (CvMilitaryAI)
+	if (!isHuman() && GET_PLAYER(getOwner()).IsEarlyStrikeBook() && GET_PLAYER(getOwner()).GetMilitaryAI()->IsEarlyStrikeHoldingUpgrades())
+		return false;
+
 	return CanUpgradeTo(GetUpgradeUnitType(), bOnlyTestVisible);
 }
 
