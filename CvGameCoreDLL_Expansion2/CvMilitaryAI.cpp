@@ -2340,8 +2340,9 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 	const PlayerTypes eOwner = pCity->getOwner();
 	for (const CvUnit* pDefender = GET_PLAYER(eOwner).firstUnit(&iLoop); pDefender != NULL; pDefender = GET_PLAYER(eOwner).nextUnit(&iLoop))
 	{
+		// not the garrison: the city's strength has it (the lead's review)
 		if (pDefender->getDomainType() == DOMAIN_LAND && pDefender->IsCombatUnit() && !pDefender->isDelayedDeath() &&
-			plotDistance(pDefender->getX(), pDefender->getY(), pCity->getX(), pCity->getY()) <= 3)
+			pDefender->plot() != pCity->plot() && plotDistance(pDefender->getX(), pDefender->getY(), pCity->getX(), pCity->getY()) <= 3)
 			iDefenders++;
 	}
 	// one of ours per defender, from the largest melee group first, then ranged
@@ -2691,15 +2692,55 @@ static bool StrikeClassTrainableButForUse(const CvPlayer* pPlayer, UnitClassType
 	return bNeedsResource;
 }
 
-/// every unit on this class's upgrade line (the class and every class it upgrades into, for this civ) is obsolete for our
-/// team. A class with no unit for this civ counts as obsolete. NO_UNITCLASS: false (no core, no exit here)
+/// the strike's line for a class (the lead's review of c7eed909: the whole upgrade line, Archer -> Composite Bowman -> Crossbow
+/// -> ..., is never obsolete, so the exit never fired): the class, then up its upgrade line to the plan's upgrade, the class
+/// whose unit needs the plan's upgrade tech (Assyria: Archer, Composite Bowman at Construction; the rule IsStrikeArmyReady's
+/// upgrade bill uses). No upgrade tech, or no class on the line needing it: the class alone
+static void GetStrikeLine(const CvPlayer* pPlayer, UnitClassTypes eClass, std::vector<UnitClassTypes>& vLine)
+{
+	vLine.clear();
+	if (eClass == NO_UNITCLASS)
+		return;
+	vLine.push_back(eClass);
+	const TechTypes eUpgradeTech = pPlayer->GetGrandStrategyAI() ? pPlayer->GetGrandStrategyAI()->GetStrikePlan().eUpgradeTech : NO_TECH;
+	if (eUpgradeTech == NO_TECH)
+		return;
+	// breadth first, with each class's parent, to the first class whose unit needs the upgrade tech
+	std::vector<UnitClassTypes> vSeen(1, eClass);
+	std::vector<int> vParent(1, -1);
+	for (size_t i = 0; i < vSeen.size() && vSeen.size() <= 32; i++)
+	{
+		const UnitTypes eUnit = pPlayer->GetSpecificUnitType(vSeen[i]);
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (!pkUnit)
+			continue;
+		if ((TechTypes)pkUnit->GetPrereqAndTech() == eUpgradeTech)
+		{
+			vLine.clear();
+			for (int j = (int)i; j >= 0; j = vParent[j])
+				vLine.insert(vLine.begin(), vSeen[j]);
+			return;
+		}
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+		{
+			if (pkUnit->GetUpgradeUnitClass(iClass) && std::find(vSeen.begin(), vSeen.end(), (UnitClassTypes)iClass) == vSeen.end())
+			{
+				vSeen.push_back((UnitClassTypes)iClass);
+				vParent.push_back((int)i);
+			}
+		}
+	}
+}
+
+/// every unit on the core's strike line (GetStrikeLine: the core up to the plan's upgrade) is obsolete for our team. A class
+/// with no unit for this civ counts as obsolete. NO_UNITCLASS: false (no core, no exit here)
 bool CvMilitaryAI::IsStrikeCoreLineObsolete(UnitClassTypes eCoreClass) const
 {
 	if (eCoreClass == NO_UNITCLASS)
 		return false;
 	std::vector<UnitClassTypes> vLine;
-	vLine.push_back(eCoreClass);
-	for (size_t i = 0; i < vLine.size() && vLine.size() <= 32; i++)
+	GetStrikeLine(m_pPlayer, eCoreClass, vLine);
+	for (size_t i = 0; i < vLine.size(); i++)
 	{
 		const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(vLine[i]);
 		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
@@ -2708,27 +2749,20 @@ bool CvMilitaryAI::IsStrikeCoreLineObsolete(UnitClassTypes eCoreClass) const
 		const TechTypes eObsolete = (TechTypes)pkUnit->GetObsoleteTech();
 		if (eObsolete == NO_TECH || !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eObsolete))
 			return false;	// this one isn't obsolete: the line goes on
-		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
-		{
-			if (pkUnit->GetUpgradeUnitClass(iClass) && std::find(vLine.begin(), vLine.end(), (UnitClassTypes)iClass) == vLine.end())
-				vLine.push_back((UnitClassTypes)iClass);
-		}
 	}
 	return true;
 }
 
-/// a city of ours can build an income item: a Market or a Caravan (Economy 0054's income-first items under the unit hold)
+/// the capital can build an income item: a Market or a Caravan (Economy 0054's income-first items under the unit hold; 0057
+/// made income-first the capital's only, so the lead's review: test the capital only)
 bool CvMilitaryAI::CanBuildStrikeIncomeItem() const
 {
 	const BuildingTypes eMarket = m_pPlayer->GetSpecificBuildingType("BUILDINGCLASS_MARKET", true);
 	const UnitTypes eCaravan = m_pPlayer->GetSpecificUnitType("UNITCLASS_CARAVAN", true);
-	int iLoop = 0;
-	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
-	{
-		if ((eMarket != NO_BUILDING && pLoopCity->canConstruct(eMarket)) || (eCaravan != NO_UNIT && pLoopCity->canTrain(eCaravan)))
-			return true;
-	}
-	return false;
+	CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (!pCapital)
+		return false;
+	return (eMarket != NO_BUILDING && pCapital->canConstruct(eMarket)) || (eCaravan != NO_UNIT && pCapital->canTrain(eCaravan));
 }
 
 /// the lead's review: an early civ whose core can't be trained (a resource missing) sat in PREP for good, every declaration
@@ -2942,11 +2976,12 @@ void CvMilitaryAI::UpdateStrikeState()
 		// the core can't be trained though its tech is in (a resource missing; the lead's review: an early civ sat in PREP for
 		// good with every declaration blocked)
 		// a BUILDUP that can't recover (the lead's review: with the unit hold on, core, siege and short-of-plan units all wait,
-		// so the target never becomes takeable): no unit affordable, the army on hand can't take the target, income negative,
-		// and no city can build an income item (a Market, a Caravan). The strike ends and CP's economy and disbanding resume
-		else if (eNew == STRIKE_BUILDUP && m_pPlayer->IsStrikeUnitHold() && !IsStrikeTargetTakeableNow() &&
+		// so the army never becomes ready): no unit affordable, the army not ready and not as ready as it gets (takeable but the
+		// upgrade bill unpaid or the field short counts too; the lead's next review), income negative, and the capital can't
+		// build an income item (a Market, a Caravan). The strike ends and CP's economy and disbanding resume
+		else if (eNew == STRIKE_BUILDUP && m_pPlayer->IsStrikeUnitHold() && !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets() &&
 			m_pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 && !CanBuildStrikeIncomeItem())
-			eNew = STRIKE_OVER, strWhy = "stalled: no unit affordable, the target not takeable, income negative and no income item to build";
+			eNew = STRIKE_OVER, strWhy = "stalled: no unit affordable, the army not ready, income negative and no income item to build";
 		else if (IsStrikeCoreUntrainable())
 			eNew = STRIKE_OVER, strWhy = "the core can't be trained (its tech is in; a resource missing)";
 		// a major declared war on us (the lead: not an exit by itself). The strike's own target during BUILDUP: that is the
@@ -3124,6 +3159,11 @@ void CvMilitaryAI::UpdateStrikeState()
 			eNew = STRIKE_OVER, strWhy = "a city taken: the strike's job is done (the war goes on as CP's)";
 		else if (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
 			eNew = STRIKE_OVER, strWhy = "peace with the target (or it's gone), nothing taken";
+		// a lasting loss (the lead's review: WAR had no exit when losing, and kept production and the wonder ban for good): no
+		// retreat released by a city lost or the war nearly lost. A city in danger releases it too, but passes, so OVER waits
+		// until home is safe again
+		else if (!IsStrikeNoRetreat(eWarTarget) && IsStrikeHomeSafe())
+			eNew = STRIKE_OVER, strWhy = "no-retreat released by a loss (a city lost or the war nearly lost): the war goes on as CP's";
 		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; while nothing is taken from the
 		// strike's target, an attack on it is always under way
 		else
@@ -3327,13 +3367,22 @@ bool CvMilitaryAI::IsStrikeArmyBuildable() const
 }
 
 /// a strike unit class we can train now, or could but for resources we own and have in use (the army built from them; the
-/// lead's reviews: canTrainUnit counts free resources only). Also Personality's early economy-ready test
+/// lead's reviews: canTrainUnit counts free resources only). Also Personality's early economy-ready test. Any class on its
+/// strike line counts (GetStrikeLine; the lead's review of c7eed909: Assyria's Archer, obsolete at Construction, read
+/// unbuildable though Composite Bowmen are the plan, so the late window never opened)
 bool CvMilitaryAI::IsStrikeClassBuildable(UnitClassTypes eClass) const
 {
-	const UnitTypes eUnit = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
-	if (eUnit == NO_UNIT)
-		return false;
-	return m_pPlayer->canTrainUnit(eUnit, false, false, /*bIgnoreCost*/ true) || StrikeClassTrainableButForUse(m_pPlayer, eClass);
+	std::vector<UnitClassTypes> vLine;
+	GetStrikeLine(m_pPlayer, eClass, vLine);
+	for (size_t i = 0; i < vLine.size(); i++)
+	{
+		const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(vLine[i]);
+		if (eUnit == NO_UNIT)
+			continue;
+		if (m_pPlayer->canTrainUnit(eUnit, false, false, /*bIgnoreCost*/ true) || StrikeClassTrainableButForUse(m_pPlayer, vLine[i]))
+			return true;
+	}
+	return false;
 }
 
 bool CvMilitaryAI::IsLateStrikeBuildup() const
