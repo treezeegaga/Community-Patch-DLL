@@ -2656,8 +2656,8 @@ int CvGrandStrategyAI::CountStrikeClassLine(UnitClassTypes eClass) const
 /// Economy-ready, PREP to BUILDUP (the lead, 10:41pm ET; game state only, no turn).
 /// - Early strike: the core unit can be trained, N core units are out (the opening's barbarian hunters), and the plan's K
 ///   cities are founded (or there's no room for more).
-/// - Late strike: the core's tech or the upgrade tech is known or can be researched now (its prerequisites in), the plan's
-///   K cities are founded (or no room), and the treasury holds half the upgrade bill.
+/// - Late strike: the upgrade tech is known or can be researched now (its prerequisites in), and the plan's K cities are
+///   founded (or no room). The gold comes in BUILDUP.
 bool CvGrandStrategyAI::IsStrikeEconomyReady() const
 {
 	const CvStrikePlan& kPlan = GetStrikePlan();
@@ -2674,7 +2674,10 @@ bool CvGrandStrategyAI::IsStrikeEconomyReady() const
 	bool bTechInReach = true;
 	if (eKeyTech != NO_TECH)
 		bTechInReach = GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eKeyTech) || m_pPlayer->GetPlayerTechs()->CanResearch(eKeyTech);
-	return bTechInReach && bCitiesDone && m_pPlayer->GetTreasury()->GetGold() >= kPlan.iEconomyGoldTarget;
+	// no gold condition here (War, 2026-11-06, Songhai in 15286C56: in PREP from T1 to T148, because Economy saves for the
+	// upgrades only from BUILDUP and the treasury never held iEconomyGoldTarget): the gold is BUILDUP's job (Economy's
+	// saving, War's upgrade hold, IsStrikeArmyReady's bill). iEconomyGoldTarget stays as a logged expectation.
+	return bTechInReach && bCitiesDone;
 }
 
 /// Army-ready, BUILDUP to WAR (game state only): the upgrade tech known (or none); core units at the target (pre-built units
