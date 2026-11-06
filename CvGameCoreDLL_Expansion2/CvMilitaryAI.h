@@ -263,7 +263,8 @@ public:
 	bool IsStrikeKeepingUnit(const CvUnit* pUnit) const;	// ownership gate (5): a strike unit no CP system disbands or gifts
 	bool IsStrikeOwningOperations() const;	// ownership gate (4): PREP, BUILDUP, or WAR before a city is taken
 	bool IsStrikeOperationTarget(PlayerTypes eOther) const;	// a player the strike's army may attack
-	int GetStrikeCaptureCount() const;	// cities captured from majors and city-states (the strike's capture measure)
+	int GetStrikeCaptureCount() const;	// cities captured from majors and city-states
+	int GetStrikeTargetCaptures() const;	// our cities whose previous owner is the strike's target (the strike's capture measure)
 	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;	// the strike's war on this player, nothing taken yet: no peace, no abort
 	bool IsStrikeHomeSafe() const;	// none of our cities in danger of falling: a strike's declaration waits for it
 	bool IsStrikeDeclarationBlocked(PlayerTypes eOn) const;	// before the strike (PREP, BUILDUP) no declaration of ours but the strike's on its target, when ready
@@ -425,6 +426,7 @@ private:
 	int m_iStrikeWarsDeclaredMark;	// our wars declared / wars on us when the strike entered its state, cities captured at its war,
 	int m_iStrikeWarsOnUsMark;		// and the land army at the declaration (saved): the exits compare against them
 	int m_iStrikeCapturedMark;
+	int m_iStrikeCitiesAtWar;		// our city count at the strike's war (saved): a loss to anyone (a city-state, barbarians) releases no-retreat
 	int m_iStrikeLostMark;			// our cities lost (AB_COUNT_CITIES_LOST) at the strike's war (saved): no-retreat releases on a loss
 	int m_iStrikeArmyAtWar;
 	int m_iStrikeCityState;			// EarlyStrike's city-state target (PlayerTypes; the user: with no major in reach), saved

@@ -23562,6 +23562,18 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		pPlayer->GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_BUILDUP && pPlayer->GetMilitaryAI()->GetStrikeCityStateTarget() != NO_PLAYER;
 	if (!pPlayer->isMajorCiv() || pPlayer->getNumCities() == 0 || (pPlayer->IsAtWarAnyMajor() && !bStrikeThroughWar) || pPlayer->isHuman())
 		return NO_PLAYER;
+	// AI_AB_TEST (the strike's ownership; the lead's review): in the strike's war on its city-state, before a city is taken, CP
+	// holds no major target either (169CA418: CP re-committed to Morocco during the war on Ur)
+	{
+		const CvMilitaryAI* pStrikeMilitary = pPlayer->GetMilitaryAI();
+		const PlayerTypes eWarCS = pStrikeMilitary->GetStrikeCityStateTarget();
+		if (pStrikeMilitary->GetStrikeState() == CvMilitaryAI::STRIKE_WAR && eWarCS != NO_PLAYER && GET_PLAYER(eWarCS).isMinorCiv() &&
+			pStrikeMilitary->IsStrikeOwningOperations())
+		{
+			m_eNewAIConquestTarget = NO_PLAYER;
+			return NO_PLAYER;
+		}
+	}
 
 	// flags TimingAttack (warmongers) and BoxedInWar (other wide civs)
 	const bool bWarmonger = pPlayer->IsCandidateWarmonger(FIX_TIMING_ATTACK);

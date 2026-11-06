@@ -326,14 +326,28 @@ int CvLuaTeam::lCanDeclareWar(lua_State* L)
 //void declareWar(TeamTypes eTeam);
 int CvLuaTeam::lDeclareWar(lua_State* L)
 {
-	return BasicLuaMethod(L, &CvTeam::declareWar);
+	// AI_AB_TEST: written out so a script's call has no originator unless it names one (BasicLuaMethod passed player 0, which
+	// the strike's war gate read as that player's own declaration; the lead's third review)
+	CvTeam* pkTeam = GetInstance(L);
+	const TeamTypes eTeam = (TeamTypes)lua_tointeger(L, 2);
+	const bool bDefensivePact = luaL_optbool(L, 3, false);
+	const PlayerTypes eOriginatingPlayer = (PlayerTypes)luaL_optint(L, 4, NO_PLAYER);
+	pkTeam->declareWar(eTeam, bDefensivePact, eOriginatingPlayer);
+	return 0;
 }
 
 //------------------------------------------------------------------------------
 //void makePeace(TeamTypes eTeam);
 int CvLuaTeam::lMakePeace(lua_State* L)
 {
-	return BasicLuaMethod(L, &CvTeam::makePeace);
+	// AI_AB_TEST: as lDeclareWar, no originator unless the script names one (the strike's peace gate)
+	CvTeam* pkTeam = GetInstance(L);
+	const TeamTypes eTeam = (TeamTypes)lua_tointeger(L, 2);
+	const bool bBumpUnits = luaL_optbool(L, 3, true);
+	const bool bSuppressNotification = luaL_optbool(L, 4, false);
+	const PlayerTypes eOriginatingPlayer = (PlayerTypes)luaL_optint(L, 5, NO_PLAYER);
+	pkTeam->makePeace(eTeam, bBumpUnits, bSuppressNotification, eOriginatingPlayer);
+	return 0;
 }
 
 //------------------------------------------------------------------------------
