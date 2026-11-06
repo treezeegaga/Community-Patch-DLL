@@ -2402,6 +2402,102 @@ PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude, const CvCity*
 	return eBest;
 }
 
+/// the strike's target is still one it can go for (the lead's review: the block allows only the strike's own declaration, so
+/// a stale target deadlocked the strike): alive and met, at war or one we can declare on, its nearest city revealed and within
+/// 12 tiles of our capital and an attack target; a major with no defensive allies to pull in; a city-state with no ally (or
+/// one we're at war with), no protector at peace with us and no recent peace. The attack-target check (a land or sea path
+/// CP's military AI scores) only for a new target: it can drop out for a turn, and a target already held stays
+bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) const
+{
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (eTarget == NO_PLAYER || !pCapital)
+		return false;
+	CvPlayer& kOther = GET_PLAYER(eTarget);
+	const TeamTypes eOurTeam = m_pPlayer->getTeam();
+	if (eTarget == m_pPlayer->GetID() || !kOther.isAlive() || kOther.isBarbarian() || kOther.getTeam() == eOurTeam ||
+		!GET_TEAM(eOurTeam).isHasMet(kOther.getTeam()))
+		return false;
+	const bool bAtWar = GET_TEAM(eOurTeam).isAtWar(kOther.getTeam());
+	if (!bAtWar && !GET_TEAM(eOurTeam).canDeclareWar(kOther.getTeam(), m_pPlayer->GetID()))
+		return false;
+	if (kOther.isMajorCiv())
+	{
+		if (!bAtWar && !m_pPlayer->GetDiplomacyAI()->GetDefensiveWarAllies(eTarget, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true).empty())
+			return false;
+	}
+	else if (kOther.isMinorCiv())
+	{
+		if (!bAtWar)
+		{
+			const PlayerTypes eAlly = kOther.GetMinorCivAI()->GetAlly();
+			if (eAlly == m_pPlayer->GetID() || (eAlly != NO_PLAYER && !GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eAlly).getTeam())))
+				return false;
+			for (int iMajor = 0; iMajor < MAX_MAJOR_CIVS; iMajor++)
+			{
+				const PlayerTypes eMajor = (PlayerTypes)iMajor;
+				if (eMajor != m_pPlayer->GetID() && GET_PLAYER(eMajor).isAlive() && kOther.GetMinorCivAI()->IsProtectedByMajor(eMajor) &&
+					!GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eMajor).getTeam()))
+					return false;
+			}
+			const int iPeaceTurn = GET_TEAM(eOurTeam).GetTurnMadePeaceTreatyWithTeam(kOther.getTeam());
+			if (iPeaceTurn >= 0 && GC.getGame().getGameTurn() - iPeaceTurn < GC.getGame().getHandicapInfo().getPeaceTreatyDampenerTurns())
+				return false;
+		}
+	}
+	else
+		return false;
+	const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
+	if (!pCity || !pCity->plot()->isRevealed(eOurTeam) || plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) > 12)
+		return false;
+	return !bNewTarget || HavePossibleAttackTarget(eTarget);
+}
+
+/// the nearest major the strike can go for (IsStrikeTargetValid), by its nearest city's distance to our capital
+PlayerTypes CvMilitaryAI::FindStrikeMajorInReach() const
+{
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (!pCapital)
+		return NO_PLAYER;
+	PlayerTypes eBest = NO_PLAYER;
+	int iBestDistance = INT_MAX;
+	for (int iLoop = 0; iLoop < MAX_MAJOR_CIVS; iLoop++)
+	{
+		const PlayerTypes eOther = (PlayerTypes)iLoop;
+		if (!IsStrikeTargetValid(eOther))
+			continue;
+		const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eOther);
+		const int iDistance = pCity ? plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) : INT_MAX;
+		if (iDistance < iBestDistance)
+		{
+			iBestDistance = iDistance;
+			eBest = eOther;
+		}
+	}
+	return eBest;
+}
+
+/// a unit class whose tech we have (or that needs none); NO_UNIT counts as known (nothing to wait for)
+static bool StrikeClassTechKnown(const CvPlayer* pPlayer, UnitClassTypes eClass)
+{
+	const UnitTypes eUnit = (eClass != NO_UNITCLASS) ? pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
+	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	const TechTypes eTech = pkUnit ? (TechTypes)pkUnit->GetPrereqAndTech() : NO_TECH;
+	return eTech == NO_TECH || GET_TEAM(pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech);
+}
+
+/// the lead's review: an early civ whose core can't be trained (a resource missing) sat in PREP for good, every declaration
+/// blocked. The core (and the plan's pre-build, if any) can't be trained though its tech is in
+bool CvMilitaryAI::IsStrikeCoreUntrainable() const
+{
+	if (IsStrikeArmyBuildable() || !m_pPlayer->GetGrandStrategyAI())
+		return false;
+	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+	const UnitClassTypes eCoreClass = IsEarlyStrikeCiv() ? GetEarlyStrikeCore() : kPlan.eCoreClass;
+	if (eCoreClass == NO_UNITCLASS)
+		return false;
+	return StrikeClassTechKnown(m_pPlayer, eCoreClass) && (kPlan.ePreBuildClass == NO_UNITCLASS || StrikeClassTechKnown(m_pPlayer, kPlan.ePreBuildClass));
+}
+
 void CvMilitaryAI::UpdateStrikeState()
 {
 	const bool bEarly = IsEarlyStrikeCiv();
@@ -2449,6 +2545,9 @@ void CvMilitaryAI::UpdateStrikeState()
 		else if (!bInReach && eNew == STRIKE_PREP)
 			eCS = FindStrikeCityState();
 	}
+	// LateStrike: a pinned target (a re-target, or the BUILDUP target check below) holds through BUILDUP and WAR
+	else if (bLate && (eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR) && eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive())
+		eCS = eOldCS;
 	if (eCS != eOldCS)
 	{
 		m_iStrikeCityState = eCS;
@@ -2466,6 +2565,61 @@ void CvMilitaryAI::UpdateStrikeState()
 		pTargetCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
 		bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
 	}
+	// the strike's target, checked each BUILDUP turn (the lead's review: before the strike only the strike's own declaration is
+	// allowed, so a stale target was a deadlock: a defensive pact, CP's committed target changing under an open window, the
+	// target killed; a late civ with no major in reach never opened a window). The first valid one (IsStrikeTargetValid) of:
+	// the window's target, the current one, CP's committed target, the nearest major in reach, the nearest city-state in reach.
+	// A change is pinned (m_iStrikeCityState; the diplomacy takes a major there as its target) and the window follows. None:
+	// OVER. Game state only
+	if (eNew == STRIKE_BUILDUP)
+	{
+		const PlayerTypes eWindow = (m_iTimingBuildupStartTurn >= 0) ? m_eTimingBuildupTarget : NO_PLAYER;
+		const PlayerTypes eCommitted = m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
+		PlayerTypes eKeep = NO_PLAYER;
+		const char* szHow = "";
+		if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ false))
+			eKeep = eWindow, szHow = "the build-up's target";
+		else if (IsStrikeTargetValid(eTarget, /*bNewTarget*/ false))
+			eKeep = eTarget, szHow = "the current target";
+		else if (IsStrikeTargetValid(eCommitted))
+			eKeep = eCommitted, szHow = "the committed target";
+		else if ((eKeep = FindStrikeMajorInReach()) != NO_PLAYER)
+			szHow = "the nearest major in reach";
+		else
+		{
+			eKeep = FindStrikeCityState();
+			if (!IsStrikeTargetValid(eKeep))
+				eKeep = NO_PLAYER;
+			szHow = "the nearest city-state in reach";
+		}
+		if (eKeep == NO_PLAYER)
+		{
+			eNew = STRIKE_OVER;
+			strWhy = "no target in reach (no major or city-state the strike can declare on and reach)";
+		}
+		else if (eKeep != eTarget || (eWindow != NO_PLAYER && eKeep != eWindow))
+		{
+			if (GC.getLogging() && GC.getAILogging())
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s -> %s (%s; the build-up's target %s; %s)",
+					eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "none", GET_PLAYER(eKeep).getCivilizationShortDescription(), szHow,
+					eWindow != NO_PLAYER ? GET_PLAYER(eWindow).getCivilizationShortDescription() : "none", bEarly ? "EarlyStrike" : "LateStrike"));
+			if (eKeep != eTarget)
+				m_iStrikeCityState = eKeep;
+			if (eWindow != NO_PLAYER)
+				m_eTimingBuildupTarget = eKeep;
+			// a new city to take: its siege and takeable answers start over (the window's own target only pinned: kept)
+			if (eWindow == NO_PLAYER || eKeep != eWindow)
+			{
+				m_iStrikeSiege = 0;
+				m_iTakeableTurn = -1;
+			}
+			if (eKeep != eTarget)
+				eCS = eKeep;
+			eTarget = eKeep;
+			pTargetCity = m_pPlayer->GetClosestCityToUsByPlots(eKeep);
+			bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+		}
+	}
 	const bool bAtCSWar = eCS != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam());
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	const UnitClassTypes eCoreClass = bEarly ? GetEarlyStrikeCore() : kPlan.eCoreClass;
@@ -2477,6 +2631,10 @@ void CvMilitaryAI::UpdateStrikeState()
 		const TechTypes eObsolete = pkCore ? (TechTypes)pkCore->GetObsoleteTech() : NO_TECH;
 		if (eObsolete != NO_TECH && GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eObsolete))
 			eNew = STRIKE_OVER, strWhy = "the core unit is obsolete";
+		// the core can't be trained though its tech is in (a resource missing; the lead's review: an early civ sat in PREP for
+		// good with every declaration blocked)
+		else if (IsStrikeCoreUntrainable())
+			eNew = STRIKE_OVER, strWhy = "the core can't be trained (its tech is in; a resource missing)";
 		// a major declared war on us (the lead: not an exit by itself). The strike's own target during BUILDUP: that is the
 		// strike's war (no retreat). Anyone else, or in PREP: the strike goes on; its declaration waits while one of our cities
 		// is in danger of falling (IsStrikeHomeSafe)
@@ -3056,7 +3214,11 @@ void CvMilitaryAI::DoTimingBuildup()
 			m_pPlayer->GetTreasury()->CalculateBaseNetGold()));
 
 	// at war: the window has done its job; savings go back to the economy
-	if (m_pPlayer->IsAtWarAnyMajor())
+	// a strike's BUILDUP keeps its window through a third party's war (103bd11d: the strike goes on; the lead's review: its
+	// declaration needs the open window, so closing it here held the strike until that war ended)
+	const bool bStrikeWindowHolds = GetStrikeState() == STRIKE_BUILDUP && m_eTimingBuildupTarget != NO_PLAYER &&
+		!GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(m_eTimingBuildupTarget).getTeam());
+	if (m_pPlayer->IsAtWarAnyMajor() && !bStrikeWindowHolds)
 	{
 		if (m_iTimingBuildupStartTurn >= 0 && bLog)
 			pTactical->LogTacticalMessage(CvString::format("TimingBuildup: at war, window closed after %d turns", iTurn - m_iTimingBuildupStartTurn));

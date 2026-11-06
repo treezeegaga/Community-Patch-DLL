@@ -977,6 +977,24 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 			if (!pFromTeam->canDeclareWar(eTargetTeam, ePlayer))
 				return false;
 
+			// AI_AB_TEST (strike; the lead's review): a strike civ before its strike declares only the strike's own war
+			// (CvMilitaryAI::IsStrikeDeclarationBlocked), so it can't be paid to declare: the payment and its penalties would
+			// apply with the declaration refused
+			{
+				vector<PlayerTypes> vStrikeFrom = pFromTeam->getPlayers(), vStrikeTarget = GET_TEAM(eTargetTeam).getPlayers();
+				for (size_t i = 0; i < vStrikeFrom.size(); i++)
+				{
+					const CvPlayer& kStrikeFrom = GET_PLAYER(vStrikeFrom[i]);
+					if (!kStrikeFrom.isAlive() || kStrikeFrom.isHuman() || !kStrikeFrom.isMajorCiv())
+						continue;
+					for (size_t j = 0; j < vStrikeTarget.size(); j++)
+					{
+						if (GET_PLAYER(vStrikeTarget[j]).isAlive() && kStrikeFrom.GetMilitaryAI()->IsStrikeDeclarationBlocked(vStrikeTarget[j]))
+							return false;
+					}
+				}
+			}
+
 			// Vassals can't declare or be declared on
 			if (pFromTeam->IsVassalOfSomeone() || GET_TEAM(eTargetTeam).IsVassalOfSomeone())
 				return false;

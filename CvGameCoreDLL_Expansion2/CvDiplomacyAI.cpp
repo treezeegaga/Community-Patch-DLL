@@ -41746,7 +41746,9 @@ void CvDiplomacyAI::DoFromUIDiploEvent(PlayerTypes eFromPlayer, FromUIDiploEvent
 		{
 			MoveTroopsResponseTypes eResponse = GetMoveTroopsRequestResponse(eFromPlayer, /*bJustChecking*/ false);
 
-			if (eResponse == MOVE_TROOPS_RESPONSE_REFUSE && !GET_TEAM(GetTeam()).canDeclareWar(GET_PLAYER(eFromPlayer).getTeam(), GetID()))
+			// AI_AB_TEST (strike; the lead's review): nor while a strike civ's declaration would be refused (before its strike)
+			if (eResponse == MOVE_TROOPS_RESPONSE_REFUSE && (!GET_TEAM(GetTeam()).canDeclareWar(GET_PLAYER(eFromPlayer).getTeam(), GetID()) ||
+				GetPlayer()->GetMilitaryAI()->IsStrikeDeclarationBlocked(eFromPlayer)))
 				eResponse = MOVE_TROOPS_RESPONSE_NEUTRAL;
 
 			// AI says yes, they will move their troops, and even better, they will leave the human alone
@@ -43028,6 +43030,11 @@ bool CvDiplomacyAI::IsValidCoopWarTarget(PlayerTypes eTargetPlayer, bool bAtWarE
 		return false;
 
 	if (GET_PLAYER(eTargetPlayer).IsVassalOfSomeone() || !GET_PLAYER(eTargetPlayer).isMajorCiv() || !GET_PLAYER(eTargetPlayer).isAlive() || GET_PLAYER(eTargetPlayer).getNumCities() <= 0)
+		return false;
+
+	// AI_AB_TEST (strike; the lead's review): a strike civ before its strike joins no coop war it would have to declare (its
+	// declaration would be refused, CvMilitaryAI::IsStrikeDeclarationBlocked)
+	if (!GetPlayer()->isHuman() && !IsAtWar(eTargetPlayer) && GetPlayer()->GetMilitaryAI()->IsStrikeDeclarationBlocked(eTargetPlayer))
 		return false;
 
 	TeamTypes eMyTeam = GetTeam();

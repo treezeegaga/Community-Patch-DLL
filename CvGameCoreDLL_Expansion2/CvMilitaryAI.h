@@ -423,6 +423,9 @@ private:
 	void UpdateStrikeState();
 	PlayerTypes FindStrikeCityState(bool bUnwalledOnly = false, PlayerTypes eExclude = NO_PLAYER) const;
 	PlayerTypes FindStrikeRetarget(PlayerTypes eExclude, const CvCity* pCurrent) const;	// a clearly easier city in reach, a major's or a city-state's
+	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
+	PlayerTypes FindStrikeMajorInReach() const;	// the nearest valid major in reach
+	bool IsStrikeCoreUntrainable() const;	// the core (and the pre-build) can't be trained with its tech in: a resource missing
 	int m_iStrikeDeclared;			// HasStrikeDeclared, saved
 	int m_iStrikeSiege;				// the build-up brings siege (the army too weak for the target, no easier city in reach), saved
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
