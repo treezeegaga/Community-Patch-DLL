@@ -1892,13 +1892,22 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			iBonus += 4000;
 		//EarlyStrike, the expert strike: 3 melee units that can take the city first ("bring two in case one dies"), then the
 		//spike unit (Economy's core class) up to Personality's core share of the field target (50%, 33% for a siege core)
-		else if (kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() && pkUnitEntry->GetCombat() > 0 && pkUnitEntry->GetRangedCombat() == 0 &&
+		else if (kPlayer.GetMilitaryAI()->IsStrikeBuildup() && pkUnitEntry->GetCombat() > 0 && pkUnitEntry->GetRangedCombat() == 0 &&
 			pkUnitEntry->GetDefaultUnitAIType() != UNITAI_CITY_BOMBARD && kPlayer.GetMilitaryAI()->GetEarlyStrikeMeleeUnits() < CvMilitaryAI::EARLY_STRIKE_MELEE_MIN)
 			iBonus += 5000;
 		else if ((UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetMilitaryAI()->GetEarlyStrikeCore() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 100 <
 			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget() * kPlayer.GetMilitaryAI()->GetEarlyStrikeCoreSharePercent())
 			iBonus += 4500;
+		//LateStrike: the strike plan's core up to its count, then its support (Personality's CvStrikePlan)
+		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
+			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eCoreClass &&
+			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iCoreTarget)
+			iBonus += 4500;
+		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
+			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eSupportClass &&
+			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iSupportTarget)
+			iBonus += 3500;
 		//SiegeSlots: other land units only while the field target isn't met; past it they are not what the army lacks
 		else if (!bSiege && (!kPlayer.UsesCandidateAI(FIX_SIEGE_SLOTS) ||
 			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldUnits() < kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget()))

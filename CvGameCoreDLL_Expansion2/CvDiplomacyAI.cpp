@@ -23784,6 +23784,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	{
 		if (iTurn < 40 * iSpeed / 100)
 			return NO_PLAYER; // planned only
+		// AI_AB_TEST (candidate, flag LateStrike, War): infrastructure first, no build-up before the strike plan's window
+		if (pPlayer->GetMilitaryAI()->IsLateStrikeCiv() && !pPlayer->GetMilitaryAI()->IsLateStrikeOpen())
+			return NO_PLAYER; // planned only
 		CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
 		if (!pMilitary->IsTimingBuildupArmyReady() && !pMilitary->HasTimingBuildupWindowEnded())
 		{
