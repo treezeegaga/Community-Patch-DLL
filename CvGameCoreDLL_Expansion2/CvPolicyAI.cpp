@@ -187,7 +187,7 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 	}
 
 	// AI_AB_TEST (Economy 0056; the user caught the Aztec aggressor taking Aesthetics, 168C0544): a strike civ follows its plan's
-	// policy-tree order (Personality's aePolicyOrder) the whole game, not only while the strike is active. The allowed tree
+	// policy-tree order (Personality's aePolicyBranches) the whole game, not only while the strike is active. The allowed tree
 	// is the first in the order that isn't finished: its best adoptable policy (CP's weights) if it's open, else it's opened.
 	// A tree that can't be opened yet (an era gate) or has nothing adoptable now gives way to the next in the order. A tree
 	// that isn't in the order is never opened. Ideology tenets stay CP's
@@ -197,7 +197,7 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 	{
 		for (int iOrder = 0; iOrder < pOrderPlan->iNumPolicyBranches; iOrder++)
 		{
-			const PolicyBranchTypes eTree = pOrderPlan->aePolicyOrder[iOrder];
+			const PolicyBranchTypes eTree = pOrderPlan->aePolicyBranches[iOrder];
 			if (eTree == NO_POLICY_BRANCH_TYPE || m_pCurrentPolicies->IsPolicyBranchFinished(eTree))
 				continue;
 			if (m_pCurrentPolicies->IsPolicyBranchUnlocked(eTree))
@@ -731,7 +731,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 		if (iBestOpen >= 0)
 			iBestBranchIdx = iBestOpen;
 	}
-	// AI_AB_TEST (Economy 0056): a strike civ takes the ideology in its plan's policy-tree order (Personality's aePolicyOrder),
+	// AI_AB_TEST (Economy 0056): a strike civ takes the ideology in its plan's policy-tree order (Personality's aePolicyBranches),
 	// when it's one of those on offer
 	if (MOD_AI_AB_TEST && !pPlayer->isHuman() && pPlayer->UsesCandidateAI(FIX_STRIKE_LIST) && pPlayer->GetGrandStrategyAI())
 	{
@@ -741,7 +741,7 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 			bool bFound = false;
 			for (size_t i = 0; i < vIdeologyBranches.size() && !bFound; ++i)
 			{
-				if (vIdeologyBranches[i] == kOrderPlan.aePolicyOrder[iOrder])
+				if (vIdeologyBranches[i] == kOrderPlan.aePolicyBranches[iOrder])
 				{
 					iBestBranchIdx = (int)i;
 					bFound = true;
