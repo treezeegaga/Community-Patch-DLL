@@ -3069,27 +3069,16 @@ bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
-	//a strike's build-up: Personality's plan army (CvGrandStrategyAI::IsStrikeArmyReady: core, support and siege at their
-	//targets, the upgrade tech in, gold for the upgrades) also counts as built
-	const bool bStrike = IsStrikeBuildup();
-	// and, for a strike, the plan's core and support lines at their counts: siege never holds the declaration (the lead's
-	// trial24 1664FF61: siege 0/2 untrainable for 39 turns); whether the army on hand can take the city decides (below)
-	bool bPlanCoreSupport = false;
-	if (bStrike)
-	{
-		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-		bPlanCoreSupport = kPlan.bValid && m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kPlan.eCoreClass) >= kPlan.iCoreTarget &&
-			(kPlan.eSupportClass == NO_UNITCLASS || m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kPlan.eSupportClass) >= kPlan.iSupportTarget);
-	}
-	if (!IsTimingBuildupArmyBuilt() && !(bStrike && (m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady() || bPlanCoreSupport)))
-		return false;
-	//EarlyStrike, upgrade and go (the user: "i upgraded 3 archers to composite archers. that was part of the timing attack.
-	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
-	//length (WindowUntilReady) still bounds the wait.
-	//and, the expert strike, 3 melee units that can take the city (2 at the city, 1 spare)
-	//and the user: "only start the attack if the city is takeable": the army on hand against the target's nearest city
-	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && IsStrikeTargetTakeableNow() &&
-		IsStrikeHomeSafe());
+	//a strike's build-up (the user: "just calculate if you can take the city"; the lead, bullygreedy24 17436CCD: Zulu sat in
+	//BUILDUP T107 to the end, "the plan's army takes it in about 2 turns", held by CP's normal field target growing 13 -> 21
+	//and a support count at 7/8): the army on hand taking the target decides. No field count, no exact plan counts, no
+	//siege. Upgrade and go (the user: "i upgraded 3 archers to composite archers ... upgrade and go"): not while units at
+	//home wait for an upgrade whose tech is in; and 3 melee units that can take the city (2 at the city, 1 spare); and home
+	//safe
+	if (IsStrikeBuildup())
+		return GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && IsStrikeTargetTakeableNow() &&
+			IsStrikeHomeSafe();
+	return IsTimingBuildupArmyBuilt();
 }
 
 /// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,
