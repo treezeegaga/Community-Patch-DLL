@@ -35459,7 +35459,13 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// (0053, the lead's review of 0050) BUILDUP with the plan's army too weak for its target and no easier city: War asks for
 	// siege (GetTimingBuildupSiegeTarget, from its m_iStrikeSiege). The list only knew the plan's own siege count, so the
 	// siege never came. Now the siege comes first, the plan's class or else the Catapult line
-	if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP)
+	// (0060) only against a target the army can reach: an unreachable one (17A1A659: the Aztecs' Milan, no army path) isn't
+	// helped by more units; War's per-turn check re-targets it. The same target IsStrikeTargetTakeableNow reads
+	PlayerTypes eStrikeTarget = GetMilitaryAI()->GetTimingBuildupTarget();
+	if (eStrikeTarget == NO_PLAYER)
+		eStrikeTarget = GetMilitaryAI()->GetStrikeCityStateTarget();
+	const bool bTargetReachable = eStrikeTarget != NO_PLAYER && GetMilitaryAI()->HaveStrikeLandAttackTarget(eStrikeTarget);
+	if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && bTargetReachable)
 	{
 		const int iSiegeWanted = GetMilitaryAI()->GetTimingBuildupSiegeTarget();
 		if (iSiegeWanted > 0 && GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true) < iSiegeWanted && !IsStrikeUnitHold())	// (0055) affordable
@@ -35483,7 +35489,7 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// while BUILDUP waited, and net gold went from -9 to -14 a turn.
 	// (0053) Unless the army can't take the target yet: then BUILDUP keeps building core until it can (the lead's review: a
 	// too-weak army and no easier city waited forever, and its cities fell to CP's picks before the strike)
-	const bool bTooWeak = eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && !GetMilitaryAI()->IsStrikeTargetTakeableNow();
+	const bool bTooWeak = eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && bTargetReachable && !GetMilitaryAI()->IsStrikeTargetTakeableNow();	// (0060) reachable
 	const bool bMoreCore = (eStrikeState == CvMilitaryAI::STRIKE_WAR || bTooWeak) && GetEconomicAI()->GetAffordableWarUnits(10) >= 1;
 	// (0055) the army short of the plan too only while one more unit is affordable (IsStrikeUnitHold)
 	if (eArmy != NO_UNIT && ((bShort && !IsStrikeUnitHold()) || bMoreCore))
