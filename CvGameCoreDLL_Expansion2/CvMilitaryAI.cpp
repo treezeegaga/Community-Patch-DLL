@@ -2314,6 +2314,20 @@ bool CvMilitaryAI::IsStrikeHomeSafe() const
 	return true;
 }
 
+/// a strike civ before its strike (PREP, BUILDUP) declares no war of its own (the lead: CP's own wars ended strikes, Japan
+/// 1468D9F4, Denmark 15E8F168) except the strike's: on its target, once the army is ready or as ready as it gets (both
+/// require the city takeable and home safe)
+bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
+{
+	const StrikeStateTypes eState = GetStrikeState();
+	if (eState != STRIKE_PREP && eState != STRIKE_BUILDUP)
+		return false;
+	const bool bTarget = eOn != NO_PLAYER && (eOn == m_eTimingBuildupTarget || eOn == GetStrikeCityStateTarget());
+	if (eState == STRIKE_BUILDUP && bTarget && m_iTimingBuildupStartTurn >= 0 && (IsTimingBuildupArmyReady() || IsStrikeAsReadyAsItGets()))
+		return false;
+	return true;
+}
+
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
 /// strike's war against this player, until a city is taken from it. Read by the peace willingness and the operations' aborts
 bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const

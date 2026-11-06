@@ -20,6 +20,7 @@
 #include "CvMilitaryAI.h"
 #include "CvMinorCivAI.h"
 #include "CvNotifications.h"
+#include "CvTacticalAI.h"
 
 // must be included after all other headers
 #include "LintFree.h"
@@ -28405,6 +28406,17 @@ bool CvDiplomacyAI::DeclareWar(PlayerTypes ePlayer)
 {
 	CvTeam& kMyTeam = GET_TEAM(GetTeam());
 	TeamTypes eTheirTeam = GET_PLAYER(ePlayer).getTeam();
+
+	// AI_AB_TEST (EarlyStrike, LateStrike; the lead, Denmark 15E8F168: CP's own war on China in PREP ended the strike at T69):
+	// a strike civ before its strike declares no war of its own but the strike's, on its target, once the army can take the
+	// city (the user: "only start the attack if the city is takeable"). Wars on us are unaffected
+	if (!GetPlayer()->isHuman() && GetPlayer()->GetMilitaryAI()->IsStrikeDeclarationBlocked(ePlayer))
+	{
+		if (GC.getLogging() && GC.getAILogging())
+			GetPlayer()->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaration on %s refused (before the strike, only the strike's own declaration)",
+				GET_PLAYER(ePlayer).getCivilizationShortDescription()));
+		return false;
+	}
 
 	if (!kMyTeam.canDeclareWar(eTheirTeam, GetID()))
 		return false;

@@ -260,6 +260,7 @@ public:
 	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city
 	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;	// the strike's war on this player, nothing taken yet: no peace, no abort
 	bool IsStrikeHomeSafe() const;	// none of our cities in danger of falling: a strike's declaration waits for it
+	bool IsStrikeDeclarationBlocked(PlayerTypes eOn) const;	// before the strike (PREP, BUILDUP) no declaration of ours but the strike's on its target, when ready
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
 	PlayerTypes GetStrikeCityStateTarget() const { return (PlayerTypes)m_iStrikeCityState; }	// EarlyStrike: a city-state when no major is in reach, or a re-target (major or city-state)
