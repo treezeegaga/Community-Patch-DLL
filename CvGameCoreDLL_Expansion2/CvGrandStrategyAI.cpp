@@ -2159,7 +2159,11 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bLateStrike = false;
 	kPlan.ePreBuildClass = NO_UNITCLASS;
 	kPlan.iPreBuildTarget = 0;
-	kPlan.iReadyGraceTurns = 15 * max(1, GC.getGame().getGameSpeedInfo().getTrainPercent()) / 100;
+	kPlan.iEconomyGoldTarget = 0;
+	kPlan.iExitCityStrength = 0;
+	kPlan.eExitCounterClass1 = NO_UNITCLASS;
+	kPlan.eExitCounterClass2 = NO_UNITCLASS;
+	kPlan.bExitRoughTarget = false;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
 		return;
 
@@ -2235,8 +2239,17 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		kPlan.bLateStrike = kRow.bLate;
 		kPlan.ePreBuildClass = kRow.szPreBuild ? (UnitClassTypes)GC.getInfoTypeForString(kRow.szPreBuild, true) : NO_UNITCLASS;
 		kPlan.iPreBuildTarget = kRow.iPreBuild;
-		// a late strike has more units to upgrade and a longer march: 20 turns Standard to get ready, 15 for an early one
-		kPlan.iReadyGraceTurns = (kRow.bLate ? 20 : 15) * iSpeed / 100;
+		// late strike: half the upgrade bill in the treasury before the build-up (economy-ready)
+		kPlan.iEconomyGoldTarget = kRow.bLate ? kRow.iPreBuild * kRow.iUpgradeGold / 2 : 0;
+		// China's exits (the lead's research, "China (Chu-Ko-Nu rush)"): a target city at about 25-30+ defence, Knights or
+		// gunpowder units near it, rough ground. Chu-Ko-Nus lost is War's army-lost exit for every plan.
+		if (strcmp(kRow.szCiv, "CIVILIZATION_CHINA") == 0)
+		{
+			kPlan.iExitCityStrength = 25;
+			kPlan.eExitCounterClass1 = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_KNIGHT", true);
+			kPlan.eExitCounterClass2 = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_MUSKETMAN", true);
+			kPlan.bExitRoughTarget = true;
+		}
 		return;
 	}
 
@@ -2276,7 +2289,99 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bSiegeOnlyIfWalled = true;
 	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
 	kPlan.bLateStrike = !kProfile.bMilitaryFirst;
-	kPlan.iReadyGraceTurns = (kPlan.bLateStrike ? 20 : 15) * iSpeed / 100;
+}
+
+/// AI_AB_TEST (Personality, strike plan; War's strike state): units of a class plus those of the classes it upgrades into
+/// (one step), so Archers upgraded to Composite Bowmen still count as the plan's support
+int CvGrandStrategyAI::CountStrikeClassLine(UnitClassTypes eClass) const
+{
+	if (!m_pPlayer || eClass == NO_UNITCLASS)
+		return 0;
+	int iCount = m_pPlayer->getUnitClassCount(eClass);
+	const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eClass);
+	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (pkUnit)
+	{
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+		{
+			if (iClass != (int)eClass && pkUnit->GetUpgradeUnitClass(iClass))
+				iCount += m_pPlayer->getUnitClassCount((UnitClassTypes)iClass);
+		}
+	}
+	return iCount;
+}
+
+/// Economy-ready, PREP to BUILDUP (the lead, 10:41pm ET; game state only, no turn).
+/// - Early strike: the core unit can be trained, N core units are out (the opening's barbarian hunters), and the plan's K
+///   cities are founded (or there's no room for more).
+/// - Late strike: the core's tech or the upgrade tech is known or can be researched now (its prerequisites in), the plan's
+///   K cities are founded (or no room), and the treasury holds half the upgrade bill.
+bool CvGrandStrategyAI::IsStrikeEconomyReady() const
+{
+	const CvStrikePlan& kPlan = GetStrikePlan();
+	if (!m_pPlayer || !kPlan.bValid || kPlan.eCoreClass == NO_UNITCLASS)
+		return false;
+	const bool bCitiesDone = m_pPlayer->getNumCities() >= kPlan.iMaxCitiesBeforeStrike || m_pPlayer->IsBoxedInForSettling();
+	if (!kPlan.bLateStrike)
+	{
+		const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass);
+		return eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true) &&
+			CountStrikeClassLine(kPlan.eCoreClass) >= kPlan.iCoreBeforeSettler && bCitiesDone;
+	}
+	const TechTypes eKeyTech = (kPlan.eUpgradeTech != NO_TECH) ? kPlan.eUpgradeTech : NO_TECH;
+	bool bTechInReach = true;
+	if (eKeyTech != NO_TECH)
+		bTechInReach = GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eKeyTech) || m_pPlayer->GetPlayerTechs()->CanResearch(eKeyTech);
+	return bTechInReach && bCitiesDone && m_pPlayer->GetTreasury()->GetGold() >= kPlan.iEconomyGoldTarget;
+}
+
+/// Army-ready, BUILDUP to WAR (game state only): the upgrade tech known (or none); core units at the target (pre-built units
+/// that upgrade into the core count); support and always-brought siege at their targets (upgraded units count); and the
+/// treasury covers the upgrades still to do (units of the pre-build, core and support lines whose upgrade the plan's tech
+/// unlocks, iUpgradeGoldPerUnit each). War adds its own check: 2+ melee that can take a city, a target in reach.
+bool CvGrandStrategyAI::IsStrikeArmyReady(int* piUpgradeBill) const
+{
+	const CvStrikePlan& kPlan = GetStrikePlan();
+	if (piUpgradeBill)
+		*piUpgradeBill = 0;
+	if (!m_pPlayer || !kPlan.bValid || kPlan.eCoreClass == NO_UNITCLASS)
+		return false;
+	if (kPlan.eUpgradeTech != NO_TECH && !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(kPlan.eUpgradeTech))
+		return false;
+	const int iPreBuild = (kPlan.ePreBuildClass != NO_UNITCLASS) ? m_pPlayer->getUnitClassCount(kPlan.ePreBuildClass) : 0;
+	if (CountStrikeClassLine(kPlan.eCoreClass) + iPreBuild < kPlan.iCoreTarget)
+		return false;
+	if (CountStrikeClassLine(kPlan.eSupportClass) < kPlan.iSupportTarget)
+		return false;
+	if (kPlan.eSiegeClass != NO_UNITCLASS && kPlan.iSiegeTarget > 0 && !kPlan.bSiegeOnlyIfWalled &&
+		CountStrikeClassLine(kPlan.eSiegeClass) < kPlan.iSiegeTarget)
+		return false;
+	// the upgrade bill: units still in a class the plan's tech upgrades (pre-build, core or support line)
+	int iBill = 0;
+	if (kPlan.eUpgradeTech != NO_TECH)
+	{
+		const UnitClassTypes aeLines[3] = { kPlan.ePreBuildClass, kPlan.eCoreClass, kPlan.eSupportClass };
+		for (int i = 0; i < 3; i++)
+		{
+			const UnitTypes eUnit = (aeLines[i] != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(aeLines[i]) : NO_UNIT;
+			CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+			if (!pkUnit)
+				continue;
+			bool bUpgradedByTech = false;
+			for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && !bUpgradedByTech; iClass++)
+			{
+				if (!pkUnit->GetUpgradeUnitClass(iClass))
+					continue;
+				const UnitTypes eTo = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
+				bUpgradedByTech = eTo != NO_UNIT && GC.getUnitInfo(eTo)->GetPrereqAndTech() == (int)kPlan.eUpgradeTech;
+			}
+			if (bUpgradedByTech)
+				iBill += m_pPlayer->getUnitClassCount(aeLines[i]) * kPlan.iUpgradeGoldPerUnit;
+		}
+	}
+	if (piUpgradeBill)
+		*piUpgradeBill = iBill;
+	return m_pPlayer->GetTreasury()->GetGold() >= iBill;
 }
 
 /// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research
