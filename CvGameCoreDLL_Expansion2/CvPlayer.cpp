@@ -33988,7 +33988,9 @@ bool CvPlayer::IsStrikeUnitHold() const
 {
 	if (IsLateStrikeUnitHold())
 		return true;
-	return IsStrikeActive() && GetEconomicAI() && GetEconomicAI()->GetAffordableWarUnits(10) < 1;
+	// (0057, the lead's review) not while at war with a major: defenders, replacements and CP's emergency buys come first, as
+	// 0048's hold already did
+	return IsStrikeActive() && !IsAtWarAnyMajor() && GetEconomicAI() && GetEconomicAI()->GetAffordableWarUnits(10) < 1;
 }
 
 bool CvPlayer::IsLateStrikeUnitHold() const
@@ -35326,7 +35328,10 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// (0054) a late strike's PREP held for income (net gold under +2, IsLateStrikeUnitHold): an income item comes first, a
 	// Market, else a Caravan where a trade route is free, so the hold lifts. Trial ab-791ab9d 172518A7: Karakorum's list
 	// waited on its held Chariot Archer from T29 to T85 with net gold at 0
-	if (IsStrikeUnitHold())	// (0055: the general hold too)
+	// (0057, the lead's review) the capital only, and not in WAR or at war with a major: the pushOrder redirect had put Markets
+	// and Caravans in place of walls, settlers and defence in every city
+	if (pCity->isCapital() && GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_WAR && !IsAtWarAnyMajor() &&
+		IsStrikeUnitHold())	// (0055: the general hold too)
 	{
 		const BuildingTypes eMarket = GetSpecificBuildingType("BUILDINGCLASS_MARKET", true);
 		if (eMarket != NO_BUILDING && pCity->canConstruct(eMarket))

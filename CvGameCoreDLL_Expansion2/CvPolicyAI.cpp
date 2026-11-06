@@ -9,6 +9,7 @@
 #include "CvGameCoreDLLUtil.h"
 #include "CvPolicyAI.h"
 #include "CvGrandStrategyAI.h"
+#include "CvMilitaryAI.h"	// AI_AB_TEST (Economy 0057): the strike state
 #include "CvInfosSerializationHelper.h"
 #include "CvTypes.h"
 #include "CvEconomicAI.h"
@@ -191,7 +192,10 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 	// is the first in the order that isn't finished: its best adoptable policy (CP's weights) if it's open, else it's opened.
 	// A tree that can't be opened yet (an era gate) or has nothing adoptable now gives way to the next in the order. A tree
 	// that isn't in the order is never opened. Ideology tenets stay CP's
-	const CvStrikePlan* pOrderPlan = (MOD_AI_AB_TEST && !pPlayer->isHuman() && pPlayer->UsesCandidateAI(FIX_STRIKE_LIST) && pPlayer->GetGrandStrategyAI()) ?
+	// (0057, the lead's review) a strike civ only: a strike state other than NONE. bValid alone is every civ with a land unique
+	// unit (a greedy-tall China, a balanced Japan)
+	const CvStrikePlan* pOrderPlan = (MOD_AI_AB_TEST && !pPlayer->isHuman() && pPlayer->UsesCandidateAI(FIX_STRIKE_LIST) && pPlayer->GetGrandStrategyAI() &&
+		pPlayer->GetMilitaryAI() && pPlayer->GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_NONE) ?
 		&pPlayer->GetGrandStrategyAI()->GetStrikePlan() : NULL;
 	if (!bMustChooseTenet && pOrderPlan && pOrderPlan->bValid && pOrderPlan->iNumPolicyBranches > 0)
 	{
@@ -252,6 +256,35 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 		{
 			LogPolicyChoice((PolicyTypes)(iBest - GC.getNumPolicyBranchInfos()));
 			return iBest;
+		}
+		// (0057, the lead's review) every tree in the order done or locked: the best tree that can be opened (CP's branch weight),
+		// never one on the never-list, rather than leave the culture unspent
+		PolicyBranchTypes eBestTree = NO_POLICY_BRANCH_TYPE;
+		int iBestTreeWeight = INT_MIN;
+		for (int iBranch = 0; iBranch < GC.getNumPolicyBranchInfos(); iBranch++)
+		{
+			const PolicyBranchTypes eBranch = (PolicyBranchTypes)iBranch;
+			CvPolicyBranchEntry* pkBranch = GC.getPolicyBranchInfo(eBranch);
+			if (!pkBranch || pkBranch->IsPurchaseByLevel() || m_pCurrentPolicies->IsPolicyBranchUnlocked(eBranch) || !m_pCurrentPolicies->CanUnlockPolicyBranch(eBranch))
+				continue;
+			if (bStartedAMutuallyExclusiveBranch && pkBranch->IsMutuallyExclusive())
+				continue;
+			bool bNever = false;
+			for (int iNever = 0; iNever < pOrderPlan->iNumNeverBranches; iNever++)
+				bNever = bNever || pOrderPlan->aeNeverBranches[iNever] == eBranch;
+			if (bNever)
+				continue;
+			const int iWeight = WeighBranch(pPlayer, eBranch);
+			if (iWeight > iBestTreeWeight)
+			{
+				iBestTreeWeight = iWeight;
+				eBestTree = eBranch;
+			}
+		}
+		if (eBestTree != NO_POLICY_BRANCH_TYPE)
+		{
+			LogBranchChoice(eBestTree);
+			return (int)eBestTree;
 		}
 		return (int)NO_POLICY;
 	}
@@ -733,7 +766,8 @@ void CvPolicyAI::DoChooseIdeology(CvPlayer *pPlayer)
 	}
 	// AI_AB_TEST (Economy 0056): a strike civ takes the ideology in its plan's policy-tree order (Personality's aePolicyBranches),
 	// when it's one of those on offer
-	if (MOD_AI_AB_TEST && !pPlayer->isHuman() && pPlayer->UsesCandidateAI(FIX_STRIKE_LIST) && pPlayer->GetGrandStrategyAI())
+	if (MOD_AI_AB_TEST && !pPlayer->isHuman() && pPlayer->UsesCandidateAI(FIX_STRIKE_LIST) && pPlayer->GetGrandStrategyAI() &&
+		pPlayer->GetMilitaryAI() && pPlayer->GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_NONE)	// (0057) strike civs only
 	{
 		const CvStrikePlan& kOrderPlan = pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 		for (int iOrder = 0; kOrderPlan.bValid && iOrder < kOrderPlan.iNumPolicyBranches; iOrder++)
