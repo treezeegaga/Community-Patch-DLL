@@ -37673,6 +37673,16 @@ void CvDiplomacyAI::DoContactMinorCivs()
 
 	int iGoldReserve = GetPlayer()->GetTreasury()->GetGold();
 
+	// AI_AB_TEST candidate (EarlyStrike, Economy 0039): before the strike, no gold to city-states by any path.
+	// Drop a gift saving started earlier, and skip buyouts and marriages too.
+	if (GetPlayer()->IsEarlyStrikeSmallEmpire() || GetPlayer()->IsLateStrikeSaving())
+	{
+		if (GetPlayer()->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT))
+			GetPlayer()->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT);
+		veMinorsToBuyout.clear();
+		veMinorsToMarry.clear();
+	}
+
 	// Do we want to buyout a minor?
 	veMinorsToBuyout.StableSortItems();
 	int iGoldLeft = GetPlayer()->GetTreasury()->GetGold();

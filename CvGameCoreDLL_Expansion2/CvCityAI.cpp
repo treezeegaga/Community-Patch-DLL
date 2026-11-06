@@ -134,6 +134,10 @@ void CvCityAI::AI_chooseProduction(bool bInterruptWonders, bool bInterruptBuildi
 	if (eNextWonder != NO_BUILDING && !CityStrategyAIHelpers::IsWonderForOurVictory(kOwner, eNextWonder))
 		eNextWonder = NO_BUILDING;
 
+	// AI_AB_TEST candidate (EarlyStrike, Economy 0039): no world wonder before the strike, even one picked earlier
+	if (eNextWonder != NO_BUILDING && (kOwner.IsEarlyStrikeSmallEmpire() || kOwner.IsLateStrikeSaving()))
+		eNextWonder = NO_BUILDING;
+
 	if (!bAlreadyBuildingWonder && bInterruptWonders && eNextWonder != NO_BUILDING)
 	{		
 		CvBuildingEntry* pkBuilding = GC.getBuildingInfo(eNextWonder);
