@@ -12,6 +12,7 @@
 #include "CvGameCoreUtils.h"
 #include "ICvDLLUserInterface.h"
 #include "CvDiplomacyAI.h"
+#include "CvTacticalAI.h"
 #include "CvTypes.h"
 
 #include "CvDllCity.h"
@@ -4287,6 +4288,16 @@ void CvUnitCombat::ApplyPostKillTraitEffects(CvUnit* pkWinner, CvUnit* pkLoser)
 	}
 
 	CvPlayer& kPlayer = GET_PLAYER(pkWinner->getOwner());
+
+	// AI_AB_TEST (War, logging only; for EarlyStrike's barbarian hunt): a major civ's unit killed a barbarian, with the
+	// winner's level and XP after the fight, and whether it was a camp's guard. Before this only our own losses were logged.
+	if (pkLoser->getOwner() == BARBARIAN_PLAYER && kPlayer.isMajorCiv() && GC.getLogging() && GC.getAILogging())
+	{
+		const bool bCamp = pkLoser->plot()->getImprovementType() == GD_INT_GET(BARBARIAN_CAMP_IMPROVEMENT);
+		kPlayer.GetTacticalAI()->LogTacticalMessage(CvString::format("BarbKill: %s killed a barbarian %s at (%d:%d)%s; level %d, XP %d",
+			pkWinner->getUnitInfo().GetDescription(), pkLoser->getUnitInfo().GetDescription(), pkLoser->getX(), pkLoser->getY(),
+			bCamp ? ", a camp's guard" : "", pkWinner->getLevel(), pkWinner->getExperienceTimes100() / 100));
+	}
 
 	// Earn bonuses for kills?
 	kPlayer.DoYieldsFromKill(pkWinner, pkLoser);
