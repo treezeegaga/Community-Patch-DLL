@@ -2065,6 +2065,17 @@ bool CvMilitaryAI::IsEarlyStrikeHoldingUpgrades() const
 	//declared at T63 with 289 gold and 2 Archers held; its first upgrade came at T99, in the field)
 	if (m_iTimingBuildupStartTurn < 0)
 		return true;
+	//upgrade and go: once the strike's own upgrade tech is in, the hold has done its job (the gold is there) and the upgrades
+	//happen now, at home, before the units muster. Aztec (152231C3, ab-8f9b7f9) held 2 Archers with 300 gold from T50 to T71;
+	//its sneak attack then mustered them out of our territory, the bill (home units only) fell to 0 and it declared at T77
+	//with nothing upgraded
+	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+	TechTypes eUpgradeTech = kPlan.bValid ? kPlan.eUpgradeTech : NO_TECH;
+	CvStrikeWindow kWindow;
+	if (eUpgradeTech == NO_TECH && GetEarlyStrikeWindow(kWindow))
+		eUpgradeTech = kWindow.eUpgradeTech;
+	if (eUpgradeTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eUpgradeTech))
+		return false;
 	return !(IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded() || m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady() ||
 		IsStrikeAsReadyAsItGets());
 }
