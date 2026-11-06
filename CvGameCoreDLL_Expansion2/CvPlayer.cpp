@@ -35099,6 +35099,11 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 /// The first policy branch the opening book wants opened
 PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 {
+	// AI_AB_TEST (Economy 0049): while the strike is active, the plan's first tree, whether or not the book is (the book
+	// ends at war with any major)
+	if (IsStrikeActive() && GetGrandStrategyAI() && GetGrandStrategyAI()->GetStrikePlan().bValid &&
+		GetGrandStrategyAI()->GetStrikePlan().eFirstPolicyBranch != NO_POLICY_BRANCH_TYPE)
+		return GetGrandStrategyAI()->GetStrikePlan().eFirstPolicyBranch;
 	if (!IsOpeningBookActive())
 		return NO_POLICY_BRANCH_TYPE;
 
@@ -35130,9 +35135,20 @@ PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 /// AI_AB_TEST (flag StrikeList, Economy; the user, via the lead: "this is why we looked up expert build orders. literally
 /// just follow the list."). The strike plan while its lists run: a StrikeList civ from PREP to its declaration (no turn
 /// limit, and an unrelated war doesn't stop it). NULL otherwise
+/// AI_AB_TEST (Economy 0049; the user's structural fix, via the lead: the strike owns a fixed set of decisions while it's
+/// active, gated at the lowest level, CP cut out). PREP, BUILDUP or WAR, until OVER
+bool CvPlayer::IsStrikeActive() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv() || isHuman() || !GetMilitaryAI())
+		return false;
+	const CvMilitaryAI::StrikeStateTypes eState = GetMilitaryAI()->GetStrikeState();
+	return eState == CvMilitaryAI::STRIKE_PREP || eState == CvMilitaryAI::STRIKE_BUILDUP || eState == CvMilitaryAI::STRIKE_WAR;
+}
+
 const CvStrikePlan* CvPlayer::GetStrikeListPlan() const
 {
-	if (!MOD_AI_AB_TEST || !isMajorCiv() || isHuman() || !UsesCandidateAI(FIX_STRIKE_LIST) || !IsStrikePending())
+	// (0049: WAR too; the capital's list itself runs in PREP and BUILDUP only, WAR builds the army)
+	if (!MOD_AI_AB_TEST || !isMajorCiv() || isHuman() || !UsesCandidateAI(FIX_STRIKE_LIST) || !IsStrikeActive())
 		return NULL;
 	const CvStrikePlan& kPlan = GetGrandStrategyAI()->GetStrikePlan();
 	return kPlan.bValid ? &kPlan : NULL;
@@ -35246,9 +35262,10 @@ static UnitTypes GetStrikeListArmyUnit(const CvPlayer& kPlayer, const CvStrikePl
 	return eFirstTrainable;
 }
 
+static bool s_bStrikeListQuiet = false;	// 0049: the pushOrder gate asks the executor without logging
 static void LogStrikeList(CvPlayer& kPlayer, const CvCity* pCity, const char* szWhat, const char* szDetail)
 {
-	if (!GC.getLogging() || !GC.getAILogging() || !pCity)
+	if (s_bStrikeListQuiet || !GC.getLogging() || !GC.getAILogging() || !pCity)
 		return;
 	CvString strOut;
 	strOut.Format("%s, STRIKE LIST - %s%s%s", pCity->getName().GetCString(), szWhat, szDetail ? " " : "", szDetail ? szDetail : "");
@@ -35293,7 +35310,8 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 		return false;
 	}
 
-	if (pCity->isCapital())
+	// the capital's list in PREP and BUILDUP; in WAR every city builds the army (0049)
+	if (pCity->isCapital() && GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_WAR)
 	{
 		std::map<int, int> unitsWanted;
 		CvString strWait;
@@ -35367,7 +35385,7 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	}
 
 	// after the list, and the other cities: a late strike's PREP is economy first (the regular book)
-	if (kPlan.bLateStrike && GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_BUILDUP)
+	if (kPlan.bLateStrike && GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_PREP)
 	{
 		bListRuns = false;
 		return false;
@@ -35401,6 +35419,17 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	}
 	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" : "LIST NORMAL (army complete, no more affordable)", NULL);
 	return false;
+}
+
+/// StrikeList (0049): the executor's pick without logging, for CvCity::pushOrder's gate. False: no pick (the executor
+/// defers, or isn't running)
+bool CvPlayer::GetStrikeListProductionQuiet(CvCity* pCity, OrderTypes& eOrder, int& iData)
+{
+	bool bListRuns = false;
+	s_bStrikeListQuiet = true;
+	const bool bPick = GetStrikeListProduction(pCity, eOrder, iData, bListRuns);
+	s_bStrikeListQuiet = false;
+	return bPick;
 }
 
 /// StrikeList: research follows the plan's list in order (a prerequisite first when a tech isn't researchable yet). After

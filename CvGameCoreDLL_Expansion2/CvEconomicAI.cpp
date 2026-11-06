@@ -3229,7 +3229,9 @@ bool CvEconomicAI::IsGoldPurchaseAllowed(const CvCity* pCity, UnitTypes eUnit, B
 	}
 
 	// WarmongerHurry (the user's rule): a warmonger buys settlers and siege units only
-	if (bAllowed && kPlayer.IsCandidateWarmonger(FIX_WARMONGER_HURRY))
+	// (0049: and any AI strike civ while its strike is active, whatever its role's flags; the user: "NO on strike purchases
+	// beyond the hurry rules")
+	if (bAllowed && (kPlayer.IsCandidateWarmonger(FIX_WARMONGER_HURRY) || kPlayer.IsStrikeActive()))
 	{
 		bAllowed = false;
 		if (pkUnitInfo)

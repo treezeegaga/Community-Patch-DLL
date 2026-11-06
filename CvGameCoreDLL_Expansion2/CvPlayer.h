@@ -1936,6 +1936,8 @@ public:
 	bool IsStrikePending() const; // AI_AB_TEST Economy, flags EarlyStrike/LateStrike (0040): a strike civ before its strike (state PREP or BUILDUP) // AI_AB_TEST Economy, flag LateStrike: from the build-up to the declaration, gold kept for upgrades
 	bool IsLateStrikeUnitHold() const; // AI_AB_TEST Economy 0046/0048: a late strike's PREP with net gold under +2: no new combat unit
 	bool IsStrikeNoWonders() const; // AI_AB_TEST Economy 0042: no world or national wonder now (a strike civ before its strike)
+	bool IsStrikeActive() const; // AI_AB_TEST Economy 0049: an AI strike civ with its strike under way (PREP, BUILDUP or WAR): the strike owns production, gold, research and policy
+	bool GetStrikeListProductionQuiet(CvCity* pCity, OrderTypes& eOrder, int& iData); // 0049: the executor's pick, unlogged (CvCity::pushOrder's gate)
 	const CvStrikePlan* GetStrikeListPlan() const; // AI_AB_TEST Economy, flag StrikeList: the strike plan while its lists run
 	bool GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& iData, bool& bListRuns); // flag StrikeList: the next list item
 	TechTypes GetStrikeListTech() const; // flag StrikeList: the next tech on the plan's list

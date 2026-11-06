@@ -197,6 +197,35 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 		}
 	}
 
+	// AI_AB_TEST (Economy 0049): while the strike is active, the plan's first tree is finished before a second opens: its best
+	// adoptable policy (CP's weights) comes first
+	if (!bMustChooseTenet && !bNeedToFinish && pPlayer->IsStrikeActive())
+	{
+		const PolicyBranchTypes eStrikeBranch = pPlayer->GetOpeningBookPolicyBranch();
+		if (eStrikeBranch != NO_POLICY_BRANCH_TYPE && m_pCurrentPolicies->IsPolicyBranchUnlocked(eStrikeBranch) && !m_pCurrentPolicies->IsPolicyBranchFinished(eStrikeBranch))
+		{
+			int iBest = -1;
+			int iBestWeight = INT_MIN;
+			for (int i = 0; i < m_AdoptablePolicies.size(); i++)
+			{
+				const int iElement = m_AdoptablePolicies.GetElement(i);
+				if (iElement < GC.getNumPolicyBranchInfos())
+					continue;
+				CvPolicyEntry* pkPolicy = m_pCurrentPolicies->GetPolicies()->GetPolicyEntry(iElement - GC.getNumPolicyBranchInfos());
+				if (pkPolicy && pkPolicy->GetPolicyBranchType() == (int)eStrikeBranch && m_AdoptablePolicies.GetWeight(i) > iBestWeight)
+				{
+					iBest = iElement;
+					iBestWeight = m_AdoptablePolicies.GetWeight(i);
+				}
+			}
+			if (iBest >= 0)
+			{
+				LogPolicyChoice((PolicyTypes)(iBest - GC.getNumPolicyBranchInfos()));
+				return iBest;
+			}
+		}
+	}
+
 	// Loop though the branches adding each as another possibility
 	if (!bMustChooseTenet && !bNeedToFinish)
 	{

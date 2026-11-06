@@ -27975,6 +27975,10 @@ bool CvCity::CanBuyPlot(int iPlotX, int iPlotY, bool bIgnoreCost) const
 {
 	VALIDATE_OBJECT();
 
+	// AI_AB_TEST (Economy 0049): an AI strike civ buys no tile while its strike is active (the gold is the strike's)
+	if (MOD_AI_AB_TEST && !bIgnoreCost && !GET_PLAYER(getOwner()).isHuman() && GET_PLAYER(getOwner()).IsStrikeActive())
+		return false;
+
 	if (/*0*/ GD_INT_GET(BUY_PLOTS_DISABLED) > 0)
 		return false;
 
@@ -29329,6 +29333,29 @@ void CvCity::pushOrder(OrderTypes eOrder, int iData1, int iData2, bool bSave, bo
 	VALIDATE_OBJECT();
 	OrderData order;
 	bool bValid = false;
+
+	// AI_AB_TEST (Economy 0049; the user's structural fix: the strike owns production while it's active). Every new
+	// production choice of an AI strike city (a push that replaces the queue) becomes the strike executor's pick whenever the
+	// executor has one, whatever path chose it. Appends (CP's operation units, War's strike ops), re-pushes of a saved order
+	// and humans pass unchanged
+	if (MOD_AI_AB_TEST && bPop && !bAppend && !bSave && !GET_PLAYER(getOwner()).isHuman() && GET_PLAYER(getOwner()).IsStrikeActive())
+	{
+		OrderTypes eStrikeOrder = ORDER_TRAIN;
+		int iStrikeData = -1;
+		if (GET_PLAYER(getOwner()).GetStrikeListProductionQuiet(this, eStrikeOrder, iStrikeData) && (eStrikeOrder != eOrder || iStrikeData != iData1))
+		{
+			if (GC.getLogging() && GC.getAILogging())
+			{
+				CvString strOut;
+				strOut.Format("%s, STRIKE LIST - REDIRECT: %s %d -> %s", getName().GetCString(), eOrder == ORDER_TRAIN ? "unit" : eOrder == ORDER_CONSTRUCT ? "building" : "order", iData1,
+					eStrikeOrder == ORDER_TRAIN ? GC.getUnitInfo((UnitTypes)iStrikeData)->GetDescription() : GC.getBuildingInfo((BuildingTypes)iStrikeData)->GetDescription());
+				GET_PLAYER(getOwner()).GetCitySpecializationAI()->LogMsg(strOut);
+			}
+			eOrder = eStrikeOrder;
+			iData1 = iStrikeData;
+			iData2 = -1;
+		}
+	}
 
 	if (bPop)
 	{

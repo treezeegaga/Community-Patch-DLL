@@ -213,14 +213,17 @@ TechTypes CvTechAI::ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech)
 		return NO_TECH;
 
 	// AI_AB_TEST: the new AI follows its opening book's tech path early in the game
-	if (!bFreeTech)
+	// AI_AB_TEST Economy, flag StrikeList: the expert's tech list first (0049: for a free tech too)
 	{
-		TechTypes eListTech = pPlayer->GetStrikeListTech(); // AI_AB_TEST Economy, flag StrikeList: the expert's tech list first
+		TechTypes eListTech = pPlayer->GetStrikeListTech();
 		if (eListTech != NO_TECH)
 		{
 			LogResearchChoice(eListTech);
 			return eListTech;
 		}
+	}
+	if (!bFreeTech)
+	{
 		TechTypes eBookTech = pPlayer->GetOpeningBookTech();
 		if (eBookTech != NO_TECH)
 		{

@@ -13666,6 +13666,9 @@ bool CvMinorCivAI::CanMajorDiploMarriage(PlayerTypes eMajor)
 	ASSERT(eMajor >= 0 && eMajor < MAX_MAJOR_CIVS, "Invalid eMajor index");
 	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
 		return false;
+	// AI_AB_TEST (Economy 0049): nor a marriage
+	if (MOD_AI_AB_TEST && !GET_PLAYER(eMajor).isHuman() && GET_PLAYER(eMajor).IsStrikeNoWonders())
+		return false;
 
 	// Can't be already married
 	if (IsMarried(eMajor))
@@ -13702,6 +13705,9 @@ bool CvMinorCivAI::CanMajorDiploMarriage(PlayerTypes eMajor)
 bool CvMinorCivAI::CanMajorBuyout(PlayerTypes eMajor)
 {
 	if (eMajor < 0 || eMajor >= MAX_MAJOR_CIVS)
+		return false;
+	// AI_AB_TEST (Economy 0049): no city-state gold, buyouts included, before an AI strike civ's first declaration
+	if (MOD_AI_AB_TEST && !GET_PLAYER(eMajor).isHuman() && GET_PLAYER(eMajor).IsStrikeNoWonders())
 		return false;
 
 	// We must both be alive and they must have a capital

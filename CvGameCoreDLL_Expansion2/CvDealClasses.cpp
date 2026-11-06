@@ -369,6 +369,12 @@ bool CvDeal::IsPossibleToTradeItem(PlayerTypes ePlayer, PlayerTypes eToPlayer, T
 	if (!GET_PLAYER(ePlayer).isAlive() || !GET_PLAYER(eToPlayer).isAlive())
 		return false;
 
+	// AI_AB_TEST (Economy 0049; the strike owns the gold while it's active): an AI strike civ gives no gold, no gold per turn
+	// and makes no research agreement. Peace deals stay War's
+	if (MOD_AI_AB_TEST && (eItem == TRADE_ITEM_GOLD || eItem == TRADE_ITEM_GOLD_PER_TURN || eItem == TRADE_ITEM_RESEARCH_AGREEMENT) &&
+		!GET_PLAYER(ePlayer).isHuman() && GET_PLAYER(ePlayer).IsStrikeActive() && !IsPeaceTreatyTrade(ePlayer) && !IsPeaceTreatyTrade(eToPlayer))
+		return false;
+
 	CvPlayer* pFromPlayer = &GET_PLAYER(ePlayer);
 	CvPlayer* pToPlayer = &GET_PLAYER(eToPlayer);
 	TeamTypes eFromTeam = pFromPlayer->getTeam();
