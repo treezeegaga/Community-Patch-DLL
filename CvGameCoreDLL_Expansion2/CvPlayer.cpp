@@ -33945,6 +33945,15 @@ bool CvPlayer::IsStrikePending() const
 	return eState == CvMilitaryAI::STRIKE_PREP || eState == CvMilitaryAI::STRIKE_BUILDUP;
 }
 
+/// AI_AB_TEST (flags EarlyStrike, LateStrike; Economy 0042; the user: "no wonders before a strike"): no world wonder and no
+/// national wonder while a strike civ is before its strike, on every path a city picks one (the sanity check, its
+/// everything-vetoed fallback, the city specialization's pick, a Great Engineer). bullyabort20 game 1 (14BC6621): LateStrike
+/// Germany's Munich took Heroic Epic (T61) and the Temple of Artemis (T62) in PREP, through the fallback
+bool CvPlayer::IsStrikeNoWonders() const
+{
+	return IsStrikePending() || IsEarlyStrikeSmallEmpire() || IsLateStrikeSaving();
+}
+
 bool CvPlayer::IsLateStrikeSaving() const
 {
 	// War's strike state BUILDUP (Personality's economy-ready condition fired), to the declaration; no turns

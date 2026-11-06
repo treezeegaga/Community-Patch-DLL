@@ -4681,6 +4681,9 @@ void CvHomelandAI::ExecuteEngineerMoves()
 			//int iNextWonderWeight;
 			CvCity* pCityToBuildAt = 0;
 			BuildingTypes eNextWonderDesired = m_pPlayer->GetCitySpecializationAI()->GetNextWonderDesired();
+			// AI_AB_TEST (Economy 0042): no wonder before a strike (a Great Engineer keeps; see CvPlayer::IsStrikeNoWonders)
+			if (m_pPlayer->IsStrikeNoWonders())
+				eNextWonderDesired = NO_BUILDING;
 
 			// No?  Just move to safety...
 			if(eNextWonderDesired == NO_BUILDING)

@@ -993,7 +993,31 @@ void CvCityStrategyAI::ChooseProduction(BuildingTypes eIgnoreBldg, UnitTypes eIg
 	LogPossibleBuilds(m_Buildables,"POST");
 
 	if (m_Buildables.size() <= 0)
+	{
 		m_Buildables = m_BuildablesPrecheck;
+
+		// AI_AB_TEST (Economy 0042): the fallback keeps the strike's wonder ban. When the sanity check vetoed everything, the
+		// unchecked list came back with its wonders (bullyabort20 14BC6621: Munich's Heroic Epic and Temple of Artemis in PREP)
+		if (GET_PLAYER(m_pCity->getOwner()).IsStrikeNoWonders())
+		{
+			CvWeightedVector<CvCityBuildable> vKept;
+			for (int iI = 0; iI < m_Buildables.size(); iI++)
+			{
+				const CvCityBuildable& kItem = m_Buildables.GetElement(iI);
+				if (kItem.m_eBuildableType == CITY_BUILDABLE_BUILDING)
+				{
+					CvBuildingEntry* pkItemInfo = GC.getBuildingInfo((BuildingTypes)kItem.m_iIndex);
+					if (pkItemInfo && (isWorldWonderClass(pkItemInfo->GetBuildingClassInfo()) || isNationalWonderClass(pkItemInfo->GetBuildingClassInfo())))
+					{
+						LogInvalidItem(kItem, SR_STRATEGY);
+						continue;
+					}
+				}
+				vKept.push_back(kItem, m_Buildables.GetWeight(iI));
+			}
+			m_Buildables = vKept;
+		}
+	}
 
 	bool bPushedOrderForSettler = false;
 	if (m_Buildables.size() > 0)
