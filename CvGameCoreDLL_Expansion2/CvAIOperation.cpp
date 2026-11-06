@@ -909,6 +909,11 @@ void CvAIOperation::UnitWasRemoved(int iArmyID, int iSlotID)
 		{
 			// If down below half strength, abort
 			CvArmyAI* pThisArmy = GET_PLAYER(m_eOwner).getArmyAI(iArmyID);
+			// AI_AB_TEST (EarlyStrike, LateStrike; the user: "i dont think there should be any retreat once you commit"): an
+			// operation against the strike's target doesn't give up at half strength until a city is taken from it
+			if (pThisArmy && pThisArmy->GetNumSlotsFilled() > 0 && GET_PLAYER(m_eOwner).isMajorCiv() &&
+				GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy))
+				break;
 			CvMultiUnitFormationInfo* pkFormation = pThisArmy->GetFormation();
 			if(pkFormation)
 			{

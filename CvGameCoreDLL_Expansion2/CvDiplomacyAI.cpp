@@ -25858,6 +25858,18 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 					vMajorTeamsAtWarWith.push_back(eLoopTeam);
 			}
 
+			// AI_AB_TEST (EarlyStrike, LateStrike; the user: "i dont think there should be any retreat once you commit"): no peace
+			// with the strike's target until a city is taken from it
+			if (GetPlayer()->GetMilitaryAI()->IsStrikeNoRetreat(eLoopPlayer))
+			{
+				if (bMajor)
+				{
+					RefusePeaceTreaty(eLoopPlayer, CvString("STRIKE: no retreat until a city is taken"));
+					vPeaceBlockedMajors.push_back(eLoopPlayer);
+				}
+				continue;
+			}
+
 			PeaceBlockReasons ePeaceBlockReason = NUM_PEACE_BLOCK_REASONS;
 			for (size_t i=0; i<vMyTeam.size(); i++)
 			{

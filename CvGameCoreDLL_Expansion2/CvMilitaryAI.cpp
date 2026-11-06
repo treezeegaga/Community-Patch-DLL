@@ -330,6 +330,8 @@ void CvMilitaryAI::Reset()
 	m_iArmyQualityTurn = -1;
 	m_iSiegeTrainableTurn = -1;
 	m_bSiegeTrainable = true;
+	m_iTakeableTurn = -1;
+	m_bTakeable = false;
 	m_iStrikeNotReadyKey = 0;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
@@ -2169,15 +2171,65 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState(bool bUnwalledOnly, PlayerTypes eE
 }
 
 /// AI_AB_TEST (EarlyStrike, LateStrike; the user: "i think i brute forced through marrakeshs walls when i attacked", "having
-/// a turn limit is bad. just calculate if you can take the city or not"): can the strike plan's army take this city? The
-/// game's own damage math (CvUnitCombat::DoDamageMath, expected values) on the plan's core and support at their counts, as the
-/// units they become at the plan's upgrade tech:
+/// a turn limit is bad. just calculate if you can take the city or not", "you probably want a little buffer"): can this army
+/// (unit types and counts) take the city? The game's own damage math (CvUnitCombat::DoDamageMath, expected values):
 /// - per turn, each ranged unit bombards the city; melee units attack every other turn (they take the city's counter-damage);
 /// - the city heals CITY_HIT_POINTS_HEALED_PER_TURN a turn: if our damage doesn't beat it, the city can't be taken;
 /// - otherwise the turns it takes follow (not a limit), and over them the city's strike (one a turn) and the melee
-///   counter-damage must cost less than the army's hit points less one unit (one has to walk in).
+///   counter-damage must cost less than the army's hit points less one unit (one has to walk in);
+/// - a buffer: our damage counts at STRIKE_TAKE_DAMAGE_PERCENT, the city's damage to us at STRIKE_TAKE_LOSS_PERCENT.
 /// The user's Marrakesh (defence about 19, walls and a Warrior) fell to 6 Jaguars and 4 Composite Bowmen in about 5 turns.
-/// No plan: no check (true).
+static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector< std::pair<const CvUnitEntry*, int> >& vArmy, int* piTurnsNeeded)
+{
+	if (piTurnsNeeded)
+		*piTurnsNeeded = -1;
+	const CvSeeder kNoSeed;
+	const int iCityDefence100 = max(100, pCity->getStrengthValue());
+	const int iCityStrike100 = max(100, pCity->getStrengthValue(/*bForRangeStrike*/ true));
+	const int iCityHP = max(1, pCity->GetMaxHitPoints() - pCity->getDamage());
+	const int iCityHeal = /*8 in VP*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
+	int iDamage100 = 0, iSelfDamage100 = 0, iArmyHP = 0, iBestDefence100 = 0, iUnits = 0;
+	const int iUnitHP = 100;
+	for (size_t i = 0; i < vArmy.size(); i++)
+	{
+		const CvUnitEntry* pkUnit = vArmy[i].first;
+		const int iCount = vArmy[i].second;
+		if (!pkUnit || iCount <= 0)
+			continue;
+		iUnits += iCount;
+		iArmyHP += iCount * iUnitHP;
+		iBestDefence100 = max(iBestDefence100, pkUnit->GetCombat() * 100);
+		if (pkUnit->GetRangedCombat() > 0)
+		{
+			iDamage100 += iCount * CvUnitCombat::DoDamageMath(pkUnit->GetRangedCombat() * 100, iCityDefence100,
+				GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
+		}
+		else if (pkUnit->GetCombat() > 0)
+		{
+			iDamage100 += iCount * CvUnitCombat::DoDamageMath(pkUnit->GetCombat() * 100, iCityDefence100,
+				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 200;
+			iSelfDamage100 += iCount * CvUnitCombat::DoDamageMath(iCityDefence100, pkUnit->GetCombat() * 100,
+				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 200;
+		}
+	}
+	if (iUnits == 0)
+		return false;
+	iDamage100 = iDamage100 * CvMilitaryAI::STRIKE_TAKE_DAMAGE_PERCENT / 100;
+	iSelfDamage100 = iSelfDamage100 * CvMilitaryAI::STRIKE_TAKE_LOSS_PERCENT / 100;
+	const int iNet100 = iDamage100 - iCityHeal * 100;
+	if (iNet100 <= 0)
+		return false;	// the city heals faster than we hurt it
+	const int iTurns = (iCityHP * 100 + iNet100 - 1) / iNet100;
+	if (piTurnsNeeded)
+		*piTurnsNeeded = iTurns;
+	const int iCityStrikeDamage100 = CvUnitCombat::DoDamageMath(iCityStrike100, max(100, iBestDefence100),
+		GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
+	const int iLoss = iTurns * (iCityStrikeDamage100 * CvMilitaryAI::STRIKE_TAKE_LOSS_PERCENT / 100 + iSelfDamage100) / 100;
+	return iLoss < iArmyHP - iUnitHP;
+}
+
+/// the strike plan's army (core and support at their counts, as the units they become at the plan's upgrade tech) against the
+/// city: the build-up's target decisions (go, a clearly easier city, siege). No plan: no check (true)
 bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNeeded) const
 {
 	if (piTurnsNeeded)
@@ -2185,16 +2237,9 @@ bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNee
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	if (!pCity || !kPlan.bValid)
 		return true;
-	const CvSeeder kNoSeed;
-	const int iCityDefence100 = max(100, pCity->getStrengthValue());
-	const int iCityStrike100 = max(100, pCity->getStrengthValue(/*bForRangeStrike*/ true));
-	const int iCityHP = max(1, pCity->GetMaxHitPoints() - pCity->getDamage());
-	const int iCityHeal = /*8 in VP*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
+	std::vector< std::pair<const CvUnitEntry*, int> > vArmy;
 	const UnitClassTypes aeClass[2] = { kPlan.eCoreClass, kPlan.eSupportClass };
 	const int aiCount[2] = { kPlan.iCoreTarget, kPlan.iSupportTarget };
-	int iDamage100 = 0;		// to the city per turn, times 100 (melee at half rate)
-	int iSelfDamage100 = 0;	// to us per turn from melee counter-damage, times 100
-	int iArmyHP = 0, iUnitHP = 100, iDefence100ForStrike = 0, iUnits = 0;
 	for (int i = 0; i < 2; i++)
 	{
 		const UnitTypes eUnit = (aeClass[i] != NO_UNITCLASS && aiCount[i] > 0) ? m_pPlayer->GetSpecificUnitType(aeClass[i]) : NO_UNIT;
@@ -2216,40 +2261,53 @@ bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNee
 				}
 			}
 		}
-		const int iCount = aiCount[i];
-		iUnits += iCount;
-		iArmyHP += iCount * iUnitHP;
-		iDefence100ForStrike = max(iDefence100ForStrike, pkUnit->GetCombat() * 100);
-		if (pkUnit->GetRangedCombat() > 0)
-		{
-			iDamage100 += iCount * CvUnitCombat::DoDamageMath(pkUnit->GetRangedCombat() * 100, iCityDefence100,
-				GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
-		}
-		else if (pkUnit->GetCombat() > 0)
-		{
-			iDamage100 += iCount * CvUnitCombat::DoDamageMath(pkUnit->GetCombat() * 100, iCityDefence100,
-				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 200;
-			iSelfDamage100 += iCount * CvUnitCombat::DoDamageMath(iCityDefence100, pkUnit->GetCombat() * 100,
-				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 200;
-		}
+		vArmy.push_back(std::make_pair((const CvUnitEntry*)pkUnit, aiCount[i]));
 	}
-	if (iUnits == 0)
+	if (vArmy.empty())
 		return true;
-	// a buffer (the user: "you probably want a little buffer"): expected values leave out the garrison soaking damage, turns
-	// out of position and bad rolls, so our damage counts at 80% and what the city does to us at 125%
-	iDamage100 = iDamage100 * STRIKE_TAKE_DAMAGE_PERCENT / 100;
-	iSelfDamage100 = iSelfDamage100 * STRIKE_TAKE_LOSS_PERCENT / 100;
-	const int iNet100 = iDamage100 - iCityHeal * 100;
-	if (iNet100 <= 0)
-		return false;	// the city heals faster than we hurt it
-	const int iTurns = (iCityHP * 100 + iNet100 - 1) / iNet100;
+	return StrikeArmyTakesCity(pCity, vArmy, piTurnsNeeded);
+}
+
+/// the user: "only start the attack if the city is takeable": the land combat units we have (siege included, as they are)
+/// against the strike's target's nearest city. No target city: false
+bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
+{
 	if (piTurnsNeeded)
-		*piTurnsNeeded = iTurns;
-	// the city strikes one unit a turn (at our best melee defence)
-	const int iCityStrikeDamage100 = CvUnitCombat::DoDamageMath(iCityStrike100, max(100, iDefence100ForStrike),
-		GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
-	const int iLoss = iTurns * (iCityStrikeDamage100 * STRIKE_TAKE_LOSS_PERCENT / 100 + iSelfDamage100) / 100;
-	return iLoss < iArmyHP - iUnitHP;
+		*piTurnsNeeded = -1;
+	const int iTurn = GC.getGame().getGameTurn();
+	if (!piTurnsNeeded && m_iTakeableTurn == iTurn)	// asked often (production, readiness): once a turn
+		return m_bTakeable;
+	m_iTakeableTurn = iTurn;
+	m_bTakeable = false;
+	const PlayerTypes eTarget = (m_eTimingBuildupTarget != NO_PLAYER) ? m_eTimingBuildupTarget : GetStrikeCityStateTarget();
+	const CvCity* pCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
+	if (!pCity)
+		return false;
+	std::map<UnitTypes, int> mCounts;
+	int iLoop = 0;
+	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || (!pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged()) ||
+			pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pLoopUnit->isDelayedDeath())
+			continue;
+		mCounts[pLoopUnit->getUnitType()]++;
+	}
+	std::vector< std::pair<const CvUnitEntry*, int> > vArmy;
+	for (std::map<UnitTypes, int>::const_iterator it = mCounts.begin(); it != mCounts.end(); ++it)
+		vArmy.push_back(std::make_pair((const CvUnitEntry*)GC.getUnitInfo(it->first), it->second));
+	m_bTakeable = StrikeArmyTakesCity(pCity, vArmy, piTurnsNeeded);
+	return m_bTakeable;
+}
+
+/// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
+/// strike's war against this player, until a city is taken from it. Read by the peace willingness and the operations' aborts
+bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
+{
+	if (eEnemy == NO_PLAYER || GetStrikeState() != STRIKE_WAR)
+		return false;
+	if (eEnemy != m_eTimingBuildupTarget && eEnemy != GetStrikeCityStateTarget())
+		return false;
+	return GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_CAPTURED) == m_iStrikeCapturedMark;
 }
 
 /// AI_AB_TEST (EarlyStrike, LateStrike; the lead, Nov 6): with the strike's army too weak for its target, a clearly easier city
@@ -2527,8 +2585,6 @@ void CvMilitaryAI::UpdateStrikeState()
 	{
 		if (!m_pPlayer->IsAtWarAnyMajor() && !bAtCSWar)
 			eNew = STRIKE_OVER, strWhy = (iCaptured > m_iStrikeCapturedMark) ? "peace after a capture" : "peace, nothing taken";
-		else if (iCaptured == m_iStrikeCapturedMark && m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true) * 2 < m_iStrikeArmyAtWar)
-			eNew = STRIKE_OVER, strWhy = "the army fell below half its size at the declaration, nothing taken";
 	}
 
 	if (eNew != eOld)
@@ -2548,8 +2604,10 @@ void CvMilitaryAI::UpdateStrikeState()
 bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+	//and the user: "only start the attack if the city is takeable"
 	return TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= max(1, m_pPlayer->getNumCities()) + 4 &&
-		GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20) <= 0;
+		GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20) <= 0 &&
+		IsStrikeTargetTakeableNow();
 }
 
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
@@ -2563,7 +2621,8 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
 	//length (WindowUntilReady) still bounds the wait.
 	//and, the expert strike, 3 melee units that can take the city (2 at the city, 1 spare)
-	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN);
+	//and the user: "only start the attack if the city is takeable": the army on hand against the target's nearest city
+	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && IsStrikeTargetTakeableNow());
 }
 
 /// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,
