@@ -233,6 +233,12 @@ TechTypes CvTechAI::ChooseNextTech(CvPlayer *pPlayer, bool bFreeTech)
 			LogResearchChoice(eBookTech);
 			return eBookTech;
 		}
+		eBookTech = pPlayer->GetLateStrikeTech(); // AI_AB_TEST Economy, flag LateStrike: the spike and upgrade techs before the window
+		if (eBookTech != NO_TECH)
+		{
+			LogResearchChoice(eBookTech);
+			return eBookTech;
+		}
 		eBookTech = pPlayer->GetTimingBuildupTech(); // AI_AB_TEST War, flag TimingBuildup
 		if (eBookTech != NO_TECH)
 		{

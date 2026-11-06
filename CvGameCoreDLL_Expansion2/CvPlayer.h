@@ -317,10 +317,9 @@ enum CandidateFixTypes
 	FIX_SPOILER,			// Diplomacy (the user's design): a civ that has fallen too far behind to be first picks the one civ it blames
 							// for its downfall and, while that civ contends for first, helps its enemies (better deals, joint wars) and
 							// sells it nothing. Off in the bundle
-	FIX_LATE_STRIKE,		// War (the user: "every civ builds to its strengths"; late-spike civs such as the Zulu, Mongolia, Assyria, Japan and
-							// Songhai): infrastructure first, then a timed strike with the unique unit. The build-up opens at Personality's
-							// strike plan (open turn, the spike's unit trainable; fallback turn at the latest), builds the plan's core,
-							// support and siege, saves for its upgrade and declares by its turn. Off in the bundle
+	FIX_LATE_STRIKE,		// Economy (the book) and War (the window): a warmonger whose spike comes late (not bMilitaryFirst) plays economy first,
+							// researches its spike and upgrade techs and saves for the upgrades; its build-up opens at Personality's strike plan,
+							// builds the plan's core, support and siege, and declares by the plan's turn. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1926,6 +1925,9 @@ public:
 	bool IsEarlyStrikeCityCapReached() const; // AI_AB_TEST Economy, flag EarlyStrike: K cities before the strike
 	bool IsEarlyStrikeTargetInReach() const; // AI_AB_TEST Economy, flag EarlyStrike: a barbarian camp or a major's city near the capital
 	TechTypes GetEarlyStrikeLuxuryTech() const; // AI_AB_TEST Economy, flag EarlyStrike: the one luxury tech before the upgrade
+	bool IsLateStrikeCiv() const; // AI_AB_TEST Economy, flag LateStrike: a warmonger with a late spike and a strike plan
+	bool IsLateStrikeSaving() const; // AI_AB_TEST Economy, flag LateStrike: from the build-up to the declaration, gold kept for upgrades
+	TechTypes GetLateStrikeTech() const; // AI_AB_TEST Economy, flag LateStrike: the spike's and the upgrade's techs before the window
 	bool IsWarGoldShort() const; // AI_AB_TEST Economy, flag WarGold
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
