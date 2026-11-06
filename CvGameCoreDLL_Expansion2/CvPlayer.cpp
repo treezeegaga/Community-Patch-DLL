@@ -33978,6 +33978,19 @@ bool CvPlayer::IsStrikeNoWonders() const
 /// book after it, and CP's choice (CvUnitProductionAI). bullyabort22 15286C56: Songhai's list built 6 Horsemen and 3 Archers
 /// in PREP (T42-T88), its upkeep went from 13 to 30 a turn, net -7 to -12, and the treasury drained to 0. (0048: the PREP
 /// saving 0046 also had is gone, since Personality's 553dfdc made BUILDUP need no gold; BUILDUP does the saving)
+/// AI_AB_TEST (Economy 0055): no new combat unit for the strike right now. Either the late-PREP hold (0048: net gold under +2),
+/// or, while the strike is active, one more unit couldn't be kept for 10 turns (WarBudget's GetAffordableWarUnits: treasury,
+/// income and CP's own upkeep formula). The strike list ran without a gold check (the experts' lists come with their own
+/// economy). Since War's IsStrikeKeepingUnit, the army can't be scrapped for a deficit, so nothing kept it affordable. Trial
+/// ab-791ab9d 172518A7: Mongolia's BUILDUP (T96-T120) went from 14 to 27 units and net gold from -4 to -30 a turn, and the
+/// treasury sat at 0 from T110. 171787CD: the Aztecs' treasury fell from 183 to 14
+bool CvPlayer::IsStrikeUnitHold() const
+{
+	if (IsLateStrikeUnitHold())
+		return true;
+	return IsStrikeActive() && GetEconomicAI() && GetEconomicAI()->GetAffordableWarUnits(10) < 1;
+}
+
 bool CvPlayer::IsLateStrikeUnitHold() const
 {
 	// cheapest first: this runs in CP's unit sanity check (every unit, every city)
@@ -34851,7 +34864,7 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 				GetEconomicAI()->GetAffordableWarUnits(10) < 1)
 				continue;
 			// AI_AB_TEST (LateStrike, Economy 0048): a late strike's PREP holds combat units while net gold is under +2
-			if (IsLateStrikeHeldUnit(pkUnitInfo) && IsLateStrikeUnitHold())
+			if (IsLateStrikeHeldUnit(pkUnitInfo) && IsStrikeUnitHold())
 				continue;
 
 			eOrder = ORDER_TRAIN;
@@ -35313,7 +35326,7 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// (0054) a late strike's PREP held for income (net gold under +2, IsLateStrikeUnitHold): an income item comes first, a
 	// Market, else a Caravan where a trade route is free, so the hold lifts. Trial ab-791ab9d 172518A7: Karakorum's list
 	// waited on its held Chariot Archer from T29 to T85 with net gold at 0
-	if (IsLateStrikeUnitHold())
+	if (IsStrikeUnitHold())	// (0055: the general hold too)
 	{
 		const BuildingTypes eMarket = GetSpecificBuildingType("BUILDINGCLASS_MARKET", true);
 		if (eMarket != NO_BUILDING && pCity->canConstruct(eMarket))
@@ -35355,10 +35368,11 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 				// (net under +2 a turn) and the list goes on to its economy items. bullyabort22 15286C56: Songhai's list built
 				// 6 Horsemen and 3 Archers in PREP (T42-T88), its upkeep went from 13 to 30 a turn, net -7 to -12, and the
 				// treasury never reached the 300 its BUILDUP waits for
-				if (IsLateStrikeHeldUnit(pkUnitInfo) && IsLateStrikeUnitHold())
+				// (0055) and, while the strike is active, whenever one more unit is unaffordable for 10 turns (IsStrikeUnitHold)
+				if (IsLateStrikeHeldUnit(pkUnitInfo) && IsStrikeUnitHold())
 				{
 					if (strWait.IsEmpty())
-						strWait.Format("(item %d %s, LIST HOLD: net gold %d)", i + 1, pkUnitInfo->GetDescription(), GetTreasury()->CalculateBaseNetGold());
+						strWait.Format("(item %d %s, LIST HOLD: net gold %d, affordable %d)", i + 1, pkUnitInfo->GetDescription(), GetTreasury()->CalculateBaseNetGold(), GetEconomicAI()->GetAffordableWarUnits(10));
 					continue;
 				}
 				// the item's class, or its upgrade once it's obsolete (0047; the upgraded unit counts toward the item)
@@ -35438,7 +35452,7 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP)
 	{
 		const int iSiegeWanted = GetMilitaryAI()->GetTimingBuildupSiegeTarget();
-		if (iSiegeWanted > 0 && GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true) < iSiegeWanted)
+		if (iSiegeWanted > 0 && GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true) < iSiegeWanted && !IsStrikeUnitHold())	// (0055) affordable
 		{
 			const UnitClassTypes eSiegeClass = (kPlan.eSiegeClass != NO_UNITCLASS) ? kPlan.eSiegeClass : (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CATAPULT", true);
 			const UnitTypes eSiege = (eSiegeClass != NO_UNITCLASS) ? GetStrikeListTrainableOnLine(*this, eSiegeClass, pCity) : NO_UNIT;
@@ -35461,14 +35475,15 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// too-weak army and no easier city waited forever, and its cities fell to CP's picks before the strike)
 	const bool bTooWeak = eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && !GetMilitaryAI()->IsStrikeTargetTakeableNow();
 	const bool bMoreCore = (eStrikeState == CvMilitaryAI::STRIKE_WAR || bTooWeak) && GetEconomicAI()->GetAffordableWarUnits(10) >= 1;
-	if (eArmy != NO_UNIT && (bShort || bMoreCore))
+	// (0055) the army short of the plan too only while one more unit is affordable (IsStrikeUnitHold)
+	if (eArmy != NO_UNIT && ((bShort && !IsStrikeUnitHold()) || bMoreCore))
 	{
 		eOrder = ORDER_TRAIN;
 		iData = eArmy;
 		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : (bTooWeak ? "the army (too weak for the target, more core):" : "the army (the plan's counts met, more core):"), GC.getUnitInfo(eArmy)->GetDescription());
 		return true;
 	}
-	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" :
+	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" : bShort ? "LIST NORMAL (army short, unaffordable)" :
 		(GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_WAR ? "LIST NORMAL (army complete, no more affordable)" : "LIST NORMAL (army complete, waiting for the declaration)"), NULL);
 	return false;
 }

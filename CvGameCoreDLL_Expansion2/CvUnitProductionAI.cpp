@@ -210,7 +210,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 	// AI_AB_TEST (LateStrike, Economy 0048): a late strike's PREP is economy first. No new combat unit while net gold is under
 	// +2 a turn, unless the city is in danger (CvPlayer::IsLateStrikeUnitHold)
 	if (bCombat && !bFree && !bDesperate && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
-		kPlayer.IsLateStrikeUnitHold() && !m_pCity->isInDangerOfFalling())
+		kPlayer.IsStrikeUnitHold() && !m_pCity->isInDangerOfFalling())	// (0055: the general hold)
 		return SR_STRATEGY;
 
 	if (bCombat && !bFree && !bDesperate && pkUnitEntry->GetDomainType() == DOMAIN_LAND && pkUnitEntry->GetDefaultUnitAIType() != UNITAI_EXPLORE &&
