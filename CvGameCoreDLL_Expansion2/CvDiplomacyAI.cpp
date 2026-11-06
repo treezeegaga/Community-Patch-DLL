@@ -25765,9 +25765,14 @@ void CvDiplomacyAI::SelectBestApproachTowardsMinorCiv(PlayerTypes ePlayer)
 	{
 		CvMilitaryAI* pStrikeMilitary = GetPlayer()->GetMilitaryAI();
 		const CvMilitaryAI::StrikeStateTypes eStrike = pStrikeMilitary->GetStrikeState();
+		// (the lead, bullygreedy23 167DE984: the strike declared on Panama City every turn T66-T87 and no war held. In the
+		// window the phase is WINDOW, not ATTACK, so the approach wasn't WAR, the city-state wasn't our CS war target, and
+		// the city-state peace (DoUpdatePeaceTreatyWillingness, part 3) made peace again. Now WAR once we're at war with it
+		// in BUILDUP, or once the army is ready, whatever the window's phase)
 		if (pStrikeMilitary->GetStrikeCityStateTarget() == ePlayer &&
-			((eStrike == CvMilitaryAI::STRIKE_BUILDUP && pStrikeMilitary->GetTimingBuildupPhase() == CvMilitaryAI::TIMING_BUILDUP_ATTACK &&
-			  GET_TEAM(GetTeam()).canDeclareWar(eTeam, eMyPlayer)) ||
+			((eStrike == CvMilitaryAI::STRIKE_BUILDUP && (IsAtWar(ePlayer) ||
+			  ((pStrikeMilitary->GetTimingBuildupPhase() == CvMilitaryAI::TIMING_BUILDUP_ATTACK || pStrikeMilitary->IsTimingBuildupArmyReady() ||
+			    pStrikeMilitary->IsStrikeAsReadyAsItGets()) && GET_TEAM(GetTeam()).canDeclareWar(eTeam, eMyPlayer)))) ||
 			 (eStrike == CvMilitaryAI::STRIKE_WAR && IsAtWar(ePlayer))))
 		{
 			int iHighest = 0;
@@ -26022,6 +26027,20 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 			// Only consider peace with City-States if they aren't our war target or we're doing poorly (since there's no War Weariness)
 			if (!bMakePeaceWithAllMinors && GetCSWarTargetPlayer() == eMinor)
 				continue;
+
+			// AI_AB_TEST (strike; the lead, bullygreedy23 167DE984): never with the strike's own city-state target during its
+			// build-up and war until a city is taken (the user: no retreat once committed). The strike's declaration was undone
+			// here every turn
+			{
+				const CvMilitaryAI* pStrikeMilitary = GetPlayer()->GetMilitaryAI();
+				if (pStrikeMilitary->GetStrikeCityStateTarget() == eMinor &&
+					(pStrikeMilitary->GetStrikeState() == CvMilitaryAI::STRIKE_BUILDUP || pStrikeMilitary->IsStrikeNoRetreat(eMinor)))
+				{
+					if (bLog)
+						LogPeaceWillingnessReason(eMinor, "STRIKE: no peace with the strike's city-state target");
+					continue;
+				}
+			}
 
 			if (!bCriticalState)
 			{

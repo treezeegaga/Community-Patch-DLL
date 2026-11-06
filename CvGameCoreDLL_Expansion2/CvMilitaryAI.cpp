@@ -2829,8 +2829,15 @@ void CvMilitaryAI::UpdateStrikeState()
 			if (GC.getLogging() && GC.getAILogging())
 				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaring war on the city-state %s (%s)",
 					GET_PLAYER(eCS).getCivilizationShortDescription(), bReady ? "the army ready" : "as ready as it gets"));
-			if (m_pPlayer->GetDiplomacyAI()->DeclareWar(eCS))
+			const bool bDeclared = m_pPlayer->GetDiplomacyAI()->DeclareWar(eCS);
+			if (bDeclared)
 				m_iStrikeDeclared = 1;
+			// the outcome (the lead: 22 "declaring" lines and no war in 167DE984)
+			if (GC.getLogging() && GC.getAILogging())
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaration on the city-state %s %s", GET_PLAYER(eCS).getCivilizationShortDescription(),
+					bDeclared && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam()) ? "made: at war" :
+					!GET_TEAM(m_pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eCS).getTeam(), m_pPlayer->GetID()) ? "failed: canDeclareWar false" :
+					IsStrikeDeclarationBlocked(eCS) ? "failed: the strike block" : "failed: DeclareWar refused"));
 		}
 	}
 
