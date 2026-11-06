@@ -327,6 +327,9 @@ void CvMilitaryAI::Reset()
 	m_iStrikeCityState = NO_PLAYER;
 	m_iStrikeSiege = 0;
 	m_iArmyQualityTurn = -1;
+	m_iSiegeTrainableTurn = -1;
+	m_bSiegeTrainable = true;
+	m_iStrikeNotReadyKey = 0;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
 	m_eLandDefenseState = NO_DEFENSE_STATE;
@@ -2046,7 +2049,21 @@ int CvMilitaryAI::GetTimingBuildupFieldUnits() const
 bool CvMilitaryAI::IsTimingBuildupArmyBuilt() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	return iSiege >= GetTimingBuildupSiegeTarget() && TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= GetTimingBuildupFieldTarget();
+	//a strike: siege we can't train yet (its tech not in) doesn't hold the army back (Persia, 15A7D14F: BUILDUP for 73 turns
+	//against a 2-siege target with 7 land units); checked once a turn
+	int iSiegeTarget = GetTimingBuildupSiegeTarget();
+	if (iSiegeTarget > 0 && iSiege < iSiegeTarget && IsStrikeBuildup())
+	{
+		const int iTurn = GC.getGame().getGameTurn();
+		if (m_iSiegeTrainableTurn != iTurn)
+		{
+			m_iSiegeTrainableTurn = iTurn;
+			m_bSiegeTrainable = GetTimingBuildupUnitType(true) != NO_UNIT;
+		}
+		if (!m_bSiegeTrainable)
+			iSiegeTarget = 0;
+	}
+	return iSiege >= iSiegeTarget && TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= GetTimingBuildupFieldTarget();
 }
 
 /// AI_AB_TEST (flag EarlyStrike, upgrade and go; Economy keeps the treasury for it, patch 0029): until the strike an
@@ -2395,6 +2412,46 @@ void CvMilitaryAI::UpdateStrikeState()
 		if (eNew == STRIKE_PREP && bEarly && !bInReach && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN &&
 			TimingBuildupFieldUnits(m_pPlayer, this, m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true)) >= 8)
 			eNew = STRIKE_OVER, strWhy = "the army is built and no target is in reach";
+	}
+
+	// a strike's build-up: why it isn't ready yet, logged when the blockers change (the lead: a long BUILDUP must say what held
+	// it); and a city-state target is declared on directly once the army is ready or as ready as it gets
+	if (eNew == STRIKE_BUILDUP && m_iTimingBuildupStartTurn >= 0)
+	{
+		const bool bReady = IsTimingBuildupArmyReady();
+		const bool bAsReady = IsStrikeAsReadyAsItGets();
+		if (!bReady && !bAsReady && GC.getLogging() && GC.getAILogging())
+		{
+			const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+			const int iField = TimingBuildupFieldUnits(m_pPlayer, this, iSiege);
+			int iPlanBill = 0;
+			const bool bPlanArmy = m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady(&iPlanBill);
+			const int iBill = GetEarlyStrikeUpgradeBill();
+			const int iMelee = GetEarlyStrikeMeleeUnits();
+			const int iAffordable = m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20);
+			const bool bBuilt = IsTimingBuildupArmyBuilt();
+			const int iKey = 1 + iSiege + 8 * GetTimingBuildupSiegeTarget() + 64 * iField + 4096 * GetTimingBuildupFieldTarget() + (bPlanArmy ? 1 << 20 : 0) +
+				(iBill > 0 ? 1 << 21 : 0) + (iMelee >= EARLY_STRIKE_MELEE_MIN ? 1 << 22 : 0) + (iAffordable > 0 ? 1 << 23 : 0) + (bBuilt ? 1 << 24 : 0);
+			if (iKey != m_iStrikeNotReadyKey)
+			{
+				m_iStrikeNotReadyKey = iKey;
+				const CvStrikePlan& kStrikePlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: not ready (normal army %s: field %d/%d, siege %d/%d; plan army %s: core line %d/%d, support line %d/%d, upgrade tech %s, plan bill %d; upgrade bill %d (gold %d); melee %d/%d; affordable %d more)",
+					bBuilt ? "built" : "short", iField, GetTimingBuildupFieldTarget(), iSiege, GetTimingBuildupSiegeTarget(), bPlanArmy ? "ready" : "short",
+					m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kStrikePlan.eCoreClass), kStrikePlan.iCoreTarget,
+					m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kStrikePlan.eSupportClass), kStrikePlan.iSupportTarget,
+					(kStrikePlan.eUpgradeTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(kStrikePlan.eUpgradeTech)) ? "in" : "not in",
+					iPlanBill, iBill, m_pPlayer->GetTreasury()->GetGold(), iMelee, (int)EARLY_STRIKE_MELEE_MIN, iAffordable));
+			}
+		}
+		if (eCS != NO_PLAYER && GET_PLAYER(eCS).isMinorCiv() && !bAtCSWar && (bReady || bAsReady) &&
+			GET_TEAM(m_pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eCS).getTeam(), m_pPlayer->GetID()))
+		{
+			if (GC.getLogging() && GC.getAILogging())
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaring war on the city-state %s (%s)",
+					GET_PLAYER(eCS).getCivilizationShortDescription(), bReady ? "the army ready" : "as ready as it gets"));
+			m_pPlayer->GetDiplomacyAI()->DeclareWar(eCS);
+		}
 	}
 
 	if (eNew == STRIKE_PREP)

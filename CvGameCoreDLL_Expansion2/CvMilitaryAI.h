@@ -418,6 +418,9 @@ private:
 	bool IsStrikeArmyStrongEnough(const CvCity* pCity) const;	// the plan's (upgraded) army against the city's defence
 	int m_iStrikeSiege;				// the build-up brings siege (the army too weak for the target, no easier city in reach), saved
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
+	mutable int m_iSiegeTrainableTurn;	// AI_AB_TEST strike: the turn the siege check was made, and its answer (not saved)
+	mutable bool m_bSiegeTrainable;
+	int m_iStrikeNotReadyKey;			// AI_AB_TEST strike: the last logged "not ready" blockers (not saved; logs only)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;
 	void DoTimingBuildup();
