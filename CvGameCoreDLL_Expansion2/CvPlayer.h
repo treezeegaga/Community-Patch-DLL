@@ -295,6 +295,8 @@ enum CandidateFixTypes
 	FIX_EARLY_STRIKE,		// Economy (the book) and War (the build-up): a warmonger whose power spike comes early (Personality's bMilitaryFirst)
 							// opens military first (UU x3, Worker, Settler, ranged x4, UU x2), keeps a small empire, and in its build-up (turn 40
 							// Standard, the book's army built) leads with the spike unit, wants 8+ field units, no siege vs an unwalled target. Off in the bundle
+	FIX_EARLY_STRIKE_AGGRESSOR,	// test harness (War): in RoleFixes, bully mode picks an early-spike civ (Personality's bMilitaryFirst) as the
+							// aggressor when the game has one, so EarlyStrike is exercised (by default about a third of bully aggressors qualify)
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

@@ -33449,6 +33449,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"SiegeSlots", false},
 	{"WarTradeRoutes", false},
 	{"EarlyStrike", false},
+	{"EarlyStrikeAggressor", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33646,6 +33647,12 @@ static ABTestRoleTypes GetABTestRoleOfSlot(PlayerTypes ePlayer)
 		s_iTurn = iTurn;
 		s_iMode = iMode;
 		std::vector< std::pair<int, int> > aAggressor, aTall;	// (score, player), highest first after sorting
+		// AI_AB_TEST (test harness, EarlyStrikeAggressor in RoleFixes, War): an early-spike civ (the strategy profile's
+		// bMilitaryFirst: the civ plays EarlyStrike's book) is the bully aggressor first, warmongers next. By default the
+		// most offensive warmonger is picked, and about a third of bully aggressors qualified (48 of 147 logged games),
+		// though 142 of the 147 had a qualifying civ in the game. The profile is game data, so both games of a pair agree.
+		const bool bEarlyStrikeAggressor = iMode == AB_MODE_BULLY &&
+			(bool)(GC.getGame().GetABTestRoleFixes() & CvPlayer::GetABTestFixBit((int)FIX_EARLY_STRIKE_AGGRESSOR));
 		for (int i = 0; i < MAX_MAJOR_CIVS; i++)
 		{
 			s_aeRole[i] = AB_ROLE_NONE;
@@ -33657,7 +33664,8 @@ static ABTestRoleTypes GetABTestRoleOfSlot(PlayerTypes ePlayer)
 			const bool bWarmonger = IsABTestWarmongerCiv(kLoop);
 			const bool bTallTrait = kLoop.GetPlayerTraits()->IsNerd() || kLoop.GetPlayerTraits()->IsSmaller();
 			const int iTie = (int)(ABTestHash(uSeed, 0xAB10u, (unsigned int)i) & 0xFF);	// random order among equals
-			aAggressor.push_back(std::make_pair((bWarmonger ? 100000 : 0) + iOffense * 1000 + iTie, i));
+			const bool bEarlySpike = bEarlyStrikeAggressor && kLoop.GetGrandStrategyAI() && kLoop.GetGrandStrategyAI()->GetStrategyProfile().bMilitaryFirst;
+			aAggressor.push_back(std::make_pair((bEarlySpike ? 200000 : 0) + (bWarmonger ? 100000 : 0) + iOffense * 1000 + iTie, i));
 			aTall.push_back(std::make_pair((bTallTrait ? 100000 : 0) + (bWarmonger ? -100000 : 0) + iPeaceful * 1000 + iTie, i));
 		}
 		std::sort(aAggressor.rbegin(), aAggressor.rend());
