@@ -7,6 +7,7 @@
 	------------------------------------------------------------------------------------------------------- */
 #include "CvGameCoreDLLPCH.h"
 #include "CvGrandStrategyAI.h"
+#include "CvInternalGameCoreUtils.h"
 #include "CvEconomicAI.h"
 #include "CvCitySpecializationAI.h"
 #include "CvDiplomacyAI.h"
@@ -1973,6 +1974,11 @@ void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
 		const int iTurn = (iColumn < iNumColumns) ? aiTurnByColumn[iColumn] : aiTurnByColumn[iNumColumns - 1] + 20 * (iColumn - iNumColumns + 1);
 		if (iTurn >= iBestTurn)
 			continue;
+		// a spike out of reach is no spike (the user, 2026-11-06, on Germany's Panzer at T227: "you cant do a turn 227
+		// timing attack. germany would either need to use normal units for an attack earlier or not be aggressive at
+		// all"): units past about T175 Standard (T117 Quick, Gunpowder and later) don't count
+		if (iTurn > 175)
+			continue;
 		iBestTurn = iTurn;
 		kProfile.eSpikeUnit = eUnit;
 		kProfile.eSpikeTech = pkTech ? eTech : NO_TECH;
@@ -2167,14 +2173,57 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.iNumBuilds = 0;
 	kPlan.iNumTechs = 0;
 	kPlan.bListInferred = false;
+	kPlan.bGenericRush = false;
 	for (int iItem = 0; iItem < STRIKE_LIST_MAX; iItem++)
 	{
 		kPlan.aBuilds[iItem].bUnit = false;
 		kPlan.aBuilds[iItem].iClass = -1;
 		kPlan.aeTechs[iItem] = NO_TECH;
 	}
-	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
+	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return;
+	// No unique land unit in reach (the user, 2026-11-06: "germany would either need to use normal units for an attack
+	// earlier or not be aggressive at all"): a warmonger plays the research's standard strike (G1, S1-S3: Archers early,
+	// one luxury, Construction, upgrade to Composite Bowmen with 70-80 gold each, 5-7 of them and 2+ melee, around T55-70
+	// Standard, Liberty for a plain Composite Bowman rush); any other civ gets no strike plan
+	if (kProfile.eSpikeUnit == NO_UNIT)
+	{
+		if (!m_pPlayer->IsABTestWarmonger())
+			return;
+		const int iRushSpeed = max(1, GC.getGame().getGameSpeedInfo().getTrainPercent());
+		kPlan.bValid = true;
+		kPlan.bGenericRush = true;
+		kPlan.bListInferred = true;
+		kPlan.eCoreClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_ARCHER", true);
+		kPlan.iCoreTarget = 6;
+		kPlan.eSupportClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SPEARMAN", true);
+		kPlan.iSupportTarget = 3;
+		kPlan.eUpgradeTech = (TechTypes)GC.getInfoTypeForString("TECH_CONSTRUCTION", true);
+		kPlan.iUpgradeGoldPerUnit = 75;
+		kPlan.iCoreBeforeSettler = 2;
+		kPlan.iMaxCitiesBeforeStrike = 3;
+		kPlan.iOpenTurn = 55 * iRushSpeed / 100;	// logged expectations only
+		kPlan.iDeclareByTurn = 65 * iRushSpeed / 100;
+		kPlan.iFallbackTurn = 75 * iRushSpeed / 100;
+		kPlan.eFirstPolicyBranch = (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_LIBERTY", true);
+		kPlan.bSiegeOnlyIfWalled = true;
+		kPlan.bBarbarianHunt = true;
+		kPlan.bLateStrike = false;
+		// G1's list [I]: Archers early, two settlers, spearmen to take the city; research Archery, a luxury, Construction
+		static const char* const aszRushBuilds[] = { "UNITCLASS_SCOUT", "UNITCLASS_ARCHER", "UNITCLASS_ARCHER", "UNITCLASS_SETTLER", "UNITCLASS_WORKER",
+			"UNITCLASS_ARCHER", "UNITCLASS_SETTLER", "UNITCLASS_ARCHER", "UNITCLASS_SPEARMAN", "UNITCLASS_ARCHER", "UNITCLASS_SPEARMAN", "UNITCLASS_ARCHER" };
+		for (int iItem = 0; iItem < (int)(sizeof(aszRushBuilds) / sizeof(aszRushBuilds[0])); iItem++)
+			AddStrikeBuild(kPlan, true, GC.getInfoTypeForString(aszRushBuilds[iItem], true));
+		const TechTypes eArchery = (TechTypes)GC.getInfoTypeForString("TECH_ARCHERY", true);
+		const TechTypes eBronze = (TechTypes)GC.getInfoTypeForString("TECH_BRONZE_WORKING", true);
+		if (eArchery != NO_TECH)
+			kPlan.aeTechs[kPlan.iNumTechs++] = eArchery;
+		kPlan.aeTechs[kPlan.iNumTechs++] = STRIKE_TECH_LUXURY;
+		if (eBronze != NO_TECH)
+			kPlan.aeTechs[kPlan.iNumTechs++] = eBronze;
+		CompleteStrikeLists(kPlan);
+		return;
+	}
 
 	struct ExpertRow
 	{
@@ -2462,6 +2511,14 @@ void CvGrandStrategyAI::AddStrikeBuild(CvStrikePlan& kPlan, bool bUnit, int iCla
 {
 	if (iClass < 0 || kPlan.iNumBuilds >= STRIKE_LIST_MAX)
 		return;
+	// no wonders, world or national (Economy, 2026-11-06: the executor builds what the list says, and no wonder before a
+	// strike): the research's Pyramids, Temple of Artemis and National College stay off the lists
+	if (!bUnit)
+	{
+		CvBuildingClassInfo* pkClass = GC.getBuildingClassInfo((BuildingClassTypes)iClass);
+		if (!pkClass || isWorldWonderClass(*pkClass) || isTeamWonderClass(*pkClass) || isNationalWonderClass(*pkClass) || isLimitedWonderClass(*pkClass))
+			return;
+	}
 	kPlan.aBuilds[kPlan.iNumBuilds].bUnit = bUnit;
 	kPlan.aBuilds[kPlan.iNumBuilds].iClass = iClass;
 	kPlan.iNumBuilds++;
@@ -2985,7 +3042,7 @@ void CvGrandStrategyAI::LogStrategyProfile()
 	{
 		CvString strPlan;
 		strPlan.Format("%03d, %s, strike plan %s: core %s x%d, support %s x%d, siege %s x%d, upgrade %s (%d gold each), N %d, K %d, open T%d, declare by T%d, fallback T%d, policy %s%s%s",
-			iTurn, m_pPlayer->getCivilizationShortDescription(), kPlan.bExpert ? "expert" : "default",
+			iTurn, m_pPlayer->getCivilizationShortDescription(), kPlan.bExpert ? "expert" : (kPlan.bGenericRush ? "generic rush (no unique unit in reach)" : "default"),
 			(kPlan.eCoreClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eCoreClass)->GetType() : "none", kPlan.iCoreTarget,
 			(kPlan.eSupportClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSupportClass)->GetType() : "none", kPlan.iSupportTarget,
 			(kPlan.eSiegeClass != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSiegeClass)->GetType() : "none", kPlan.iSiegeTarget,

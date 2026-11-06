@@ -123,6 +123,7 @@ struct CvStrikePlan
 	int iNumTechs;
 	TechTypes aeTechs[STRIKE_LIST_MAX];
 	bool bListInferred;
+	bool bGenericRush;			// no unique unit in reach: a warmonger's plain Composite Bowman rush (the research's G1)
 };
 struct CvStrategyProfile
 {
