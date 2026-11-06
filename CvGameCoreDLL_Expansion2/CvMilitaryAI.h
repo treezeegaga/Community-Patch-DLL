@@ -223,6 +223,7 @@ public:
 	bool IsEarlyStrikeCiv() const;
 	bool IsEarlyStrikeBuildup() const;
 	bool IsEarlyStrikeTargetUnwalled() const;
+	int GetEarlyStrikeUpgradeBill(int* piUnits = NULL, bool* pbTechSoon = NULL) const;	// upgrade-and-go (the user's Composite Bowmen)
 	bool IsBigArmyUpkeepWaived() const;
 	// AI_AB_TEST (flag ArmyQuality): the strength floor for the TimingBuildup army (70% of the best trainable melee / ranged land unit)
 	int GetArmyQualityFloor(bool bRanged) const;

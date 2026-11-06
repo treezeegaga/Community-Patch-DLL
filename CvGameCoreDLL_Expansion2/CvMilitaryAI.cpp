@@ -2025,7 +2025,47 @@ int CvMilitaryAI::GetTimingBuildupFieldUnits() const
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 {
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
-	return iSiege >= GetTimingBuildupSiegeTarget() && TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= GetTimingBuildupFieldTarget();
+	if (iSiege < GetTimingBuildupSiegeTarget() || TimingBuildupFieldUnits(m_pPlayer, this, iSiege) < GetTimingBuildupFieldTarget())
+		return false;
+	//EarlyStrike, upgrade and go (the user: "i upgraded 3 archers to composite archers. that was part of the timing attack.
+	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
+	//length (WindowUntilReady) still bounds the wait.
+	return !IsEarlyStrikeBuildup() || GetEarlyStrikeUpgradeBill() == 0;
+}
+
+/// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,
+/// or is being researched with at most 8 turns (Standard) left; resources for the new unit required. The user's treasury
+/// went from 263 at T40 to 31 at T50 (Quick): saved for the Composite Bowmen, spent just before the declaration.
+int CvMilitaryAI::GetEarlyStrikeUpgradeBill(int* piUnits, bool* pbTechSoon) const
+{
+	if (piUnits)
+		*piUnits = 0;
+	if (pbTechSoon)
+		*pbTechSoon = false;
+	CvPlayerTechs* pTechs = m_pPlayer->GetPlayerTechs();
+	const TechTypes eResearch = pTechs->GetCurrentResearch();
+	const bool bResearchSoon = eResearch != NO_TECH && pTechs->GetResearchTurnsLeft(eResearch, true) <= max(2, 8 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
+	int iBill = 0, iLoop = 0;
+	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE ||
+			pLoopUnit->isDelayedDeath() || pLoopUnit->plot()->getOwner() != m_pPlayer->GetID())
+			continue;
+		const UnitTypes eUpgrade = pLoopUnit->GetUpgradeUnitType();
+		CvUnitEntry* pkUpgrade = eUpgrade != NO_UNIT ? GC.getUnitInfo(eUpgrade) : NULL;
+		if (!pkUpgrade || !m_pPlayer->HasResourceForNewUnit(eUpgrade, false, true, pLoopUnit->getUnitType()))
+			continue;
+		const TechTypes eTech = (TechTypes)pkUpgrade->GetPrereqAndTech();
+		const bool bKnown = eTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech);
+		if (!bKnown && !(bResearchSoon && eTech == eResearch))
+			continue;
+		iBill += pLoopUnit->upgradePrice(eUpgrade);
+		if (piUnits)
+			(*piUnits)++;
+		if (!bKnown && pbTechSoon)
+			*pbTechSoon = true;
+	}
+	return iBill;
 }
 
 /// AI_AB_TEST (diagnostic flag BigArmy, the user and the lead): is the attack failing because the army is too small, or
@@ -2289,6 +2329,9 @@ void CvMilitaryAI::DoTimingBuildup()
 	{
 		UnitTypes eSiege = pCapital->GetCityStrategyAI()->GetUnitProductionAI()->RecommendUnit(UNITAI_CITY_BOMBARD, true);
 		int iGoldTarget = (eSiege != NO_UNIT) ? 2 * pCapital->GetPurchaseCost(eSiege) : 0;
+		//EarlyStrike: the upgrade bill, and no siege gold when the strike needs no siege
+		if (IsEarlyStrikeBuildup())
+			iGoldTarget = (GetTimingBuildupSiegeTarget() > 0 ? iGoldTarget : 0) + GetEarlyStrikeUpgradeBill();
 		if (iGoldTarget > 0)
 		{
 			m_pPlayer->GetEconomicAI()->StartSaveForPurchase(PURCHASE_TYPE_UNIT, iGoldTarget, 400);
@@ -2302,7 +2345,14 @@ void CvMilitaryAI::DoTimingBuildup()
 	}
 
 	// in the window: buy one siege or attack unit a turn in the city nearest the target, while the gold allows
-	if (!bWarChest && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
+	//EarlyStrike: gold goes to the upgrades first; log the wait
+	int iUpgradeUnits = 0;
+	bool bUpgradeTechSoon = false;
+	const int iUpgradeBill = IsEarlyStrikeBuildup() && IsInTimingBuildupWindow() ? GetEarlyStrikeUpgradeBill(&iUpgradeUnits, &bUpgradeTechSoon) : 0;
+	if (iUpgradeBill > 0 && bLog)
+		pTactical->LogTacticalMessage(CvString::format("EarlyStrike: upgrade and go, %d units to upgrade for %d gold (gold %d)%s",
+			iUpgradeUnits, iUpgradeBill, m_pPlayer->GetTreasury()->GetGold(), bUpgradeTechSoon ? ", upgrade tech a few turns off" : ""));
+	if (!bWarChest && iUpgradeBill == 0 && IsInTimingBuildupWindow() && !IsTimingBuildupArmyReady())
 	{
 		CvCity* pTheirCity = m_eTimingBuildupTarget != NO_PLAYER ? m_pPlayer->GetClosestCityToUsByPlots(m_eTimingBuildupTarget) : NULL;
 		CvCity* pBuyCity = pTheirCity ? m_pPlayer->GetClosestCityByPathLength(pTheirCity->plot()) : pCapital;
@@ -3254,6 +3304,11 @@ CvUnit* CvMilitaryAI::FindArmyScrapUnit() const
 		if (pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE && bReconNeeded)
 			continue;
 		if (IsArmyQualityUnit(&pLoopUnit->getUnitInfo()))
+			continue;
+		//not a unit waiting for its upgrade (the lead: Archers waiting for Composite Bowmen are the strike's army)
+		const UnitTypes eUpgrade = pLoopUnit->GetUpgradeUnitType();
+		if (eUpgrade != NO_UNIT && (pLoopUnit->CanUpgradeRightNow(true) ||
+			(TechTypes)GC.getUnitInfo(eUpgrade)->GetPrereqAndTech() == m_pPlayer->GetPlayerTechs()->GetCurrentResearch()))
 			continue;
 		const int iScore = pLoopUnit->GetPower() * pLoopUnit->getUnitInfo().GetProductionCost() + pLoopUnit->getLevel();
 		if (iScore < iBestScore)
