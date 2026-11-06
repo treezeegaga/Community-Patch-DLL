@@ -327,6 +327,7 @@ void CvMilitaryAI::Reset()
 	m_iStrikeArmyAtWar = 0;
 	m_iStrikeCityState = NO_PLAYER;
 	m_iStrikeSiege = 0;
+	m_iStrikeDeclared = 0;
 	m_iArmyQualityTurn = -1;
 	m_iSiegeTrainableTurn = -1;
 	m_bSiegeTrainable = true;
@@ -398,6 +399,7 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iStrikeArmyAtWar);
 	visitor(militaryAI.m_iStrikeCityState);
 	visitor(militaryAI.m_iStrikeSiege);
+	visitor(militaryAI.m_iStrikeDeclared);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -2378,6 +2380,10 @@ void CvMilitaryAI::UpdateStrikeState()
 	const bool bEarly = IsEarlyStrikeCiv();
 	const bool bLate = !bEarly && IsLateStrikeCiv();
 	const StrikeStateTypes eOld = GetStrikeState();
+	// Economy's request: an exact "we have declared" (its wonder and gift bans hold until then, also after an OVER). Our own
+	// declarations on majors (the game's counter), a war on a city-state (only we start those), or the strike's own (below)
+	if (m_iStrikeDeclared == 0 && (GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED) > 0 || m_pPlayer->IsAtWarAnyMinor()))
+		m_iStrikeDeclared = 1;
 	if (!bEarly && !bLate)
 	{
 		if (eOld != STRIKE_OVER)
@@ -2555,7 +2561,8 @@ void CvMilitaryAI::UpdateStrikeState()
 			if (GC.getLogging() && GC.getAILogging())
 				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: declaring war on the city-state %s (%s)",
 					GET_PLAYER(eCS).getCivilizationShortDescription(), bReady ? "the army ready" : "as ready as it gets"));
-			m_pPlayer->GetDiplomacyAI()->DeclareWar(eCS);
+			if (m_pPlayer->GetDiplomacyAI()->DeclareWar(eCS))
+				m_iStrikeDeclared = 1;
 		}
 	}
 
@@ -2580,6 +2587,7 @@ void CvMilitaryAI::UpdateStrikeState()
 		strWhy = IsTimingBuildupArmyReady() ? "declared, the army ready" : "declared, as ready as it got";
 		m_iStrikeCapturedMark = iCaptured;
 		m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+		m_iStrikeDeclared = 1;
 	}
 	else if (eNew == STRIKE_WAR)
 	{
