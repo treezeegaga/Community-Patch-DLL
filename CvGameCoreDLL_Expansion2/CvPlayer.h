@@ -287,6 +287,9 @@ enum CandidateFixTypes
 							// of income, upkeep included), from the normal army up to BigArmy's size, with no upkeep waiver. Off in the bundle
 	FIX_VICTORY_TECH_PATH,	// Personality (the user, on Economy's finding): after the opening book, each target victory's key techs get extra
 							// research weight by the strategy profile's victory weights (not forced). Off in the bundle
+	FIX_SPOILER,			// Diplomacy (the user's design): a civ that has fallen too far behind to be first picks the one civ it blames
+							// for its downfall and, while that civ contends for first, helps its enemies (better deals, joint wars) and
+							// sells it nothing. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)

@@ -918,6 +918,13 @@ int CvDealAI::GetDealValue(CvDeal* pDeal) const
 	pDeal->SetFromPlayerValue(0);
 	pDeal->SetToPlayerValue(0);
 
+	// FIX_SPOILER: we've fallen too far behind to be first and blame one civ for it. Outside peace deals we give that civ
+	// nothing, and we give its enemies (at war with it or denouncing it) better terms: what we hand over counts at 75%.
+	// GetSpoilerGrudge() is NO_PLAYER unless the flag is on and a grudge is active.
+	const bool bSpoilerPeace = eOtherPlayer != NO_PLAYER && (pDeal->IsPeaceTreatyTrade(eMyPlayer) || pDeal->IsPeaceTreatyTrade(eOtherPlayer));
+	const bool bSpoilerDeny = !bSpoilerPeace && eOtherPlayer != NO_PLAYER && GetPlayer()->GetDiplomacyAI()->GetSpoilerGrudge() == eOtherPlayer;
+	const bool bSpoilerHelp = !bSpoilerPeace && eOtherPlayer != NO_PLAYER && GetPlayer()->GetDiplomacyAI()->IsSpoilerHelping(eOtherPlayer);
+
 	TradedItemList::iterator it;
 	for (it = pDeal->m_TradedItems.begin(); it != pDeal->m_TradedItems.end(); ++it)
 	{
@@ -961,6 +968,11 @@ int CvDealAI::GetDealValue(CvDeal* pDeal) const
 				iDuration = iDuration * max(50, 100 - 25 * iBroken) / 100;
 			}
 			iItemValue = GetTradeItemValue(it->m_eItemType, bFromMe, eOtherPlayer, it->m_iData1, it->m_iData2, it->m_iData3, it->m_bFlag1, iDuration, false, true);
+			// FIX_SPOILER (see above)
+			if (bFromMe && bSpoilerDeny)
+				iItemValue = INT_MAX;
+			else if (bFromMe && bSpoilerHelp && iItemValue != INT_MAX && iItemValue > 0)
+				iItemValue = (iItemValue * 75) / 100;
 			it->m_iValue = iItemValue;
 		}
 

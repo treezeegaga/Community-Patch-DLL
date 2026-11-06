@@ -1403,6 +1403,13 @@ public:
 	bool IsGoldGiftAllowed(PlayerTypes eMinor); // AI_AB_TEST FIX_GIFTS_NEED_PATRONAGE
 	bool IsGreedyWideDealSeeker() const; // AI_AB_TEST FIX_GREEDY_WIDE_DEALS
 	bool IsWarChestSeeker() const; // AI_AB_TEST FIX_WAR_CHEST_TRIBUTE
+	// AI_AB_TEST FIX_SPOILER: fallen too far behind to be first, help the enemies of the civ we blame
+	void DoUpdateSpoiler();
+	int GetSpoilerBlame(PlayerTypes ePlayer) const;
+	bool IsSpoilerContender(PlayerTypes ePlayer) const;
+	PlayerTypes GetSpoilerGrudge() const { return m_eSpoilerGrudge; } // NO_PLAYER unless the flag is on and a grudge is active
+	bool IsSpoilerHelping(PlayerTypes ePlayer) const; // ePlayer is visibly against our grudge (at war with it or denouncing it)
+	void LogSpoiler(const CvString& strMessage) const;
 	bool IsWantsToConquer(PlayerTypes ePlayer) const;
 	bool IsPotentialMilitaryTargetOrThreat(PlayerTypes ePlayer, bool bFromApproachSelection) const;
 
@@ -1916,6 +1923,11 @@ private:
 	PlayerTypes m_eCSWarTarget;
 	PlayerTypes m_eCSBullyTarget;
 	PlayerTypes m_eNewAIConquestTarget; // AI_AB_TEST: the committed target of GetNewAIConquestTarget, saved with the game
+	PlayerTypes m_eSpoilerGrudge; // AI_AB_TEST FIX_SPOILER: the civ we blame, while it contends for first (saved)
+	int m_iSpoilerBehindTurns; // AI_AB_TEST FIX_SPOILER: consecutive turns far behind first place (saved)
+	int m_iSpoilerBehindStartRatio; // AI_AB_TEST FIX_SPOILER: our score as a % of first place's when that stretch began (saved)
+	int m_iSpoilerLastTurn; // AI_AB_TEST FIX_SPOILER: the game turn of the last update; DoTurn can run more than once a turn (saved)
+	unsigned int m_uiSpoilerHelpingMask; // AI_AB_TEST FIX_SPOILER: who we helped last turn, for the log only (not saved)
 
 	// Other Global Memory
 	bool m_bAvoidDeals; // Not serialized!
