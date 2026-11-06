@@ -2149,6 +2149,16 @@ bool CvMilitaryAI::GetEarlyStrikeWindow(CvStrikeWindow& kWindow) const
 	return m_pPlayer->GetGrandStrategyAI() && m_pPlayer->GetGrandStrategyAI()->GetStrikeWindow(kWindow);
 }
 
+/// the strike's core unit class: Economy's per-civ plan (CvPlayer::GetEarlyStrikePlan, patch 0031: the Huns' Horse Archer,
+/// with Battering Rams as the plan's siege) when there is one, else Personality's pick (GetEarlyStrikeCoreClass)
+UnitClassTypes CvMilitaryAI::GetEarlyStrikeCore() const
+{
+	CvEarlyStrikePlan kPlan;
+	if (m_pPlayer->GetEarlyStrikePlan(kPlan) && kPlan.eCore != NO_UNITCLASS)
+		return kPlan.eCore;
+	return m_pPlayer->GetEarlyStrikeCoreClass();
+}
+
 int CvMilitaryAI::GetEarlyStrikeCoreSharePercent() const
 {
 	CvStrikeWindow kWindow;
@@ -2304,7 +2314,7 @@ void CvMilitaryAI::StartTimingBuildup(PlayerTypes eTarget)
 	if (IsEarlyStrikeBuildup() && GC.getLogging() && GC.getAILogging())
 	{
 		m_eTimingBuildupTarget = eTarget;
-		const UnitClassTypes eCore = m_pPlayer->GetEarlyStrikeCoreClass();
+		const UnitClassTypes eCore = GetEarlyStrikeCore();
 		CvUnitClassInfo* pkCore = eCore != NO_UNITCLASS ? GC.getUnitClassInfo(eCore) : NULL;
 		m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("EarlyStrike: build-up opens, core unit class %s, target's nearest city %s",
 			pkCore ? pkCore->GetDescription() : "none", IsEarlyStrikeTargetUnwalled() ? "unwalled (no siege)" : "walled"));

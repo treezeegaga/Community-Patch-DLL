@@ -1895,7 +1895,7 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		else if (kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() && pkUnitEntry->GetCombat() > 0 && pkUnitEntry->GetRangedCombat() == 0 &&
 			pkUnitEntry->GetDefaultUnitAIType() != UNITAI_CITY_BOMBARD && kPlayer.GetMilitaryAI()->GetEarlyStrikeMeleeUnits() < CvMilitaryAI::EARLY_STRIKE_MELEE_MIN)
 			iBonus += 5000;
-		else if ((UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetEarlyStrikeCoreClass() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
+		else if ((UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetMilitaryAI()->GetEarlyStrikeCore() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 100 <
 			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget() * kPlayer.GetMilitaryAI()->GetEarlyStrikeCoreSharePercent())
 			iBonus += 4500;

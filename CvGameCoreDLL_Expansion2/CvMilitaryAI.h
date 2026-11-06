@@ -227,6 +227,7 @@ public:
 	bool GetEarlyStrikeWindow(CvStrikeWindow& kWindow) const;	// Personality's per-civ plan (CvGrandStrategyAI)
 	int GetEarlyStrikeMeleeUnits() const;	// land units that can take a city (melee, not siege, not no-capture)
 	int GetEarlyStrikeCoreSharePercent() const;	// Personality's core share (50 if none)
+	UnitClassTypes GetEarlyStrikeCore() const;	// Economy's plan core (the Huns: Horse Archer), else the profile's pick
 	static const int EARLY_STRIKE_MELEE_MIN = 3;	// "bring two in case one dies" (the strike-plans research): 2 at the city, 1 spare
 	int GetEarlyStrikeUpgradeBill(int* piUnits = NULL, bool* pbTechSoon = NULL) const;	// upgrade-and-go (the user's Composite Bowmen)
 	bool IsEarlyStrikeHoldingUpgrades() const;	// no upgrades until the strike's army is built (Economy: keep the reserve)

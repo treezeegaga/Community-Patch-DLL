@@ -1102,7 +1102,7 @@ void CvTacticalAI::PlotEarlyStrikeBarbHuntMoves()
 	CvStrikeWindow kWindow;
 	if (pMilitary->GetEarlyStrikeWindow(kWindow) && kWindow.iCloseTurn >= 0 && GC.getGame().getElapsedGameTurns() > kWindow.iCloseTurn)
 		return;
-	const UnitClassTypes eCore = m_pPlayer->GetEarlyStrikeCoreClass();
+	const UnitClassTypes eCore = pMilitary->GetEarlyStrikeCore();
 	if (eCore == NO_UNITCLASS)
 		return;
 	const int iXPCap = GD_INT_GET(BARBARIAN_MAX_XP_VALUE);
