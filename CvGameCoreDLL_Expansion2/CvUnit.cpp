@@ -14045,7 +14045,7 @@ bool CvUnit::CanUpgradeRightNow(bool bOnlyTestVisible) const
 		return false;
 
 	// AI_AB_TEST (flag EarlyStrike, upgrade and go): no upgrades until the strike's army is built (CvMilitaryAI)
-	if (!isHuman() && (GET_PLAYER(getOwner()).IsEarlyStrikeBook() || GET_PLAYER(getOwner()).IsLateStrikeSaving()) &&
+	if (!isHuman() && GET_PLAYER(getOwner()).GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_NONE &&
 		GET_PLAYER(getOwner()).GetMilitaryAI()->IsEarlyStrikeHoldingUpgrades())
 		return false;
 

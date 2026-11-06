@@ -319,6 +319,11 @@ void CvMilitaryAI::Reset()
 	m_eTimingBuildupTarget = NO_PLAYER;
 	m_bTimingBuildupSaving = false;
 	m_iTimingBuildupPausedTurns = 0;
+	m_iStrikeState = STRIKE_NONE;
+	m_iStrikeWarsDeclaredMark = 0;
+	m_iStrikeWarsOnUsMark = 0;
+	m_iStrikeCapturedMark = 0;
+	m_iStrikeArmyAtWar = 0;
 	m_iArmyQualityTurn = -1;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
@@ -378,6 +383,11 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_eTimingBuildupTarget);
 	visitor(militaryAI.m_bTimingBuildupSaving);
 	visitor(militaryAI.m_iTimingBuildupPausedTurns);
+	visitor(militaryAI.m_iStrikeState);
+	visitor(militaryAI.m_iStrikeWarsDeclaredMark);
+	visitor(militaryAI.m_iStrikeWarsOnUsMark);
+	visitor(militaryAI.m_iStrikeCapturedMark);
+	visitor(militaryAI.m_iStrikeArmyAtWar);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -516,7 +526,10 @@ void CvMilitaryAI::DoTurn()
 			MakeEmergencyPurchases();
 		}
 		if (IsTimingBuildupPlayer())
+		{
+			UpdateStrikeState();
 			DoTimingBuildup();
+		}
 		DisbandObsoleteUnits();
 	}
 
@@ -1940,20 +1953,10 @@ bool CvMilitaryAI::IsInTimingBuildupWindow() const
 {
 	if (m_iTimingBuildupStartTurn < 0)
 		return false;
-	//EarlyStrike: the window is over at Personality's declare-by turn, while the spike is fresh (the attack phase follows)
-	if (IsEarlyStrikeBuildup())
-	{
-		CvStrikeWindow kWindow;
-		if (GetEarlyStrikeWindow(kWindow) && kWindow.iDeclareByTurn >= 0 && GC.getGame().getElapsedGameTurns() > kWindow.iDeclareByTurn)
-			return false;
-	}
-	//LateStrike: the same at the strike plan's declare-by turn
-	if (IsLateStrikeBuildup())
-	{
-		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-		if (kPlan.iDeclareByTurn >= 0 && GC.getGame().getElapsedGameTurns() > kPlan.iDeclareByTurn)
-			return false;
-	}
+	//a strike's build-up (EarlyStrike, LateStrike) has no length: it lasts until the army is ready, or as ready as it gets, and
+	//the attack phase declares; the strike state's exits end it otherwise (the user: no windows in the AI's own judgement)
+	if (IsStrikeBuildup())
+		return !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets();
 	const int iElapsed = GC.getGame().getGameTurn() - m_iTimingBuildupStartTurn;
 	if (iElapsed < TimingBuildupWindowTurns())
 		return true;
@@ -2048,13 +2051,147 @@ bool CvMilitaryAI::IsTimingBuildupArmyBuilt() const
 /// them. At war, or past turn 90 (Standard), CP upgrades as usual. Read by CvUnit::CanUpgradeRightNow, every AI upgrade path.
 bool CvMilitaryAI::IsEarlyStrikeHoldingUpgrades() const
 {
-	//LateStrike (Economy's ask): the same hold while Economy keeps the treasury for the upgrades (CvPlayer::IsLateStrikeSaving,
-	//15 turns Standard before the plan's window to the declaration), until the late strike's army is built
-	if (m_pPlayer->IsLateStrikeSaving() && IsTimingBuildupPlayer())
-		return !(IsLateStrikeBuildup() && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
-	if (!m_pPlayer->IsEarlyStrikeSmallEmpire() || !IsTimingBuildupPlayer())
+	//on the strike state, no turns: EarlyStrike holds through PREP (the book) and BUILDUP; LateStrike through BUILDUP (Economy
+	//saves for the upgrades there). The hold lifts once the strike's build-up has its army built (or its window is over).
+	const StrikeStateTypes eState = GetStrikeState();
+	if (eState == STRIKE_PREP)
+		return IsEarlyStrikeCiv();
+	if (eState != STRIKE_BUILDUP)
 		return false;
-	return !(IsEarlyStrikeBuildup() && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
+	return !(m_iTimingBuildupStartTurn >= 0 && (IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded()));
+}
+
+static bool StrikeCityHasWalls(const CvCity* pCity)
+{
+	static const BuildingClassTypes eWalls = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_WALLS", true);
+	return pCity && eWalls != NO_BUILDINGCLASS && pCity->GetCityBuildings()->HasBuildingClass(eWalls);
+}
+
+/// AI_AB_TEST (flags EarlyStrike, LateStrike; the user: "dont have the ai judge itself based on the window during a game"; the
+/// lead's go, 10:41pm ET). The strike's state from game state only, once a turn, saved, logged on a change:
+///   NONE     not a strike civ
+///   PREP     EarlyStrike: the military-first book, no target in reach yet. LateStrike: economy first, not economy-ready yet
+///   BUILDUP  EarlyStrike: the committed target's nearest city in reach (12 tiles of our capital) and the core trainable.
+///            LateStrike: economy-ready (for now the plan's K cities and the opening book done; Personality's condition to
+///            come). Economy beelines and saves; War's unit weights start once the core (or pre-build) can be trained
+///   WAR      we declared (our wars-declared count rose) during BUILDUP
+///   OVER     an exit: the core unit obsolete; a major declared on us first; the target's nearest city walled and the plan
+///            brings no siege; the target fields the counter (3+ units with a bonus against the core's combat class near its
+///            city); the army built in PREP with no target in reach; at war, the army below half its size at the declaration
+///            with no capture; peace
+void CvMilitaryAI::UpdateStrikeState()
+{
+	const bool bEarly = IsEarlyStrikeCiv();
+	const bool bLate = !bEarly && IsLateStrikeCiv();
+	const StrikeStateTypes eOld = GetStrikeState();
+	if (!bEarly && !bLate)
+	{
+		if (eOld != STRIKE_OVER)
+			m_iStrikeState = STRIKE_NONE;
+		return;
+	}
+	if (eOld == STRIKE_OVER)
+		return;
+
+	const CvGame& kGame = GC.getGame();
+	const int iWarsDeclared = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_DECLARED);
+	const int iWarsOnUs = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_WARS_ON_US);
+	const int iCaptured = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_CAPTURED);
+	StrikeStateTypes eNew = eOld;
+	if (eOld == STRIKE_NONE)
+	{
+		eNew = STRIKE_PREP;
+		m_iStrikeWarsDeclaredMark = iWarsDeclared;
+		m_iStrikeWarsOnUsMark = iWarsOnUs;
+	}
+	CvString strWhy = (eOld == STRIKE_NONE) ? "a strike civ" : "";
+
+	const CvCity* pCapital = m_pPlayer->getCapitalCity();
+	const PlayerTypes eTarget = m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
+	const CvCity* pTargetCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
+	const bool bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+	const bool bWalled = StrikeCityHasWalls(pTargetCity);
+	bool bPlanSiege = bLate;	// LateStrike brings siege against walls; EarlyStrike only if its plan has siege (Huns' Rams, Inca's Catapults)
+	CvEarlyStrikePlan kEarlyPlan;
+	if (bEarly && m_pPlayer->GetEarlyStrikePlan(kEarlyPlan))
+		bPlanSiege = kEarlyPlan.eSiege != NO_UNITCLASS && kEarlyPlan.iSiegeTotal > 0;
+	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+	const UnitClassTypes eCoreClass = bEarly ? GetEarlyStrikeCore() : kPlan.eCoreClass;
+	const UnitTypes eCore = (eCoreClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eCoreClass) : NO_UNIT;
+	CvUnitEntry* pkCore = (eCore != NO_UNIT) ? GC.getUnitInfo(eCore) : NULL;
+
+	if (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP)
+	{
+		const TechTypes eObsolete = pkCore ? (TechTypes)pkCore->GetObsoleteTech() : NO_TECH;
+		if (eObsolete != NO_TECH && GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eObsolete))
+			eNew = STRIKE_OVER, strWhy = "the core unit is obsolete";
+		else if (iWarsOnUs > m_iStrikeWarsOnUsMark)
+			eNew = STRIKE_OVER, strWhy = "a major declared war on us first";
+		else if (eNew == STRIKE_BUILDUP && bWalled && !bPlanSiege)
+			eNew = STRIKE_OVER, strWhy = "the target's nearest city has walls and the plan brings no siege";
+		else if (eNew == STRIKE_BUILDUP && pTargetCity && pkCore && pkCore->GetUnitCombatType() != NO_UNITCOMBAT)
+		{
+			int iCounters = 0, iLoop = 0;
+			for (const CvUnit* pLoopUnit = GET_PLAYER(eTarget).firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = GET_PLAYER(eTarget).nextUnit(&iLoop))
+			{
+				if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && pLoopUnit->unitCombatModifier((UnitCombatTypes)pkCore->GetUnitCombatType()) > 0 &&
+					plotDistance(pLoopUnit->getX(), pLoopUnit->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 8)
+					iCounters++;
+			}
+			if (iCounters >= 3)
+				eNew = STRIKE_OVER, strWhy = CvString::format("the target fields the counter (%d units with a bonus against our core)", iCounters);
+		}
+		if (eNew == STRIKE_PREP && bEarly && !bInReach && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN &&
+			TimingBuildupFieldUnits(m_pPlayer, this, m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true)) >= 8)
+			eNew = STRIKE_OVER, strWhy = "the army is built and no target is in reach";
+	}
+
+	if (eNew == STRIKE_PREP)
+	{
+		const bool bTrigger = bEarly ? (bInReach && (!bWalled || bPlanSiege) && IsStrikeArmyBuildable()) :
+			(m_pPlayer->getNumCities() >= max(1, kPlan.iMaxCitiesBeforeStrike) && !m_pPlayer->IsOpeningBookActive());
+		if (bTrigger)
+		{
+			eNew = STRIKE_BUILDUP;
+			strWhy = bEarly ? CvString::format("target %s in reach, core trainable", pTargetCity->getNameNoSpace().c_str()) : CvString("economy-ready (K cities, book done)");
+			m_iStrikeWarsDeclaredMark = iWarsDeclared;
+			m_iStrikeWarsOnUsMark = iWarsOnUs;
+		}
+	}
+	else if (eNew == STRIKE_BUILDUP && m_pPlayer->IsAtWarAnyMajor() && iWarsDeclared > m_iStrikeWarsDeclaredMark)
+	{
+		eNew = STRIKE_WAR;
+		strWhy = IsTimingBuildupArmyReady() ? "declared, the army ready" : "declared, as ready as it got";
+		m_iStrikeCapturedMark = iCaptured;
+		m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+	}
+	else if (eNew == STRIKE_WAR)
+	{
+		if (!m_pPlayer->IsAtWarAnyMajor())
+			eNew = STRIKE_OVER, strWhy = (iCaptured > m_iStrikeCapturedMark) ? "peace after a capture" : "peace, nothing taken";
+		else if (iCaptured == m_iStrikeCapturedMark && m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true) * 2 < m_iStrikeArmyAtWar)
+			eNew = STRIKE_OVER, strWhy = "the army fell below half its size at the declaration, nothing taken";
+	}
+
+	if (eNew != eOld)
+	{
+		m_iStrikeState = eNew;
+		if (GC.getLogging() && GC.getAILogging())
+		{
+			static const char* const kNames[] = { "NONE", "PREP", "BUILDUP", "WAR", "OVER" };
+			m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: %s -> %s (%s; %s)", kNames[eOld], kNames[eNew], strWhy.c_str(),
+				bEarly ? "EarlyStrike" : "LateStrike"));
+		}
+	}
+}
+
+/// a normal army (cities + 4 field units), 3 melee that can take a city, and nothing more affordable (WarBudget's measure):
+/// the strike goes with what it has rather than wait on a clock
+bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
+{
+	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
+	return TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= max(1, m_pPlayer->getNumCities()) + 4 &&
+		GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20) <= 0;
 }
 
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
@@ -2079,7 +2216,7 @@ int CvMilitaryAI::GetEarlyStrikeUpgradeBill(int* piUnits, bool* pbTechSoon) cons
 		*pbTechSoon = false;
 	CvPlayerTechs* pTechs = m_pPlayer->GetPlayerTechs();
 	const TechTypes eResearch = pTechs->GetCurrentResearch();
-	const bool bResearchSoon = eResearch != NO_TECH && pTechs->GetResearchTurnsLeft(eResearch, true) <= max(2, 8 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100);
+	const bool bResearchSoon = false;	// no turn horizon (the user): units count when their upgrade's tech is known, or is the strike's own
 	CvStrikeWindow kWindow;
 	TechTypes eStrikeUpgradeTech = GetEarlyStrikeWindow(kWindow) ? kWindow.eUpgradeTech : NO_TECH;
 	if (IsLateStrikeCiv())	// LateStrike: the strike plan's upgrade
@@ -2147,20 +2284,15 @@ int CvMilitaryAI::GetTimingBuildupSiegeTarget() const
 /// army already built (Personality's strike window ends before that army can exist: the Aztec's T3-23 on Quick).
 bool CvMilitaryAI::IsEarlyStrikeCiv() const
 {
-	return IsTimingBuildupPlayer() && m_pPlayer->IsEarlyStrikeBook();
+	//static (who plays the strike), not the book's own state: Economy's book now follows GetStrikeState
+	return IsTimingBuildupPlayer() && m_pPlayer->IsCandidateWarmonger(FIX_EARLY_STRIKE) && m_pPlayer->GetEarlyStrikeCoreClass() != NO_UNITCLASS;
 }
 
 /// the strike's build-up: one opened by turn 60 (Standard)
+/// a strike's build-up: the strike state's BUILDUP with its build-up window open (no turn limit: the state's exits end it)
 bool CvMilitaryAI::IsEarlyStrikeBuildup() const
 {
-	if (m_iTimingBuildupStartTurn < 0 || !IsEarlyStrikeCiv())
-		return false;
-	const int iStartElapsed = m_iTimingBuildupStartTurn - (GC.getGame().getGameTurn() - GC.getGame().getElapsedGameTurns());
-	//the expert strike's exit (the lead, 9:58pm ET): past Personality's close turn the strike is over and the late plan runs
-	CvStrikeWindow kWindow;
-	if (GetEarlyStrikeWindow(kWindow) && kWindow.iCloseTurn >= 0)
-		return iStartElapsed <= kWindow.iCloseTurn;
-	return iStartElapsed <= 60 * GC.getGame().getGameSpeedInfo().getTrainPercent() / 100;
+	return m_iTimingBuildupStartTurn >= 0 && GetStrikeState() == STRIKE_BUILDUP && IsEarlyStrikeCiv();
 }
 
 bool CvMilitaryAI::GetEarlyStrikeWindow(CvStrikeWindow& kWindow) const
@@ -2195,15 +2327,20 @@ bool CvMilitaryAI::IsLateStrikeCiv() const
 
 bool CvMilitaryAI::IsLateStrikeOpen() const
 {
-	if (!IsLateStrikeCiv())
+	return IsLateStrikeCiv() && GetStrikeState() == STRIKE_BUILDUP && IsStrikeArmyBuildable();
+}
+
+/// the strike's army can be built: its core unit, or the plan's pre-build (China's Composite Bowmen, to be Chu-Ko-Nu), can be
+/// trained now. Until then a BUILDUP does nothing but research and save (Economy) and hold upgrades.
+bool CvMilitaryAI::IsStrikeArmyBuildable() const
+{
+	if (!m_pPlayer->GetGrandStrategyAI())
 		return false;
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-	const int iTurn = GC.getGame().getElapsedGameTurns();
-	if (kPlan.iFallbackTurn >= 0 && iTurn >= kPlan.iFallbackTurn)
-		return true;
-	if (iTurn < kPlan.iOpenTurn)
+	const UnitClassTypes eCoreClass = IsEarlyStrikeCiv() ? GetEarlyStrikeCore() : kPlan.eCoreClass;
+	if (eCoreClass == NO_UNITCLASS)
 		return false;
-	const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass);
+	const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(eCoreClass);
 	if (eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true))
 		return true;
 	//a plan with a pre-build (China's Composite Bowmen, upgraded to Chu-Ko-Nu at Machinery) opens on its turn: the pre-build
@@ -2214,11 +2351,7 @@ bool CvMilitaryAI::IsLateStrikeOpen() const
 
 bool CvMilitaryAI::IsLateStrikeBuildup() const
 {
-	if (m_iTimingBuildupStartTurn < 0 || !IsLateStrikeCiv())
-		return false;
-	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-	const int iStartElapsed = m_iTimingBuildupStartTurn - (GC.getGame().getGameTurn() - GC.getGame().getElapsedGameTurns());
-	return kPlan.iFallbackTurn < 0 || iStartElapsed <= kPlan.iFallbackTurn;
+	return m_iTimingBuildupStartTurn >= 0 && GetStrikeState() == STRIKE_BUILDUP && IsLateStrikeCiv();
 }
 
 bool CvMilitaryAI::IsStrikeBuildup() const
@@ -2443,7 +2576,7 @@ void CvMilitaryAI::DoTimingBuildup()
 			m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true), m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true)));
 
 	// the attack never came: back to peace
-	if (m_iTimingBuildupStartTurn >= 0 && iTurn - m_iTimingBuildupStartTurn > (IsTimingBuildupBigArmy() ? 5 : 3) * TimingBuildupWindowTurns())
+	if (m_iTimingBuildupStartTurn >= 0 && !IsStrikeBuildup() && iTurn - m_iTimingBuildupStartTurn > (IsTimingBuildupBigArmy() ? 5 : 3) * TimingBuildupWindowTurns())
 	{
 		if (bLog)
 			pTactical->LogTacticalMessage("TimingBuildup: no war 3 windows after the build-up, back to the peace army");

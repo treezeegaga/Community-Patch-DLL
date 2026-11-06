@@ -1098,10 +1098,8 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 void CvTacticalAI::PlotEarlyStrikeBarbHuntMoves()
 {
 	CvMilitaryAI* pMilitary = m_pPlayer->GetMilitaryAI();
-	if (!pMilitary->IsEarlyStrikeCiv() || m_pPlayer->IsAtWarAnyMajor() || pMilitary->GetTimingBuildupPhase() >= CvMilitaryAI::TIMING_BUILDUP_WINDOW)
-		return;
-	CvStrikeWindow kWindow;
-	if (pMilitary->GetEarlyStrikeWindow(kWindow) && kWindow.iCloseTurn >= 0 && GC.getGame().getElapsedGameTurns() > kWindow.iCloseTurn)
+	//the strike state, no turns: the hunt is PREP's (before the build-up), not at war with a major
+	if (!pMilitary->IsEarlyStrikeCiv() || m_pPlayer->IsAtWarAnyMajor() || pMilitary->GetStrikeState() != CvMilitaryAI::STRIKE_PREP)
 		return;
 	const UnitClassTypes eCore = pMilitary->GetEarlyStrikeCore();
 	if (eCore == NO_UNITCLASS)

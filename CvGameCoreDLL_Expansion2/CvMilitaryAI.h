@@ -249,6 +249,12 @@ public:
 	void StartTimingBuildup(PlayerTypes eTarget);
 	// read-only plan for other subsystems (Economy's WarChest and WarEconomy)
 	enum TimingBuildupPhase { TIMING_BUILDUP_NONE, TIMING_BUILDUP_PEACE, TIMING_BUILDUP_PLANNED, TIMING_BUILDUP_WINDOW, TIMING_BUILDUP_ATTACK, TIMING_BUILDUP_WAR };
+	// AI_AB_TEST (flags EarlyStrike, LateStrike; the user: "dont have the ai judge itself based on the window during a game"): the
+	// strike's state, from game state only (no turns), worked out once a turn and saved. Economy's book reads it (patch 0034).
+	enum StrikeStateTypes { STRIKE_NONE, STRIKE_PREP, STRIKE_BUILDUP, STRIKE_WAR, STRIKE_OVER };
+	StrikeStateTypes GetStrikeState() const { return (StrikeStateTypes)m_iStrikeState; }
+	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
+	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
 	TimingBuildupPhase GetTimingBuildupPhase() const;
 	PlayerTypes GetTimingBuildupTarget() const;
 	int GetTimingBuildupUnitsWanted() const;
@@ -399,6 +405,12 @@ private:
 	PlayerTypes m_eTimingBuildupTarget;
 	bool m_bTimingBuildupSaving;
 	int m_iTimingBuildupPausedTurns;	// turns this window was paused while units were unaffordable
+	int m_iStrikeState;				// AI_AB_TEST StrikeStateTypes (saved)
+	int m_iStrikeWarsDeclaredMark;	// our wars declared / wars on us when the strike entered its state, cities captured at its war,
+	int m_iStrikeWarsOnUsMark;		// and the land army at the declaration (saved): the exits compare against them
+	int m_iStrikeCapturedMark;
+	int m_iStrikeArmyAtWar;
+	void UpdateStrikeState();
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;

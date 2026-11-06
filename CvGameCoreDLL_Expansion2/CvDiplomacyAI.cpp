@@ -23574,7 +23574,10 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// or the window is over.
 	const bool bBuildupPlanning = bTimingBuildup && !pPlayer->GetMilitaryAI()->IsTimingBuildupArmyReady() &&
 		!pPlayer->GetMilitaryAI()->HasTimingBuildupWindowEnded();
-	if (bTimingBuildup && iTurn < 25 * iSpeed / 100)
+	// AI_AB_TEST (EarlyStrike, LateStrike): a strike civ's target and build-up follow the strike state, not turns (the user)
+	const CvMilitaryAI::StrikeStateTypes eStrikeState = pPlayer->GetMilitaryAI()->GetStrikeState();
+	const bool bStrikeCiv = bTimingBuildup && (eStrikeState == CvMilitaryAI::STRIKE_PREP || eStrikeState == CvMilitaryAI::STRIKE_BUILDUP);
+	if (bTimingBuildup && !bStrikeCiv && iTurn < 25 * iSpeed / 100)
 		return NO_PLAYER;
 	if (bWarmonger && !bTimingBuildup && pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 90 * iSpeed / 100)
 	{
@@ -23583,7 +23586,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		if (iSiege < 2 || iLand - iSiege < 4)
 			return NO_PLAYER;
 	}
-	if (bWarmonger && !pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 45 * iSpeed / 100)
+	if (bWarmonger && !bStrikeCiv && !pPlayer->UsesCandidateAI(FIX_DECLARE_TIMING) && iTurn < 45 * iSpeed / 100)
 		return NO_PLAYER;
 	if (bExpansionist && !pPlayer->IsBoxedInForSettling())
 		return NO_PLAYER;
@@ -23600,12 +23603,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// games unwalled cities fell 9 of 31 times, walled 4 of 28. The target civ's city nearest us is judged: walled and on a
 	// hill, the civ is skipped; walled or on a hill, it ranks below every flat, unwalled one. With no target, no strike: the
 	// late plan runs after the close turn.
-	bool bEarlyStrikeTarget = false;
-	if (bTimingBuildup && pPlayer->GetMilitaryAI()->IsEarlyStrikeCiv())
-	{
-		CvStrikeWindow kStrike;
-		bEarlyStrikeTarget = pPlayer->GetMilitaryAI()->GetEarlyStrikeWindow(kStrike) && kStrike.iCloseTurn >= 0 && iTurn <= kStrike.iCloseTurn;
-	}
+	const bool bEarlyStrikeTarget = bStrikeCiv && pPlayer->GetMilitaryAI()->IsEarlyStrikeCiv();	// while the strike is on (its state)
 	static const BuildingClassTypes eStrikeWalls = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_WALLS", true);
 
 	const CvCity* pCapital = pPlayer->getCapitalCity();
@@ -23782,10 +23780,13 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// ready or the window is over
 	if (bTimingBuildup && eBest != NO_PLAYER)
 	{
-		if (iTurn < 40 * iSpeed / 100)
-			return NO_PLAYER; // planned only
-		// AI_AB_TEST (candidate, flag LateStrike, War): infrastructure first, no build-up before the strike plan's window
-		if (pPlayer->GetMilitaryAI()->IsLateStrikeCiv() && !pPlayer->GetMilitaryAI()->IsLateStrikeOpen())
+		// a strike civ opens its build-up on the strike state: BUILDUP, with the core (or pre-build) trainable; never on a turn
+		if (bStrikeCiv)
+		{
+			if (eStrikeState != CvMilitaryAI::STRIKE_BUILDUP || !pPlayer->GetMilitaryAI()->IsStrikeArmyBuildable())
+				return NO_PLAYER; // planned only
+		}
+		else if (iTurn < 40 * iSpeed / 100)
 			return NO_PLAYER; // planned only
 		CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
 		if (!pMilitary->IsTimingBuildupArmyReady() && !pMilitary->HasTimingBuildupWindowEnded())
