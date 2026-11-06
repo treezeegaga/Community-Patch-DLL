@@ -2855,10 +2855,15 @@ CvString CvDeal::GetReasonsItemUntradeable(PlayerTypes ePlayer, PlayerTypes eToP
 				return GetLocalizedText("TXT_KEY_DIPLO_ALREADY_AT_WAR");
 			}
 
-			// AI_AB_TEST (strike): a strike AI before its strike declares no war but its own (see IsPossibleToTradeItem)
-			if (!bFromHuman && pFromPlayer->GetMilitaryAI()->IsStrikeDeclarationBlocked(GET_TEAM(eTargetTeam).getLeaderID()))
+			// AI_AB_TEST (strike): a strike AI before its strike declares no war but its own (the same test as IsPossibleToTradeItem)
+			if (!bFromHuman)
 			{
-				return GetLocalizedText("TXT_KEY_DIPLO_BLOCKED_GAME_RULE");
+				const vector<PlayerTypes>& vStrikeTarget = GET_TEAM(eTargetTeam).getPlayers();
+				for (size_t j = 0; j < vStrikeTarget.size(); j++)
+				{
+					if (GET_PLAYER(vStrikeTarget[j]).isAlive() && pFromPlayer->GetMilitaryAI()->IsStrikeDeclarationBlocked(vStrikeTarget[j]))
+						return GetLocalizedText("TXT_KEY_DIPLO_BLOCKED_GAME_RULE");
+				}
 			}
 
 			// Not allowed by Deal AI Options

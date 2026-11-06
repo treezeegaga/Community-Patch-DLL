@@ -14,6 +14,7 @@
 #include "CvMinorCivAI.h"
 #include "ICvDLLUserInterface.h"
 #include "CvSpanSerialization.h"
+#include "CvMilitaryAI.h"
 
 // must be included after all other headers
 #include "LintFree.h"
@@ -2819,8 +2820,9 @@ bool CvGrandStrategyAI::IsStrikeEconomyReady() const
 	const bool bCitiesDone = m_pPlayer->getNumCities() >= kPlan.iMaxCitiesBeforeStrike || m_pPlayer->IsBoxedInForSettling();
 	if (!kPlan.bLateStrike)
 	{
-		const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass);
-		return eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true) &&
+		// trainable, or but for its Horses or Iron in use by the units already built (War, the lead's third review: canTrainUnit
+		// counts free resources only, so PREP stayed until the core went obsolete)
+		return m_pPlayer->GetMilitaryAI() && m_pPlayer->GetMilitaryAI()->IsStrikeClassBuildable(kPlan.eCoreClass) &&
 			CountStrikeClassLine(kPlan.eCoreClass) >= kPlan.iCoreBeforeSettler && bCitiesDone;
 	}
 	const TechTypes eKeyTech = (kPlan.eUpgradeTech != NO_TECH) ? kPlan.eUpgradeTech : NO_TECH;
