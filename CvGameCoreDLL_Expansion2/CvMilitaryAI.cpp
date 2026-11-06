@@ -2452,6 +2452,11 @@ PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude, const CvCity*
 		if (eOther == eExclude || eOther == m_pPlayer->GetID() || !kOther.isAlive() || kOther.getTeam() == eOurTeam ||
 			kOther.isBarbarian() || !GET_TEAM(eOurTeam).isHasMet(kOther.getTeam()))
 			continue;
+		// the per-turn target check's own definition (the lead, bullygreedy23 16DAE4CC: Singapore too strong -> re-target to
+		// Sweden, which the BUILDUP check then rejected (IsStrikeTargetValid: a declared friend, allies, reach) -> back to the
+		// nearest city-state Singapore, every turn T96-T106). A re-target is only to a target that check keeps
+		if (!IsStrikeTargetValid(eOther))
+			continue;
 		const bool bAtWar = GET_TEAM(eOurTeam).isAtWar(kOther.getTeam());
 		if (!bAtWar && !GET_TEAM(eOurTeam).canDeclareWar(kOther.getTeam(), m_pPlayer->GetID()))
 			continue;
