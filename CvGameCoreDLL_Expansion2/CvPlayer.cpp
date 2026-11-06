@@ -33960,7 +33960,18 @@ bool CvPlayer::IsStrikePending() const
 /// Germany's Munich took Heroic Epic (T61) and the Temple of Artemis (T62) in PREP, through the fallback
 bool CvPlayer::IsStrikeNoWonders() const
 {
-	return IsStrikePending() || IsEarlyStrikeSmallEmpire() || IsLateStrikeSaving();
+	if (IsStrikePending() || IsEarlyStrikeSmallEmpire() || IsLateStrikeSaving())
+		return true;
+	// AI_AB_TEST (Economy 0044; the lead's check: no wonder and no city-state gold "before its first declaration"): a strike
+	// that ended OVER before we declared anything keeps the ban until our first declaration. bullygreedy21 15A7D14F: Persia's
+	// strike went OVER at T70 (a major declared on us first), then Persia built the Terracotta Army (T72), the Pyramids (T75),
+	// the Writers' Guild and Chichen Itza and saved for a city-state gift (T96) before its own first declaration at T129.
+	// "Declared": a war we declared on a major (the AB count), a city-state captured, or a city-state war under way
+	if (!isMajorCiv() || isHuman() || !GetMilitaryAI() || GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_OVER)
+		return false;
+	const CvGame& kGame = GC.getGame();
+	return kGame.GetABTestCount(GetID(), AB_COUNT_WARS_DECLARED) == 0 &&
+		kGame.GetABTestCount(GetID(), AB_COUNT_CITY_STATES_CAPTURED) == 0 && !IsAtWarAnyMinor();
 }
 
 bool CvPlayer::IsLateStrikeSaving() const

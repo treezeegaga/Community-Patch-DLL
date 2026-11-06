@@ -37696,7 +37696,7 @@ void CvDiplomacyAI::DoContactMinorCivs()
 
 	// AI_AB_TEST candidate (EarlyStrike, Economy 0039): before the strike, no gold to city-states by any path.
 	// Drop a gift saving started earlier, and skip buyouts and marriages too.
-	if (GetPlayer()->IsEarlyStrikeSmallEmpire() || GetPlayer()->IsLateStrikeSaving() || GetPlayer()->IsStrikePending())
+	if (GetPlayer()->IsStrikeNoWonders())
 	{
 		if (GetPlayer()->GetEconomicAI()->IsSavingForThisPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT))
 			GetPlayer()->GetEconomicAI()->CancelSaveForPurchase(PURCHASE_TYPE_MINOR_CIV_GIFT);
@@ -37785,7 +37785,7 @@ void CvDiplomacyAI::DoContactMinorCivs()
 	// AI_AB_TEST candidates (EarlyStrike, LateStrike; Economy): nor while a strike civ saves for its upgrades (War's expert-block
 	// read: Greece, 1464B588, gave 500 gold to a city-state at T46 in its build-up)
 	const bool bSavingForSettler = GetPlayer()->GetEconomicAI()->IsSavingForExpansionSettler() ||
-		GetPlayer()->IsEarlyStrikeSmallEmpire() || GetPlayer()->IsLateStrikeSaving() || GetPlayer()->IsStrikePending();
+		GetPlayer()->IsStrikeNoWonders();
 	veMinorsToGiveGold.StableSortItems(); // Sort from highest desirability to lowest
 	for (int i = 0; i < veMinorsToGiveGold.size() && !bSavingForSettler; i++)
 	{

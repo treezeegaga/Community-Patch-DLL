@@ -1219,6 +1219,10 @@ int EconomicAIHelpers::GetExtraExploreValue(const CvPlot* pPlot, int iRange, Tea
 /// Request that the AI set aside this much money
 void CvEconomicAI::StartSaveForPurchase(PurchaseType ePurchase, int iAmount, int iPriority)
 {
+	// AI_AB_TEST (Economy 0044): no saving for a city-state gift while a strike civ is before its strike (every request goes
+	// through here)
+	if (MOD_AI_AB_TEST && ePurchase == PURCHASE_TYPE_MINOR_CIV_GIFT && m_pPlayer && !m_pPlayer->isHuman() && m_pPlayer->IsStrikeNoWonders())
+		return;
 	int iIndex = (int)ePurchase;
 	CvPurchaseRequest request;
 	request.m_eType = ePurchase;

@@ -15548,6 +15548,9 @@ void CvMinorCivAI::ChangeNumGoldGifted(PlayerTypes ePlayer, int iChange)
 /// Major Civ gifted some Gold to this Minor
 void CvMinorCivAI::DoGoldGiftFromMajor(PlayerTypes ePlayer, int iGold)
 {
+	// AI_AB_TEST (Economy 0044; the user: no city-state gold before a strike): every AI gold gift goes through here
+	if (MOD_AI_AB_TEST && ePlayer != NO_PLAYER && !GET_PLAYER(ePlayer).isHuman() && GET_PLAYER(ePlayer).IsStrikeNoWonders())
+		return;
 	if(GET_PLAYER(ePlayer).GetTreasury()->GetGold() >= iGold)
 	{
 		int iFriendshipChange = GetFriendshipFromGoldGift(ePlayer, iGold);

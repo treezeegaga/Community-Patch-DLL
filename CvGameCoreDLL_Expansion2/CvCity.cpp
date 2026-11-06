@@ -8860,6 +8860,16 @@ bool CvCity::canConstruct(BuildingTypes eBuilding, const std::vector<int>& vPreE
 		}
 	}
 
+	// AI_AB_TEST (Economy 0044; the user: "no wonders before a strike"): the one place every AI path asks, so no pick path
+	// (the production choice, its fallback, the specialization, a Great Engineer, a strike list) can start or continue a
+	// world or national wonder while a strike civ is before its strike. Humans are never affected
+	if (MOD_AI_AB_TEST && !GET_PLAYER(m_eOwner).isHuman() &&
+		(isWorldWonderClass(pkBuildingInfo->GetBuildingClassInfo()) || isNationalWonderClass(pkBuildingInfo->GetBuildingClassInfo())) &&
+		GET_PLAYER(m_eOwner).IsStrikeNoWonders())
+	{
+		return false;
+	}
+
 	if (!(GET_PLAYER(getOwner()).canConstruct(eBuilding, vPreExistingBuildings, bContinue, bTestVisible, bIgnoreCost, toolTipSink)))
 	{
 		return false;
