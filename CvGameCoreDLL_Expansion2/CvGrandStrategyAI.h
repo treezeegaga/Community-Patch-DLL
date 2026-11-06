@@ -65,6 +65,16 @@ struct CvStrategyProfile
 	StrategyRiskTypes eRisk;
 	StrategyExpansionTypes eExpansion;
 	StrategyGreedyKindTypes eGreedyKind;	// which kind of greedy this leader plays when it plays greedy
+	// the military power spike (the user, 2026-11-06: "every civ needs to build to its strengths"): the civ's earliest
+	// unique land combat unit, the tech that unlocks it (NO_TECH: from the start), the turn it's expected (this game's
+	// speed; -1: no unique land combat unit), and whether it fights better in forest or jungle
+	UnitTypes eSpikeUnit;
+	TechTypes eSpikeTech;
+	int iSpikeTurn;
+	bool bSpikeTerrain;
+	bool bMilitaryFirst;	// the opening that serves the spike: military first and a small empire (a spike by turn 30 Standard)
+	int iStrikeStart;		// the strike window, turns (this game's speed): the spike's army ready, before counters and castles;
+	int iStrikeEnd;			// -1 when there's no spike
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -117,6 +127,9 @@ public:
 	static const char* GetStrategyArchetypeName(StrategyArchetypeTypes eArchetype);
 	int GetMetaPosition() const;
 	StrategyGreedyKindTypes GetGreedyKind() const;
+	// AI_AB_TEST (Personality, power spike; for War's TimingBuildup): the strike window, and are we in it now?
+	bool GetStrikeWindow(int& iStartTurn, int& iEndTurn) const;
+	bool IsInStrikeWindow() const;
 	bool IsGreedyWideOutOfRoom() const;
 	int GetWarDefenceLandUnitCap() const;
 
@@ -150,6 +163,7 @@ private:
 	void LogGrandStrategies(const vector<int>& vGrandStrategyPriorities);
 	void LogGuessOtherPlayerGrandStrategy(const vector<int>& vGrandStrategyPriorities, PlayerTypes ePlayer);
 	void LogStrategyProfile();
+	void GetPowerSpike(CvStrategyProfile& kProfile) const;
 	void DoStyleCityStateUnitGifts();
 	void DoGreedyDisbandToCap();
 
@@ -183,6 +197,9 @@ private:
 	mutable int m_iCachedMetaPosition;
 	mutable int m_iCachedMetaTurn;
 	mutable int m_iCachedGreedyKind;	// GreedyWide/GreedyTall: worked out with the meta position, once per turn
+	mutable int m_iCachedStrikeStart;	// the strike window, worked out with the meta position, once per turn
+	mutable int m_iCachedStrikeEnd;
+	mutable int m_iCachedSpikeTech;
 	mutable int m_iCachedOutOfRoom;	// GreedyWide: -1 not worked out this turn, else 0 or 1
 	mutable int m_iCachedOutOfRoomTurn;
 	// AI_AB_TEST (Personality, GreedyWarArmy): not saved, worked out again from the game state
