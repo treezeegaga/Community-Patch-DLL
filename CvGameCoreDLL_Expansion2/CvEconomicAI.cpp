@@ -3436,6 +3436,16 @@ void CvEconomicAI::DoHurry()
 {
 	int iLoop = 0;
 
+	// AI_AB_TEST candidate (EarlyStrike, the user's Aztec game): the treasury is saved until the strike (263 gold at T40,
+	// no building or unit bought) and goes on upgrades just before the declaration (31 at T50; War's half times those).
+	// No hurries, no WarChest purchases, no bought settler past the book's one: the book's units are built, not bought.
+	if (m_pPlayer->IsEarlyStrikeSmallEmpire())
+	{
+		if (m_pPlayer->getNumCities() < 2)
+			BuyExpansionSettler(m_pPlayer);
+		return;
+	}
+
 	DoWarChest(m_pPlayer);
 
 	if (m_pPlayer->UsesNewAI())
@@ -3795,6 +3805,10 @@ void CvEconomicAI::DoPlotPurchases()
 
 	// AI_AB_TEST: the new AI's next city comes before tiles
 	if (IsSavingForExpansionSettler())
+		return;
+
+	// AI_AB_TEST candidate (EarlyStrike): no tiles bought before the strike, the gold is for the upgrades
+	if (m_pPlayer->IsEarlyStrikeSmallEmpire())
 		return;
 
 	// AI_AB_TEST: CP never cancels a tile savings request, so after one unaffordable plot the amount stays

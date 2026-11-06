@@ -34637,6 +34637,26 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 			eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString(pkCoreUnit->GetRangedCombat() > 0 ? "TECH_BRONZE_WORKING" : "TECH_ARCHERY", true), 0);
 			if (eStep != NO_TECH)
 				return eStep;
+			// then the support's upgrade, if it's early (the user: "i beelined to construction. i didnt even get
+			// plantations for my citrus", and upgraded 3 archers to composite bowmen just before declaring). A straight
+			// line: Calendar, Pottery and the rest wait until after it. Only an upgrade within the first 4 tech-tree
+			// columns (Construction's Composite Bowman; not Civil Service's Pikeman)
+			const UnitTypes eSupport = GetSpecificUnitType((UnitClassTypes)GC.getInfoTypeForString(pkCoreUnit->GetRangedCombat() > 0 ? "UNITCLASS_SPEARMAN" : "UNITCLASS_ARCHER", true));
+			CvUnitEntry* pkSupport = (eSupport != NO_UNIT) ? GC.getUnitInfo(eSupport) : NULL;
+			for (int iClass = 0; pkSupport && iClass < GC.getNumUnitClassInfos(); iClass++)
+			{
+				if (!pkSupport->GetUpgradeUnitClass(iClass))
+					continue;
+				const UnitTypes eUpgrade = GetSpecificUnitType((UnitClassTypes)iClass);
+				CvUnitEntry* pkUpgrade = (eUpgrade != NO_UNIT) ? GC.getUnitInfo(eUpgrade) : NULL;
+				const TechTypes eUpgradeTech = pkUpgrade ? (TechTypes)pkUpgrade->GetPrereqAndTech() : NO_TECH;
+				CvTechEntry* pkUpgradeTech = (eUpgradeTech != NO_TECH) ? GC.getTechInfo(eUpgradeTech) : NULL;
+				if (!pkUpgradeTech || pkUpgradeTech->GetGridX() > 3)
+					continue;
+				eStep = GetOpeningBookTechStep(*this, eUpgradeTech, 0);
+				if (eStep != NO_TECH)
+					return eStep;
+			}
 		}
 	}
 
