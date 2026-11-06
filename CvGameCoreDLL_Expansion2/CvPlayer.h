@@ -138,7 +138,7 @@ struct CvEarlyStrikePlan
 	UnitClassTypes eSiege;		// NO_UNITCLASS: none (unwalled targets need none)
 	int iSiegeTotal;
 	int iMaxCities;				// K: cities before the strike
-	int iFallbackTurn;			// elapsed turns, this game's speed: no target in reach and no war by then, back to the normal plan
+	int iFallbackTurn;			// Personality's reference turn (logs only: the strike state's game-state exits decide, not turns)
 	PolicyBranchTypes eFirstTree;	// NO_POLICY_BRANCH_TYPE: the book's own
 	TechTypes eUpgradeTech;		// upgrade and go (NO_TECH: none)
 };
