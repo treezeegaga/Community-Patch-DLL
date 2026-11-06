@@ -2537,6 +2537,14 @@ bool CvMilitaryAI::IsTimingBuildupWarBudget() const
 
 int CvMilitaryAI::GetTimingBuildupFieldTarget() const
 {
+	//EarlyStrike: the plan's army (Personality's core + support counts, at least the 3 melee), not cities + 4 or WarBudget's
+	//affordable army (12 in the expert block's strikes, against plans of 8): the window asks for what the plan brings
+	if (IsEarlyStrikeBuildup())
+	{
+		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+		if (kPlan.bValid && kPlan.iCoreTarget + kPlan.iSupportTarget > 0)
+			return max((int)EARLY_STRIKE_MELEE_MIN, kPlan.iCoreTarget + kPlan.iSupportTarget);
+	}
 	const int iNormal = max(1, m_pPlayer->getNumCities()) + 4;
 	if (IsTimingBuildupWarBudget())
 	{

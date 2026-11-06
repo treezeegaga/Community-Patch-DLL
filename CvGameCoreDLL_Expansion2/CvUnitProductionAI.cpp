@@ -1922,11 +1922,13 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			!kPlayer.canTrainUnit(kPlayer.GetSpecificUnitType(kPlayer.GetGrandStrategyAI()->GetStrikePlan().eCoreClass), false, false, true) &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iPreBuildTarget)
 			iBonus += 4500;
-		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
+		//the core and support up to the plan's counts, for both strikes (the user, Nov 6: "if they were 4 units short, they need
+		//to fix their start"; EarlyStrike's armies opened their build-ups at 1-3 units against plans of 8)
+		else if (kPlayer.GetMilitaryAI()->IsStrikeBuildup() &&
 			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eCoreClass &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iCoreTarget)
 			iBonus += 4500;
-		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
+		else if (kPlayer.GetMilitaryAI()->IsStrikeBuildup() &&
 			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eSupportClass &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iSupportTarget)
 			iBonus += 3500;
