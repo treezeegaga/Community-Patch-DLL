@@ -2696,8 +2696,10 @@ void CvMilitaryAI::DoTimingBuildup()
 	}
 
 	// peace: let one extra land unit go each turn once more than 2 over the cap (siege units stay for the next window),
-	// not in the 10 turns after a peace treaty
-	if (IsTimingBuildupPeace())
+	// not in the 10 turns after a peace treaty. Not a strike civ before its declaration (PREP, BUILDUP): those units are the
+	// strike's army (Persia, 13A89116, let an Archer, 2 Warriors and a Composite Bowman go from T57 to T77)
+	const bool bStrikeArmy = GetStrikeState() == STRIKE_PREP || GetStrikeState() == STRIKE_BUILDUP;
+	if (IsTimingBuildupPeace() && !bStrikeArmy)
 	{
 		for (int iTeamLoop = 0; iTeamLoop < MAX_MAJOR_CIVS; iTeamLoop++)
 		{

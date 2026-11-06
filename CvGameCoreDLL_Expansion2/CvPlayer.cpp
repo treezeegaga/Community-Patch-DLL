@@ -33668,7 +33668,9 @@ static ABTestRoleTypes GetABTestRoleOfSlot(PlayerTypes ePlayer)
 			const bool bWarmonger = IsABTestWarmongerCiv(kLoop);
 			const bool bTallTrait = kLoop.GetPlayerTraits()->IsNerd() || kLoop.GetPlayerTraits()->IsSmaller();
 			const int iTie = (int)(ABTestHash(uSeed, 0xAB10u, (unsigned int)i) & 0xFF);	// random order among equals
-			const bool bEarlySpike = bEarlyStrikeAggressor && kLoop.GetGrandStrategyAI() && kLoop.GetGrandStrategyAI()->GetStrategyProfile().bMilitaryFirst;
+			// only a warmonger: an early-spike civ that isn't one plays no conquest plan at all (Polynesia, 13CA9885: Warmonger 0,
+			// no TimingBuildup, no EarlyStrike book), and the bully game is wasted
+			const bool bEarlySpike = bEarlyStrikeAggressor && bWarmonger && kLoop.GetGrandStrategyAI() && kLoop.GetGrandStrategyAI()->GetStrategyProfile().bMilitaryFirst;
 			aAggressor.push_back(std::make_pair((bEarlySpike ? 200000 : 0) + (bWarmonger ? 100000 : 0) + iOffense * 1000 + iTie, i));
 			aTall.push_back(std::make_pair((bTallTrait ? 100000 : 0) + (bWarmonger ? -100000 : 0) + iPeaceful * 1000 + iTie, i));
 		}
