@@ -2301,6 +2301,19 @@ bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
 	return m_bTakeable;
 }
 
+/// a strike's declaration waits while one of our cities is in danger of falling (a third party at war with us: the lead,
+/// Persia 15A7D14F was declared on by Germany and Ethiopia at T69); not an exit
+bool CvMilitaryAI::IsStrikeHomeSafe() const
+{
+	int iLoop = 0;
+	for (const CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if (pLoopCity->isInDangerOfFalling())
+			return false;
+	}
+	return true;
+}
+
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
 /// strike's war against this player, until a city is taken from it. Read by the peace willingness and the operations' aborts
 bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
@@ -2450,8 +2463,23 @@ void CvMilitaryAI::UpdateStrikeState()
 		const TechTypes eObsolete = pkCore ? (TechTypes)pkCore->GetObsoleteTech() : NO_TECH;
 		if (eObsolete != NO_TECH && GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eObsolete))
 			eNew = STRIKE_OVER, strWhy = "the core unit is obsolete";
+		// a major declared war on us (the lead: not an exit by itself). The strike's own target during BUILDUP: that is the
+		// strike's war (no retreat). Anyone else, or in PREP: the strike goes on; its declaration waits while one of our cities
+		// is in danger of falling (IsStrikeHomeSafe)
 		else if (iWarsOnUs > m_iStrikeWarsOnUsMark)
-			eNew = STRIKE_OVER, strWhy = "a major declared war on us first";
+		{
+			m_iStrikeWarsOnUsMark = iWarsOnUs;
+			if (eNew == STRIKE_BUILDUP && eTarget != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eTarget).getTeam()))
+			{
+				eNew = STRIKE_WAR;
+				strWhy = "the target declared war on us: the strike's war";
+				m_iStrikeCapturedMark = iCaptured;
+				m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
+			}
+			else if (GC.getLogging() && GC.getAILogging())
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: a major declared war on us; the strike goes on (%s, %s)",
+					eNew == STRIKE_PREP ? "PREP" : "BUILDUP", bEarly ? "EarlyStrike" : "LateStrike"));
+		}
 		// a war of our own before the strike's build-up (CP's war approach, not the strike): the strike is pre-empted and the
 		// normal plan runs (Japan, 1468D9F4: LateStrike in PREP from T1 declared on Spain at T102, BUILDUP came at T149)
 		else if (eNew == STRIKE_PREP && iWarsDeclared > m_iStrikeWarsDeclaredMark)
@@ -2615,7 +2643,7 @@ bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 	//and the user: "only start the attack if the city is takeable"
 	return TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= max(1, m_pPlayer->getNumCities()) + 4 &&
 		GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20) <= 0 &&
-		IsStrikeTargetTakeableNow();
+		IsStrikeTargetTakeableNow() && IsStrikeHomeSafe();
 }
 
 bool CvMilitaryAI::IsTimingBuildupArmyReady() const
@@ -2630,7 +2658,8 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 	//length (WindowUntilReady) still bounds the wait.
 	//and, the expert strike, 3 melee units that can take the city (2 at the city, 1 spare)
 	//and the user: "only start the attack if the city is takeable": the army on hand against the target's nearest city
-	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && IsStrikeTargetTakeableNow());
+	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && IsStrikeTargetTakeableNow() &&
+		IsStrikeHomeSafe());
 }
 
 /// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,

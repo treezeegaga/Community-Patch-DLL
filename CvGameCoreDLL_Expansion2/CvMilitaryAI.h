@@ -259,6 +259,7 @@ public:
 	bool IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// can the plan's (upgraded) army take the city (the game's damage math)
 	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city
 	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;	// the strike's war on this player, nothing taken yet: no peace, no abort
+	bool IsStrikeHomeSafe() const;	// none of our cities in danger of falling: a strike's declaration waits for it
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
 	PlayerTypes GetStrikeCityStateTarget() const { return (PlayerTypes)m_iStrikeCityState; }	// EarlyStrike: a city-state when no major is in reach, or a re-target (major or city-state)
