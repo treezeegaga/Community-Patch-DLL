@@ -763,11 +763,15 @@ bool CvAIOperation::ShouldAbort()
 void CvAIOperation::SetToAbort(AIOperationAbortReason eReason)
 {
 	// AI_AB_TEST (the strike's ownership, gate 4; the lead's audit): an offensive operation against a player the strike refuses
-	// peace with doesn't retreat. Every abort passes here; the retreat reasons are refused (CP's war-state, approach and
-	// danger judgements, half strength), the mechanical ends stay (no units, no target or path, timeout, the city taken)
+	// peace with doesn't retreat. Every abort passes here; the retreat reasons are refused (CP's war-state and approach
+	// judgements, half strength), the mechanical ends stay (no units, no target or path, timeout, the city taken).
+	// TOO_DANGEROUS is a route problem, not a retreat (the tactical AI raises it when the army's next step is within 3 tiles of
+	// another enemy city), so it stays: the lead, bullygreedy24 17813E6E, the Celts' pillage op 3358 (2 Pictish Warriors)
+	// bounced between 23% and 45% progress T143-149 with abort 12 refused every turn. In WAR the strike requests a new city
+	// attack when none is under way
 	if (m_eCurrentState != AI_OPERATION_STATE_ABORTED && IsOffensive() && m_eOwner != NO_PLAYER && m_eEnemy != NO_PLAYER &&
 		GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeRefusingPeace(m_eEnemy) &&
-		(eReason == AI_ABORT_HALF_STRENGTH || eReason == AI_ABORT_TARGET_NOT_VALID || eReason == AI_ABORT_TOO_DANGEROUS ||
+		(eReason == AI_ABORT_HALF_STRENGTH || eReason == AI_ABORT_TARGET_NOT_VALID ||
 		 eReason == AI_ABORT_WAR_STATE_CHANGE || eReason == AI_ABORT_DIPLO_OPINION_CHANGE || eReason == AI_ABORT_CANCELLED))
 	{
 		if (GC.getLogging() && GC.getAILogging())
