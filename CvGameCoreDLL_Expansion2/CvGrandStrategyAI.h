@@ -247,6 +247,7 @@ private:
 	void SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) const;
 	static void AddStrikeBuild(CvStrikePlan& kPlan, bool bUnit, int iClass);
 	void CompleteStrikeLists(CvStrikePlan& kPlan) const;
+	void OrderStrikeLists(CvStrikePlan& kPlan) const;
 	void DoStyleCityStateUnitGifts();
 	void DoGreedyDisbandToCap();
 
