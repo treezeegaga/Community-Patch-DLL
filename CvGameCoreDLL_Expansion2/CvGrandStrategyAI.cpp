@@ -127,6 +127,9 @@ CvGrandStrategyAI::CvGrandStrategyAI():
 	m_iCachedMetaPosition(0),
 	m_iCachedMetaTurn(-1),
 	m_iCachedGreedyKind(STRATEGY_GREEDY_TALL),
+	m_iCachedStrikeStart(-1),
+	m_iCachedStrikeEnd(-1),
+	m_iCachedSpikeTech(NO_TECH),
 	m_iCachedOutOfRoom(0),
 	m_iCachedOutOfRoomTurn(-1),
 	m_iCachedWarDefenceCap(0),
@@ -193,6 +196,9 @@ void CvGrandStrategyAI::Reset()
 	m_iCachedMetaPosition = 0;
 	m_iCachedMetaTurn = -1;
 	m_iCachedGreedyKind = STRATEGY_GREEDY_TALL;
+	m_iCachedStrikeStart = -1;
+	m_iCachedStrikeEnd = -1;
+	m_iCachedSpikeTech = NO_TECH;
 	m_iCachedOutOfRoom = 0;
 	m_iCachedOutOfRoomTurn = -1;
 	m_iCachedWarDefenceCap = 0;
@@ -1733,6 +1739,13 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	kProfile.eRisk = STRATEGY_RISK_MEDIUM;
 	kProfile.eExpansion = STRATEGY_EXPANSION_MEDIUM;
 	kProfile.eGreedyKind = STRATEGY_GREEDY_TALL;
+	kProfile.eSpikeUnit = NO_UNIT;
+	kProfile.eSpikeTech = NO_TECH;
+	kProfile.iSpikeTurn = -1;
+	kProfile.bSpikeTerrain = false;
+	kProfile.bMilitaryFirst = false;
+	kProfile.iStrikeStart = -1;
+	kProfile.iStrikeEnd = -1;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return kProfile;
 
@@ -1906,7 +1919,66 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 			kProfile.eGreedyKind = (kProfile.eExpansion >= STRATEGY_EXPANSION_WIDE) ? STRATEGY_GREEDY_WIDE : STRATEGY_GREEDY_TALL;
 	}
 
+	GetPowerSpike(kProfile);
 	return kProfile;
+}
+
+/// AI_AB_TEST (Personality; the user, 2026-11-06, after taking Marrakesh at T54 with the Aztec's Jaguars: "every civ needs
+/// to build to its strengths"). The military power spike: the civ's earliest unique land combat unit (game data, so mods
+/// and other civs work too; scouts don't count), the tech that unlocks it, and the turn that tech usually comes (Standard
+/// turns by its column in the tech tree, roughly the new AI's pace in logged games: warmongers' Mathematics, column 3, at
+/// about T48, their Physics at T138; scaled to the game's speed). The opening that serves it: military first and a small empire when the spike comes by turn 30 (Standard),
+/// otherwise expansion first. The strike window: from 5 turns after the spike (the first units built) to 30 turns later,
+/// or to when the unit goes obsolete if that's sooner; past that the neighbours have walls, counters and castles.
+void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
+{
+	static const int aiTurnByColumn[] = { 0, 15, 30, 47, 75, 105, 135, 160, 185, 210, 235, 260, 285, 310, 335, 360, 385, 410, 435, 460 };
+	static const int iNumColumns = (int)(sizeof(aiTurnByColumn) / sizeof(aiTurnByColumn[0]));
+	const int iSpeed = max(1, GC.getGame().getGameSpeedInfo().getTrainPercent());
+	const CvCivilizationInfo& kCiv = m_pPlayer->getCivilizationInfo();
+
+	int iBestTurn = MAX_INT;
+	for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+	{
+		if (!kCiv.isCivilizationUnitOverridden(iClass))
+			continue;
+		const UnitTypes eUnit = (UnitTypes)kCiv.getCivilizationUnits(iClass);
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (!pkUnit || pkUnit->GetDomainType() != DOMAIN_LAND || (pkUnit->GetCombat() <= 0 && pkUnit->GetRangedCombat() <= 0) ||
+			pkUnit->GetDefaultUnitAIType() == UNITAI_EXPLORE)
+			continue;
+		const TechTypes eTech = (TechTypes)pkUnit->GetPrereqAndTech();
+		CvTechEntry* pkTech = (eTech != NO_TECH) ? GC.getTechInfo(eTech) : NULL;
+		const int iColumn = pkTech ? max(0, pkTech->GetGridX()) : 0;
+		const int iTurn = (iColumn < iNumColumns) ? aiTurnByColumn[iColumn] : aiTurnByColumn[iNumColumns - 1] + 20 * (iColumn - iNumColumns + 1);
+		if (iTurn >= iBestTurn)
+			continue;
+		iBestTurn = iTurn;
+		kProfile.eSpikeUnit = eUnit;
+		kProfile.eSpikeTech = pkTech ? eTech : NO_TECH;
+		kProfile.iSpikeTurn = iTurn * iSpeed / 100;
+
+		// fights better in forest or jungle (the Jaguar, the Mohawk Warrior)
+		kProfile.bSpikeTerrain = false;
+		for (int iPromotion = 0; iPromotion < GC.getNumPromotionInfos() && !kProfile.bSpikeTerrain; iPromotion++)
+		{
+			CvPromotionEntry* pkPromotion = pkUnit->GetFreePromotions(iPromotion) ? GC.getPromotionInfo((PromotionTypes)iPromotion) : NULL;
+			if (!pkPromotion)
+				continue;
+			for (int iFeature = 0; iFeature < GC.getNumFeatureInfos() && !kProfile.bSpikeTerrain; iFeature++)
+				kProfile.bSpikeTerrain = pkPromotion->GetFeatureAttackPercent(iFeature) > 0 || pkPromotion->GetFeatureDefensePercent(iFeature) > 0;
+		}
+
+		// the strike window, cut short when the unit goes obsolete
+		int iEnd = iTurn + 35;
+		const TechTypes eObsolete = (TechTypes)pkUnit->GetObsoleteTech();
+		CvTechEntry* pkObsolete = (eObsolete != NO_TECH) ? GC.getTechInfo(eObsolete) : NULL;
+		if (pkObsolete && pkObsolete->GetGridX() >= 0 && pkObsolete->GetGridX() < iNumColumns)
+			iEnd = min(iEnd, max(iTurn + 10, aiTurnByColumn[pkObsolete->GetGridX()]));
+		kProfile.iStrikeStart = (iTurn + 5) * iSpeed / 100;
+		kProfile.iStrikeEnd = iEnd * iSpeed / 100;
+	}
+	kProfile.bMilitaryFirst = kProfile.iSpikeTurn >= 0 && iBestTurn <= 30;
 }
 
 /// AI_AB_TEST (Personality, MetaDial): the meta position the dial reads, -100 greedy to +100 aggressive. The home
@@ -1920,6 +1992,9 @@ int CvGrandStrategyAI::GetMetaPosition() const
 		const CvStrategyProfile kProfile = GetStrategyProfile();
 		m_iCachedMetaPosition = kProfile.iHomeMeta;
 		m_iCachedGreedyKind = kProfile.eGreedyKind;
+		m_iCachedStrikeStart = kProfile.iStrikeStart;
+		m_iCachedStrikeEnd = kProfile.iStrikeEnd;
+		m_iCachedSpikeTech = kProfile.eSpikeTech;
 		m_iCachedMetaTurn = iTurn;
 	}
 	return m_iCachedMetaPosition;
@@ -1930,6 +2005,30 @@ StrategyGreedyKindTypes CvGrandStrategyAI::GetGreedyKind() const
 {
 	GetMetaPosition();	// fills the cache
 	return (StrategyGreedyKindTypes)m_iCachedGreedyKind;
+}
+
+/// AI_AB_TEST (Personality, power spike; for War's TimingBuildup): the strike window in game turns (elapsed, this game's
+/// speed). False when the civ has no unique land combat unit.
+bool CvGrandStrategyAI::GetStrikeWindow(int& iStartTurn, int& iEndTurn) const
+{
+	GetMetaPosition();	// fills the cache
+	iStartTurn = m_iCachedStrikeStart;
+	iEndTurn = m_iCachedStrikeEnd;
+	return iStartTurn >= 0;
+}
+
+/// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research
+/// runs late)
+bool CvGrandStrategyAI::IsInStrikeWindow() const
+{
+	int iStart = -1, iEnd = -1;
+	if (!GetStrikeWindow(iStart, iEnd))
+		return false;
+	const int iTurn = GC.getGame().getElapsedGameTurns();
+	if (iTurn < iStart || iTurn > iEnd)
+		return false;
+	const TechTypes eTech = (TechTypes)m_iCachedSpikeTech;
+	return eTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech);
 }
 
 /// AI_AB_TEST (Personality, GreedyWide): out of room to settle (CvPlayer::IsBoxedInForSettling), once per turn: it looks
@@ -2215,13 +2314,17 @@ void CvGrandStrategyAI::LogStrategyProfile()
 	if (!pLog)
 		return;
 	CvString strOut;
-	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s",
+	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s, spike %s at %s T%d%s, opening %s, strike window T%d-T%d",
 		iTurn, m_pPlayer->getCivilizationShortDescription(), m_pPlayer->getLeaderTypeKey(), strTags.c_str(),
 		(int)m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit(), (int)m_pPlayer->GetDiplomacyAI()->GetSecondaryVictoryPursuit(),
 		GetStrategyArchetypeName(kProfile.eArchetype), kProfile.iHomeMeta,
 		kProfile.aiVictoryWeight[STRATEGY_VICTORY_DOMINATION], kProfile.aiVictoryWeight[STRATEGY_VICTORY_SCIENCE],
 		kProfile.aiVictoryWeight[STRATEGY_VICTORY_CULTURE], kProfile.aiVictoryWeight[STRATEGY_VICTORY_DIPLOMACY],
-		aszRisk[kProfile.eRisk], aszExpansion[kProfile.eExpansion], kProfile.eGreedyKind == STRATEGY_GREEDY_WIDE ? "wide" : "tall");
+		aszRisk[kProfile.eRisk], aszExpansion[kProfile.eExpansion], kProfile.eGreedyKind == STRATEGY_GREEDY_WIDE ? "wide" : "tall",
+		(kProfile.eSpikeUnit != NO_UNIT) ? GC.getUnitInfo(kProfile.eSpikeUnit)->GetType() : "none",
+		(kProfile.eSpikeTech != NO_TECH) ? GC.getTechInfo(kProfile.eSpikeTech)->GetType() : "start", kProfile.iSpikeTurn,
+		kProfile.bSpikeTerrain ? " (forest/jungle)" : "", kProfile.bMilitaryFirst ? "military first" : "expansion first",
+		kProfile.iStrikeStart, kProfile.iStrikeEnd);
 	pLog->Msg(strOut);
 }
 
