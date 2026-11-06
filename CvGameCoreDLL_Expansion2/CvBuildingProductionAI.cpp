@@ -267,6 +267,11 @@ int CvBuildingProductionAI::CheckBuildingBuildSanity(BuildingTypes eBuilding, in
 			iBonus += 500;
 	}
 
+	// AI_AB_TEST candidates (EarlyStrike, LateStrike): no world wonder before the strike (EarlyStrike's PREP and BUILDUP,
+	// LateStrike's BUILDUP). The expert block's Persia (13A89116) started Stonehenge at T39 while its book waited
+	if (isWorldWonderClass(kBuildingClassInfo) && (kPlayer.IsEarlyStrikeSmallEmpire() || kPlayer.IsLateStrikeSaving()))
+		return SR_STRATEGY;
+
 	// AI_AB_TEST candidate (WarGold, the lead's): a warmonger at peace keeps its income at 0 or more. While it's losing gold,
 	// no new building with upkeep (unless it makes gold, defends, or gets the army ready: production or experience) and no
 	// world wonder

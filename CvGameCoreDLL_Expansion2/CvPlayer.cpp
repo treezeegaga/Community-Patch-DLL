@@ -34486,8 +34486,10 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 		return false;
 
 	// A settler waiting for its escort comes first: let the normal production choice build units for operations
+	// (AI_AB_TEST candidate EarlyStrike: the strike book builds the escort itself, a core unit, below)
 	CvAIOperation* pFoundCityOp = getFirstAIOperationOfType(AI_OPERATION_FOUND_CITY);
-	if (pFoundCityOp && pFoundCityOp->GetNumUnitsNeededToBeBuilt() > 0)
+	const bool bStrikeEscort = pFoundCityOp && pFoundCityOp->GetNumUnitsNeededToBeBuilt() > 0 && pCity->isCapital() && IsEarlyStrikeBook();
+	if (pFoundCityOp && pFoundCityOp->GetNumUnitsNeededToBeBuilt() > 0 && !bStrikeEscort)
 		return false;
 
 	// So does an attack being gathered (see CvDiplomacyAI::GetNewAIConquestTarget): its army gets built first
@@ -34534,6 +34536,12 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 			const bool bReach = IsEarlyStrikeTargetInReach();
 			if (!bReach)
 			{
+				// one core unit first even with nothing in reach: it's the settler's escort. In the expert block's Persia game
+				// (13A89116) the book went Worker, Settler with no combat unit; the found-city operation found nobody to
+				// recruit (T19), the book stood aside for it, and CP's own choices built a Monument, a Granary and Stonehenge
+				// before an Immortal came at T30-33
+				for (int i = 0; i < 1 + iCoreStart; i++)
+					vEarlyStrike.push_back(kCore);
 				vEarlyStrike.push_back(kWorker);
 				vEarlyStrike.push_back(kSettler);
 			}
@@ -34562,6 +34570,21 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 				vEarlyStrike.push_back(kSettler);
 			pSteps = &vEarlyStrike[0];
 			iNumSteps = (int)vEarlyStrike.size();
+
+			// the settler is waiting for its escort: build it now, the core unit, or a warrior while the core's tech is out
+			if (bStrikeEscort)
+			{
+				UnitTypes eEscort = GetSpecificUnitType(kPlan.eCore);
+				if (eEscort == NO_UNIT || !pCity->canTrain(eEscort))
+					eEscort = GetSpecificUnitType("UNITCLASS_WARRIOR", true);
+				if (eEscort != NO_UNIT && pCity->canTrain(eEscort))
+				{
+					eOrder = ORDER_TRAIN;
+					iData = eEscort;
+					LogOpeningBookSettlerHeld(*this, pCity, "escort", GC.getUnitInfo(eEscort)->GetDescription());
+					return true;
+				}
+			}
 		}
 	}
 	if (pSteps)
