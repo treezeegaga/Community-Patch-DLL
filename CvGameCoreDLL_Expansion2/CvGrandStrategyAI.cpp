@@ -2181,7 +2181,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bPolicyInferred = true;
 	for (int iItem = 0; iItem < STRIKE_POLICY_MAX; iItem++)
 	{
-		kPlan.aePolicyOrder[iItem] = NO_POLICY_BRANCH_TYPE;
+		kPlan.aePolicyBranches[iItem] = NO_POLICY_BRANCH_TYPE;
 		kPlan.aeNeverBranches[iItem] = NO_POLICY_BRANCH_TYPE;
 	}
 	for (int iItem = 0; iItem < STRIKE_LIST_MAX; iItem++)
@@ -2744,11 +2744,11 @@ void CvGrandStrategyAI::SetStrikePolicyOrder(CvStrikePlan& kPlan) const
 		iPos = iEnd + 1;
 		const PolicyBranchTypes eBranch = (PolicyBranchTypes)GC.getInfoTypeForString(strName.c_str(), true);
 		if (eBranch != NO_POLICY_BRANCH_TYPE)
-			kPlan.aePolicyOrder[kPlan.iNumPolicyBranches++] = eBranch;
+			kPlan.aePolicyBranches[kPlan.iNumPolicyBranches++] = eBranch;
 	}
 	// the first tree follows the order (it was the plan's only policy field)
 	if (kPlan.iNumPolicyBranches > 0)
-		kPlan.eFirstPolicyBranch = kPlan.aePolicyOrder[0];
+		kPlan.eFirstPolicyBranch = kPlan.aePolicyBranches[0];
 	kPlan.iNumNeverBranches = 0;
 	const char* const aszNever[2] = { "POLICY_BRANCH_AESTHETICS", "POLICY_BRANCH_PIETY" };
 	for (int i = 0; i < 2; i++)
@@ -2892,15 +2892,24 @@ int CvGrandStrategyAI::CountStrikeClassLine(UnitClassTypes eClass) const
 {
 	if (!m_pPlayer || eClass == NO_UNITCLASS)
 		return 0;
-	int iCount = m_pPlayer->getUnitClassCount(eClass);
-	const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eClass);
-	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
-	if (pkUnit)
+	// the whole upgrade line, not one step (War, 2026-11-06, Zulu in 17436CCD: a Composite Bowman upgraded to a
+	// Crossbowman, two steps from the Archer, and the support line read 7/8 for 30 turns while Economy's recursive count,
+	// AddStrikeListUpgradeClasses, read 8/8); breadth-first with a visited list
+	std::vector<int> viLine;
+	viLine.push_back((int)eClass);
+	int iCount = 0;
+	for (size_t iAt = 0; iAt < viLine.size(); iAt++)
 	{
+		const UnitClassTypes eLoopClass = (UnitClassTypes)viLine[iAt];
+		iCount += m_pPlayer->getUnitClassCount(eLoopClass);
+		const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eLoopClass);
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (!pkUnit)
+			continue;
 		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
 		{
-			if (iClass != (int)eClass && pkUnit->GetUpgradeUnitClass(iClass))
-				iCount += m_pPlayer->getUnitClassCount((UnitClassTypes)iClass);
+			if (pkUnit->GetUpgradeUnitClass(iClass) && std::find(viLine.begin(), viLine.end(), iClass) == viLine.end())
+				viLine.push_back(iClass);
 		}
 	}
 	return iCount;
@@ -3330,7 +3339,7 @@ void CvGrandStrategyAI::LogStrategyProfile()
 		CvString strPolicies;
 		for (int iItem = 0; iItem < kPlan.iNumPolicyBranches; iItem++)
 		{
-			CvPolicyBranchEntry* pkBranch = GC.getPolicyBranchInfo(kPlan.aePolicyOrder[iItem]);
+			CvPolicyBranchEntry* pkBranch = GC.getPolicyBranchInfo(kPlan.aePolicyBranches[iItem]);
 			strPolicies += CvString::format("%s%s", iItem > 0 ? " " : "", pkBranch ? pkBranch->GetType() : "?");
 		}
 		CvString strLists;

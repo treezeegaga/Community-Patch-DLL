@@ -129,7 +129,7 @@ struct CvStrikePlan
 	// aggressor) went aesthetics? wtf"): Economy's policy gate takes the trees in this order, the ideology slot included;
 	// the never-list (Aesthetics, Piety for a strike civ) is never opened. bPolicyInferred: [I] beyond the research's first tree.
 	int iNumPolicyBranches;
-	PolicyBranchTypes aePolicyOrder[STRIKE_POLICY_MAX];
+	PolicyBranchTypes aePolicyBranches[STRIKE_POLICY_MAX];
 	int iNumNeverBranches;
 	PolicyBranchTypes aeNeverBranches[STRIKE_POLICY_MAX];
 	bool bPolicyInferred;
@@ -217,7 +217,7 @@ public:
 	const CvStrikePlan& GetStrikePlan() const;
 	bool IsStrikeEconomyReady() const;	// PREP to BUILDUP (game state only)
 	bool IsStrikeArmyReady(int* piUpgradeBill = NULL) const;	// BUILDUP to WAR (game state only); War adds its 2+ melee check
-	int CountStrikeClassLine(UnitClassTypes eClass) const;	// units of a class and of the classes it upgrades into
+	int CountStrikeClassLine(UnitClassTypes eClass) const;	// units of a class and of every class along its upgrade line
 	bool IsGreedyWideOutOfRoom() const;
 	int GetWarDefenceLandUnitCap() const;
 
