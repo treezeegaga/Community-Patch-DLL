@@ -2535,6 +2535,7 @@ static bool IsStrikeTechPrereqOf(TechTypes eA, TechTypes eB, int iDepth)
 /// - every build's tech is in the research list (added if missing);
 /// - a build comes after the research item that brings its tech (the item itself, or the first item it's a prerequisite
 ///   of); builds with a starting tech keep their place at the front; the expert order is kept within each step;
+/// - game data only (the tech tree), never the civ's current techs: multiplayer-safe;
 /// - a late strike: Currency early in the research (after the first two items) and the Market before any combat unit,
 ///   so the economy pays for the army's upkeep.
 /// Lists straight from a source (bListInferred false) keep their order; they only get missing techs added.
@@ -2593,8 +2594,10 @@ void CvGrandStrategyAI::OrderStrikeLists(CvStrikePlan& kPlan) const
 	for (int i = 0; i < kPlan.iNumBuilds; i++)
 	{
 		const TechTypes eTech = aeBuildTech[i];
-		if (eTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTech) ||
-			(GC.getTechInfo(eTech) && GC.getTechInfo(eTech)->GetGridX() <= 0))
+		// game data only, never what the civ knows now: the plan is cached once per turn and the UI can reach it (an AI city's
+		// canConstruct), so a client building it before the AI's tech arrives and another after would see different lists
+		// (multiplayer desync; the lead's pre-flight review of d75dfec)
+		if (eTech == NO_TECH || (GC.getTechInfo(eTech) && GC.getTechInfo(eTech)->GetGridX() <= 0))
 		{
 			aiStep[i] = 0;
 			continue;
@@ -2621,7 +2624,9 @@ void CvGrandStrategyAI::OrderStrikeLists(CvStrikePlan& kPlan) const
 		for (int i = 0; i < kPlan.iNumBuilds; i++)
 			if (!kPlan.aBuilds[i].bUnit && kPlan.aBuilds[i].iClass == iMarket)
 				iMarketStep = aiStep[i];
-		if (iMarketStep >= 0)
+		// (no Market step to go by when its tech couldn't be put on a full research list: skip the rule, or every combat unit
+		// would go to the end; the lead's review)
+		if (iMarketStep >= 0 && iMarketStep <= STRIKE_LIST_MAX)
 		{
 			for (int i = 0; i < kPlan.iNumBuilds; i++)
 			{
