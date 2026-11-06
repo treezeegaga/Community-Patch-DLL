@@ -1890,8 +1890,8 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		const bool bSiege = pkUnitEntry->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD;
 		if (bSiege && kPlayer.GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, true, true) < kPlayer.GetMilitaryAI()->GetTimingBuildupSiegeTarget())
 			iBonus += 4000;
-		//EarlyStrike: the spike unit leads the army, first until it makes up half the field target
-		else if (eUnit == kPlayer.GetMilitaryAI()->GetEarlyStrikeUnit() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
+		//EarlyStrike: the spike unit (Economy's core class) leads the army, first until it makes up half the field target
+		else if ((UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetEarlyStrikeCoreClass() && kPlayer.GetMilitaryAI()->IsEarlyStrikeBuildup() &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 2 < kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget())
 			iBonus += 4500;
 		//SiegeSlots: other land units only while the field target isn't met; past it they are not what the army lacks

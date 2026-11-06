@@ -23741,10 +23741,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// ready or the window is over
 	if (bTimingBuildup && eBest != NO_PLAYER)
 	{
-		// AI_AB_TEST (candidate, flag EarlyStrike, War): a civ whose strike window (Personality's power spike) comes before
-		// turn 40 opens its build-up in that window (CvMilitaryAI::IsEarlyStrikeCiv)
-		const bool bEarlyStrikeNow = pPlayer->GetMilitaryAI()->IsEarlyStrikeCiv() && pPlayer->GetGrandStrategyAI()->IsInStrikeWindow();
-		if (iTurn < 40 * iSpeed / 100 && !bEarlyStrikeNow)
+		if (iTurn < 40 * iSpeed / 100)
 			return NO_PLAYER; // planned only
 		CvMilitaryAI* pMilitary = pPlayer->GetMilitaryAI();
 		if (!pMilitary->IsTimingBuildupArmyReady() && !pMilitary->HasTimingBuildupWindowEnded())
