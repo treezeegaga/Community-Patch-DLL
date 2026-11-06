@@ -198,8 +198,10 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 	}
 
 	// AI_AB_TEST (Economy 0049): while the strike is active, the plan's first tree is finished before a second opens: its best
-	// adoptable policy (CP's weights) comes first
-	if (!bMustChooseTenet && !bNeedToFinish && pPlayer->IsStrikeActive())
+	// adoptable policy (CP's weights) comes first. (0051: not gated on bNeedToFinish, which is true whenever an open branch,
+	// the strike's included, can still be continued; it only keeps CP from opening a new branch, and CP then picked from
+	// any open branch, so this block never ran)
+	if (!bMustChooseTenet && pPlayer->IsStrikeActive())
 	{
 		const PolicyBranchTypes eStrikeBranch = pPlayer->GetOpeningBookPolicyBranch();
 		if (eStrikeBranch != NO_POLICY_BRANCH_TYPE && m_pCurrentPolicies->IsPolicyBranchUnlocked(eStrikeBranch) && !m_pCurrentPolicies->IsPolicyBranchFinished(eStrikeBranch))

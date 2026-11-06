@@ -29336,8 +29336,10 @@ void CvCity::pushOrder(OrderTypes eOrder, int iData1, int iData2, bool bSave, bo
 
 	// AI_AB_TEST (Economy 0049; the user's structural fix: the strike owns production while it's active). Every new
 	// production choice of an AI strike city (a push that replaces the queue) becomes the strike executor's pick whenever the
-	// executor has one, whatever path chose it. Appends (CP's operation units, War's strike ops), re-pushes of a saved order
-	// and humans pass unchanged
+	// executor has one, whatever path chose it. Appended orders (CvCity::CheckForOperationUnits), re-pushes of a saved
+	// order and humans pass unchanged. A unit ChooseProduction picks for an operation (CITY_BUILDABLE_UNIT_FOR_OPERATION)
+	// replaces the queue, so it is redirected too, by design: the strike owns production. (0051: comment corrected; the
+	// settler-skip count ChooseProduction keeps then refers to its own pick, which is harmless)
 	if (MOD_AI_AB_TEST && bPop && !bAppend && !bSave && !GET_PLAYER(getOwner()).isHuman() && GET_PLAYER(getOwner()).IsStrikeActive())
 	{
 		OrderTypes eStrikeOrder = ORDER_TRAIN;
