@@ -3060,8 +3060,6 @@ void CvMilitaryAI::UpdateStrikeState()
 /// the strike goes with what it has rather than wait on a clock
 bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 {
-	if (!IsLateStrikeSpikeIn())
-		return false;
 	const int iSiege = m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true);
 	//and the user: "only start the attack if the city is takeable"
 	return TimingBuildupFieldUnits(m_pPlayer, this, iSiege) >= max(1, m_pPlayer->getNumCities()) + 4 &&
@@ -3090,19 +3088,8 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 	//length (WindowUntilReady) still bounds the wait.
 	//and, the expert strike, 3 melee units that can take the city (2 at the city, 1 spare)
 	//and the user: "only start the attack if the city is takeable": the army on hand against the target's nearest city
-	return !bStrike || (IsLateStrikeSpikeIn() && GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN &&
-		IsStrikeTargetTakeableNow() && IsStrikeHomeSafe());
-}
-
-/// AI_AB_TEST (LateStrike; Economy relaying the lead, 172518A7): a late strike is its spike. It declares only once the plan's
-/// upgrade tech is in (Mongolia declared at T120 "as ready as it got" with Chariot Archers and its Knights 0/8, before
-/// Chivalry). An early strike, or a plan without an upgrade tech, isn't held
-bool CvMilitaryAI::IsLateStrikeSpikeIn() const
-{
-	if (!IsLateStrikeCiv() || !m_pPlayer->GetGrandStrategyAI())
-		return true;
-	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
-	return kPlan.eUpgradeTech == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(kPlan.eUpgradeTech);
+	return !bStrike || (GetEarlyStrikeUpgradeBill() == 0 && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && IsStrikeTargetTakeableNow() &&
+		IsStrikeHomeSafe());
 }
 
 /// AI_AB_TEST (flag EarlyStrike): the gold to upgrade the land combat units in our territory whose upgrade's tech is known,
