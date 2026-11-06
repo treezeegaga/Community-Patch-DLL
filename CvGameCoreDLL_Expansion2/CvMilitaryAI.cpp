@@ -2077,11 +2077,16 @@ void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 		return;
 	map<CvString, int> mTypes;
 	int iLand = 0, iSiege = 0, iLoop = 0;
+	int iPromoted = 0, iPromotions = 0, iXPTimes100 = 0;	// the army's experience (the user's human game: promoted Jaguars took a capital at T54)
 	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
 	{
 		if (pLoopUnit->getDomainType() != DOMAIN_LAND || (!pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged()))
 			continue;
 		iLand++;
+		if (pLoopUnit->getLevel() > 1)
+			iPromoted++;
+		iPromotions += max(0, pLoopUnit->getLevel() - 1);
+		iXPTimes100 += pLoopUnit->getExperienceTimes100();
 		if (pLoopUnit->AI_getUnitAIType() == UNITAI_CITY_BOMBARD)
 			iSiege++;
 		mTypes[pLoopUnit->getUnitInfo().GetDescription()]++;
@@ -2091,9 +2096,9 @@ void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 		strTypes += CvString::format("%s%s %d", strTypes.empty() ? "" : ", ", it->first.c_str(), it->second);
 	//WarBudget writes the same line under its own name, with what gold still pays for (20 turns)
 	const CvString strAffordable = IsTimingBuildupWarBudget() ? CvString::format(", affordable %d more", m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20)) : CvString("");
-	m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("%s: army %s: %d land (%d siege; target %d siege, %d others), gold %d, %d a turn%s: %s",
+	m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("%s: army %s: %d land (%d siege; target %d siege, %d others), gold %d, %d a turn%s, promoted %d (%d promotions, %d XP): %s",
 		IsTimingBuildupBigArmy() ? "BigArmy" : "WarBudget", szWhen, iLand, iSiege, GetTimingBuildupSiegeTarget(), GetTimingBuildupFieldTarget(), m_pPlayer->GetTreasury()->GetGold(),
-		m_pPlayer->GetTreasury()->CalculateBaseNetGold(), strAffordable.c_str(), strTypes.c_str()));
+		m_pPlayer->GetTreasury()->CalculateBaseNetGold(), strAffordable.c_str(), iPromoted, iPromotions, iXPTimes100 / 100, strTypes.c_str()));
 }
 
 /// non-siege land combat units at peace: a garrison per city and one escort
