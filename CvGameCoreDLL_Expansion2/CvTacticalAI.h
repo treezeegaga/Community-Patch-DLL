@@ -391,6 +391,7 @@ private:
 	// Routines to manage identifying and implementing tactical moves
 	void ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl = AL_HIGH);
 	void PlotGrabGoodyMoves();
+	void PlotEarlyStrikeBarbHuntMoves();	// AI_AB_TEST (flag EarlyStrike): spike units hunt barbarians for XP before the strike
 	void PlotMovesToSafety(bool bCombatUnits);
 	void PlotOperationalArmyMoves();
 	void PlotPillageMoves(AITacticalTargetType eTarget, bool bImmediate);

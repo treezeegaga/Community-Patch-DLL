@@ -819,6 +819,7 @@ void CvTacticalAI::AssignGlobalMidPrioMoves()
 
 	//score some goodies
 	PlotGrabGoodyMoves();
+	PlotEarlyStrikeBarbHuntMoves();
 	PlotCivilianAttackMoves();
 
 	//make sure our frontline fortresses are occupied
@@ -1086,6 +1087,55 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 }
 
 /// Assign a unit to capture an undefended barbarian camp
+/// AI_AB_TEST (candidate, flag EarlyStrike, the expert strike's barbarian hunt, War; the user: "i pushed out 3 quick jaguars
+/// and went barb hunting", with Honor). Before the window our early units explored, garrisoned and walked to camps, but made
+/// 0.8 attacks a game, so they came to the strike with little XP. Here an EarlyStrike civ's spike units (the core class)
+/// go after visible barbarian units within 8 tiles of our cities, before its build-up opens and before Personality's close
+/// turn, not at war with a major. Only units at half health or better, not needed as garrisons
+/// (FindUnitsForHarassing), and under Vox Populi's barbarian XP cap (BARBARIAN_MAX_XP_VALUE) hunt; they get into position
+/// when an attack is worth it, and the turn's attacks follow as for any enemy unit. Camps stay with PlotGrabGoodyMoves.
+void CvTacticalAI::PlotEarlyStrikeBarbHuntMoves()
+{
+	CvMilitaryAI* pMilitary = m_pPlayer->GetMilitaryAI();
+	if (!pMilitary->IsEarlyStrikeCiv() || m_pPlayer->IsAtWarAnyMajor() || pMilitary->GetTimingBuildupPhase() >= CvMilitaryAI::TIMING_BUILDUP_WINDOW)
+		return;
+	CvStrikeWindow kWindow;
+	if (pMilitary->GetEarlyStrikeWindow(kWindow) && kWindow.iCloseTurn >= 0 && GC.getGame().getElapsedGameTurns() > kWindow.iCloseTurn)
+		return;
+	const UnitClassTypes eCore = m_pPlayer->GetEarlyStrikeCoreClass();
+	if (eCore == NO_UNITCLASS)
+		return;
+	const int iXPCap = GD_INT_GET(BARBARIAN_MAX_XP_VALUE);
+
+	ClearCurrentMoveUnits(AI_TACTICAL_BARBARIAN_HUNT);
+	for (CvTacticalTarget* pTarget = GetFirstZoneTarget(AI_TACTICAL_TARGET_ENEMY_COMBAT_UNIT); pTarget != NULL; pTarget = GetNextZoneTarget())
+	{
+		CvUnit* pEnemy = pTarget->GetUnitPtr();
+		CvPlot* pPlot = GC.getMap().plot(pTarget->GetTargetX(), pTarget->GetTargetY());
+		if (!pEnemy || !pPlot || !pEnemy->isBarbarian() || m_pPlayer->GetCityDistanceInPlots(pPlot) > 8)
+			continue;
+		if (!FindUnitsForHarassing(pPlot, 4, 50, -1, DOMAIN_LAND, false, false, 6))
+			continue;
+		vector<CvUnit*> vHunters;
+		int nGoodAttackers = 0;
+		for (size_t i = 0; i < m_CurrentMoveUnits.size() && vHunters.size() < 2; i++)
+		{
+			CvUnit* pUnit = m_pPlayer->getUnit(m_CurrentMoveUnits[i].GetID());
+			if (!pUnit || (UnitClassTypes)pUnit->getUnitInfo().GetUnitClassType() != eCore || pUnit->getExperienceTimes100() / 100 >= iXPCap)
+				continue;
+			if (TacticalAIHelpers::IsAttackNetPositive(pUnit, pPlot, 0))
+				nGoodAttackers++;
+			vHunters.push_back(pUnit);
+		}
+		if (nGoodAttackers == 0 || !PositionUnitsAroundTarget(vHunters, pPlot))
+			continue;
+		if (GC.getLogging() && GC.getAILogging())
+			LogTacticalMessage(CvString::format("BarbHunt: %d %s after a barbarian %s at (%d:%d), %d tiles from our nearest city",
+				(int)vHunters.size(), vHunters[0]->getUnitInfo().GetDescription(), pEnemy->getUnitInfo().GetDescription(),
+				pPlot->getX(), pPlot->getY(), m_pPlayer->GetCityDistanceInPlots(pPlot)));
+	}
+}
+
 void CvTacticalAI::PlotGrabGoodyMoves()
 {
 	ClearCurrentMoveUnits(AI_TACTICAL_GOODY);
