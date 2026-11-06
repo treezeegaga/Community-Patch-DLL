@@ -2304,20 +2304,67 @@ bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
 	const CvCity* pCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
 	if (!pCity)
 		return false;
-	std::map<UnitTypes, int> mCounts;
+	// the field army: our land combat units but the garrisons (the lead's review: a city's garrison doesn't march)
+	std::vector<const CvUnit*> vUnits;
 	int iLoop = 0;
 	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
 	{
 		if (pLoopUnit->getDomainType() != DOMAIN_LAND || (!pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged()) ||
-			pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pLoopUnit->isDelayedDeath())
+			pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pLoopUnit->isDelayedDeath() || pLoopUnit->IsGarrisoned())
 			continue;
-		mCounts[pLoopUnit->getUnitType()]++;
+		vUnits.push_back(pLoopUnit);
+	}
+	m_bTakeable = StrikeUnitsTakeCity(vUnits, pCity, piTurnsNeeded);
+	return m_bTakeable;
+}
+
+/// these units against the city (the strike's take-the-city math, StrikeArmyTakesCity), less one of ours for each land
+/// combat unit of the city's owner within 3 tiles of it: each defender ties up one attacker (melee first). The lead's review:
+/// the target's own units weren't counted. Used for the army on hand (IsStrikeTargetTakeableNow) and for an operation's
+/// army (CvAIOperation::IsArmyTooWeakForTarget)
+bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits, const CvCity* pCity, int* piTurnsNeeded) const
+{
+	if (piTurnsNeeded)
+		*piTurnsNeeded = -1;
+	if (!pCity)
+		return false;
+	std::map<UnitTypes, int> mMelee, mRanged;
+	for (size_t i = 0; i < vUnits.size(); i++)
+	{
+		if (vUnits[i]->IsCanAttackRanged())
+			mRanged[vUnits[i]->getUnitType()]++;
+		else
+			mMelee[vUnits[i]->getUnitType()]++;
+	}
+	int iDefenders = 0, iLoop = 0;
+	const PlayerTypes eOwner = pCity->getOwner();
+	for (const CvUnit* pDefender = GET_PLAYER(eOwner).firstUnit(&iLoop); pDefender != NULL; pDefender = GET_PLAYER(eOwner).nextUnit(&iLoop))
+	{
+		if (pDefender->getDomainType() == DOMAIN_LAND && pDefender->IsCombatUnit() && !pDefender->isDelayedDeath() &&
+			plotDistance(pDefender->getX(), pDefender->getY(), pCity->getX(), pCity->getY()) <= 3)
+			iDefenders++;
+	}
+	// one of ours per defender, from the largest melee group first, then ranged
+	for (int iTied = 0; iTied < iDefenders; iTied++)
+	{
+		std::map<UnitTypes, int>* pGroup = !mMelee.empty() ? &mMelee : (!mRanged.empty() ? &mRanged : NULL);
+		if (!pGroup)
+			break;
+		std::map<UnitTypes, int>::iterator itMax = pGroup->begin();
+		for (std::map<UnitTypes, int>::iterator it = pGroup->begin(); it != pGroup->end(); ++it)
+			if (it->second > itMax->second)
+				itMax = it;
+		if (--itMax->second <= 0)
+			pGroup->erase(itMax);
 	}
 	std::vector< std::pair<const CvUnitEntry*, int> > vArmy;
-	for (std::map<UnitTypes, int>::const_iterator it = mCounts.begin(); it != mCounts.end(); ++it)
+	for (std::map<UnitTypes, int>::const_iterator it = mMelee.begin(); it != mMelee.end(); ++it)
 		vArmy.push_back(std::make_pair((const CvUnitEntry*)GC.getUnitInfo(it->first), it->second));
-	m_bTakeable = StrikeArmyTakesCity(pCity, vArmy, piTurnsNeeded);
-	return m_bTakeable;
+	for (std::map<UnitTypes, int>::const_iterator it = mRanged.begin(); it != mRanged.end(); ++it)
+		vArmy.push_back(std::make_pair((const CvUnitEntry*)GC.getUnitInfo(it->first), it->second));
+	if (vArmy.empty())
+		return false;
+	return StrikeArmyTakesCity(pCity, vArmy, piTurnsNeeded);
 }
 
 /// a strike's declaration waits while one of our cities is in danger of falling (a third party at war with us: the lead,
@@ -2670,6 +2717,20 @@ bool CvMilitaryAI::IsStrikeCoreLineObsolete(UnitClassTypes eCoreClass) const
 	return true;
 }
 
+/// a city of ours can build an income item: a Market or a Caravan (Economy 0054's income-first items under the unit hold)
+bool CvMilitaryAI::CanBuildStrikeIncomeItem() const
+{
+	const BuildingTypes eMarket = m_pPlayer->GetSpecificBuildingType("BUILDINGCLASS_MARKET", true);
+	const UnitTypes eCaravan = m_pPlayer->GetSpecificUnitType("UNITCLASS_CARAVAN", true);
+	int iLoop = 0;
+	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if ((eMarket != NO_BUILDING && pLoopCity->canConstruct(eMarket)) || (eCaravan != NO_UNIT && pLoopCity->canTrain(eCaravan)))
+			return true;
+	}
+	return false;
+}
+
 /// the lead's review: an early civ whose core can't be trained (a resource missing) sat in PREP for good, every declaration
 /// blocked. Its tech is in and we own none of a resource it needs; the same for the plan's pre-build, if any
 bool CvMilitaryAI::IsStrikeCoreUntrainable() const
@@ -2880,6 +2941,12 @@ void CvMilitaryAI::UpdateStrikeState()
 			eNew = STRIKE_OVER, strWhy = "every unit on the core's upgrade line is obsolete";
 		// the core can't be trained though its tech is in (a resource missing; the lead's review: an early civ sat in PREP for
 		// good with every declaration blocked)
+		// a BUILDUP that can't recover (the lead's review: with the unit hold on, core, siege and short-of-plan units all wait,
+		// so the target never becomes takeable): no unit affordable, the army on hand can't take the target, income negative,
+		// and no city can build an income item (a Market, a Caravan). The strike ends and CP's economy and disbanding resume
+		else if (eNew == STRIKE_BUILDUP && m_pPlayer->IsStrikeUnitHold() && !IsStrikeTargetTakeableNow() &&
+			m_pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 && !CanBuildStrikeIncomeItem())
+			eNew = STRIKE_OVER, strWhy = "stalled: no unit affordable, the target not takeable, income negative and no income item to build";
 		else if (IsStrikeCoreUntrainable())
 			eNew = STRIKE_OVER, strWhy = "the core can't be trained (its tech is in; a resource missing)";
 		// a major declared war on us (the lead: not an exit by itself). The strike's own target during BUILDUP: that is the

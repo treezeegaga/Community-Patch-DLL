@@ -473,9 +473,16 @@ bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog, bool bIgn
 	// AI_AB_TEST (the strike; trial25 171787CD): against the strike's target the strike's own take-the-city math decides (the user:
 	// "just calculate if you can take the city"). The bar held the Aztec attack on Kyzyl at 33 of 36 a turn while the strike's
 	// math said the army takes it in about 2 turns
-	if (m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy) &&
-		GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeTargetTakeableNow())
-		return false;
+	// (the lead's review: this army's own units against this city, not the empire's whole army)
+	if (pArmy && GetTargetPlot() && GetTargetPlot()->getPlotCity() && m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).isMajorCiv() &&
+		GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy))
+	{
+		std::vector<const CvUnit*> vArmyUnits;
+		for (CvUnit* pUnit = pArmy->GetFirstUnit(); pUnit; pUnit = pArmy->GetNextUnit(pUnit))
+			vArmyUnits.push_back(pUnit);
+		if (GET_PLAYER(m_eOwner).GetMilitaryAI()->StrikeUnitsTakeCity(vArmyUnits, GetTargetPlot()->getPlotCity()))
+			return false;
+	}
 	CvCity* pCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
 	if (!pArmy || !pCity || (!bIgnoreTimeLimit && GC.getGame().getGameTurn() - GetTurnStarted() >= 20))
 		return false;
@@ -735,12 +742,9 @@ bool CvAIOperation::ShouldAbort()
 	}
 	else
 	{
-		// Mark units in successful operation
-		// AI_AB_TEST (the strike's ownership, gate 4; trial25 171787CD): not against the strike's target before a capture. The
-		// mark keeps units out of new operations for 5 turns; MarchOn handed the Aztec army over 4-6 tiles from Kyzyl (T69), and
-		// the strike's next city attack failed "for lack of units" T70-T73
-		const bool bStrikeKeepsArmy = m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy);
-		for(unsigned int uiI = 0; uiI < m_viArmyIDs.size() && !bStrikeKeepsArmy; uiI++)
+		// Mark units in successful operation (the tactical AI reads the mark too; the strike's exemption is at recruitment,
+		// OperationalAIHelpers::IsUnitSuitableForRecruitment)
+		for(unsigned int uiI = 0; uiI < m_viArmyIDs.size(); uiI++)
 		{
 			CvArmyAI* pArmy = GetArmy(uiI);
 			CvUnit* pUnit = pArmy ? pArmy->GetFirstUnit() : NULL;
@@ -3599,7 +3603,12 @@ int OperationalAIHelpers::IsUnitSuitableForRecruitment(CvUnit* pLoopUnit, const 
 		*/
 		return -1;
 	}
-	if (pLoopUnit->IsRecentlyDeployedFromOperation())
+	// AI_AB_TEST (the strike; trial25 171787CD, the lead's review of b446678): a strike's units may re-form at once against the
+	// strike's target (the Aztec attack on Kyzyl failed "for lack of units" T70-T73 after MarchOn's hand-over). The deploy
+	// mark itself stays: the tactical AI reads it
+	const bool bStrikeRecruit = pTarget && pTarget->getOwner() != NO_PLAYER && GET_PLAYER(pLoopUnit->getOwner()).isMajorCiv() &&
+		GET_PLAYER(pLoopUnit->getOwner()).GetMilitaryAI()->IsStrikeNoRetreat(pTarget->getOwner());
+	if (pLoopUnit->IsRecentlyDeployedFromOperation() && !bStrikeRecruit)
 	{
 		/*
 		if (GC.getLogging() && GC.getAILogging())

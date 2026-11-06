@@ -258,7 +258,8 @@ public:
 	void SetStrikeDeclared(PlayerTypes eTarget = NO_PLAYER);	// CvDiplomacyAI::DeclareWar: a declaration of ours (the lead's review: a city-state's war on us isn't one). Economy 0052: on a city-state it counts once the war still stands at the next strike update
 	bool HasStrikeDeclared() const { return m_iStrikeDeclared == 1; }	// we have declared a war: the strike's (BUILDUP -> WAR, its city-state) or any of our own since the game began (Economy's bans end here; public for CvPlayer, Economy 0045) (0052: confirmed only; 2 + a city-state's index is a declaration waiting for confirmation)
 	bool IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// can the plan's (upgraded) army take the city (the game's damage math)
-	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city
+	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the field army on hand take the strike target's nearest city
+	bool StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits, const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// the strike's math for these units, defenders near the city subtracted
 	bool IsStrikeRefusingPeace(PlayerTypes eOther) const;	// ownership gate (2-4): no peace, approach WAR, no retreat aborts toward this player
 	bool IsStrikeKeepingUnit(const CvUnit* pUnit) const;	// ownership gate (5): a strike unit no CP system disbands or gifts
 	bool IsStrikeOwningOperations() const;	// ownership gate (4): PREP, BUILDUP, or WAR before a city is taken
@@ -436,6 +437,7 @@ private:
 	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
 	PlayerTypes FindStrikeMajorInReach() const;	// the nearest valid major in reach
 	bool IsStrikeCoreLineObsolete(UnitClassTypes eCoreClass) const;	// every unit on the core's upgrade line obsolete (the strike's obsolete exit)
+	bool CanBuildStrikeIncomeItem() const;	// a city of ours can build a Market or a Caravan
 	bool IsStrikeCoreUntrainable() const;	// the core (and the pre-build) can't be trained with its tech in: a resource missing
 	int m_iStrikeDeclared;			// HasStrikeDeclared, saved
 	int m_iStrikeSiege;				// the build-up brings siege (the army too weak for the target, no easier city in reach), saved
