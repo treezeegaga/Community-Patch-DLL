@@ -33868,6 +33868,15 @@ UnitClassTypes CvPlayer::GetEarlyStrikeCoreClass() const
 			const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
 			m_iEarlyStrikeCoreClass = (kStrike.bValid && kStrike.eCoreClass != NO_UNITCLASS) ? kStrike.eCoreClass : pkSpike->GetUnitClassType();
 		}
+		else
+		{
+			// AI_AB_TEST (Economy 0043; the user: "germany would either need to use normal units for an attack earlier or not
+			// be aggressive at all"): a warmonger with no unique unit in reach plays Personality's generic rush (the research's
+			// G1: Archers, upgraded to Composite Bowmen at Construction) as an early strike. Its core is the plan's (the Archer)
+			const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
+			if (kStrike.bValid && kStrike.bGenericRush && !kStrike.bLateStrike && kStrike.eCoreClass != NO_UNITCLASS)
+				m_iEarlyStrikeCoreClass = kStrike.eCoreClass;
+		}
 	}
 	return (UnitClassTypes)m_iEarlyStrikeCoreClass;
 }
