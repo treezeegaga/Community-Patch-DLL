@@ -29,6 +29,7 @@ class CvMilitaryAI;
 class CvCitySpecializationAI;
 class CvWonderProductionAI;
 class CvGrandStrategyAI;
+struct CvStrikePlan;
 class CvDiplomacyAI;
 class CvPlayerReligions;
 class CvReligionAI;
@@ -320,6 +321,9 @@ enum CandidateFixTypes
 	FIX_LATE_STRIKE,		// Economy (the book) and War (the window): a warmonger whose spike comes late (not bMilitaryFirst) plays economy first,
 							// researches its spike and upgrade techs and saves for the upgrades; its build-up opens at Personality's strike plan,
 							// builds the plan's core, support and siege, and declares by the plan's turn. Off in the bundle
+	FIX_STRIKE_LIST,		// Economy (the user: "literally just follow the list"): before its strike, a strike civ's capital builds the plan's
+							// expert list item by item (a lost unit rebuilt in its place), then the plan's army; its other cities the army;
+							// research follows the plan's list; the first tree is the plan's. Personality's rows carry the lists. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
@@ -1930,6 +1934,9 @@ public:
 	bool IsLateStrikeCiv() const; // AI_AB_TEST Economy, flag LateStrike: a warmonger with a late spike and a strike plan
 	bool IsLateStrikeSaving() const; // AI_AB_TEST Economy, flag LateStrike: from the build-up to the declaration, gold kept for upgrades
 	bool IsStrikePending() const; // AI_AB_TEST Economy, flags EarlyStrike/LateStrike (0040): a strike civ before its strike (state PREP or BUILDUP) // AI_AB_TEST Economy, flag LateStrike: from the build-up to the declaration, gold kept for upgrades
+	const CvStrikePlan* GetStrikeListPlan() const; // AI_AB_TEST Economy, flag StrikeList: the strike plan while its lists run
+	bool GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& iData, bool& bListRuns); // flag StrikeList: the next list item
+	TechTypes GetStrikeListTech() const; // flag StrikeList: the next tech on the plan's list
 	TechTypes GetLateStrikeTech() const; // AI_AB_TEST Economy, flag LateStrike: the spike's and the upgrade's techs before the window
 	bool IsWarGoldShort() const; // AI_AB_TEST Economy, flag WarGold
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;

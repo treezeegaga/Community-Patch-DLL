@@ -33454,6 +33454,7 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"EarlyStrikeAggressor", false},
 	{"Spoiler", false},
 	{"LateStrike", false},
+	{"StrikeList", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -35071,6 +35072,265 @@ PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 	default:
 		return NO_POLICY_BRANCH_TYPE;
 	}
+}
+
+/// AI_AB_TEST (flag StrikeList, Economy; the user, via the lead: "this is why we looked up expert build orders. literally
+/// just follow the list."). The strike plan while its lists run: a StrikeList civ from PREP to its declaration (no turn
+/// limit, and an unrelated war doesn't stop it). NULL otherwise
+const CvStrikePlan* CvPlayer::GetStrikeListPlan() const
+{
+	if (!MOD_AI_AB_TEST || !isMajorCiv() || isHuman() || !UsesCandidateAI(FIX_STRIKE_LIST) || !IsStrikePending())
+		return NULL;
+	const CvStrikePlan& kPlan = GetGrandStrategyAI()->GetStrikePlan();
+	return kPlan.bValid ? &kPlan : NULL;
+}
+
+/// StrikeList: eClass and every class it upgrades into, for this civ
+static void AddStrikeListUpgradeClasses(const CvPlayer& kPlayer, UnitClassTypes eClass, std::vector<UnitClassTypes>& vClasses)
+{
+	if (eClass == NO_UNITCLASS || vClasses.size() > 16 || std::find(vClasses.begin(), vClasses.end(), eClass) != vClasses.end())
+		return;
+	vClasses.push_back(eClass);
+	const UnitTypes eUnit = kPlayer.GetSpecificUnitType(eClass);
+	CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	for (int iClass = 0; pkUnitInfo && iClass < GC.getNumUnitClassInfos(); iClass++)
+	{
+		if (pkUnitInfo->GetUpgradeUnitClass(iClass))
+			AddStrikeListUpgradeClasses(kPlayer, (UnitClassTypes)iClass, vClasses);
+	}
+}
+
+/// StrikeList: units of eClass we have, counting the ones that upgraded since and the ones in production. bBuiltOnly:
+/// not the starting units (created on the start turn; an upgrade keeps the turn), the list's counts are builds. A
+/// settler that founded a city still counts (cities founded after the first turns; the capital's settler is a start unit)
+static int CountStrikeListUnits(const CvPlayer& kPlayer, UnitClassTypes eClass, bool bBuiltOnly)
+{
+	std::vector<UnitClassTypes> vClasses;
+	AddStrikeListUpgradeClasses(kPlayer, eClass, vClasses);
+	const int iStartTurn = GC.getGame().getStartTurn();
+	int iCount = 0;
+	int iLoop = 0;
+	for (const CvUnit* pUnit = kPlayer.firstUnit(&iLoop); pUnit != NULL; pUnit = kPlayer.nextUnit(&iLoop))
+	{
+		if (bBuiltOnly && pUnit->getGameTurnCreated() <= iStartTurn)
+			continue;
+		if (std::find(vClasses.begin(), vClasses.end(), pUnit->getUnitClassType()) != vClasses.end())
+			iCount++;
+	}
+	for (size_t i = 0; i < vClasses.size(); i++)
+		iCount += kPlayer.getUnitClassMaking(vClasses[i]);
+
+	const UnitTypes eUnit = kPlayer.GetSpecificUnitType(eClass);
+	CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (pkUnitInfo && pkUnitInfo->IsFound())
+	{
+		for (const CvCity* pCity = kPlayer.firstCity(&iLoop); pCity != NULL; pCity = kPlayer.nextCity(&iLoop))
+		{
+			if (pCity->getOriginalOwner() == kPlayer.GetID() && pCity->getGameTurnFounded() > iStartTurn + 5)
+				iCount++;
+		}
+	}
+	return iCount;
+}
+
+/// StrikeList: the plan's army unit this city should train next: the core, support and siege below the plan's counts (the
+/// core first, then the support, then the siege), then more core. A class the city can't train yet gives way to a unit
+/// that upgrades into it (the late strike's pre-build). NO_UNIT: nothing trainable
+static UnitTypes GetStrikeListArmyUnit(const CvPlayer& kPlayer, const CvStrikePlan& kPlan, const CvCity* pCity, bool& bShort)
+{
+	const UnitClassTypes aeClass[3] = { kPlan.eCoreClass, kPlan.eSupportClass, kPlan.eSiegeClass };
+	const int aiTarget[3] = { kPlan.iCoreTarget, kPlan.iSupportTarget, kPlan.iSiegeTarget };
+	bShort = false;
+	UnitTypes eFirstTrainable = NO_UNIT;
+	for (int iPass = 0; iPass < 2; iPass++)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			if (aeClass[i] == NO_UNITCLASS || (iPass == 0 && CountStrikeListUnits(kPlayer, aeClass[i], false) >= aiTarget[i]))
+				continue;
+			if (iPass == 0)
+				bShort = true;
+			UnitTypes eUnit = kPlayer.GetSpecificUnitType(aeClass[i]);
+			if (eUnit == NO_UNIT || !pCity->canTrain(eUnit))
+			{
+				// the pre-build: a unit that upgrades into this class
+				eUnit = NO_UNIT;
+				if (i == 0 && kPlan.ePreBuildClass != NO_UNITCLASS)
+				{
+					const UnitTypes ePre = kPlayer.GetSpecificUnitType(kPlan.ePreBuildClass);
+					if (ePre != NO_UNIT && pCity->canTrain(ePre))
+						eUnit = ePre;
+				}
+			}
+			if (eUnit == NO_UNIT)
+				continue;
+			if (iPass == 0)
+				return eUnit;
+			if (eFirstTrainable == NO_UNIT)
+				eFirstTrainable = eUnit;
+		}
+		if (iPass == 1)
+			break;
+	}
+	// the counts are met: more core (the war's losses), else what the city can train of the plan
+	return eFirstTrainable;
+}
+
+static void LogStrikeList(CvPlayer& kPlayer, const CvCity* pCity, const char* szWhat, const char* szDetail)
+{
+	if (!GC.getLogging() || !GC.getAILogging() || !pCity)
+		return;
+	CvString strOut;
+	strOut.Format("%s, STRIKE LIST - %s%s%s", pCity->getName().GetCString(), szWhat, szDetail ? " " : "", szDetail ? szDetail : "");
+	kPlayer.GetCitySpecializationAI()->LogMsg(strOut);
+}
+
+/// StrikeList: the capital builds the plan's list in order. The first item still short is next (counts add up along the
+/// list, so a unit lost later makes its item short again and it's rebuilt in its place). No settler holds and no gold
+/// check: the experts' lists come with their own economy. The only deviations are game events: the city in danger (a
+/// defender first) and an item the game can't do yet (passed over for the next one, logged LIST WAIT; research follows
+/// the list too). After the list, and in the other cities: the plan's army (a worker first where a city has none near),
+/// and for a late strike in its economy-first PREP, the regular book. bListRuns: the list owns this choice, so a false
+/// return goes straight to CP's choice (logged), not to the regular book
+bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& iData, bool& bListRuns)
+{
+	bListRuns = false;
+	const CvStrikePlan* pPlan = GetStrikeListPlan();
+	if (!pCity || pCity->IsPuppet() || !pPlan || pPlan->iNumBuilds <= 0)
+		return false;
+	const CvStrikePlan& kPlan = *pPlan;
+	bListRuns = true;
+
+	// danger: a defender first, the plan's melee unit
+	if (pCity->isUnderSiege() || pCity->isInDangerOfFalling())
+	{
+		const UnitClassTypes aeClass[2] = { kPlan.eCoreClass, kPlan.eSupportClass };
+		for (int i = 0; i < 2; i++)
+		{
+			const UnitTypes eUnit = (aeClass[i] != NO_UNITCLASS) ? GetSpecificUnitType(aeClass[i]) : NO_UNIT;
+			CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+			if (pkUnitInfo && pkUnitInfo->GetDomainType() == DOMAIN_LAND && pkUnitInfo->GetCombat() > 0 &&
+				pkUnitInfo->GetRangedCombat() == 0 && pCity->canTrain(eUnit))
+			{
+				eOrder = ORDER_TRAIN;
+				iData = eUnit;
+				LogStrikeList(*this, pCity, "DANGER, a defender:", pkUnitInfo->GetDescription());
+				return true;
+			}
+		}
+		LogStrikeList(*this, pCity, "DANGER, CP's defence", NULL);
+		return false;
+	}
+
+	if (pCity->isCapital())
+	{
+		std::map<int, int> unitsWanted;
+		CvString strWait;
+		for (int i = 0; i < kPlan.iNumBuilds; i++)
+		{
+			const CvStrikeBuildItem& kItem = kPlan.aBuilds[i];
+			if (kItem.bUnit)
+			{
+				const UnitClassTypes eClass = (UnitClassTypes)kItem.iClass;
+				const int iWanted = ++unitsWanted[eClass]; // one item, one unit built; repeats add up
+				if (CountStrikeListUnits(*this, eClass, true) >= iWanted)
+					continue;
+				const UnitTypes eUnit = GetSpecificUnitType(eClass);
+				CvUnitEntry* pkUnitInfo = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+				if (!pkUnitInfo)
+					continue;
+				if (!pCity->canTrain(eUnit))
+				{
+					if (strWait.IsEmpty())
+						strWait.Format("(item %d %s)", i + 1, pkUnitInfo->GetDescription());
+					continue;
+				}
+				eOrder = ORDER_TRAIN;
+				iData = eUnit;
+				CvString strItem;
+				strItem.Format("item %d/%d %s%s%s", i + 1, kPlan.iNumBuilds, pkUnitInfo->GetDescription(), strWait.IsEmpty() ? "" : ", LIST WAIT ", strWait.c_str());
+				LogStrikeList(*this, pCity, strItem.c_str(), NULL);
+				return true;
+			}
+			else
+			{
+				const BuildingClassTypes eClass = (BuildingClassTypes)kItem.iClass;
+				CvBuildingClassInfo* pkClassInfo = GC.getBuildingClassInfo(eClass);
+				if (!pkClassInfo || pCity->GetCityBuildings()->HasBuildingClass(eClass))
+					continue;
+				const BuildingTypes eBuilding = GetSpecificBuildingType(pkClassInfo->GetType(), true);
+				CvBuildingEntry* pkBuildingInfo = (eBuilding != NO_BUILDING) ? GC.getBuildingInfo(eBuilding) : NULL;
+				if (!pkBuildingInfo)
+					continue;
+				if (!pCity->canConstruct(eBuilding))
+				{
+					if (strWait.IsEmpty())
+						strWait.Format("(item %d %s)", i + 1, pkBuildingInfo->GetDescription());
+					continue;
+				}
+				eOrder = ORDER_CONSTRUCT;
+				iData = eBuilding;
+				CvString strItem;
+				strItem.Format("item %d/%d %s%s%s", i + 1, kPlan.iNumBuilds, pkBuildingInfo->GetDescription(), strWait.IsEmpty() ? "" : ", LIST WAIT ", strWait.c_str());
+				LogStrikeList(*this, pCity, strItem.c_str(), NULL);
+				return true;
+			}
+		}
+		if (!strWait.IsEmpty())
+			LogStrikeList(*this, pCity, "LIST WAIT, nothing on the list can be done now", strWait.c_str());
+	}
+
+	// after the list, and the other cities: a late strike's PREP is economy first (the regular book)
+	if (kPlan.bLateStrike && GetMilitaryAI()->GetStrikeState() != CvMilitaryAI::STRIKE_BUILDUP)
+	{
+		bListRuns = false;
+		return false;
+	}
+
+	// a worker where a city has none in its area
+	if (!pCity->isCapital())
+	{
+		bool bWorker = false;
+		int iLoop = 0;
+		for (const CvUnit* pUnit = firstUnit(&iLoop); pUnit != NULL && !bWorker; pUnit = nextUnit(&iLoop))
+			bWorker = pUnit->AI_getUnitAIType() == UNITAI_WORKER && pUnit->plot() && pUnit->plot()->getArea() == pCity->plot()->getArea();
+		const UnitTypes eWorker = bWorker ? NO_UNIT : GetSpecificUnitType("UNITCLASS_WORKER", true);
+		if (eWorker != NO_UNIT && pCity->canTrain(eWorker) && getUnitClassMaking((UnitClassTypes)GC.getUnitInfo(eWorker)->GetUnitClassType()) == 0)
+		{
+			eOrder = ORDER_TRAIN;
+			iData = eWorker;
+			LogStrikeList(*this, pCity, "a worker (none in this area)", NULL);
+			return true;
+		}
+	}
+
+	bool bShort = false;
+	const UnitTypes eArmy = GetStrikeListArmyUnit(*this, kPlan, pCity, bShort);
+	if (eArmy != NO_UNIT && (bShort || GetEconomicAI()->GetAffordableWarUnits(10) >= 1))
+	{
+		eOrder = ORDER_TRAIN;
+		iData = eArmy;
+		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : "the army (the plan's counts met, more core):", GC.getUnitInfo(eArmy)->GetDescription());
+		return true;
+	}
+	LogStrikeList(*this, pCity, eArmy == NO_UNIT ? "LIST NORMAL (no army unit trainable)" : "LIST NORMAL (army complete, no more affordable)", NULL);
+	return false;
+}
+
+/// StrikeList: research follows the plan's list in order (a prerequisite first when a tech isn't researchable yet). After
+/// the list, the book's straight line (GetOpeningBookTech)
+TechTypes CvPlayer::GetStrikeListTech() const
+{
+	const CvStrikePlan* pPlan = GetStrikeListPlan();
+	for (int i = 0; pPlan && i < pPlan->iNumTechs; i++)
+	{
+		// STRIKE_TECH_LUXURY: one luxury tech, the book's pick (none needed: skipped)
+		const TechTypes eTarget = (pPlan->aeTechs[i] == STRIKE_TECH_LUXURY) ? GetEarlyStrikeLuxuryTech() : pPlan->aeTechs[i];
+		const TechTypes eStep = (eTarget != NO_TECH && eTarget >= 0) ? GetOpeningBookTechStep(*this, eTarget, 0) : NO_TECH;
+		if (eStep != NO_TECH)
+			return eStep;
+	}
+	return NO_TECH;
 }
 
 bool CvPlayer::IsVassalOfSomeone() const

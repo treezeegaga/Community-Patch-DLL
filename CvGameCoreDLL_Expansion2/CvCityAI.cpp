@@ -156,7 +156,12 @@ void CvCityAI::AI_chooseProduction(bool bInterruptWonders, bool bInterruptBuildi
 	{
 		OrderTypes eBookOrder = ORDER_TRAIN;
 		int iBookData = -1;
-		bool bBookPick = kOwner.GetOpeningBookProduction(this, eBookOrder, iBookData);
+		// AI_AB_TEST (flag StrikeList, Economy): a strike civ's expert list comes first; while it owns the choice, its
+		// fall-through is CP's choice below, not the regular book
+		bool bListRuns = false;
+		bool bBookPick = kOwner.GetStrikeListProduction(this, eBookOrder, iBookData, bListRuns);
+		if (!bBookPick && !bListRuns)
+			bBookPick = kOwner.GetOpeningBookProduction(this, eBookOrder, iBookData);
 
 		// The book's later buildings (library and on) give way to the wonder this city is best placed for: over 7
 		// test games the new AI had a fifth of CP's wonders at turn 50, and CP's runaway civs were built on them.
