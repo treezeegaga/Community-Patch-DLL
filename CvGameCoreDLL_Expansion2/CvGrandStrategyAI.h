@@ -71,6 +71,30 @@ struct CvStrikeWindow
 	TechTypes eUpgradeTech;		// the upgrade the strike waits for (NO_TECH: none); time the declaration on it
 	int iUpgradeTurn;			// when that tech usually comes (elapsed turns, this game's speed; -1: none)
 };
+// AI_AB_TEST (Personality, EarlyStrike; the user, 2026-11-06: "use the experts ideas right away and we will know if they
+// are good by if they take cities"): the civ's strike plan, from the civfanatics research (tools/ab/STRIKE_PLANS_RESEARCH.md
+// in the pack repo) for the researched civs, a data default for the rest. Economy's book and War's strike read it.
+struct CvStrikePlan
+{
+	bool bValid;				// false: no plan (no unique land combat unit)
+	bool bExpert;				// a researched per-civ plan (else the data default)
+	UnitClassTypes eCoreClass;	// the core unit (build it through GetSpecificUnitType)
+	UnitClassTypes eSupportClass;	// the support unit: ranged with a melee core, melee with a ranged core
+	UnitClassTypes eSiegeClass;	// a siege unit the plan always brings (the Huns' Battering Ram); NO_UNITCLASS: none
+	int iCoreTarget;			// the strike army: core units
+	int iSupportTarget;			// and support units (at least 2 melee in all, the research's rule)
+	int iSiegeTarget;			// and siege units
+	TechTypes eUpgradeTech;		// upgrade and go: research it after one luxury tech, save gold, upgrade the turn it lands; NO_TECH: none
+	int iUpgradeGoldPerUnit;	// gold to save per unit to upgrade (the research: 70-80)
+	int iCoreBeforeSettler;		// N: core units out before the first settler
+	int iMaxCitiesBeforeStrike;	// K: no settler past this many cities until the strike (captures don't count)
+	int iOpenTurn;				// the window opens (elapsed turns, this game's speed)
+	int iDeclareByTurn;			// declare by this turn
+	int iFallbackTurn;			// X: no target in reach by now, drop to the economy-first plan
+	PolicyBranchTypes eFirstPolicyBranch;	// NO_POLICY_BRANCH_TYPE: CP's choice
+	bool bSiegeOnlyIfWalled;	// beyond eSiegeClass, siege only against a walled target
+	bool bBarbarianHunt;		// the first units hunt barbarians before the window opens
+};
 struct CvStrategyProfile
 {
 	StrategyArchetypeTypes eArchetype;
@@ -150,6 +174,8 @@ public:
 	bool GetStrikeWindow(int& iStartTurn, int& iEndTurn) const;
 	bool GetStrikeWindow(CvStrikeWindow& kWindow) const;
 	bool IsInStrikeWindow() const;
+	// AI_AB_TEST (Personality, EarlyStrike): the civ's strike plan (expert row or data default), worked out once per turn
+	const CvStrikePlan& GetStrikePlan() const;
 	bool IsGreedyWideOutOfRoom() const;
 	int GetWarDefenceLandUnitCap() const;
 
@@ -184,6 +210,7 @@ private:
 	void LogGuessOtherPlayerGrandStrategy(const vector<int>& vGrandStrategyPriorities, PlayerTypes ePlayer);
 	void LogStrategyProfile();
 	void GetPowerSpike(CvStrategyProfile& kProfile) const;
+	void MakeStrikePlan(const CvStrategyProfile& kProfile, CvStrikePlan& kPlan) const;
 	void DoStyleCityStateUnitGifts();
 	void DoGreedyDisbandToCap();
 
@@ -226,6 +253,8 @@ private:
 	mutable bool m_bCachedMilitaryFirst;
 	mutable int m_iCachedUpgradeTech;
 	mutable int m_iCachedUpgradeTurn;
+	mutable CvStrikePlan m_kCachedStrikePlan;
+	mutable int m_iCachedStrikePlanTurn;
 	mutable int m_iCachedOutOfRoom;	// GreedyWide: -1 not worked out this turn, else 0 or 1
 	mutable int m_iCachedOutOfRoomTurn;
 	// AI_AB_TEST (Personality, GreedyWarArmy): not saved, worked out again from the game state
