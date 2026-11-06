@@ -1899,7 +1899,13 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) * 100 <
 			kPlayer.GetMilitaryAI()->GetTimingBuildupFieldTarget() * kPlayer.GetMilitaryAI()->GetEarlyStrikeCoreSharePercent())
 			iBonus += 4500;
-		//LateStrike: the strike plan's core up to its count, then its support (Personality's CvStrikePlan)
+		//LateStrike: the plan's pre-build up to its count while the core can't be trained yet (it upgrades into the core at the
+		//plan's upgrade tech), then the core up to its count, then the support (Personality's CvStrikePlan)
+		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() && kPlayer.GetGrandStrategyAI()->GetStrikePlan().ePreBuildClass != NO_UNITCLASS &&
+			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().ePreBuildClass &&
+			!kPlayer.canTrainUnit(kPlayer.GetSpecificUnitType(kPlayer.GetGrandStrategyAI()->GetStrikePlan().eCoreClass), false, false, true) &&
+			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iPreBuildTarget)
+			iBonus += 4500;
 		else if (kPlayer.GetMilitaryAI()->IsLateStrikeBuildup() &&
 			(UnitClassTypes)pkUnitEntry->GetUnitClassType() == kPlayer.GetGrandStrategyAI()->GetStrikePlan().eCoreClass &&
 			kPlayer.getUnitClassCountPlusMaking((UnitClassTypes)pkUnitEntry->GetUnitClassType()) < kPlayer.GetGrandStrategyAI()->GetStrikePlan().iCoreTarget)

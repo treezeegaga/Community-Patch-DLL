@@ -2188,7 +2188,9 @@ bool CvMilitaryAI::IsLateStrikeCiv() const
 	//the same civs as Economy's book half (CvPlayer::IsLateStrikeCiv, patch 0033), as timing attackers with a core unit
 	if (!IsTimingBuildupPlayer() || !m_pPlayer->IsLateStrikeCiv())
 		return false;
-	return m_pPlayer->GetGrandStrategyAI()->GetStrikePlan().eCoreClass != NO_UNITCLASS;
+	//one source (the lead, 10:33pm ET): the strike plan's own bLateStrike (Personality's late-strike rows, else the default)
+	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+	return kPlan.bLateStrike && kPlan.eCoreClass != NO_UNITCLASS;
 }
 
 bool CvMilitaryAI::IsLateStrikeOpen() const
@@ -2202,7 +2204,12 @@ bool CvMilitaryAI::IsLateStrikeOpen() const
 	if (iTurn < kPlan.iOpenTurn)
 		return false;
 	const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass);
-	return eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true);
+	if (eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true))
+		return true;
+	//a plan with a pre-build (China's Composite Bowmen, upgraded to Chu-Ko-Nu at Machinery) opens on its turn: the pre-build
+	//is the window's army, and the declaration waits for the upgrade (the upgrade bill)
+	const UnitTypes ePreBuild = kPlan.ePreBuildClass != NO_UNITCLASS ? m_pPlayer->GetSpecificUnitType(kPlan.ePreBuildClass) : NO_UNIT;
+	return ePreBuild != NO_UNIT && m_pPlayer->canTrainUnit(ePreBuild, false, false, /*bIgnoreCost*/ true);
 }
 
 bool CvMilitaryAI::IsLateStrikeBuildup() const
