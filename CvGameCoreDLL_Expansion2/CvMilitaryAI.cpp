@@ -2198,17 +2198,19 @@ static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector< std::pai
 		iUnits += iCount;
 		iArmyHP += iCount * iUnitHP;
 		iBestDefence100 = max(iBestDefence100, pkUnit->GetCombat() * 100);
+		// DoDamageMath returns hit points x100 (the game divides by 100 for HP): kept x100 here (the lead's trial24 1664FF61:
+		// dividing by 100 made every army's damage 100 times too small against the city's healing, so nothing was takeable)
 		if (pkUnit->GetRangedCombat() > 0)
 		{
 			iDamage100 += iCount * CvUnitCombat::DoDamageMath(pkUnit->GetRangedCombat() * 100, iCityDefence100,
-				GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
+				GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0);
 		}
 		else if (pkUnit->GetCombat() > 0)
 		{
 			iDamage100 += iCount * CvUnitCombat::DoDamageMath(pkUnit->GetCombat() * 100, iCityDefence100,
-				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 200;
+				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 2;
 			iSelfDamage100 += iCount * CvUnitCombat::DoDamageMath(iCityDefence100, pkUnit->GetCombat() * 100,
-				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 200;
+				GD_INT_GET(ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 2;
 		}
 	}
 	if (iUnits == 0)
@@ -2222,7 +2224,7 @@ static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector< std::pai
 	if (piTurnsNeeded)
 		*piTurnsNeeded = iTurns;
 	const int iCityStrikeDamage100 = CvUnitCombat::DoDamageMath(iCityStrike100, max(100, iBestDefence100),
-		GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0) / 100;
+		GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0);
 	const int iLoss = iTurns * (iCityStrikeDamage100 * CvMilitaryAI::STRIKE_TAKE_LOSS_PERCENT / 100 + iSelfDamage100) / 100;
 	return iLoss < iArmyHP - iUnitHP;
 }
@@ -2890,7 +2892,16 @@ bool CvMilitaryAI::IsTimingBuildupArmyReady() const
 	//a strike's build-up: Personality's plan army (CvGrandStrategyAI::IsStrikeArmyReady: core, support and siege at their
 	//targets, the upgrade tech in, gold for the upgrades) also counts as built
 	const bool bStrike = IsStrikeBuildup();
-	if (!IsTimingBuildupArmyBuilt() && !(bStrike && m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady()))
+	// and, for a strike, the plan's core and support lines at their counts: siege never holds the declaration (the lead's
+	// trial24 1664FF61: siege 0/2 untrainable for 39 turns); whether the army on hand can take the city decides (below)
+	bool bPlanCoreSupport = false;
+	if (bStrike)
+	{
+		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+		bPlanCoreSupport = kPlan.bValid && m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kPlan.eCoreClass) >= kPlan.iCoreTarget &&
+			(kPlan.eSupportClass == NO_UNITCLASS || m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kPlan.eSupportClass) >= kPlan.iSupportTarget);
+	}
+	if (!IsTimingBuildupArmyBuilt() && !(bStrike && (m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady() || bPlanCoreSupport)))
 		return false;
 	//EarlyStrike, upgrade and go (the user: "i upgraded 3 archers to composite archers. that was part of the timing attack.
 	//upgrade and go"): not ready while units at home wait for an upgrade whose tech is in or a few turns off. The window's
