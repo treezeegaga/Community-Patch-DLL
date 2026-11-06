@@ -261,6 +261,8 @@ public:
 	bool IsStrikeTargetTakeableNow(int* piTurnsNeeded = NULL) const;	// can the army on hand take the strike target's nearest city
 	bool IsStrikeRefusingPeace(PlayerTypes eOther) const;	// ownership gate (2-4): no peace, approach WAR, no retreat aborts toward this player
 	bool IsStrikeKeepingUnit(const CvUnit* pUnit) const;	// ownership gate (5): a strike unit no CP system disbands or gifts
+	bool IsStrikeOwningOperations() const;	// ownership gate (4): PREP, BUILDUP, or WAR before a city is taken
+	bool IsStrikeOperationTarget(PlayerTypes eOther) const;	// a player the strike's army may attack
 	int GetStrikeCaptureCount() const;	// cities captured from majors and city-states (the strike's capture measure)
 	bool IsStrikeNoRetreat(PlayerTypes eEnemy) const;	// the strike's war on this player, nothing taken yet: no peace, no abort
 	bool IsStrikeHomeSafe() const;	// none of our cities in danger of falling: a strike's declaration waits for it

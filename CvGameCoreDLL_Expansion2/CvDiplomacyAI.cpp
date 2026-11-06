@@ -23803,6 +23803,10 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	}
 	else if (eStrikeCS != NO_PLAYER && GET_PLAYER(eStrikeCS).isMinorCiv())
 	{
+		// the strike's target is the city-state: CP holds no major conquest target meanwhile (the lead, bullygreedy23 169CA418:
+		// the Aztec strike went to war on Ur while CP's committed target Morocco kept the WAR approach, its sneak operations
+		// gathered the whole army at Marrakech, none went to Ur, and CP declared on Morocco at T76)
+		m_eNewAIConquestTarget = NO_PLAYER;
 		if (eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && pPlayer->GetMilitaryAI()->IsStrikeArmyBuildable())
 			pPlayer->GetMilitaryAI()->StartTimingBuildup(eStrikeCS);
 		return NO_PLAYER;

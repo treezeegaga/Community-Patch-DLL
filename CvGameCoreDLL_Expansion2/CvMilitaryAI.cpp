@@ -1053,6 +1053,18 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
 {
+	// AI_AB_TEST (the strike's ownership, gate 4: the army's operations; the lead, bullygreedy23 169CA418): while the strike
+	// is on (PREP, BUILDUP, or WAR before a city is taken) its army attacks only the strike's target, or a player already at
+	// war with us. CP's own attacks on another player (sneak operations on its conquest target, coop wars, CS quests) don't
+	// start; in 169CA418 they gathered the army at Marrakech while the strike was at war with Ur
+	if (IsStrikeOwningOperations() && !IsStrikeOperationTarget(eIntendedTarget))
+	{
+		if (GC.getLogging() && GC.getAILogging() && eIntendedTarget != NO_PLAYER)
+			m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: city attack on %s refused (gate 4: the strike's army attacks only its target)",
+				GET_PLAYER(eIntendedTarget).getCivilizationShortDescription()));
+		return false;
+	}
+
 	//note that a given target might be repeated with different muster points / army types
 	for (size_t i = 0; i < m_potentialAttackTargets.size(); i++)
 	{
@@ -2321,9 +2333,16 @@ bool CvMilitaryAI::IsStrikeHomeSafe() const
 bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
 {
 	const StrikeStateTypes eState = GetStrikeState();
+	const bool bTarget = eOn != NO_PLAYER && (eOn == m_eTimingBuildupTarget || eOn == GetStrikeCityStateTarget());
+	// in the strike's war, until a city is taken from the target, no second war either (169CA418: CP's sneak operation on
+	// Morocco declared at T76 while the strike's war on Ur had taken nothing)
+	if (eState == STRIKE_WAR)
+	{
+		const PlayerTypes eWarTarget = (GetStrikeCityStateTarget() != NO_PLAYER) ? GetStrikeCityStateTarget() : m_eTimingBuildupTarget;
+		return !bTarget && eWarTarget != NO_PLAYER && IsStrikeNoRetreat(eWarTarget);
+	}
 	if (eState != STRIKE_PREP && eState != STRIKE_BUILDUP)
 		return false;
-	const bool bTarget = eOn != NO_PLAYER && (eOn == m_eTimingBuildupTarget || eOn == GetStrikeCityStateTarget());
 	if (eState == STRIKE_BUILDUP && bTarget && m_iTimingBuildupStartTurn >= 0 && (IsTimingBuildupArmyReady() || IsStrikeAsReadyAsItGets()))
 		return false;
 	return true;
@@ -2341,6 +2360,31 @@ bool CvMilitaryAI::IsStrikeRefusingPeace(PlayerTypes eOther) const
 		return true;
 	return GetStrikeState() == STRIKE_BUILDUP && (eOther == m_eTimingBuildupTarget || eOther == GetStrikeCityStateTarget()) &&
 		GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOther).getTeam());
+}
+
+/// the strike's ownership (gate 4, operations): PREP, BUILDUP, or WAR before a city is taken from the target
+bool CvMilitaryAI::IsStrikeOwningOperations() const
+{
+	if (m_pPlayer->isHuman() || !m_pPlayer->isMajorCiv())
+		return false;
+	const StrikeStateTypes eState = GetStrikeState();
+	if (eState == STRIKE_PREP || eState == STRIKE_BUILDUP)
+		return true;
+	if (eState != STRIKE_WAR)
+		return false;
+	const PlayerTypes eWarTarget = (GetStrikeCityStateTarget() != NO_PLAYER) ? GetStrikeCityStateTarget() : m_eTimingBuildupTarget;
+	return eWarTarget != NO_PLAYER && IsStrikeNoRetreat(eWarTarget);
+}
+
+/// a player the strike's army may attack: its target (the window's, the pinned one, or CP's committed major target, which is
+/// the strike's when no city-state is pinned), or anyone already at war with us (defence)
+bool CvMilitaryAI::IsStrikeOperationTarget(PlayerTypes eOther) const
+{
+	if (eOther == NO_PLAYER)
+		return false;
+	if (eOther == m_eTimingBuildupTarget || eOther == GetStrikeCityStateTarget() || GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOther).getTeam()))
+		return true;
+	return GetStrikeCityStateTarget() == NO_PLAYER && eOther == m_pPlayer->GetDiplomacyAI()->GetCommittedConquestTarget();
 }
 
 /// the strike's ownership (5): while the strike is on (PREP, BUILDUP, WAR), its land combat units are not CP's to disband or
