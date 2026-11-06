@@ -1126,7 +1126,9 @@ void CvTacticalAI::PlotEarlyStrikeBarbHuntMoves()
 				nGoodAttackers++;
 			vHunters.push_back(pUnit);
 		}
-		if (nGoodAttackers == 0 || !PositionUnitsAroundTarget(vHunters, pPlot))
+		//a lone hunter only close to home: one Jaguar chased the same Brute 7 tiles out for 15 turns (Aztec, 14849045) and
+		//the hunt made 4 kills in all; farther out it takes two
+		if (nGoodAttackers == 0 || (vHunters.size() < 2 && m_pPlayer->GetCityDistanceInPlots(pPlot) > 5) || !PositionUnitsAroundTarget(vHunters, pPlot))
 			continue;
 		if (GC.getLogging() && GC.getAILogging())
 			LogTacticalMessage(CvString::format("BarbHunt: %d %s after a barbarian %s at (%d:%d), %d tiles from our nearest city",
