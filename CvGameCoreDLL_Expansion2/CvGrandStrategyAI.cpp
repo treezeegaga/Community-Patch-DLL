@@ -130,6 +130,10 @@ CvGrandStrategyAI::CvGrandStrategyAI():
 	m_iCachedStrikeStart(-1),
 	m_iCachedStrikeEnd(-1),
 	m_iCachedSpikeTech(NO_TECH),
+	m_iCachedStrikeDeclareBy(-1),
+	m_iCachedCoreUnitClass(NO_UNITCLASS),
+	m_iCachedCoreSharePercent(0),
+	m_bCachedMilitaryFirst(false),
 	m_iCachedOutOfRoom(0),
 	m_iCachedOutOfRoomTurn(-1),
 	m_iCachedWarDefenceCap(0),
@@ -199,6 +203,10 @@ void CvGrandStrategyAI::Reset()
 	m_iCachedStrikeStart = -1;
 	m_iCachedStrikeEnd = -1;
 	m_iCachedSpikeTech = NO_TECH;
+	m_iCachedStrikeDeclareBy = -1;
+	m_iCachedCoreUnitClass = NO_UNITCLASS;
+	m_iCachedCoreSharePercent = 0;
+	m_bCachedMilitaryFirst = false;
 	m_iCachedOutOfRoom = 0;
 	m_iCachedOutOfRoomTurn = -1;
 	m_iCachedWarDefenceCap = 0;
@@ -1746,6 +1754,8 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 	kProfile.bMilitaryFirst = false;
 	kProfile.iStrikeStart = -1;
 	kProfile.iStrikeEnd = -1;
+	kProfile.iStrikeDeclareBy = -1;
+	kProfile.iCoreSharePercent = 0;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv())
 		return kProfile;
 
@@ -1977,6 +1987,11 @@ void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
 			iEnd = min(iEnd, max(iTurn + 10, aiTurnByColumn[pkObsolete->GetGridX()]));
 		kProfile.iStrikeStart = (iTurn + 5) * iSpeed / 100;
 		kProfile.iStrikeEnd = iEnd * iSpeed / 100;
+		// declare within 10 turns of the window opening (War's data: declarations came a median 29 turns after the unique
+		// unit was available, often without it in the army), and never later than 10 turns before it closes
+		kProfile.iStrikeDeclareBy = max(iTurn + 5, min(iTurn + 15, iEnd - 10)) * iSpeed / 100;
+		// half the attack army is the spike unit; a third when it's siege (the rest still has to fight)
+		kProfile.iCoreSharePercent = (pkUnit->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD) ? 33 : 50;
 	}
 	kProfile.bMilitaryFirst = kProfile.iSpikeTurn >= 0 && iBestTurn <= 30;
 }
@@ -1995,6 +2010,10 @@ int CvGrandStrategyAI::GetMetaPosition() const
 		m_iCachedStrikeStart = kProfile.iStrikeStart;
 		m_iCachedStrikeEnd = kProfile.iStrikeEnd;
 		m_iCachedSpikeTech = kProfile.eSpikeTech;
+		m_iCachedStrikeDeclareBy = kProfile.iStrikeDeclareBy;
+		m_iCachedCoreUnitClass = (kProfile.eSpikeUnit != NO_UNIT) ? GC.getUnitInfo(kProfile.eSpikeUnit)->GetUnitClassType() : NO_UNITCLASS;
+		m_iCachedCoreSharePercent = kProfile.iCoreSharePercent;
+		m_bCachedMilitaryFirst = kProfile.bMilitaryFirst;
 		m_iCachedMetaTurn = iTurn;
 	}
 	return m_iCachedMetaPosition;
@@ -2015,6 +2034,23 @@ bool CvGrandStrategyAI::GetStrikeWindow(int& iStartTurn, int& iEndTurn) const
 	iStartTurn = m_iCachedStrikeStart;
 	iEndTurn = m_iCachedStrikeEnd;
 	return iStartTurn >= 0;
+}
+
+/// The whole strike window, for War's StrikeWindow/EarlyStrike (the fields War asked for, 2026-11-06). False when the civ
+/// has no unique land combat unit (then the fields say so: no tech, no class, -1 turns).
+bool CvGrandStrategyAI::GetStrikeWindow(CvStrikeWindow& kWindow) const
+{
+	GetMetaPosition();	// fills the cache
+	kWindow.eSpikeTech = (TechTypes)m_iCachedSpikeTech;
+	kWindow.eCoreUnitClass = (UnitClassTypes)m_iCachedCoreUnitClass;
+	kWindow.iCoreSharePercent = m_iCachedCoreSharePercent;
+	kWindow.iOpenTurn = m_iCachedStrikeStart;
+	kWindow.iDeclareByTurn = m_iCachedStrikeDeclareBy;
+	kWindow.iCloseTurn = m_iCachedStrikeEnd;
+	// an early spike (military first: by T30 Standard, before catapults) takes unwalled cities without siege
+	kWindow.bMilitaryFirst = m_bCachedMilitaryFirst;
+	kWindow.bSiegeOnlyIfWalled = m_bCachedMilitaryFirst;
+	return kWindow.iOpenTurn >= 0;
 }
 
 /// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research
@@ -2314,7 +2350,7 @@ void CvGrandStrategyAI::LogStrategyProfile()
 	if (!pLog)
 		return;
 	CvString strOut;
-	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s, spike %s at %s T%d%s, opening %s, strike window T%d-T%d",
+	strOut.Format("%03d, %s, %s, tags %s, pursuits %d/%d, %s, home meta %d, weights dom %d sci %d cul %d dip %d, risk %s, expansion %s, greedy %s, spike %s at %s T%d%s, opening %s, strike window T%d-T%d declare by T%d, core share %d%%",
 		iTurn, m_pPlayer->getCivilizationShortDescription(), m_pPlayer->getLeaderTypeKey(), strTags.c_str(),
 		(int)m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit(), (int)m_pPlayer->GetDiplomacyAI()->GetSecondaryVictoryPursuit(),
 		GetStrategyArchetypeName(kProfile.eArchetype), kProfile.iHomeMeta,
@@ -2324,7 +2360,7 @@ void CvGrandStrategyAI::LogStrategyProfile()
 		(kProfile.eSpikeUnit != NO_UNIT) ? GC.getUnitInfo(kProfile.eSpikeUnit)->GetType() : "none",
 		(kProfile.eSpikeTech != NO_TECH) ? GC.getTechInfo(kProfile.eSpikeTech)->GetType() : "start", kProfile.iSpikeTurn,
 		kProfile.bSpikeTerrain ? " (forest/jungle)" : "", kProfile.bMilitaryFirst ? "military first" : "expansion first",
-		kProfile.iStrikeStart, kProfile.iStrikeEnd);
+		kProfile.iStrikeStart, kProfile.iStrikeEnd, kProfile.iStrikeDeclareBy, kProfile.iCoreSharePercent);
 	pLog->Msg(strOut);
 }
 
