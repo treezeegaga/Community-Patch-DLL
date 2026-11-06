@@ -2606,7 +2606,18 @@ void CvMilitaryAI::LogBigArmy(const char* szWhen) const
 /// non-siege land combat units at peace: a garrison per city and one escort
 int CvMilitaryAI::GetTimingBuildupPeaceCap() const
 {
-	return max(1, m_pPlayer->getNumCities()) + 1;
+	const int iNormal = max(1, m_pPlayer->getNumCities()) + 1;
+	//a strike civ before its strike (PREP, BUILDUP): the plan's army is allowed (core + support, the pre-build for a late
+	//plan), so the peace cap doesn't veto the units the book and the plan ask for. Germany (ab-8555f21, 14BC6621): every unit
+	//in Munich at T61 was "badtimeorplace" (this cap), and the city fell back to Heroic Epic and the Temple of Artemis
+	const StrikeStateTypes eState = GetStrikeState();
+	if (eState == STRIKE_PREP || eState == STRIKE_BUILDUP)
+	{
+		const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
+		if (kPlan.bValid)
+			return max(iNormal, kPlan.iCoreTarget + kPlan.iSupportTarget + max(0, kPlan.iPreBuildTarget - kPlan.iCoreTarget));
+	}
+	return iNormal;
 }
 
 /// the plan's phase: NONE (not a timing attacker), PEACE (no target), PLANNED (target chosen, at peace, no window yet),
