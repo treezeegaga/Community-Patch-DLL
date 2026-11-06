@@ -2271,6 +2271,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 
 	m_iNumUnitsSuppliedCached = -1;
 	m_iEarlyStrikeCoreClass = -2; // AI_AB_TEST (EarlyStrike): worked out again for the next game
+	m_iEarlyStrikeReachTurn = -1;
+	m_bEarlyStrikeReach = false;
 	m_iNumUnitsSuppliedCachedWarWeariness = -1;
 	m_bUnlockedGrowthAnywhereThisTurn = false;
 
@@ -33867,8 +33869,175 @@ UnitClassTypes CvPlayer::GetEarlyStrikeCoreClass() const
 /// 2 of 44 with fewer). A candidate warmonger with an early spike plays that opening.
 bool CvPlayer::IsEarlyStrikeBook() const
 {
-	return MOD_AI_AB_TEST && IsCandidateWarmonger(FIX_EARLY_STRIKE) && GetOpeningBook() != OPENING_BOOK_NONE &&
-		GetEarlyStrikeCoreClass() != NO_UNITCLASS;
+	if (!MOD_AI_AB_TEST || !IsCandidateWarmonger(FIX_EARLY_STRIKE) || GetOpeningBook() == OPENING_BOOK_NONE ||
+		GetEarlyStrikeCoreClass() == NO_UNITCLASS)
+		return false;
+	// the experts' exit: no target in reach and no war by the fallback turn, back to the normal plan (economy first)
+	CvEarlyStrikePlan kPlan;
+	if (GetEarlyStrikePlan(kPlan) && GC.getGame().getElapsedGameTurns() > kPlan.iFallbackTurn && !IsAtWarAnyMajor() &&
+		!IsEarlyStrikeTargetInReach())
+		return false;
+	return true;
+}
+
+/// AI_AB_TEST (EarlyStrike, the expert openings; the user: "use the experts ideas right away"): the civ's opening plan.
+/// Per-civ numbers from Personality's strike-plan table (its RESULTS.md, "Strike plans per civ: spec"; N, K and the
+/// fallback turn) for the Huns, Aztec, Inca, Greece and Celts; other early-spike civs get the user's Aztec opening
+/// (core x3 then x2 more, support x4, 2 cities). The fallback turn is T50 Quick (75 Standard). When Personality's
+/// profile carries these fields, they replace this table.
+bool CvPlayer::GetEarlyStrikePlan(CvEarlyStrikePlan& kPlan) const
+{
+	const UnitClassTypes eProfileCore = GetEarlyStrikeCoreClass();
+	if (eProfileCore == NO_UNITCLASS)
+		return false;
+	const int iSpeed = GC.getGame().getGameSpeedInfo().getTrainPercent();
+	const UnitClassTypes eArcher = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_ARCHER", true);
+	const UnitClassTypes eSpearman = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SPEARMAN", true);
+
+	kPlan.eCore = eProfileCore;
+	kPlan.iCoreBeforeSettler = 3;
+	kPlan.iCoreTotal = 5;
+	const UnitTypes eCoreUnit = GetSpecificUnitType(eProfileCore);
+	const bool bRangedCore = eCoreUnit != NO_UNIT && GC.getUnitInfo(eCoreUnit)->GetRangedCombat() > 0;
+	kPlan.eSupport = bRangedCore ? eSpearman : eArcher;
+	kPlan.iSupportTotal = 4;
+	kPlan.eSiege = NO_UNITCLASS;
+	kPlan.iSiegeTotal = 0;
+	kPlan.iMaxCities = 2;
+	kPlan.iFallbackTurn = 75 * iSpeed / 100;
+	kPlan.eFirstTree = (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_HONOR", true);
+
+	const char* szCiv = getCivilizationTypeKey();
+	if (!szCiv)
+		return true;
+	if (strcmp(szCiv, "CIVILIZATION_HUNS") == 0)
+	{
+		// Horse Archers x2, settler, worker, Battering Rams x2, Horse Archer, Archer, settler (the Ram is the siege, not the core)
+		kPlan.eCore = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CHARIOT_ARCHER", true);
+		kPlan.iCoreBeforeSettler = 2;
+		kPlan.iCoreTotal = 4;
+		kPlan.eSupport = eArcher;
+		kPlan.iSupportTotal = 1;
+		kPlan.eSiege = eSpearman;
+		kPlan.iSiegeTotal = 2;
+		kPlan.iMaxCities = 3;
+	}
+	else if (strcmp(szCiv, "CIVILIZATION_AZTEC") == 0)
+	{
+		// the user's: Jaguar x3, Worker, Settler, Archer x4, Jaguar x2
+		kPlan.iCoreBeforeSettler = 3;
+		kPlan.iCoreTotal = 5;
+		kPlan.eSupport = eArcher;
+		kPlan.iSupportTotal = 4;
+		kPlan.iMaxCities = 2;
+	}
+	else if (strcmp(szCiv, "CIVILIZATION_INCA") == 0)
+	{
+		// Slingers x2, settler, worker, Slingers x2, a Spearman (or Warrior) in front, settler, Slinger
+		kPlan.eCore = eArcher;
+		kPlan.iCoreBeforeSettler = 2;
+		kPlan.iCoreTotal = 5;
+		kPlan.eSupport = eSpearman;
+		kPlan.iSupportTotal = 1;
+		kPlan.iMaxCities = 3;
+	}
+	else if (strcmp(szCiv, "CIVILIZATION_GREECE") == 0 || strcmp(szCiv, "CIVILIZATION_CELTS") == 0)
+	{
+		// Hoplites (Pictish Warriors) x3-4 with Archers x2; the Celts settle after one Pictish Warrior
+		kPlan.eCore = eSpearman;
+		kPlan.iCoreBeforeSettler = (strcmp(szCiv, "CIVILIZATION_CELTS") == 0) ? 1 : 2;
+		kPlan.iCoreTotal = 4;
+		kPlan.eSupport = eArcher;
+		kPlan.iSupportTotal = 2;
+		kPlan.iMaxCities = 3;
+	}
+	return true;
+}
+
+/// EarlyStrike: K cities before the strike; past K, no settlers until it's over
+bool CvPlayer::IsEarlyStrikeCityCapReached() const
+{
+	if (!IsEarlyStrikeSmallEmpire())
+		return false;
+	CvEarlyStrikePlan kPlan;
+	return GetEarlyStrikePlan(kPlan) && getNumCities() >= kPlan.iMaxCities;
+}
+
+/// EarlyStrike: units first while a barbarian camp or another major's city is within 8 tiles of the capital (as far as
+/// we've seen). Once a turn.
+bool CvPlayer::IsEarlyStrikeTargetInReach() const
+{
+	const int iTurn = GC.getGame().getGameTurn();
+	if (m_iEarlyStrikeReachTurn == iTurn)
+		return m_bEarlyStrikeReach;
+	m_iEarlyStrikeReachTurn = iTurn;
+	m_bEarlyStrikeReach = false;
+	const CvCity* pCapital = getCapitalCity();
+	if (!pCapital)
+		return false;
+	const ImprovementTypes eCamp = (ImprovementTypes)GD_INT_GET(BARBARIAN_CAMP_IMPROVEMENT);
+	const int iRange = 8;
+	for (int iDX = -iRange; iDX <= iRange && !m_bEarlyStrikeReach; iDX++)
+	{
+		for (int iDY = -iRange; iDY <= iRange && !m_bEarlyStrikeReach; iDY++)
+		{
+			CvPlot* pPlot = plotXYWithRangeCheck(pCapital->getX(), pCapital->getY(), iDX, iDY, iRange);
+			if (!pPlot || !pPlot->isRevealed(getTeam()))
+				continue;
+			if (eCamp != NO_IMPROVEMENT && pPlot->getRevealedImprovementType(getTeam(), false) == eCamp)
+				m_bEarlyStrikeReach = true;
+			else if (pPlot->isCity() && pPlot->getOwner() != GetID() && GET_PLAYER(pPlot->getOwner()).isMajorCiv())
+				m_bEarlyStrikeReach = true;
+		}
+	}
+	return m_bEarlyStrikeReach;
+}
+
+/// EarlyStrike: one luxury tech before the upgrade (the experts: "a luxury tech, Archery, then Construction"). The cheapest
+/// tech that lets us improve a luxury next to our cities, while we have no luxury of our own yet
+TechTypes CvPlayer::GetEarlyStrikeLuxuryTech() const
+{
+	// we already have a luxury: no detour
+	for (int iRes = 0; iRes < GC.getNumResourceInfos(); iRes++)
+	{
+		CvResourceInfo* pkRes = GC.getResourceInfo((ResourceTypes)iRes);
+		if (pkRes && pkRes->getResourceUsage() == RESOURCEUSAGE_LUXURY && getNumResourceAvailable((ResourceTypes)iRes, false) > 0)
+			return NO_TECH;
+	}
+	TechTypes eBest = NO_TECH;
+	int iBestColumn = INT_MAX;
+	int iLoop = 0;
+	for (const CvCity* pCity = firstCity(&iLoop); pCity != NULL; pCity = nextCity(&iLoop))
+	{
+		for (int i = 0; i < RING3_PLOTS; i++)
+		{
+			CvPlot* pPlot = iterateRingPlots(pCity->plot(), i);
+			if (!pPlot || (pPlot->getOwner() != NO_PLAYER && pPlot->getOwner() != GetID()))
+				continue;
+			const ResourceTypes eRes = pPlot->getResourceType(getTeam());
+			CvResourceInfo* pkRes = (eRes != NO_RESOURCE) ? GC.getResourceInfo(eRes) : NULL;
+			if (!pkRes || pkRes->getResourceUsage() != RESOURCEUSAGE_LUXURY)
+				continue;
+			for (int iBuild = 0; iBuild < GC.getNumBuildInfos(); iBuild++)
+			{
+				CvBuildInfo* pkBuild = GC.getBuildInfo((BuildTypes)iBuild);
+				const ImprovementTypes eImprovement = pkBuild ? (ImprovementTypes)pkBuild->getImprovement() : NO_IMPROVEMENT;
+				CvImprovementEntry* pkImprovement = (eImprovement != NO_IMPROVEMENT) ? GC.getImprovementInfo(eImprovement) : NULL;
+				if (!pkImprovement || !pkImprovement->IsConnectsResource(eRes))
+					continue;
+				const TechTypes eTech = (TechTypes)pkBuild->getTechPrereq();
+				CvTechEntry* pkTech = (eTech != NO_TECH) ? GC.getTechInfo(eTech) : NULL;
+				if (!pkTech || HasTech(eTech))
+					continue;
+				if (pkTech->GetGridX() < iBestColumn)
+				{
+					iBestColumn = pkTech->GetGridX();
+					eBest = eTech;
+				}
+			}
+		}
+	}
+	return eBest;
 }
 
 /// EarlyStrike: a small empire until the strike. No settler past the book's one (2 cities) until a war with a major has
@@ -34247,11 +34416,13 @@ bool CvPlayer::HasUnstartedBookSettlers() const
 {
 	if (!isMajorCiv() || isHuman() || getNumCities() == 0)
 		return false;
-	// EarlyStrike: one book settler (two cities)
-	if (IsEarlyStrikeBook())
+	// EarlyStrike: the plan's settlers (K cities)
+	CvEarlyStrikePlan kPlan;
+	if (IsEarlyStrikeBook() && GetEarlyStrikePlan(kPlan))
 	{
 		const UnitClassTypes eSettlerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
-		return eSettlerClass != NO_UNITCLASS && getUnitClassCountPlusMaking(eSettlerClass) + getNumCities() - 1 < 1 && !IsBoxedInForSettling();
+		return eSettlerClass != NO_UNITCLASS && getUnitClassCountPlusMaking(eSettlerClass) + getNumCities() - 1 < kPlan.iMaxCities - 1 &&
+			!IsBoxedInForSettling();
 	}
 	int iNumSteps = 0;
 	const OpeningBookStep* pSteps = GetOpeningBookCapitalSteps(*this, iNumSteps);
@@ -34317,32 +34488,61 @@ bool CvPlayer::GetOpeningBookProduction(CvCity* pCity, OrderTypes& eOrder, int& 
 	// (the Jaguar, the Maori Warrior), so one more is asked for.
 	std::vector<OpeningBookStep> vEarlyStrike;
 	const bool bEarlyStrike = bCapital && IsEarlyStrikeBook();
-	if (bEarlyStrike)
+	CvEarlyStrikePlan kPlan;
+	if (bEarlyStrike && GetEarlyStrikePlan(kPlan))
 	{
-		const UnitClassTypes eCore = GetEarlyStrikeCoreClass();
-		CvUnitClassInfo* pkCoreClass = GC.getUnitClassInfo(eCore);
-		const UnitTypes eCoreUnit = GetSpecificUnitType(eCore);
-		CvUnitEntry* pkCoreUnit = (eCoreUnit != NO_UNIT) ? GC.getUnitInfo(eCoreUnit) : NULL;
-		if (pkCoreClass && pkCoreUnit)
+		// The expert openings as priorities with conditions (the user: flexible, not rigid). Units first while a
+		// barbarian camp or a neighbour's city is in reach, until N core units are out; then a worker and a settler; then
+		// the siege (if the plan has any), the support and the rest of the core; then settlers up to K cities. With
+		// nothing in reach, the worker and the settler come first. The step list is rebuilt at each choice, and the
+		// loop below skips what's done or can't be trained yet.
+		CvUnitClassInfo* pkCoreClass = GC.getUnitClassInfo(kPlan.eCore);
+		CvUnitClassInfo* pkSupportClass = (kPlan.eSupport != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSupport) : NULL;
+		CvUnitClassInfo* pkSiegeClass = (kPlan.eSiege != NO_UNITCLASS) ? GC.getUnitClassInfo(kPlan.eSiege) : NULL;
+		if (pkCoreClass)
 		{
 			const char* szCore = pkCoreClass->GetType();
-			const char* szSupport = "UNITCLASS_ARCHER";
-			if (pkCoreUnit->GetRangedCombat() > 0)
+			const char* szSupport = pkSupportClass ? pkSupportClass->GetType() : NULL;
+			// a spearman in front before Bronze Working is a warrior
+			if (szSupport && strcmp(szSupport, "UNITCLASS_SPEARMAN") == 0)
 			{
 				const UnitTypes eSpear = GetSpecificUnitType("UNITCLASS_SPEARMAN", true);
-				szSupport = (eSpear != NO_UNIT && pCity->canTrain(eSpear)) ? "UNITCLASS_SPEARMAN" : "UNITCLASS_WARRIOR";
+				if (eSpear == NO_UNIT || !pCity->canTrain(eSpear))
+					szSupport = "UNITCLASS_WARRIOR";
 			}
-			const bool bWarriorCore = strcmp(szCore, "UNITCLASS_WARRIOR") == 0;
-			OpeningBookStep kCore = { true, szCore }, kSupport = { true, szSupport };
-			OpeningBookStep kWorker = { true, "UNITCLASS_WORKER" }, kSettler = { true, "UNITCLASS_SETTLER" };
-			for (int i = 0; i < (bWarriorCore ? 4 : 3); i++)
+			// the starting warrior counts as one of a warrior-class core (the Jaguar, the Maori Warrior)
+			const int iCoreStart = (strcmp(szCore, "UNITCLASS_WARRIOR") == 0) ? 1 : 0;
+			const OpeningBookStep kCore = { true, szCore };
+			const OpeningBookStep kWorker = { true, "UNITCLASS_WORKER" }, kSettler = { true, "UNITCLASS_SETTLER" };
+			const bool bReach = IsEarlyStrikeTargetInReach();
+			if (!bReach)
+			{
+				vEarlyStrike.push_back(kWorker);
+				vEarlyStrike.push_back(kSettler);
+			}
+			for (int i = 0; i < kPlan.iCoreBeforeSettler + iCoreStart; i++)
 				vEarlyStrike.push_back(kCore);
-			vEarlyStrike.push_back(kWorker);
-			vEarlyStrike.push_back(kSettler);
-			for (int i = 0; i < 4; i++)
-				vEarlyStrike.push_back(kSupport);
-			for (int i = 0; i < 2; i++)
+			if (bReach)
+			{
+				vEarlyStrike.push_back(kWorker);
+				vEarlyStrike.push_back(kSettler);
+			}
+			if (pkSiegeClass)
+			{
+				const OpeningBookStep kSiege = { true, pkSiegeClass->GetType() };
+				for (int i = 0; i < kPlan.iSiegeTotal; i++)
+					vEarlyStrike.push_back(kSiege);
+			}
+			if (szSupport)
+			{
+				const OpeningBookStep kSupport = { true, szSupport };
+				for (int i = 0; i < kPlan.iSupportTotal; i++)
+					vEarlyStrike.push_back(kSupport);
+			}
+			for (int i = kPlan.iCoreBeforeSettler; i < kPlan.iCoreTotal; i++)
 				vEarlyStrike.push_back(kCore);
+			for (int i = 2; i < kPlan.iMaxCities; i++)
+				vEarlyStrike.push_back(kSettler);
 			pSteps = &vEarlyStrike[0];
 			iNumSteps = (int)vEarlyStrike.size();
 		}
@@ -34631,40 +34831,51 @@ TechTypes CvPlayer::GetOpeningBookTech() const
 	// candidate warmongers: catapults (Mathematics needs only The Wheel) and the spearman class (hoplite, ram...)
 	static const char* const kWarmonger[] = { "TECH_POTTERY", "TECH_THE_WHEEL", "TECH_MATHEMATICS", "TECH_BRONZE_WORKING", "TECH_ARCHERY", "TECH_WRITING" };
 
-	// AI_AB_TEST candidate (EarlyStrike): the spike unit's tech first, then the support's (Archery behind a melee spike
-	// unit, Bronze Working in front of a ranged one), then the warmonger list
-	if (IsEarlyStrikeBook())
+	// AI_AB_TEST candidate (EarlyStrike, the expert openings): a straight line. The spike unit's tech, one luxury tech (if we
+	// have no luxury yet and one next to our cities needs a tech), the support's tech, then the upgrade the strike waits
+	// for (Personality's eUpgradeTech, else the support's upgrade within the first 4 tech-tree columns: Construction for
+	// archers), then the siege unit's tech. Pottery, Calendar and the rest of the warmonger list only after that.
+	// (The user: "i beelined to construction. i didnt even get plantations for my citrus"; the experts: "a luxury tech,
+	// Archery, then Construction".)
+	CvEarlyStrikePlan kStrikePlan;
+	if (IsEarlyStrikeBook() && GetEarlyStrikePlan(kStrikePlan))
 	{
-		const UnitTypes eCoreUnit = GetSpecificUnitType(GetEarlyStrikeCoreClass());
-		CvUnitEntry* pkCoreUnit = (eCoreUnit != NO_UNIT) ? GC.getUnitInfo(eCoreUnit) : NULL;
-		if (pkCoreUnit)
+		std::vector<TechTypes> vPath;
+		const UnitTypes eCoreUnit = GetSpecificUnitType(kStrikePlan.eCore);
+		if (eCoreUnit != NO_UNIT)
+			vPath.push_back((TechTypes)GC.getUnitInfo(eCoreUnit)->GetPrereqAndTech());
+		vPath.push_back(GetEarlyStrikeLuxuryTech());
+		const UnitTypes eSupport = (kStrikePlan.eSupport != NO_UNITCLASS) ? GetSpecificUnitType(kStrikePlan.eSupport) : NO_UNIT;
+		CvUnitEntry* pkSupport = (eSupport != NO_UNIT) ? GC.getUnitInfo(eSupport) : NULL;
+		if (pkSupport)
+			vPath.push_back((TechTypes)pkSupport->GetPrereqAndTech());
+		const TechTypes eProfileUpgrade = GetGrandStrategyAI() ? GetGrandStrategyAI()->GetStrategyProfile().eUpgradeTech : NO_TECH;
+		if (eProfileUpgrade != NO_TECH)
+			vPath.push_back(eProfileUpgrade);
+		else
 		{
-			TechTypes eStep = GetOpeningBookTechStep(*this, (TechTypes)pkCoreUnit->GetPrereqAndTech(), 0);
-			if (eStep != NO_TECH)
-				return eStep;
-			eStep = GetOpeningBookTechStep(*this, (TechTypes)GC.getInfoTypeForString(pkCoreUnit->GetRangedCombat() > 0 ? "TECH_BRONZE_WORKING" : "TECH_ARCHERY", true), 0);
-			if (eStep != NO_TECH)
-				return eStep;
-			// then the support's upgrade, if it's early (the user: "i beelined to construction. i didnt even get
-			// plantations for my citrus", and upgraded 3 archers to composite bowmen just before declaring). A straight
-			// line: Calendar, Pottery and the rest wait until after it. Only an upgrade within the first 4 tech-tree
-			// columns (Construction's Composite Bowman; not Civil Service's Pikeman)
-			const UnitTypes eSupport = GetSpecificUnitType((UnitClassTypes)GC.getInfoTypeForString(pkCoreUnit->GetRangedCombat() > 0 ? "UNITCLASS_SPEARMAN" : "UNITCLASS_ARCHER", true));
-			CvUnitEntry* pkSupport = (eSupport != NO_UNIT) ? GC.getUnitInfo(eSupport) : NULL;
-			for (int iClass = 0; pkSupport && iClass < GC.getNumUnitClassInfos(); iClass++)
+			// the upgrade of the ranged unit in the army (the support behind a melee core, else the core)
+			const UnitTypes eRanged = (pkSupport && pkSupport->GetRangedCombat() > 0) ? eSupport : eCoreUnit;
+			CvUnitEntry* pkRanged = (eRanged != NO_UNIT) ? GC.getUnitInfo(eRanged) : NULL;
+			for (int iClass = 0; pkRanged && iClass < GC.getNumUnitClassInfos(); iClass++)
 			{
-				if (!pkSupport->GetUpgradeUnitClass(iClass))
+				if (!pkRanged->GetUpgradeUnitClass(iClass))
 					continue;
 				const UnitTypes eUpgrade = GetSpecificUnitType((UnitClassTypes)iClass);
-				CvUnitEntry* pkUpgrade = (eUpgrade != NO_UNIT) ? GC.getUnitInfo(eUpgrade) : NULL;
-				const TechTypes eUpgradeTech = pkUpgrade ? (TechTypes)pkUpgrade->GetPrereqAndTech() : NO_TECH;
+				const TechTypes eUpgradeTech = (eUpgrade != NO_UNIT) ? (TechTypes)GC.getUnitInfo(eUpgrade)->GetPrereqAndTech() : NO_TECH;
 				CvTechEntry* pkUpgradeTech = (eUpgradeTech != NO_TECH) ? GC.getTechInfo(eUpgradeTech) : NULL;
-				if (!pkUpgradeTech || pkUpgradeTech->GetGridX() > 3)
-					continue;
-				eStep = GetOpeningBookTechStep(*this, eUpgradeTech, 0);
-				if (eStep != NO_TECH)
-					return eStep;
+				if (pkUpgradeTech && pkUpgradeTech->GetGridX() <= 3)
+					vPath.push_back(eUpgradeTech);
 			}
+		}
+		const UnitTypes eSiege = (kStrikePlan.eSiege != NO_UNITCLASS) ? GetSpecificUnitType(kStrikePlan.eSiege) : NO_UNIT;
+		if (eSiege != NO_UNIT)
+			vPath.push_back((TechTypes)GC.getUnitInfo(eSiege)->GetPrereqAndTech());
+		for (size_t i = 0; i < vPath.size(); i++)
+		{
+			const TechTypes eStep = (vPath[i] != NO_TECH) ? GetOpeningBookTechStep(*this, vPath[i], 0) : NO_TECH;
+			if (eStep != NO_TECH)
+				return eStep;
 		}
 	}
 
@@ -34705,8 +34916,9 @@ PolicyBranchTypes CvPlayer::GetOpeningBookPolicyBranch() const
 	// AI_AB_TEST candidate (EarlyStrike, the user's Aztec game: "i also decided to go honor instead of liberty because of
 	// the barb hunting"): the strike civ opens Honor. Its opener's bonus against barbarians and culture from kills pay
 	// while the book's first units hunt camps before the war. Without this, warmongers open Liberty (WidePlans: the wide book)
-	if (IsEarlyStrikeBook())
-		return (PolicyBranchTypes)GC.getInfoTypeForString("POLICY_BRANCH_HONOR", true);
+	CvEarlyStrikePlan kPlan;
+	if (IsEarlyStrikeBook() && GetEarlyStrikePlan(kPlan) && kPlan.eFirstTree != NO_POLICY_BRANCH_TYPE)
+		return kPlan.eFirstTree;
 
 	switch (GetOpeningBook())
 	{

@@ -214,8 +214,8 @@ int CvUnitProductionAI::CheckUnitBuildSanity(UnitTypes eUnit, bool bForOperation
 		return SR_STRATEGY;
 	}
 
-	// AI_AB_TEST candidate (EarlyStrike): a small empire until the strike (the book's settler is its only one)
-	if (!bFree && pkUnitEntry->IsFound() && kPlayer.getNumCities() >= 2 && kPlayer.IsEarlyStrikeSmallEmpire())
+	// AI_AB_TEST candidate (EarlyStrike): a small empire until the strike (K cities, the plan's)
+	if (!bFree && pkUnitEntry->IsFound() && kPlayer.IsEarlyStrikeCityCapReached())
 		return SR_STRATEGY;
 
 	// Don't build units in underdeveloped cities

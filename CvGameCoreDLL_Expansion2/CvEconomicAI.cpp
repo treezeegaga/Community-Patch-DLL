@@ -3128,8 +3128,8 @@ static bool GetWantedExpansionSettler(CvPlayer* pPlayer, UnitTypes& eSettler, Cv
 
 	if (pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 || pPlayer->IsBoxedInForSettling())
 		return false;
-	// AI_AB_TEST candidate (EarlyStrike): no settler bought past the book's one until the strike
-	if (pPlayer->getNumCities() >= 2 && pPlayer->IsEarlyStrikeSmallEmpire())
+	// AI_AB_TEST candidate (EarlyStrike): no settler bought before the strike; the treasury is for the upgrades
+	if (pPlayer->IsEarlyStrikeSmallEmpire())
 		return false;
 
 	UnitClassTypes eSettlerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
@@ -3438,13 +3438,9 @@ void CvEconomicAI::DoHurry()
 
 	// AI_AB_TEST candidate (EarlyStrike, the user's Aztec game): the treasury is saved until the strike (263 gold at T40,
 	// no building or unit bought) and goes on upgrades just before the declaration (31 at T50; War's half times those).
-	// No hurries, no WarChest purchases, no bought settler past the book's one: the book's units are built, not bought.
+	// No hurries, no WarChest purchases, no bought settlers: the book's units are built, not bought.
 	if (m_pPlayer->IsEarlyStrikeSmallEmpire())
-	{
-		if (m_pPlayer->getNumCities() < 2)
-			BuyExpansionSettler(m_pPlayer);
 		return;
-	}
 
 	DoWarChest(m_pPlayer);
 

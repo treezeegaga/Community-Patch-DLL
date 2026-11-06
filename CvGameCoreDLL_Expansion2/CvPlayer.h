@@ -126,6 +126,22 @@ struct SPlayerActiveEspionageEvent
 	int iAmount;
 };
 
+// AI_AB_TEST (EarlyStrike, Economy): a strike civ's opening plan (the expert openings, STRIKE_PLANS_RESEARCH.md, with
+// Personality's per-civ numbers). Classes are unit classes (the civ's own unit is built through GetSpecificUnitType).
+struct CvEarlyStrikePlan
+{
+	UnitClassTypes eCore;		// the spike unit
+	int iCoreBeforeSettler;		// N: core units out before the first settler (while a target is in reach)
+	int iCoreTotal;				// core units in all
+	UnitClassTypes eSupport;	// ranged behind a melee core, melee in front of a ranged one
+	int iSupportTotal;
+	UnitClassTypes eSiege;		// NO_UNITCLASS: none (unwalled targets need none)
+	int iSiegeTotal;
+	int iMaxCities;				// K: cities before the strike
+	int iFallbackTurn;			// elapsed turns, this game's speed: no target in reach and no war by then, back to the normal plan
+	PolicyBranchTypes eFirstTree;
+};
+
 // AI_AB_TEST opening book: a scripted start for the new AI (see CvPlayer::GetOpeningBook)
 enum OpeningBookType
 {
@@ -1897,7 +1913,11 @@ public:
 	TechTypes GetWarGoldTech() const; // AI_AB_TEST Economy, flag WarGold
 	UnitClassTypes GetEarlyStrikeCoreClass() const; // AI_AB_TEST Economy, flag EarlyStrike: the spike unit's class, if military first
 	bool IsEarlyStrikeBook() const; // AI_AB_TEST Economy, flag EarlyStrike
-	bool IsEarlyStrikeSmallEmpire() const; // AI_AB_TEST Economy, flag EarlyStrike: no settlers past the book's one until the strike
+	bool IsEarlyStrikeSmallEmpire() const; // AI_AB_TEST Economy, flag EarlyStrike: before the strike (no war with a major, to T90 Standard)
+	bool GetEarlyStrikePlan(CvEarlyStrikePlan& kPlan) const; // AI_AB_TEST Economy, flag EarlyStrike: the civ's opening plan
+	bool IsEarlyStrikeCityCapReached() const; // AI_AB_TEST Economy, flag EarlyStrike: K cities before the strike
+	bool IsEarlyStrikeTargetInReach() const; // AI_AB_TEST Economy, flag EarlyStrike: a barbarian camp or a major's city near the capital
+	TechTypes GetEarlyStrikeLuxuryTech() const; // AI_AB_TEST Economy, flag EarlyStrike: the one luxury tech before the upgrade
 	bool IsWarGoldShort() const; // AI_AB_TEST Economy, flag WarGold
 	PolicyBranchTypes GetOpeningBookPolicyBranch() const;
 
@@ -4082,6 +4102,8 @@ protected:
 	mutable int m_iNumUnitsSuppliedCached; //not serialized
 	mutable int m_iNumUnitsSuppliedCachedWarWeariness; //not serialized
 	mutable int m_iEarlyStrikeCoreClass; // AI_AB_TEST (EarlyStrike), not serialized: -2 not worked out yet, -1 none
+	mutable int m_iEarlyStrikeReachTurn; // AI_AB_TEST (EarlyStrike), not serialized: IsEarlyStrikeTargetInReach, once a turn
+	mutable bool m_bEarlyStrikeReach;
 
 	int m_iNumMilitarySeaUnits;
 	int m_iNumMilitaryAirUnits;
