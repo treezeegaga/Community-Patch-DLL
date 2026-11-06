@@ -79,6 +79,7 @@ struct CvStrikeBuildItem
 	int iClass;	// UnitClassTypes when bUnit, else BuildingClassTypes
 };
 #define STRIKE_LIST_MAX 32
+#define STRIKE_POLICY_MAX 8
 #define STRIKE_TECH_LUXURY ((TechTypes)-2)	// in a research list: one luxury tech (Economy's pick)
 // AI_AB_TEST (Personality, EarlyStrike; the user, 2026-11-06: "use the experts ideas right away and we will know if they
 // are good by if they take cities"): the civ's strike plan, from the civfanatics research (tools/ab/STRIKE_PLANS_RESEARCH.md
@@ -124,6 +125,14 @@ struct CvStrikePlan
 	TechTypes aeTechs[STRIKE_LIST_MAX];
 	bool bListInferred;
 	bool bGenericRush;			// no unique unit in reach: a warmonger's plain Composite Bowman rush (the research's G1)
+	// The policy-tree order through the game (the user, 2026-11-06, the Aztec aggressor in 168C0544: "the aztecs (the
+	// aggressor) went aesthetics? wtf"): Economy's policy gate takes the trees in this order, the ideology slot included;
+	// the never-list (Aesthetics, Piety for a strike civ) is never opened. bPolicyInferred: [I] beyond the research's first tree.
+	int iNumPolicyBranches;
+	PolicyBranchTypes aePolicyOrder[STRIKE_POLICY_MAX];
+	int iNumNeverBranches;
+	PolicyBranchTypes aeNeverBranches[STRIKE_POLICY_MAX];
+	bool bPolicyInferred;
 };
 struct CvStrategyProfile
 {
@@ -248,6 +257,7 @@ private:
 	static void AddStrikeBuild(CvStrikePlan& kPlan, bool bUnit, int iClass);
 	void CompleteStrikeLists(CvStrikePlan& kPlan) const;
 	void OrderStrikeLists(CvStrikePlan& kPlan) const;
+	void SetStrikePolicyOrder(CvStrikePlan& kPlan) const;
 	void DoStyleCityStateUnitGifts();
 	void DoGreedyDisbandToCap();
 

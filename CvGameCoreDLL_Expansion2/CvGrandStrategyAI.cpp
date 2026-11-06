@@ -2176,6 +2176,14 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.iNumTechs = 0;
 	kPlan.bListInferred = false;
 	kPlan.bGenericRush = false;
+	kPlan.iNumPolicyBranches = 0;
+	kPlan.iNumNeverBranches = 0;
+	kPlan.bPolicyInferred = true;
+	for (int iItem = 0; iItem < STRIKE_POLICY_MAX; iItem++)
+	{
+		kPlan.aePolicyOrder[iItem] = NO_POLICY_BRANCH_TYPE;
+		kPlan.aeNeverBranches[iItem] = NO_POLICY_BRANCH_TYPE;
+	}
 	for (int iItem = 0; iItem < STRIKE_LIST_MAX; iItem++)
 	{
 		kPlan.aBuilds[iItem].bUnit = false;
@@ -2434,6 +2442,7 @@ void CvGrandStrategyAI::CompleteStrikeLists(CvStrikePlan& kPlan) const
 {
 	if (!m_pPlayer || !kPlan.bValid)
 		return;
+	SetStrikePolicyOrder(kPlan);
 	const UnitClassTypes eSettler = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
 	int iSettlers = 0, iCore = 0, iSupport = 0, iSiege = 0;
 	std::vector<int> viBuildings;
@@ -2657,6 +2666,96 @@ void CvGrandStrategyAI::OrderStrikeLists(CvStrikePlan& kPlan) const
 		}
 		kPlan.aBuilds[j + 1] = kItem;
 		aiStep[j + 1] = iStep;
+	}
+}
+
+/// AI_AB_TEST (Personality; the user, 2026-11-06, the Aztec aggressor in 168C0544: "the aztecs (the aggressor) went
+/// aesthetics? wtf"; the lead: a full policy-tree order through the game, never Aesthetics or Piety for an aggressive
+/// strike civ unless an expert source says so for that civ). The first tree from STRIKE_PLANS_RESEARCH.md (G7 and the
+/// civ sections); the rest is [I], a war economy: the opening's other tree to finish what it needs, Commerce (gold for
+/// upgrades and purchases), Rationalism or Patronage per civ, Exploration last, Autocracy at the ideology. No research
+/// source names Aesthetics or Piety for any of these civs, so both are on every strike plan's never-list.
+void CvGrandStrategyAI::SetStrikePolicyOrder(CvStrikePlan& kPlan) const
+{
+	struct PolicyRow
+	{
+		const char* szCiv;
+		bool bFirstSourced;	// the first tree is from the research; the rest is [I]
+		const char* szOrder;
+	};
+	static const PolicyRow kRows[] = {
+		// Huns (S4): Honor (Military Tradition, Professional Army); Tradition only with strong capital tiles; not Liberty
+		{ "CIVILIZATION_HUNS", true, "HONOR TRADITION COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Aztec (S14): Honor opener (kill culture), then Tradition
+		{ "CIVILIZATION_AZTEC", true, "HONOR TRADITION COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Celts (S7): Honor fits faith from kills (contested: Tradition or Liberty common)
+		{ "CIVILIZATION_CELTS", true, "HONOR TRADITION COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Greece (S21; the lead: Liberty): Liberty, Honor for the rush, Patronage (the Greek city-state trait)
+		{ "CIVILIZATION_GREECE", true, "LIBERTY HONOR PATRONAGE COMMERCE RATIONALISM AUTOCRACY" },
+		// Inca (the lead: Liberty for a plain Composite Bowman rush, G7)
+		{ "CIVILIZATION_INCA", true, "LIBERTY HONOR COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Zulu (S24, S25): Liberty for 3-4 cities (Tradition with 2-3 also seen)
+		{ "CIVILIZATION_ZULU", true, "LIBERTY HONOR COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Mongolia (S26): Honor (full) or Tradition then Honor; no Patronage for a city-state conqueror
+		{ "CIVILIZATION_MONGOL", true, "HONOR TRADITION COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Assyria (S28 imMapex): Tradition (Legalism, Landed Elite, Monarchy, Aristocracy, Oligarchy)
+		{ "CIVILIZATION_ASSYRIA", true, "TRADITION HONOR RATIONALISM COMMERCE EXPLORATION AUTOCRACY" },
+		// Japan (S3): Tradition (Aristocracy)
+		{ "CIVILIZATION_JAPAN", true, "TRADITION HONOR COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// Songhai (S32/S27): Honor first (or Liberty for the bulb)
+		{ "CIVILIZATION_SONGHAI", true, "HONOR LIBERTY COMMERCE RATIONALISM EXPLORATION AUTOCRACY" },
+		// China (S35/S36): Tradition then Honor (Liberty then Honor also seen)
+		{ "CIVILIZATION_CHINA", true, "TRADITION HONOR RATIONALISM COMMERCE EXPLORATION AUTOCRACY" },
+	};
+	const char* szOrder = NULL;
+	kPlan.bPolicyInferred = true;
+	const char* szCiv = m_pPlayer ? m_pPlayer->getCivilizationTypeKey() : NULL;
+	// the expert rows only for the plans that use them (a late row under LateStrike), else the default orders
+	if (kPlan.bExpert && szCiv)
+	{
+		for (int iRow = 0; iRow < (int)(sizeof(kRows) / sizeof(kRows[0])); iRow++)
+		{
+			if (strcmp(kRows[iRow].szCiv, szCiv) == 0)
+			{
+				szOrder = kRows[iRow].szOrder;
+				kPlan.bPolicyInferred = !kRows[iRow].bFirstSourced;
+				break;
+			}
+		}
+	}
+	if (!szOrder)
+	{
+		// [I] defaults: the generic Composite Bowman rush (G7: Liberty is faster for a plain rush), an early default the
+		// same, a late default economy first (Tradition), then Honor
+		if (kPlan.bLateStrike)
+			szOrder = "TRADITION HONOR COMMERCE RATIONALISM EXPLORATION AUTOCRACY";
+		else
+			szOrder = "LIBERTY HONOR COMMERCE RATIONALISM EXPLORATION AUTOCRACY";
+	}
+	kPlan.iNumPolicyBranches = 0;
+	const std::string strOrder(szOrder);
+	size_t iPos = 0;
+	while (iPos < strOrder.size() && kPlan.iNumPolicyBranches < STRIKE_POLICY_MAX)
+	{
+		size_t iEnd = strOrder.find(' ', iPos);
+		if (iEnd == std::string::npos)
+			iEnd = strOrder.size();
+		const std::string strName = "POLICY_BRANCH_" + strOrder.substr(iPos, iEnd - iPos);
+		iPos = iEnd + 1;
+		const PolicyBranchTypes eBranch = (PolicyBranchTypes)GC.getInfoTypeForString(strName.c_str(), true);
+		if (eBranch != NO_POLICY_BRANCH_TYPE)
+			kPlan.aePolicyOrder[kPlan.iNumPolicyBranches++] = eBranch;
+	}
+	// the first tree follows the order (it was the plan's only policy field)
+	if (kPlan.iNumPolicyBranches > 0)
+		kPlan.eFirstPolicyBranch = kPlan.aePolicyOrder[0];
+	kPlan.iNumNeverBranches = 0;
+	const char* const aszNever[2] = { "POLICY_BRANCH_AESTHETICS", "POLICY_BRANCH_PIETY" };
+	for (int i = 0; i < 2; i++)
+	{
+		const PolicyBranchTypes eBranch = (PolicyBranchTypes)GC.getInfoTypeForString(aszNever[i], true);
+		if (eBranch != NO_POLICY_BRANCH_TYPE)
+			kPlan.aeNeverBranches[kPlan.iNumNeverBranches++] = eBranch;
 	}
 }
 
@@ -3228,9 +3327,15 @@ void CvGrandStrategyAI::LogStrategyProfile()
 			const char* szTech = (eTech == STRIKE_TECH_LUXURY) ? "LUXURY" : (eTech != NO_TECH && GC.getTechInfo(eTech)) ? GC.getTechInfo(eTech)->GetType() : "?";
 			strTechs += CvString::format("%s%s", iItem > 0 ? " " : "", szTech);
 		}
+		CvString strPolicies;
+		for (int iItem = 0; iItem < kPlan.iNumPolicyBranches; iItem++)
+		{
+			CvPolicyBranchEntry* pkBranch = GC.getPolicyBranchInfo(kPlan.aePolicyOrder[iItem]);
+			strPolicies += CvString::format("%s%s", iItem > 0 ? " " : "", pkBranch ? pkBranch->GetType() : "?");
+		}
 		CvString strLists;
-		strLists.Format("%03d, %s, strike lists%s: builds [%s], research [%s]", iTurn, m_pPlayer->getCivilizationShortDescription(),
-			kPlan.bListInferred ? " (partly inferred)" : "", strBuilds.c_str(), strTechs.c_str());
+		strLists.Format("%03d, %s, strike lists%s: builds [%s], research [%s], policy trees [%s] (never Aesthetics, Piety)", iTurn, m_pPlayer->getCivilizationShortDescription(),
+			kPlan.bListInferred ? " (partly inferred)" : "", strBuilds.c_str(), strTechs.c_str(), strPolicies.c_str());
 		pLog->Msg(strLists);
 	}
 }
