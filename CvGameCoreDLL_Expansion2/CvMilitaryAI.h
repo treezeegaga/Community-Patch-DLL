@@ -270,6 +270,7 @@ public:
 	bool IsStrikeDeclarationBlocked(PlayerTypes eOn) const;	// before the strike (PREP, BUILDUP) no declaration of ours but the strike's on its target, when ready
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeClassBuildable(UnitClassTypes eClass) const;	// trainable now, or but for resources we own and have in use
+	bool IsLateStrikeSpikeIn() const;	// a late strike's upgrade tech is in (its declaration waits for its spike)
 	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
 	PlayerTypes GetStrikeCityStateTarget() const { return (PlayerTypes)m_iStrikeCityState; }	// EarlyStrike: a city-state when no major is in reach, or a re-target (major or city-state)
 	TimingBuildupPhase GetTimingBuildupPhase() const;
