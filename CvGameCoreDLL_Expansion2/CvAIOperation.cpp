@@ -470,6 +470,12 @@ bool CvAIOperation::IsArmyTooWeakForTarget(CvArmyAI* pArmy, bool bLog, bool bIgn
 {
 	if (m_eType != AI_OPERATION_CITY_ATTACK_LAND || !GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_SIEGE_ARMY))
 		return false;
+	// AI_AB_TEST (the strike; trial25 171787CD): against the strike's target the strike's own take-the-city math decides (the user:
+	// "just calculate if you can take the city"). The bar held the Aztec attack on Kyzyl at 33 of 36 a turn while the strike's
+	// math said the army takes it in about 2 turns
+	if (m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy) &&
+		GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeTargetTakeableNow())
+		return false;
 	CvCity* pCity = GetTargetPlot() ? GetTargetPlot()->getPlotCity() : NULL;
 	if (!pArmy || !pCity || (!bIgnoreTimeLimit && GC.getGame().getGameTurn() - GetTurnStarted() >= 20))
 		return false;
@@ -730,7 +736,11 @@ bool CvAIOperation::ShouldAbort()
 	else
 	{
 		// Mark units in successful operation
-		for(unsigned int uiI = 0; uiI < m_viArmyIDs.size(); uiI++)
+		// AI_AB_TEST (the strike's ownership, gate 4; trial25 171787CD): not against the strike's target before a capture. The
+		// mark keeps units out of new operations for 5 turns; MarchOn handed the Aztec army over 4-6 tiles from Kyzyl (T69), and
+		// the strike's next city attack failed "for lack of units" T70-T73
+		const bool bStrikeKeepsArmy = m_eEnemy != NO_PLAYER && GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy);
+		for(unsigned int uiI = 0; uiI < m_viArmyIDs.size() && !bStrikeKeepsArmy; uiI++)
 		{
 			CvArmyAI* pArmy = GetArmy(uiI);
 			CvUnit* pUnit = pArmy ? pArmy->GetFirstUnit() : NULL;

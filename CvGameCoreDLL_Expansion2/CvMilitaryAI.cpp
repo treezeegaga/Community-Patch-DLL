@@ -1135,7 +1135,8 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 		//built, as a careful request can: the operation forms and its own build requests fill the slots (a test aggressor
 		//made 302 requests that all failed "for lack of units", since every required slot needed a free unit up front)
 		const TimingBuildupPhase eTimingPhase = GetTimingBuildupPhase();
-		const bool bTimingAttack = eTimingPhase == TIMING_BUILDUP_WINDOW || eTimingPhase == TIMING_BUILDUP_ATTACK;
+		// (and the strike's war on its target: its attack forms with slots still to fill, trial25 171787CD's "lack of units")
+		const bool bTimingAttack = eTimingPhase == TIMING_BUILDUP_WINDOW || eTimingPhase == TIMING_BUILDUP_ATTACK || IsStrikeNoRetreat(eTargetPlayer);
 		int iMaxMissing = (bCareful || bTimingAttack) ? iNumUnitsWillingToBuild : 0;
 		//AI_AB_TEST (candidate, flag SecondWave): at war with a major, the next attack may form with up to 3 required slots to be
 		//built. The siege formation has 6 required slots and the attacks after the first started with 3 units and ended NoUnits
