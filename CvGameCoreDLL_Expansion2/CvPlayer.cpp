@@ -35496,7 +35496,9 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// (0058, the lead) in WAR with nothing more to train for the army: income while net gold is below 0 (a Market, else a
 	// Caravan where a route is free), then CP's picks (no wonders in WAR, IsStrikeNoWonders). A city in danger took its
 	// defender above
-	if (GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_WAR && GetTreasury()->CalculateBaseNetGold() < 0)
+	// (0059, the lead's review) the capital only: in every city the pushOrder redirect swapped CP's walls and defenders for
+	// Markets and Caravans
+	if (pCity->isCapital() && GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_WAR && GetTreasury()->CalculateBaseNetGold() < 0)
 	{
 		const BuildingTypes eMarket = GetSpecificBuildingType("BUILDINGCLASS_MARKET", true);
 		if (eMarket != NO_BUILDING && pCity->canConstruct(eMarket))

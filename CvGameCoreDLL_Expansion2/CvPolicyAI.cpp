@@ -199,6 +199,9 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 		&pPlayer->GetGrandStrategyAI()->GetStrikePlan() : NULL;
 	if (!bMustChooseTenet && pOrderPlan && pOrderPlan->bValid && pOrderPlan->iNumPolicyBranches > 0)
 	{
+		// (0059, the lead's review) a tree in the order that will be possible later (an era gate, an ideology not yet on offer,
+		// an open tree with nothing adoptable this turn): no tree outside the order opens meanwhile, the culture is kept
+		bool bOrderWaiting = false;
 		for (int iOrder = 0; iOrder < pOrderPlan->iNumPolicyBranches; iOrder++)
 		{
 			const PolicyBranchTypes eTree = pOrderPlan->aePolicyBranches[iOrder];
@@ -225,6 +228,7 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 					LogPolicyChoice((PolicyTypes)(iBest - GC.getNumPolicyBranchInfos()));
 					return iBest;
 				}
+				bOrderWaiting = true;
 				continue;	// open but nothing adoptable now: the next tree in the order
 			}
 			if (m_pCurrentPolicies->CanUnlockPolicyBranch(eTree))
@@ -232,6 +236,13 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 				LogBranchChoice(eTree);
 				return (int)eTree;
 			}
+			// can't be opened now: permanently (blocked by a mutually exclusive tree, or an ideology other than ours taken) or for now
+			CvPolicyBranchEntry* pkTree = GC.getPolicyBranchInfo(eTree);
+			const bool bIdeology = pkTree && pkTree->IsPurchaseByLevel();
+			const PolicyBranchTypes eOurIdeology = m_pCurrentPolicies->GetLateGamePolicyTree();
+			const bool bPermanent = m_pCurrentPolicies->IsPolicyBranchBlocked(eTree) || (bIdeology && eOurIdeology != NO_POLICY_BRANCH_TYPE && eOurIdeology != eTree);
+			if (!bPermanent)
+				bOrderWaiting = true;
 		}
 		// nothing in the order can take a policy now: no tree outside the order; the policies of trees already open (CP's
 		// weights) are the only other choice, never one of the plan's never-list trees (Aesthetics, Piety)
@@ -258,7 +269,10 @@ int CvPolicyAI::ChooseNextPolicy(CvPlayer* pPlayer)
 			return iBest;
 		}
 		// (0057, the lead's review) every tree in the order done or locked: the best tree that can be opened (CP's branch weight),
-		// never one on the never-list, rather than leave the culture unspent
+		// never one on the never-list, rather than leave the culture unspent. (0059: only when every remaining order tree is
+		// finished or permanently blocked; one that will be possible later keeps the culture)
+		if (bOrderWaiting)
+			return (int)NO_POLICY;
 		PolicyBranchTypes eBestTree = NO_POLICY_BRANCH_TYPE;
 		int iBestTreeWeight = INT_MIN;
 		for (int iBranch = 0; iBranch < GC.getNumPolicyBranchInfos(); iBranch++)
