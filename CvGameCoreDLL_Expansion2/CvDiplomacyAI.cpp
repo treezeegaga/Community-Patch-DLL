@@ -23583,6 +23583,19 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 	// and was lost on a reload, so a replayed or reloaded game could pick differently.
 	PlayerTypes eCommitted = m_eNewAIConquestTarget;
 
+	// AI_AB_TEST (candidate, flag EarlyStrike, the expert strike's target, War): until Personality's close turn, an EarlyStrike
+	// civ wants a flat, unwalled city. The research: "a walled hill city without siege is sometimes impossible". Over our
+	// games unwalled cities fell 9 of 31 times, walled 4 of 28. The target civ's city nearest us is judged: walled and on a
+	// hill, the civ is skipped; walled or on a hill, it ranks below every flat, unwalled one. With no target, no strike: the
+	// late plan runs after the close turn.
+	bool bEarlyStrikeTarget = false;
+	if (bTimingBuildup && pPlayer->GetMilitaryAI()->IsEarlyStrikeCiv())
+	{
+		CvStrikeWindow kStrike;
+		bEarlyStrikeTarget = pPlayer->GetMilitaryAI()->GetEarlyStrikeWindow(kStrike) && kStrike.iCloseTurn >= 0 && iTurn <= kStrike.iCloseTurn;
+	}
+	static const BuildingClassTypes eStrikeWalls = (BuildingClassTypes)GC.getInfoTypeForString("BUILDINGCLASS_WALLS", true);
+
 	const CvCity* pCapital = pPlayer->getCapitalCity();
 	const char* szVulnerableReason = "warmonger timing attack, most vulnerable city";
 	PlayerTypes eBest = NO_PLAYER;
@@ -23598,6 +23611,21 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		PlayerProximityTypes eProximity = pPlayer->GetProximityToPlayer(eLoopPlayer);
 		if (eProximity < (bExpansionist ? PLAYER_PROXIMITY_NEIGHBORS : PLAYER_PROXIMITY_CLOSE))
 			continue;
+
+		int iStrikeTargetPenalty = 0;	// EarlyStrike: flat and unwalled first (above)
+		if (bEarlyStrikeTarget)
+		{
+			const CvCity* pStrikeCity = pPlayer->GetClosestCityToUsByPlots(eLoopPlayer);
+			if (pStrikeCity)
+			{
+				const bool bWalled = eStrikeWalls != NO_BUILDINGCLASS && pStrikeCity->GetCityBuildings()->HasBuildingClass(eStrikeWalls);
+				const bool bHill = pStrikeCity->plot()->isHills();
+				if (bWalled && bHill)
+					continue;
+				if (bWalled || bHill)
+					iStrikeTargetPenalty = 1000000;
+			}
+		}
 
 		const bool bCommitted = (eLoopPlayer == eCommitted);
 		// AI_AB_TEST (candidate, flag TargetHold): while an attack on the committed target is under way, the checks that swing
@@ -23726,6 +23754,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 				iScore += min(30, GET_PLAYER(eLoopPlayer).getTotalPopulation() / 2);
 		}
 
+		iScore -= iStrikeTargetPenalty;
 		if (iScore > iBestScore)
 		{
 			iBestScore = iScore;
