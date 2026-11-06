@@ -1938,9 +1938,9 @@ CvStrategyProfile CvGrandStrategyAI::GetStrategyProfile() const
 /// and other civs work too; scouts don't count), the tech that unlocks it, and the turn that tech usually comes (Standard
 /// turns by its column in the tech tree, roughly the new AI's pace in logged games: warmongers' Mathematics, column 3, at
 /// about T48, their Physics at T138; scaled to the game's speed). The opening that serves it: military first and a small
-/// empire when the spike comes by turn 30 (Standard), otherwise expansion first. The strike window: from 5 turns after
-/// the spike (the first units out) to 85 turns after (build the army, march, take a city), sooner when the unit goes
-/// obsolete; declare by 55 turns after.
+/// empire when the spike comes by turn 30 (Standard), otherwise expansion first. The strike window, when to start the
+/// war: opens once the army can be built (T60 Standard at the earliest, and 20 turns after the spike), declare within 15
+/// turns, closes 30 turns after opening (sooner when the unit goes obsolete).
 void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
 {
 	static const int aiTurnByColumn[] = { 0, 15, 30, 47, 75, 105, 135, 160, 185, 210, 235, 260, 285, 310, 335, 360, 385, 410, 435, 460 };
@@ -1980,24 +1980,23 @@ void CvGrandStrategyAI::GetPowerSpike(CvStrategyProfile& kProfile) const
 				kProfile.bSpikeTerrain = pkPromotion->GetFeatureAttackPercent(iFeature) > 0 || pkPromotion->GetFeatureDefensePercent(iFeature) > 0;
 		}
 
-		// the strike window, cut short when the unit goes obsolete
-		// the strike window (War, 2026-11-06: a window that closes before the army can be built and marched can't fire;
-		// the user's Aztec took Marrakesh at T54 Quick, about T80 Standard, with Jaguars from the start). Standard turns
-		// from the spike: the first units out at +5; about 25 turns to build the army (6-10 units in 1-3 cities), 10-15
-		// to march and 10-15 to take a city, so declare by +55 and close at +85. A unit that goes obsolete can't be
-		// built any more, but the ones already out still fight: the window closes 20 turns after the obsoleting tech
-		// usually comes, never before +60. The target's own walls and counters are War's to check per target
-		// (bSiegeOnlyIfWalled).
-		int iEnd = iTurn + 85;
+		// the strike window: when to start the war (the strike itself, declaration to capture, can run past it).
+		// Calibrated to the user's Aztec game (Quick, Jaguars from the start): military 29 at T30, 45 at T40, 67 at T50,
+		// gold spent on units, war declared between T41 and T50, Marrakesh taken at T54. In Standard turns: the army
+		// can't be ready before about T60 (first cities, little production), nor sooner than 20 turns after the spike;
+		// the window opens then, declare within 15 turns, and it closes 30 turns after opening. An obsolete unit can't be
+		// built but the ones out still fight: close 20 turns after the obsoleting tech usually comes, never before the
+		// declare-by turn + 5. The target's own walls and counters are War's to check per target (bSiegeOnlyIfWalled).
+		const int iOpen = max(60, iTurn + 20);
+		const int iDeclareBy = iOpen + 15;
+		int iEnd = iOpen + 30;
 		const TechTypes eObsolete = (TechTypes)pkUnit->GetObsoleteTech();
 		CvTechEntry* pkObsolete = (eObsolete != NO_TECH) ? GC.getTechInfo(eObsolete) : NULL;
 		if (pkObsolete && pkObsolete->GetGridX() >= 0 && pkObsolete->GetGridX() < iNumColumns)
-			iEnd = min(iEnd, max(iTurn + 60, aiTurnByColumn[pkObsolete->GetGridX()] + 20));
-		kProfile.iStrikeStart = (iTurn + 5) * iSpeed / 100;
+			iEnd = min(iEnd, max(iDeclareBy + 5, aiTurnByColumn[pkObsolete->GetGridX()] + 20));
+		kProfile.iStrikeStart = iOpen * iSpeed / 100;
 		kProfile.iStrikeEnd = iEnd * iSpeed / 100;
-		// declare once the army is built and marched (War's data: declarations came a median 29 turns after the unique
-		// unit was available, often without it in the army), by +55 and at least 15 turns before the window closes
-		kProfile.iStrikeDeclareBy = min(iTurn + 55, iEnd - 15) * iSpeed / 100;
+		kProfile.iStrikeDeclareBy = iDeclareBy * iSpeed / 100;
 		// half the attack army is the spike unit; a third when it's siege (the rest still has to fight)
 		kProfile.iCoreSharePercent = (pkUnit->GetDefaultUnitAIType() == UNITAI_CITY_BOMBARD) ? 33 : 50;
 	}
