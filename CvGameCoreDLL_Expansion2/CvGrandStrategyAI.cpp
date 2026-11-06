@@ -2159,6 +2159,11 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bLateStrike = false;
 	kPlan.ePreBuildClass = NO_UNITCLASS;
 	kPlan.iPreBuildTarget = 0;
+	kPlan.iEconomyGoldTarget = 0;
+	kPlan.iExitCityStrength = 0;
+	kPlan.eExitCounterClass1 = NO_UNITCLASS;
+	kPlan.eExitCounterClass2 = NO_UNITCLASS;
+	kPlan.bExitRoughTarget = false;
 	if (!m_pPlayer || !m_pPlayer->isMajorCiv() || kProfile.eSpikeUnit == NO_UNIT)
 		return;
 
@@ -2187,7 +2192,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		{ "CIVILIZATION_INCA",   "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  2, 3, 60, 70, 75, "POLICY_BRANCH_LIBERTY", NULL, 0, 75, false, true },
 		{ "CIVILIZATION_GREECE", "UNITCLASS_SPEARMAN",       3, "UNITCLASS_ARCHER",   5, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 50, 65, 75, "POLICY_BRANCH_LIBERTY", NULL, 0, 75, false, true },
 		{ "CIVILIZATION_CELTS",  "UNITCLASS_SPEARMAN",       5, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CONSTRUCTION",  2, 3, 52, 67, 75, "POLICY_BRANCH_HONOR", NULL, 0, 75, false, true },
-		// LateStrikePlans (off): economy first, pre-build, save the gold, upgrade the turn the tech lands and strike.
+		// LateStrike (off; one flag with War's window and Economy's book): economy first, pre-build, save the gold, upgrade the turn the tech lands and strike.
 		// Zulu (glory7, Deity Challenge #1): a ranged-led wave at T90-100 with Spearmen upgraded to Impi at Civil Service.
 		// Mongolia (Deity Challenge #8): Chariot Archers kept alive and upgraded to Keshiks at Chivalry, T92-105, 8+ Keshiks
 		// and 2 Horsemen to capture. Assyria (imMapex): Composite Bowmen with 1-2 Siege Towers and 1-2 melee, T80-110.
@@ -2197,10 +2202,11 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		{ "CIVILIZATION_MONGOL",   "UNITCLASS_KNIGHT",         8, "UNITCLASS_HORSEMAN", 2, NULL,                 0, "TECH_CHIVALRY",      0, 3, 95, 105, 120, "POLICY_BRANCH_HONOR",     "UNITCLASS_CHARIOT_ARCHER", 8, 140, true, true },
 		{ "CIVILIZATION_ASSYRIA",  "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  0, 3, 80,  95, 110, "POLICY_BRANCH_TRADITION", NULL,                       0,  75, true, false },
 		{ "CIVILIZATION_JAPAN",    "UNITCLASS_LONGSWORDSMAN",  7, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_STEEL",         0, 3, 100, 105, 120, "POLICY_BRANCH_TRADITION", "UNITCLASS_SWORDSMAN",      7, 100, true, true },
-		// China (the user, 2026-11-05: "cho ko nu rush?"; not in the research file, from BNW play knowledge, moderate
-		// confidence): Archers to Composite Bowmen early, then upgraded to Chu-Ko-Nus (two attacks a turn) at Machinery;
-		// two Swordsmen to take the city; no siege, the Chu-Ko-Nus bring the walls down. China's Great General bonus fits Honor.
-		{ "CIVILIZATION_CHINA",    "UNITCLASS_CROSSBOWMAN",    6, "UNITCLASS_SWORDSMAN", 2, NULL,                0, "TECH_MACHINERY",     0, 3, 85,  95, 115, "POLICY_BRANCH_HONOR",     "UNITCLASS_COMPOSITE_BOWMAN", 6, 90, true, true },
+		// China (the user, 2026-11-05: "cho ko nu rush?"; the lead's research, STRIKE_PLANS_RESEARCH.md "China (Chu-Ko-Nu
+		// rush)", thin BNW sources): 7-8 Chu-Ko-Nus (two attacks a turn; Composite Bowmen pre-built, upgraded when Machinery
+		// lands, about 100 gold each, an estimate) and 2-3 melee to take the city, a Great General if there is one (Art of
+		// War); no siege. Liberty or Tradition into Honor is more common than Honor first: Tradition here.
+		{ "CIVILIZATION_CHINA",    "UNITCLASS_CROSSBOWMAN",    8, "UNITCLASS_SWORDSMAN", 3, NULL,                0, "TECH_MACHINERY",     0, 3, 85,  95, 115, "POLICY_BRANCH_TRADITION", "UNITCLASS_COMPOSITE_BOWMAN", 8, 100, true, true },
 		{ "CIVILIZATION_SONGHAI",  "UNITCLASS_KNIGHT",         6, "UNITCLASS_ARCHER",   3, NULL,                 0, "TECH_CHIVALRY",      0, 2, 85,  95, 115, "POLICY_BRANCH_HONOR",     "UNITCLASS_HORSEMAN",       6, 100, true, true },
 	};
 	const int iSpeed = max(1, GC.getGame().getGameSpeedInfo().getTrainPercent());
@@ -2210,7 +2216,7 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		const ExpertRow& kRow = kRows[i];
 		if (!szCiv || strcmp(szCiv, kRow.szCiv) != 0)
 			continue;
-		if (kRow.bLate && !m_pPlayer->UsesCandidateAI(FIX_LATE_STRIKE_PLANS))
+		if (kRow.bLate && !m_pPlayer->UsesCandidateAI(FIX_LATE_STRIKE))
 			continue;
 		kPlan.bValid = true;
 		kPlan.bExpert = true;
@@ -2233,6 +2239,17 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		kPlan.bLateStrike = kRow.bLate;
 		kPlan.ePreBuildClass = kRow.szPreBuild ? (UnitClassTypes)GC.getInfoTypeForString(kRow.szPreBuild, true) : NO_UNITCLASS;
 		kPlan.iPreBuildTarget = kRow.iPreBuild;
+		// late strike: half the upgrade bill in the treasury before the build-up (economy-ready)
+		kPlan.iEconomyGoldTarget = kRow.bLate ? kRow.iPreBuild * kRow.iUpgradeGold / 2 : 0;
+		// China's exits (the lead's research, "China (Chu-Ko-Nu rush)"): a target city at about 25-30+ defence, Knights or
+		// gunpowder units near it, rough ground. Chu-Ko-Nus lost is War's army-lost exit for every plan.
+		if (strcmp(kRow.szCiv, "CIVILIZATION_CHINA") == 0)
+		{
+			kPlan.iExitCityStrength = 25;
+			kPlan.eExitCounterClass1 = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_KNIGHT", true);
+			kPlan.eExitCounterClass2 = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_MUSKETMAN", true);
+			kPlan.bExitRoughTarget = true;
+		}
 		return;
 	}
 
@@ -2272,6 +2289,99 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 	kPlan.bSiegeOnlyIfWalled = true;
 	kPlan.bBarbarianHunt = kProfile.bMilitaryFirst;
 	kPlan.bLateStrike = !kProfile.bMilitaryFirst;
+}
+
+/// AI_AB_TEST (Personality, strike plan; War's strike state): units of a class plus those of the classes it upgrades into
+/// (one step), so Archers upgraded to Composite Bowmen still count as the plan's support
+int CvGrandStrategyAI::CountStrikeClassLine(UnitClassTypes eClass) const
+{
+	if (!m_pPlayer || eClass == NO_UNITCLASS)
+		return 0;
+	int iCount = m_pPlayer->getUnitClassCount(eClass);
+	const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eClass);
+	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (pkUnit)
+	{
+		for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+		{
+			if (iClass != (int)eClass && pkUnit->GetUpgradeUnitClass(iClass))
+				iCount += m_pPlayer->getUnitClassCount((UnitClassTypes)iClass);
+		}
+	}
+	return iCount;
+}
+
+/// Economy-ready, PREP to BUILDUP (the lead, 10:41pm ET; game state only, no turn).
+/// - Early strike: the core unit can be trained, N core units are out (the opening's barbarian hunters), and the plan's K
+///   cities are founded (or there's no room for more).
+/// - Late strike: the core's tech or the upgrade tech is known or can be researched now (its prerequisites in), the plan's
+///   K cities are founded (or no room), and the treasury holds half the upgrade bill.
+bool CvGrandStrategyAI::IsStrikeEconomyReady() const
+{
+	const CvStrikePlan& kPlan = GetStrikePlan();
+	if (!m_pPlayer || !kPlan.bValid || kPlan.eCoreClass == NO_UNITCLASS)
+		return false;
+	const bool bCitiesDone = m_pPlayer->getNumCities() >= kPlan.iMaxCitiesBeforeStrike || m_pPlayer->IsBoxedInForSettling();
+	if (!kPlan.bLateStrike)
+	{
+		const UnitTypes eCore = m_pPlayer->GetSpecificUnitType(kPlan.eCoreClass);
+		return eCore != NO_UNIT && m_pPlayer->canTrainUnit(eCore, false, false, /*bIgnoreCost*/ true) &&
+			CountStrikeClassLine(kPlan.eCoreClass) >= kPlan.iCoreBeforeSettler && bCitiesDone;
+	}
+	const TechTypes eKeyTech = (kPlan.eUpgradeTech != NO_TECH) ? kPlan.eUpgradeTech : NO_TECH;
+	bool bTechInReach = true;
+	if (eKeyTech != NO_TECH)
+		bTechInReach = GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eKeyTech) || m_pPlayer->GetPlayerTechs()->CanResearch(eKeyTech);
+	return bTechInReach && bCitiesDone && m_pPlayer->GetTreasury()->GetGold() >= kPlan.iEconomyGoldTarget;
+}
+
+/// Army-ready, BUILDUP to WAR (game state only): the upgrade tech known (or none); core units at the target (pre-built units
+/// that upgrade into the core count); support and always-brought siege at their targets (upgraded units count); and the
+/// treasury covers the upgrades still to do (units of the pre-build, core and support lines whose upgrade the plan's tech
+/// unlocks, iUpgradeGoldPerUnit each). War adds its own check: 2+ melee that can take a city, a target in reach.
+bool CvGrandStrategyAI::IsStrikeArmyReady(int* piUpgradeBill) const
+{
+	const CvStrikePlan& kPlan = GetStrikePlan();
+	if (piUpgradeBill)
+		*piUpgradeBill = 0;
+	if (!m_pPlayer || !kPlan.bValid || kPlan.eCoreClass == NO_UNITCLASS)
+		return false;
+	if (kPlan.eUpgradeTech != NO_TECH && !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(kPlan.eUpgradeTech))
+		return false;
+	const int iPreBuild = (kPlan.ePreBuildClass != NO_UNITCLASS) ? m_pPlayer->getUnitClassCount(kPlan.ePreBuildClass) : 0;
+	if (CountStrikeClassLine(kPlan.eCoreClass) + iPreBuild < kPlan.iCoreTarget)
+		return false;
+	if (CountStrikeClassLine(kPlan.eSupportClass) < kPlan.iSupportTarget)
+		return false;
+	if (kPlan.eSiegeClass != NO_UNITCLASS && kPlan.iSiegeTarget > 0 && !kPlan.bSiegeOnlyIfWalled &&
+		CountStrikeClassLine(kPlan.eSiegeClass) < kPlan.iSiegeTarget)
+		return false;
+	// the upgrade bill: units still in a class the plan's tech upgrades (pre-build, core or support line)
+	int iBill = 0;
+	if (kPlan.eUpgradeTech != NO_TECH)
+	{
+		const UnitClassTypes aeLines[3] = { kPlan.ePreBuildClass, kPlan.eCoreClass, kPlan.eSupportClass };
+		for (int i = 0; i < 3; i++)
+		{
+			const UnitTypes eUnit = (aeLines[i] != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(aeLines[i]) : NO_UNIT;
+			CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+			if (!pkUnit)
+				continue;
+			bool bUpgradedByTech = false;
+			for (int iClass = 0; iClass < GC.getNumUnitClassInfos() && !bUpgradedByTech; iClass++)
+			{
+				if (!pkUnit->GetUpgradeUnitClass(iClass))
+					continue;
+				const UnitTypes eTo = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
+				bUpgradedByTech = eTo != NO_UNIT && GC.getUnitInfo(eTo)->GetPrereqAndTech() == (int)kPlan.eUpgradeTech;
+			}
+			if (bUpgradedByTech)
+				iBill += m_pPlayer->getUnitClassCount(aeLines[i]) * kPlan.iUpgradeGoldPerUnit;
+		}
+	}
+	if (piUpgradeBill)
+		*piUpgradeBill = iBill;
+	return m_pPlayer->GetTreasury()->GetGold() >= iBill;
 }
 
 /// In the strike window now: within its turns, and the spike's tech is known (the window follows the tech when research

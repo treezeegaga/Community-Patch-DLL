@@ -33454,7 +33454,6 @@ static const CandidateFixInfo kCandidateFixes[] = {
 	{"EarlyStrikeAggressor", false},
 	{"Spoiler", false},
 	{"LateStrike", false},
-	{"LateStrikePlans", false},
 };
 // one line per flag, and room in the masks
 typedef char ABTestFixTableMatchesEnum[(sizeof(kCandidateFixes) / sizeof(kCandidateFixes[0]) == NUM_CANDIDATE_FIXES) ? 1 : -1];
@@ -33924,8 +33923,9 @@ bool CvPlayer::IsLateStrikeCiv() const
 		return false;
 	if (GetEarlyStrikeCoreClass() != NO_UNITCLASS) // an early-spike civ: EarlyStrike's book
 		return false;
+	// Personality's plan says late strike (economy first): its expert late rows, or the data default for a spike after T30
 	const CvStrikePlan& kStrike = GetGrandStrategyAI()->GetStrikePlan();
-	return kStrike.bValid && kStrike.iOpenTurn > 0;
+	return kStrike.bValid && kStrike.bLateStrike && kStrike.iOpenTurn > 0;
 }
 
 /// LateStrike: from the build-up (15 turns Standard before the window opens) to the declaration (or the plan's
