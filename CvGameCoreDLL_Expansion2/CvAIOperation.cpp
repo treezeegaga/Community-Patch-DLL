@@ -511,14 +511,55 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 	if (!pMusterPlot || !pTargetPlot || pArmy == NULL)
 		return -1;
 
+	// AI_AB_TEST (the strike all in; the lead, Nov 7, the user's Marrakesh: the whole army went): the strike's own land attack
+	// takes every strike field unit it can recruit. The formation's slots are filled first, so its composition decides who
+	// goes in front; the rest go into extra optional slots (CvArmyAI::AddExtraSlot). Rapid responses on the target's landmass
+	// give way. bullyabort26 1A46A642 and 1A5C4C1E: the strike's first attack recruited 3-5 of a 10-unit field army, waited
+	// for more and timed out after 21 turns, 9-10 tiles from the city
+	CvPlayerAI& kOwner = GET_PLAYER(m_eOwner);
+	const bool bStrikeAllIn = m_eType == AI_OPERATION_CITY_ATTACK_LAND && m_eEnemy != NO_PLAYER && kOwner.isMajorCiv() &&
+		kOwner.GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy);
+	CvMultiUnitFormationInfo* pkArmyFormation = pArmy->GetFormation();
+	const size_t iFormationSlots = pkArmyFormation ? pkArmyFormation->getNumFormationSlotEntries() : pArmy->GetNumFormationEntries();
+
 	vector<size_t> freeSlots = pArmy->GetOpenSlots(false);
 	//anything to do?
-	if (freeSlots.empty())
+	if (freeSlots.empty() && !bStrikeAllIn)
 		return 0;
+
+	if (bStrikeAllIn)
+	{
+		// rapid responses give way: their units on the target's landmass leave them (CvArmyAI::RemoveUnit; the operation ends
+		// when its army is empty)
+		std::vector< std::pair<int, int> > vFreed;	// (army, unit)
+		for (size_t iOp = 0; iOp < kOwner.getNumAIOperations(); iOp++)
+		{
+			CvAIOperation* pOtherOp = kOwner.getAIOperationByIndex(iOp);
+			if (!pOtherOp || pOtherOp == this || pOtherOp->GetOperationType() != AI_OPERATION_RAPID_RESPONSE)
+				continue;
+			CvArmyAI* pOtherArmy = pOtherOp->GetArmy(0);
+			for (CvUnit* pUnit = pOtherArmy ? pOtherArmy->GetFirstUnit() : NULL; pUnit; pUnit = pOtherArmy->GetNextUnit(pUnit))
+			{
+				if (pUnit->getDomainType() == DOMAIN_LAND && pUnit->plot()->getLandmass() == pTargetPlot->getLandmass())
+					vFreed.push_back(std::make_pair(pOtherArmy->GetID(), pUnit->GetID()));
+			}
+		}
+		for (size_t i = 0; i < vFreed.size(); i++)
+		{
+			CvArmyAI* pOtherArmy = kOwner.getArmyAI(vFreed[i].first);
+			if (pOtherArmy)
+				pOtherArmy->RemoveUnit(vFreed[i].second, false);
+		}
+		if (!vFreed.empty() && GC.getLogging() && GC.getAILogging())
+			LogOperationSpecialMessage(CvString::format("StrikeAllIn: %d units leave rapid responses for the strike's attack", (int)vFreed.size()));
+	}
 
 	vector<pair<size_t,CvFormationSlotEntry>> freeSlotInfo;
 	for (size_t i = 0; i < freeSlots.size(); i++)
 		freeSlotInfo.push_back( make_pair(freeSlots[i],pArmy->GetSlotInfo(freeSlots[i])) );
+	// a wildcard entry, so every unit that could go is a candidate (the extra slots take it below)
+	if (bStrikeAllIn)
+		freeSlotInfo.push_back( make_pair(pArmy->GetNumFormationEntries(), CvFormationSlotEntry()) );
 
 	//simple heuristic
 	bool bOcean = pTargetPlot->getLandmass() != pMusterPlot->getLandmass();
@@ -585,6 +626,10 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 		CvArmyFormationSlot* pSlot = pArmy->GetSlotStatus(iI);
 		ASSERT(pSlot != NULL, "GetSlotStatus returned null - array bounds issue");
 
+		// (the strike all in) the extra slots past the formation's own are filled below, never by slot type
+		if (iI >= iFormationSlots)
+			continue;
+
 		if (pSlot->IsFree())
 		{
 			OperationSlot opSlot(m_iID, pArmy->GetID(), iI);
@@ -598,6 +643,36 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 					m_viListOfUnitsWeStillNeedToBuild.push_back(opSlot);
 			}
 		}
+	}
+
+	// (the strike all in) every other land combat unit that could go: a free extra slot, else a new one. No unit to build
+	// is asked for these
+	if (bStrikeAllIn)
+	{
+		int iExtra = 0;
+		for (size_t iC = 0; iC < choices.size(); iC++)
+		{
+			CvUnit* pExtra = kOwner.getUnit(choices[iC].option);
+			if (!pExtra || pExtra->getArmyID() != -1 || pExtra->getDomainType() != DOMAIN_LAND || !pExtra->IsCombatUnit())
+				continue;
+			size_t iSlot = pArmy->GetNumFormationEntries();
+			for (size_t iI = iFormationSlots; iI < pArmy->GetNumFormationEntries(); iI++)
+			{
+				if (pArmy->GetSlotStatus(iI)->IsFree())
+				{
+					iSlot = iI;
+					break;
+				}
+			}
+			if (iSlot == pArmy->GetNumFormationEntries())
+				iSlot = pArmy->AddExtraSlot();
+			// (AddUnit may upgrade the unit, replacing it: don't touch pExtra after)
+			pArmy->AddUnit(pExtra->GetID(), (int)iSlot, false);
+			iExtra++;
+		}
+		if (iExtra > 0 && GC.getLogging() && GC.getAILogging())
+			LogOperationSpecialMessage(CvString::format("StrikeAllIn: %d more units join past the formation's %d slots", iExtra, (int)iFormationSlots));
+		iCount += iExtra;
 	}
 
 	return iCount;

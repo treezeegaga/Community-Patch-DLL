@@ -344,6 +344,15 @@ void CvArmyAI::SetFormation(MultiunitFormationTypes eFormation)
 }
 
 /// How many slots are there in this formation if filled
+/// AI_AB_TEST (the strike all in; the lead, Nov 7: the strike's own attack takes every strike field unit, no formation cap):
+/// an optional slot past the formation's own. GetSlotInfo reads it as the default entry (no unit AI: a wildcard, not
+/// required); the operation fills it directly, never through FindBestFitReserveUnit
+size_t CvArmyAI::AddExtraSlot()
+{
+	m_FormationEntries.push_back(CvArmyFormationSlot(-1, false));
+	return m_FormationEntries.size() - 1;
+}
+
 size_t CvArmyAI::GetNumFormationEntries() const
 {
 	return m_FormationEntries.size();

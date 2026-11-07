@@ -155,6 +155,7 @@ public:
 	CvPlot* GetGoalPlot() const;
 
 	// Unit handling
+	size_t AddExtraSlot();	// AI_AB_TEST (the strike all in): an optional slot past the formation's own (GetSlotInfo reads it as a wildcard)
 	void AddUnit(int iUnitId, int iSlotNum, bool bIsRequired);
 	int RemoveUnit(int iUnitToRemoveID, bool bTempOnly);
 	CvUnit* GetFirstUnit();

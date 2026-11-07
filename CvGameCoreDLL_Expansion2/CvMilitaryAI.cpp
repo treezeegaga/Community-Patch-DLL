@@ -2460,6 +2460,26 @@ static void GetStrikeFieldUnits(const CvPlayer* pPlayer, std::vector<const CvUni
 	}
 }
 
+/// AI_AB_TEST (the lead, Nov 7: "a declaration means what will march") the field units an attack on this city would take:
+/// healthy enough for an operation (AI_OPERATIONAL_PERCENT_HEALTH_FOR_OPERATION, as recruitment) and on the city's landmass
+static void FilterStrikeMarchingUnits(const CvCity* pCity, std::vector<const CvUnit*>& vUnits)
+{
+	if (!pCity)
+		return;
+	const int iLandmass = pCity->plot()->getLandmass();
+	std::vector<const CvUnit*> vKeep;
+	for (size_t i = 0; i < vUnits.size(); i++)
+	{
+		const CvUnit* pUnit = vUnits[i];
+		if (pUnit->GetCurrHitPoints() * 100 < pUnit->GetMaxHitPoints() * /*70*/ GD_INT_GET(AI_OPERATIONAL_PERCENT_HEALTH_FOR_OPERATION))
+			continue;
+		if (pUnit->plot()->getLandmass() != iLandmass)
+			continue;
+		vKeep.push_back(pUnit);
+	}
+	vUnits.swap(vKeep);
+}
+
 /// the user: "only start the attack if the city is takeable": the land combat units we have (siege included, as they are)
 /// against the strike's target's nearest city. No target city: false
 /// (the lead's review of 677f7a4: multiplayer sync) the stored answer, computed in UpdateStrikeState during our own turn
@@ -2481,6 +2501,7 @@ bool CvMilitaryAI::ComputeStrikeTargetTakeable() const
 		return false;
 	std::vector<const CvUnit*> vUnits;
 	GetStrikeFieldUnits(m_pPlayer, vUnits);
+	FilterStrikeMarchingUnits(pCity, vUnits);	// what will march (the strike's attack takes all of them: StrikeAllIn)
 	return StrikeUnitsTakeCity(vUnits, pCity);
 }
 
