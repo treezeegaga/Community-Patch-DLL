@@ -1003,6 +1003,9 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 						strLogString.Format("Zone %d, no melee units to capture %s", pZone ? pZone->GetZoneID() : -1, pCity->getNameNoSpace().c_str());
 						LogTacticalMessage(strLogString);
 					}
+					//AI_AB_TEST (candidate, flag SiegeCapturer): bring melee units for next turn's capture
+					if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_CAPTURER))
+						MoveCapturersToCity(pCity);
 
 					continue;
 				}
@@ -1078,6 +1081,14 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 				// Did it work?  If so, don't need a temporary dominance zone if had one here
 				if (pPlot->getOwner() == m_pPlayer->GetID())
 					DeleteFocusArea(pPlot);
+				//AI_AB_TEST (candidate, flag SiegeCapturer): the ranged units brought it to a third of its HP or less and no melee unit
+				//could strike it: bring melee units for next turn's capture
+				else if (iMeleeCount == 0 && m_pPlayer->UsesCandidateAI(FIX_SIEGE_CAPTURER) && pPlot->getPlotCity())
+				{
+					CvCity* pCityLeft = pPlot->getPlotCity();
+					if ((pCityLeft->GetMaxHitPoints() - pCityLeft->getDamage()) * 3 <= pCityLeft->GetMaxHitPoints())
+						MoveCapturersToCity(pCityLeft);
+				}
 
 				//do we have embarked units we need to put ashore
 				if (FindEmbarkedUnitsAroundTarget(pPlot, 4))
@@ -1085,6 +1096,45 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 			}
 		}
 	}
+}
+
+/// AI_AB_TEST (candidate, flag SiegeCapturer; the user: "persia got addis abbaba to 0 health, but had no melee to capture and
+/// didnt move their closest immortal to help"): a city at war with us, down to a third of its HP or less, that no melee unit
+/// of ours could strike this turn. Up to two of our nearest free melee land units (under tactical control this turn, not
+/// garrisons, not embarked, able to capture, within 8 tiles) move toward it if they can get there within 4 turns, so the
+/// capture can come before the city heals. Units in an operation's army are moved by their operation
+void CvTacticalAI::MoveCapturersToCity(CvCity* pCity)
+{
+	if (!pCity || pCity->getOwner() == m_pPlayer->GetID() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(pCity->getTeam()))
+		return;
+	std::vector< std::pair<int, int> > vCandidates;	// (distance, unit ID)
+	for (list<int>::const_iterator it = m_CurrentTurnUnits.begin(); it != m_CurrentTurnUnits.end(); ++it)
+	{
+		CvUnit* pUnit = m_pPlayer->getUnit(*it);
+		if (!pUnit || pUnit->TurnProcessed() || !pUnit->canMove() || pUnit->getDomainType() != DOMAIN_LAND || !pUnit->IsCombatUnit() ||
+			pUnit->IsCanAttackRanged() || pUnit->isNoCapture() || pUnit->isEmbarked() || pUnit->IsGarrisoned())
+			continue;
+		const int iDistance = plotDistance(pUnit->getX(), pUnit->getY(), pCity->getX(), pCity->getY());
+		if (iDistance <= 8)
+			vCandidates.push_back(std::make_pair(iDistance, pUnit->GetID()));
+	}
+	std::sort(vCandidates.begin(), vCandidates.end());
+	int iSent = 0;
+	for (size_t i = 0; i < vCandidates.size() && iSent < 2; i++)
+	{
+		CvUnit* pUnit = m_pPlayer->getUnit(vCandidates[i].second);
+		if (pUnit && MoveToEmptySpaceNearTarget(pUnit, pCity->plot(), DOMAIN_LAND, 4))
+		{
+			if (GC.getLogging() && GC.getAILogging())
+				LogTacticalMessage(CvString::format("SiegeCapturer: %s %d moving to %s (city HP %d, %d tiles away)", pUnit->getUnitInfo().GetDescription(),
+					pUnit->GetID(), pCity->getNameNoSpace().c_str(), pCity->GetMaxHitPoints() - pCity->getDamage(), vCandidates[i].first));
+			UnitProcessed(pUnit->GetID());
+			iSent++;
+		}
+	}
+	if (iSent == 0 && GC.getLogging() && GC.getAILogging())
+		LogTacticalMessage(CvString::format("SiegeCapturer: no free melee unit within 4 turns of %s (city HP %d; %d candidates within 8 tiles)",
+			pCity->getNameNoSpace().c_str(), pCity->GetMaxHitPoints() - pCity->getDamage(), (int)vCandidates.size()));
 }
 
 /// Assign a unit to capture an undefended barbarian camp

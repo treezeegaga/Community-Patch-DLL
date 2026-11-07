@@ -324,6 +324,8 @@ enum CandidateFixTypes
 	FIX_STRIKE_LIST,		// Economy (the user: "literally just follow the list"): before its strike, a strike civ's capital builds the plan's
 							// expert list item by item (a lost unit rebuilt in its place), then the plan's army; its other cities the army;
 							// research follows the plan's list; the first tree is the plan's. Personality's rows carry the lists. Off in the bundle
+	FIX_SIEGE_CAPTURER,		// War (the user: Persia brought Addis Ababa to 0 HP with no melee to take it): a city at war down to a third of
+							// its HP with no melee unit able to strike it this turn draws our two nearest free melee units (4 turns). Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
