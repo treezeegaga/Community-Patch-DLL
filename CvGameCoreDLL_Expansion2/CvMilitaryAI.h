@@ -284,6 +284,7 @@ public:
 	bool IsStrikeDeclarationBlocked(PlayerTypes eOn) const;	// before the strike (PREP, BUILDUP) no declaration of ours but the strike's on its target, when ready
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeClassBuildable(UnitClassTypes eClass) const;	// trainable now, or but for resources we own and have in use
+	int GetStrikeFormationMissingRequired() const;	// the land city attack formation's required slots our field units can't fill
 	bool IsStrikeBuildupStalled() const;	// no unit affordable, income negative, no income item: the build-up can't grow
 	CvString GetStrikeReadinessGaps() const;	// what keeps the build-up from as ready as it gets (logging)
 	bool HasStrikeCityAttackUnderWay(PlayerTypes eEnemy) const;	// a city attack operation against this player (not a rapid response)

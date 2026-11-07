@@ -35517,7 +35517,9 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// extra unit is siege (the plan's class, else the Catapult line) while we have fewer siege than ranged support, else the
 	// ranged support; the core only if neither is trainable
 	UnitTypes eArmyPick = eArmy;
-	if (bTooWeak && !bShort && bMoreCore)
+	// (the lead's review of ae8e9ae) the capturers first: with fewer than 3 melee units that can take a city the core comes, as the
+	// take-the-city math needs one left after the defenders tie ours up
+	if (bTooWeak && !bShort && bMoreCore && GetMilitaryAI()->GetEarlyStrikeMeleeUnits() >= CvMilitaryAI::EARLY_STRIKE_MELEE_MIN)
 	{
 		const UnitClassTypes eSiegeLine = (kPlan.eSiegeClass != NO_UNITCLASS) ? kPlan.eSiegeClass : (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CATAPULT", true);
 		const UnitTypes eSiegeUnit = (eSiegeLine != NO_UNITCLASS) ? GetStrikeListTrainableOnLine(*this, eSiegeLine, pCity) : NO_UNIT;

@@ -2237,11 +2237,13 @@ PlayerTypes CvMilitaryAI::FindStrikeCityState(bool bUnwalledOnly, PlayerTypes eE
 	return eBest;
 }
 
-/// AI_AB_TEST (EarlyStrike, LateStrike): one attacker type in the strike's take-the-city math. Per hit: the city's damage
-/// x100 with the garrison's share off, and the hit's damage to the attacker x100
+/// AI_AB_TEST (EarlyStrike, LateStrike): one attacker type in the strike's take-the-city math. Per hit, x100: the whole hit,
+/// and while the city's garrison lives, the city's part and the garrison's share (CORE_GARRISON_DAMAGE_ABSORPTION)
 struct StrikeCityAttacker
 {
-	int iCityDamage100;
+	int iFullDamage100;		// no garrison (or it's dead)
+	int iCityDamage100;		// with the garrison alive: the city's part
+	int iGarrisonDamage100;	// and the garrison's share
 	int iSelfDamage100;
 	bool bMelee;		// a melee hit (every other turn: it takes the city's counter-damage)
 	bool bHitsCity;		// the tactical AI makes this attack: ranged and siege always, melee only if it isn't close to suicide
@@ -2258,21 +2260,31 @@ static bool StrikeMeleeHitsCity(int iTotalDamage, int iSelfDamage, int iMaxHP)
 	return iTotalDamage > iSelfDamage || (iTotalDamage * 2 > iSelfDamage && iMaxHP - iSelfDamage > iMaxHP / 2);
 }
 
+/// the garrison the strike may count: only one we can see (the lead's review of ae8e9ae: fair play under the fog)
+static const CvUnit* StrikeVisibleGarrison(const CvCity* pCity, TeamTypes eTeam)
+{
+	return (pCity && pCity->plot()->isVisible(eTeam)) ? pCity->GetGarrisonedUnit() : NULL;
+}
+
 /// AI_AB_TEST (EarlyStrike, LateStrike; the user: "having a turn limit is bad. just calculate if you can take the city or
 /// not", "you probably want a little buffer"; the user's ruling, Nov 7: "my jaguars never attacked the city until the last
 /// hit. they killed units, pillaged, and soaked hits while 4 archers slowly brought the city down"): can these attackers
-/// take the city, the way our tactical AI fights a siege?
+/// take the city, the way our tactical AI fights a siege? Turn by turn:
 /// - the city's damage comes from ranged and siege units each turn, and from a melee unit's hit only where the tactical AI
-///   makes it (StrikeMeleeHitsCity), every other turn; the garrison's share of each hit is off (CORE_GARRISON_DAMAGE_ABSORPTION);
-/// - the city heals CITY_HIT_POINTS_HEALED_PER_TURN a turn (plus its population in VP);
-/// - takeable only when (damage - heal) x 13 covers its hit points: the tactical AI's own siege gate (CvTacticalAI, "too
-///   early for attacking"), CP's rule for when units attack the city, not a horizon on the strike. 18BE1E3E: the math said
-///   "about 3-4 turns" for La Venta (defence 23), the tactical AI made 0 melee attacks and called it too early 33 turns;
+///   makes it (StrikeMeleeHitsCity), every other turn;
+/// - while the garrison lives it takes its share of each hit; once our hits have killed it, the city takes them whole (the
+///   lead's review of ae8e9ae: the Warrior in Marrakesh dies by about turn 3);
+/// - the city heals CITY_HIT_POINTS_HEALED_PER_TURN a turn (plus its population in VP), nothing while blockaded, as the
+///   tactical AI's gate counts it;
+/// - takeable only within iMaxTurns: 13, the tactical AI's own siege gate (CvTacticalAI, "too early for attacking"), CP's
+///   rule for when units attack the city, not a horizon on the strike; 3 in an enemy-dominated zone (SiegeDominated).
+///   18BE1E3E: the old math said "about 3-4 turns" for La Venta (defence 23), the tactical AI made 0 melee attacks and
+///   called it too early 33 turns;
 /// - a melee unit to take the last hit (the capturer; SiegeCapturer brings it up);
 /// - over the turns it takes, the city's strike (one a turn) and the melee counter-damage cost less than the army's hit
 ///   points less one unit;
 /// - a buffer: our damage at STRIKE_TAKE_DAMAGE_PERCENT, the city's damage to us at STRIKE_TAKE_LOSS_PERCENT.
-static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector<StrikeCityAttacker>& vArmy, int* piTurnsNeeded)
+static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector<StrikeCityAttacker>& vArmy, int iGarrisonHP, int iMaxTurns, int* piTurnsNeeded)
 {
 	if (piTurnsNeeded)
 		*piTurnsNeeded = -1;
@@ -2280,11 +2292,13 @@ static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector<StrikeCit
 		return false;
 	const CvSeeder kNoSeed;
 	const int iCityStrike100 = max(100, pCity->getStrengthValue(/*bForRangeStrike*/ true));
-	const int iCityHP = max(1, pCity->GetMaxHitPoints() - pCity->getDamage());
+	const int iCityMaxHP100 = max(1, pCity->GetMaxHitPoints()) * 100;
 	int iCityHeal = /*20 in CP, 8 in VP*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
 	if (MOD_BALANCE_VP)
 		iCityHeal += pCity->getPopulation();	// as the tactical AI's gate
-	int iDamage100 = 0, iSelfDamage100 = 0, iArmyHP = 0, iBestDefence100 = 0, iUnits = 0;
+	if (pCity->IsBlockadedWaterAndLand())
+		iCityHeal = 0;
+	int iFull100 = 0, iCity100 = 0, iGarrison100 = 0, iSelfDamage100 = 0, iArmyHP = 0, iBestDefence100 = 0, iUnits = 0;
 	bool bCapturer = false;
 	const int iUnitHP = 100;
 	for (size_t i = 0; i < vArmy.size(); i++)
@@ -2298,26 +2312,43 @@ static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector<StrikeCit
 		bCapturer = bCapturer || kA.bCaptures;
 		if (!kA.bHitsCity)
 			continue;	// a melee unit that won't hit the walls kills the field units, pillages and soaks hits
+		const int iDiv = kA.bMelee ? 2 : 1;
+		iFull100 += kA.iCount * kA.iFullDamage100 / iDiv;
+		iCity100 += kA.iCount * kA.iCityDamage100 / iDiv;
+		iGarrison100 += kA.iCount * kA.iGarrisonDamage100 / iDiv;
 		if (kA.bMelee)
-		{
-			iDamage100 += kA.iCount * kA.iCityDamage100 / 2;
 			iSelfDamage100 += kA.iCount * kA.iSelfDamage100 / 2;
-		}
-		else
-			iDamage100 += kA.iCount * kA.iCityDamage100;
 	}
 	if (iUnits == 0 || !bCapturer)
 		return false;
-	iDamage100 = iDamage100 * CvMilitaryAI::STRIKE_TAKE_DAMAGE_PERCENT / 100;
+	iFull100 = iFull100 * CvMilitaryAI::STRIKE_TAKE_DAMAGE_PERCENT / 100;
+	iCity100 = iCity100 * CvMilitaryAI::STRIKE_TAKE_DAMAGE_PERCENT / 100;
+	iGarrison100 = iGarrison100 * CvMilitaryAI::STRIKE_TAKE_DAMAGE_PERCENT / 100;
 	iSelfDamage100 = iSelfDamage100 * CvMilitaryAI::STRIKE_TAKE_LOSS_PERCENT / 100;
-	const int iNet100 = iDamage100 - iCityHeal * 100;
-	if (iNet100 <= 0)
-		return false;	// the city heals faster than we hurt it
-	const int iTurns = (iCityHP * 100 + iNet100 - 1) / iNet100;
+	int iHP100 = max(1, pCity->GetMaxHitPoints() - pCity->getDamage()) * 100;
+	int iGarrisonHP100 = max(0, iGarrisonHP) * 100;
+	int iTurns = -1;
+	for (int iTurn = 1; iTurn <= iMaxTurns; iTurn++)
+	{
+		if (iGarrisonHP100 > 0)
+		{
+			iHP100 -= iCity100;
+			iGarrisonHP100 -= iGarrison100;
+		}
+		else
+			iHP100 -= iFull100;
+		iHP100 += iCityHeal * 100;	// the heal counts every turn, as in the tactical AI's (damage - heal) x 13
+		if (iHP100 <= 0)
+		{
+			iTurns = iTurn;
+			break;
+		}
+		iHP100 = min(iHP100, iCityMaxHP100);
+	}
+	if (iTurns < 0)
+		return false;	// the city heals faster than we hurt it, or the tactical AI wouldn't start this siege
 	if (piTurnsNeeded)
 		*piTurnsNeeded = iTurns;
-	if (iTurns > CvMilitaryAI::STRIKE_TACTICAL_SIEGE_TURNS)
-		return false;	// the tactical AI wouldn't start this siege
 	const int iCityStrikeDamage100 = CvUnitCombat::DoDamageMath(iCityStrike100, max(100, iBestDefence100),
 		GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_MIN_DAMAGE), GD_INT_GET(RANGE_ATTACK_SAME_STRENGTH_POSSIBLE_EXTRA_DAMAGE), false, kNoSeed, 0);
 	const int iLoss = iTurns * (iCityStrikeDamage100 * CvMilitaryAI::STRIKE_TAKE_LOSS_PERCENT / 100 + iSelfDamage100) / 100;
@@ -2325,14 +2356,13 @@ static bool StrikeArmyTakesCity(const CvCity* pCity, const std::vector<StrikeCit
 }
 
 /// unit types and counts (the plan's army, as it will be) as attackers: the game's expected damage math (CvUnitCombat::
-/// DoDamageMath) against the city's defence, the garrison's share off as CvUnit::GetRangeCombatDamage takes it
-static void StrikeAttackersFromEntries(const CvCity* pCity, const std::vector< std::pair<const CvUnitEntry*, int> >& vEntries,
+/// DoDamageMath) against the city's defence, the garrison's share as CvUnit::GetRangeCombatDamage takes it
+static void StrikeAttackersFromEntries(const CvCity* pCity, const CvUnit* pGarrison, const std::vector< std::pair<const CvUnitEntry*, int> >& vEntries,
 	std::vector<StrikeCityAttacker>& vOut)
 {
 	const CvSeeder kNoSeed;
 	const int iCityDefence100 = max(100, pCity->getStrengthValue());
-	const CvUnit* pGarrison = pCity->GetGarrisonedUnit();
-	const int iGarrisonHP = (MOD_CORE_GARRISON_DAMAGE_ABSORPTION && pGarrison) ? pGarrison->GetMaxHitPoints() : 0;
+	const int iGarrisonMaxHP = (MOD_CORE_GARRISON_DAMAGE_ABSORPTION && pGarrison) ? pGarrison->GetMaxHitPoints() : 0;
 	const int iCityMaxHP = max(1, pCity->GetMaxHitPoints());
 	for (size_t i = 0; i < vEntries.size(); i++)
 	{
@@ -2366,7 +2396,9 @@ static void StrikeAttackersFromEntries(const CvCity* pCity, const std::vector< s
 		else
 			continue;
 		// the garrison's share (CvUnit::GetRangeCombatDamage, getMeleeCombatDamageCity)
-		kA.iCityDamage100 = iGarrisonHP > 0 ? iTotal100 - (iTotal100 * 2 * iGarrisonHP) / (iCityMaxHP + 2 * iGarrisonHP) : iTotal100;
+		kA.iFullDamage100 = iTotal100;
+		kA.iGarrisonDamage100 = iGarrisonMaxHP > 0 ? (iTotal100 * 2 * iGarrisonMaxHP) / (iCityMaxHP + 2 * iGarrisonMaxHP) : 0;
+		kA.iCityDamage100 = iTotal100 - kA.iGarrisonDamage100;
 		vOut.push_back(kA);
 	}
 }
@@ -2409,8 +2441,9 @@ bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNee
 	if (vArmy.empty())
 		return true;
 	std::vector<StrikeCityAttacker> vAttackers;
-	StrikeAttackersFromEntries(pCity, vArmy, vAttackers);
-	return StrikeArmyTakesCity(pCity, vAttackers, piTurnsNeeded);
+	const CvUnit* pGarrison = StrikeVisibleGarrison(pCity, m_pPlayer->getTeam());
+	StrikeAttackersFromEntries(pCity, pGarrison, vArmy, vAttackers);
+	return StrikeArmyTakesCity(pCity, vAttackers, pGarrison ? pGarrison->GetCurrHitPoints() : 0, STRIKE_TACTICAL_SIEGE_TURNS, piTurnsNeeded);
 }
 
 /// the field army: our land combat units but the garrisons (the lead's review: a city's garrison doesn't march)
@@ -2481,6 +2514,8 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 		*piTurnsNeeded = -1;
 	if (!pCity)
 		return false;
+	// the garrison only if we can see it (fog: the city's own strength still has it)
+	const CvUnit* pGarrison = StrikeVisibleGarrison(pCity, m_pPlayer->getTeam());
 	std::vector<StrikeCityAttacker> vMelee, vRanged;
 	for (size_t i = 0; i < vUnits.size(); i++)
 	{
@@ -2489,11 +2524,13 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 			continue;
 		int iSelfDamage = 0, iGarrisonDamage = 0;
 		const int iCityDamage = TacticalAIHelpers::GetSimulatedDamageFromAttackOnCity(pCity, pUnit, pUnit->plot(), iSelfDamage, iGarrisonDamage,
-			/*bIgnoreUnitAdjacencyBoni*/ true, 0, 0, 0, /*bQuickAndDirty*/ true);
+			/*bIgnoreUnitAdjacencyBoni*/ true, 0, 0, 0, /*bQuickAndDirty*/ true, /*bOverrideGarrison*/ true, pGarrison);
 		StrikeCityAttacker kA;
 		kA.iCount = 1;
 		kA.iDefence100 = pUnit->getUnitInfo().GetCombat() * 100;
+		kA.iFullDamage100 = (iCityDamage + iGarrisonDamage) * 100;	// the share is taken off the whole hit
 		kA.iCityDamage100 = iCityDamage * 100;
+		kA.iGarrisonDamage100 = iGarrisonDamage * 100;
 		kA.iSelfDamage100 = iSelfDamage * 100;
 		kA.bMelee = !pUnit->IsCanAttackRanged();
 		kA.bCaptures = kA.bMelee && !pUnit->isNoCapture();
@@ -2537,27 +2574,56 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 				iDefenders++;
 		}
 	}
-	// one of ours per defender: melee first (the one that does the least to the walls), then ranged (the weakest)
+	// one of ours per defender: melee first (the one that does the least to the walls), then ranged (the weakest). Never the
+	// last capturer while a ranged unit can take the defender instead (the lead's review of ae8e9ae: 3 melee against 3
+	// defenders left no capturer however many ranged units came, and the build-up trained only ranged and siege)
 	for (int iTied = 0; iTied < iDefenders; iTied++)
 	{
-		std::vector<StrikeCityAttacker>* pGroup = !vMelee.empty() ? &vMelee : (!vRanged.empty() ? &vRanged : NULL);
+		int iCapturers = 0;
+		for (size_t j = 0; j < vMelee.size(); j++)
+			iCapturers += vMelee[j].bCaptures ? 1 : 0;
+		bool bMeleeOk = false;	// a melee unit can go without taking the last capturer
+		for (size_t j = 0; j < vMelee.size() && !bMeleeOk; j++)
+			bMeleeOk = !vMelee[j].bCaptures || iCapturers > 1;
+		std::vector<StrikeCityAttacker>* pGroup = (bMeleeOk || (!vMelee.empty() && vRanged.empty())) ? &vMelee : (!vRanged.empty() ? &vRanged : NULL);
 		if (!pGroup)
 			break;
-		size_t iLeast = 0;
-		for (size_t j = 1; j < pGroup->size(); j++)
+		int iLeast = -1;
+		for (size_t j = 0; j < pGroup->size(); j++)
 		{
-			const int iThis = (*pGroup)[j].bHitsCity ? (*pGroup)[j].iCityDamage100 : 0;
-			const int iBest = (*pGroup)[iLeast].bHitsCity ? (*pGroup)[iLeast].iCityDamage100 : 0;
+			if (pGroup == &vMelee && bMeleeOk && (*pGroup)[j].bCaptures && iCapturers <= 1)
+				continue;	// keep the last capturer
+			const int iThis = (*pGroup)[j].bHitsCity ? (*pGroup)[j].iFullDamage100 : 0;
+			const int iBest = iLeast >= 0 ? ((*pGroup)[iLeast].bHitsCity ? (*pGroup)[iLeast].iFullDamage100 : 0) : INT_MAX;
 			if (iThis < iBest)
-				iLeast = j;
+				iLeast = (int)j;
 		}
+		if (iLeast < 0)
+			break;
 		pGroup->erase(pGroup->begin() + iLeast);
 	}
 	std::vector<StrikeCityAttacker> vArmy(vMelee);
 	vArmy.insert(vArmy.end(), vRanged.begin(), vRanged.end());
 	if (vArmy.empty())
 		return false;
-	return StrikeArmyTakesCity(pCity, vArmy, piTurnsNeeded);
+	// (the lead's review of ae8e9ae) the tactical AI's zone rule: a city in an enemy-dominated zone (land, and water if any) isn't
+	// attacked, unless SiegeDominated gives the units at an enemy major's walls a look: 3 or more of them and a kill in 3 turns
+	int iMaxTurns = STRIKE_TACTICAL_SIEGE_TURNS;
+	CvTacticalAnalysisMap* pMap = m_pPlayer->GetTacticalAI()->GetTacticalAnalysisMap();
+	CvTacticalDominanceZone* pLandZone = pMap ? pMap->GetZoneByCity(pCity, false) : NULL;
+	CvTacticalDominanceZone* pWaterZone = pMap ? pMap->GetZoneByCity(pCity, true) : NULL;
+	// (no land zone: unknown, no block; before the war the target's units aren't enemy strength, so this bites at war)
+	const bool bLandEnemy = pLandZone && pLandZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY;
+	const bool bWaterEnemy = !pWaterZone || pWaterZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY;
+	if (bLandEnemy && bWaterEnemy && !pCity->isInDangerOfFalling())
+	{
+		if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_DOMINATED) && eOwner < MAX_MAJOR_CIVS && GET_PLAYER(eOwner).isMajorCiv() &&
+			GET_TEAM(eOurTeam).isAtWar(pCity->getTeam()) && vArmy.size() >= 3)
+			iMaxTurns = 3;
+		else
+			return false;
+	}
+	return StrikeArmyTakesCity(pCity, vArmy, pGarrison ? pGarrison->GetCurrHitPoints() : 0, iMaxTurns, piTurnsNeeded);
 }
 
 /// a strike's declaration waits while one of our cities is in danger of falling (a third party at war with us: the lead,
@@ -2844,11 +2910,17 @@ bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 /// not any operation outside our land (a rapid response aimed at the target's plot isn't the strike's attack)
 bool CvMilitaryAI::HasStrikeCityAttackUnderWay(PlayerTypes eEnemy) const
 {
-	static const AIOperationTypes aeTypes[3] = { AI_OPERATION_CITY_ATTACK_LAND, AI_OPERATION_CITY_ATTACK_NAVAL, AI_OPERATION_CITY_ATTACK_COMBINED };
-	for (int i = 0; i < 3; i++)
+	// every operation, not the first of a type (the lead's review of ae8e9ae: a finished first one hid a live second one)
+	for (size_t i = 0; i < m_pPlayer->getNumAIOperations(); i++)
 	{
-		CvAIOperation* pOp = m_pPlayer->getFirstAIOperationOfType(aeTypes[i], eEnemy);
-		if (pOp && pOp->GetOperationState() != AI_OPERATION_STATE_SUCCESSFUL_FINISH)
+		CvAIOperation* pOp = m_pPlayer->getAIOperationByIndex(i);
+		if (!pOp || pOp->GetEnemy() != eEnemy)
+			continue;
+		const AIOperationTypes eType = pOp->GetOperationType();
+		if (eType != AI_OPERATION_CITY_ATTACK_LAND && eType != AI_OPERATION_CITY_ATTACK_NAVAL && eType != AI_OPERATION_CITY_ATTACK_COMBINED)
+			continue;
+		const AIOperationState eState = pOp->GetOperationState();
+		if (eState != AI_OPERATION_STATE_SUCCESSFUL_FINISH && eState != AI_OPERATION_STATE_ABORTED)
 			return true;
 	}
 	return false;
@@ -3383,6 +3455,20 @@ void CvMilitaryAI::UpdateStrikeState()
 		}
 	}
 	RefreshStrikeSnapshot();	// the target is settled for this turn: the exits and readiness below read it
+	// (the lead's review of ae8e9ae) the siege the build-up brings (GetTimingBuildupSiegeTarget, and its tech first in research)
+	// also when the plan's army looks strong enough but the units we have, its counts met, can't take the target: the city's
+	// damage comes from ranged and siege units, and with no ranged line and no siege tech the build-up would train only melee
+	if (eNew == STRIKE_BUILDUP && m_iStrikeSiege == 0 && !m_bTakeable && m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady())
+	{
+		const PlayerTypes eSiegeFor = (m_eTimingBuildupTarget != NO_PLAYER) ? m_eTimingBuildupTarget : GetStrikeCityStateTarget();
+		if (eSiegeFor != NO_PLAYER && HaveStrikeLandAttackTarget(eSiegeFor))
+		{
+			m_iStrikeSiege = 1;
+			if (GC.getLogging() && GC.getAILogging())
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: the plan's counts are met and our army can't take %s's city; the build-up brings siege (%s)",
+					GET_PLAYER(eSiegeFor).getCivilizationShortDescription(), bEarly ? "EarlyStrike" : "LateStrike"));
+		}
+	}
 	const bool bAtCSWar = eCS != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam());
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	const UnitClassTypes eCoreClass = bEarly ? GetEarlyStrikeCore() : kPlan.eCoreClass;
@@ -3402,9 +3488,11 @@ void CvMilitaryAI::UpdateStrikeState()
 		// so the army never becomes ready): no unit affordable, the army not ready and not as ready as it gets (takeable but the
 		// upgrade bill unpaid or the field short counts too; the lead's next review), income negative, and the capital can't
 		// build an income item (a Market, a Caravan). The strike ends and CP's economy and disbanding resume
-		// (STOP 18FA5DFB) not while the target is takeable: a stalled build-up with a takeable target is as ready as it gets
-		// (IsStrikeAsReadyAsItGets) and declares, or waits for home to be safe
-		else if (eNew == STRIKE_BUILDUP && !m_bTakeable && m_pPlayer->IsStrikeUnitHold() && !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets() &&
+		// (STOP 18FA5DFB) not while the target is takeable and home is safe: a stalled build-up with a takeable target is as
+		// ready as it gets (IsStrikeAsReadyAsItGets) and declares
+		// (the lead's review of ae8e9ae) with home unsafe the exit stays: a stalled civ with a city in danger can't wait for good
+		// with the bans and the K-city cap held
+		else if (eNew == STRIKE_BUILDUP && !(m_bTakeable && IsStrikeHomeSafe()) && m_pPlayer->IsStrikeUnitHold() && !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets() &&
 			m_pPlayer->GetTreasury()->CalculateBaseNetGold() <= 0 && !CanBuildStrikeIncomeItem())
 			eNew = STRIKE_OVER, strWhy = CvString::format("stalled: no unit affordable, the army not ready, income negative and no income item to build (short: %s)",
 				GetStrikeReadinessGaps().c_str());
@@ -3659,8 +3747,48 @@ bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 		GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN && m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20) <= 0)
 		return true;
 	// (the lead, STOP 18FA5DFB: the Zulus' build-up went OVER "stalled" at T109 with Nottingham takeable; CP declared at T114
-	// with the same 18 units and took it at T117) a stalled build-up can't get any readier: with the target takeable, it goes
-	return IsStrikeBuildupStalled();
+	// with the same 18 units and took it at T117) a stalled build-up can't get any readier: with the target takeable, it goes,
+	// if the units we have fill the city attack's required slots (the lead's review of ae8e9ae: a stalled civ builds nothing,
+	// and the unit hold blocks every combat unit in a city-state war, so a slot missing now stays missing and no attack starts)
+	return IsStrikeBuildupStalled() && GetStrikeFormationMissingRequired() == 0;
+}
+
+/// the required slots of a land city attack's formation (CvAIOperation::GetFormationType: SiegeFormation's basic force for the
+/// small one) that our field units (GetStrikeFieldUnits) can't fill, matched as OperationalAIHelpers::IsUnitSuitableForRecruitment
+/// matches a unit to a slot (its unit AI, or one its type allows)
+int CvMilitaryAI::GetStrikeFormationMissingRequired() const
+{
+	MultiunitFormationTypes eFormation = OperationalAIHelpers::GetArmyFormationForOpType(AI_OPERATION_CITY_ATTACK_LAND);
+	if (eFormation == MUFORMATION_SMALL_CITY_ATTACK_FORCE && m_pPlayer->UsesCandidateAI(FIX_SIEGE_FORMATION))
+		eFormation = MUFORMATION_BASIC_CITY_ATTACK_FORCE;
+	CvMultiUnitFormationInfo* pFormation = (eFormation != NO_MUFORMATION) ? GC.getMultiUnitFormationInfo(eFormation) : NULL;
+	if (!pFormation)
+		return 0;
+	std::vector<CvFormationSlotEntry> vOpen;
+	for (size_t i = 0; i < pFormation->getNumFormationSlotEntries(); i++)
+	{
+		if (pFormation->getFormationSlotEntry(i).m_requiredSlot)
+			vOpen.push_back(pFormation->getFormationSlotEntry(i));
+	}
+	std::vector<const CvUnit*> vUnits;
+	GetStrikeFieldUnits(m_pPlayer, vUnits);
+	for (size_t u = 0; u < vUnits.size() && !vOpen.empty(); u++)
+	{
+		const CvUnit* pUnit = vUnits[u];
+		const CvUnitEntry* pkInfo = GC.getUnitInfo(pUnit->getUnitType());
+		for (size_t j = 0; j < vOpen.size(); j++)
+		{
+			const CvFormationSlotEntry& kSlot = vOpen[j];
+			if (kSlot.m_primaryUnitType == NO_UNITAI || pUnit->AI_getUnitAIType() == kSlot.m_primaryUnitType ||
+				pUnit->AI_getUnitAIType() == kSlot.m_secondaryUnitType || (pkInfo && (pkInfo->GetUnitAIType(kSlot.m_primaryUnitType) ||
+				(kSlot.m_secondaryUnitType != NO_UNITAI && pkInfo->GetUnitAIType(kSlot.m_secondaryUnitType)))))
+			{
+				vOpen.erase(vOpen.begin() + j);
+				break;
+			}
+		}
+	}
+	return (int)vOpen.size();
 }
 
 /// a build-up that can't grow (Economy 0055's unit hold: no unit affordable; income negative; the capital can't build a Market
