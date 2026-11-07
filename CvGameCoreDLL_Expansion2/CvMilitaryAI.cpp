@@ -2427,7 +2427,7 @@ bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
 {
 	const StrikeStateTypes eState = GetStrikeState();
 	const bool bTarget = eOn != NO_PLAYER && (eOn == m_eTimingBuildupTarget || eOn == GetStrikeCityStateTarget());
-	// in the strike's war, until the target's capital is taken, no second war either (169CA418: CP's sneak operation on
+	// in the strike's war, until the strike is finished with its target, no second war either (169CA418: CP's sneak operation on
 	// Morocco declared at T76 while the strike's war on Ur had taken nothing)
 	if (eState == STRIKE_WAR)
 	{
@@ -2925,8 +2925,16 @@ void CvMilitaryAI::UpdateStrikeState()
 	PlayerTypes eCS = NO_PLAYER;
 	// AI_AB_TEST (the user: "no, no flip flopping. aggressive civs choose targets and then eliminate them. completely."): a
 	// target once picked is held while it's alive and not on our team. No re-pick, no re-target, no giving way to a major
+	// A held target is released only when it can never be fought (the lead's review: a wait must not hold the bans and
+	// production for good): not at war with it and no declaration possible for a reason that doesn't pass by itself. A peace
+	// treaty's turns pass (isForcePeace): the strike waits. A test builder's role, a master we can't fight, passive modes: dropped
+	const bool bHeldFightable = eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() &&
+		(GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOldCS).getTeam()) ||
+		 GET_TEAM(m_pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eOldCS).getTeam(), m_pPlayer->GetID()) ||
+		 GET_TEAM(m_pPlayer->getTeam()).isForcePeace(GET_PLAYER(eOldCS).getTeam()));
 	if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && GET_PLAYER(eOldCS).getTeam() != m_pPlayer->getTeam() &&
-		!GET_TEAM(GET_PLAYER(eOldCS).getTeam()).IsVassal(m_pPlayer->getTeam()) && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
+		!GET_TEAM(GET_PLAYER(eOldCS).getTeam()).IsVassal(m_pPlayer->getTeam()) && bHeldFightable &&
+		(eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
 		eCS = eOldCS;
 	// the first pick in PREP: CP's committed major in reach is held as soon as it's valid
 	else if (bEarly && eNew == STRIKE_PREP && bInReach && IsStrikeTargetValid(eTarget))
@@ -3256,6 +3264,9 @@ void CvMilitaryAI::UpdateStrikeState()
 				"the target finished (its capital taken, one city at most left, or the rest out of reach): the next target";
 			m_iStrikeCityState = NO_PLAYER;
 			m_eTimingBuildupTarget = NO_PLAYER;
+			// the window reopens for the next target (the declaration block lets only the window's target through, and
+			// StartTimingBuildup sets the target only when the window is closed)
+			m_iTimingBuildupStartTurn = -1;
 			m_iStrikeSiege = 0;
 			m_iTakeableTurn = -1;
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
@@ -3267,6 +3278,7 @@ void CvMilitaryAI::UpdateStrikeState()
 		{
 			eNew = STRIKE_BUILDUP;
 			strWhy = "peace with the target, not finished: the target is held, the strike builds up again";
+			m_iTimingBuildupStartTurn = -1;	// the window reopens on the held target
 			m_iStrikeSiege = 0;
 			m_iTakeableTurn = -1;
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
