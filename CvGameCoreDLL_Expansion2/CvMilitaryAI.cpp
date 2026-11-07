@@ -3405,7 +3405,7 @@ void CvMilitaryAI::UpdateStrikeState()
 		// (STOP 18FA5DFB) not while the target is takeable: a stalled build-up with a takeable target is as ready as it gets
 		// (IsStrikeAsReadyAsItGets) and declares, or waits for home to be safe
 		else if (eNew == STRIKE_BUILDUP && !m_bTakeable && m_pPlayer->IsStrikeUnitHold() && !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets() &&
-			m_pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 && !CanBuildStrikeIncomeItem())
+			m_pPlayer->GetTreasury()->CalculateBaseNetGold() <= 0 && !CanBuildStrikeIncomeItem())
 			eNew = STRIKE_OVER, strWhy = CvString::format("stalled: no unit affordable, the army not ready, income negative and no income item to build (short: %s)",
 				GetStrikeReadinessGaps().c_str());
 		else if (IsStrikeCoreUntrainable())
@@ -3667,7 +3667,8 @@ bool CvMilitaryAI::IsStrikeAsReadyAsItGets() const
 /// or a Caravan): the army it has is the army it gets
 bool CvMilitaryAI::IsStrikeBuildupStalled() const
 {
-	return IsStrikeBuildup() && m_pPlayer->IsStrikeUnitHold() && m_pPlayer->GetTreasury()->CalculateBaseNetGold() < 0 && !CanBuildStrikeIncomeItem();
+	// (Economy's review of ae8e9ae) net 0 counts: with no income growth no unit ever becomes affordable
+	return IsStrikeBuildup() && m_pPlayer->IsStrikeUnitHold() && m_pPlayer->GetTreasury()->CalculateBaseNetGold() <= 0 && !CanBuildStrikeIncomeItem();
 }
 
 /// what keeps the build-up from "as ready as it gets" (the stall exit's log; the lead, STOP 18FA5DFB: the OVER line didn't say)

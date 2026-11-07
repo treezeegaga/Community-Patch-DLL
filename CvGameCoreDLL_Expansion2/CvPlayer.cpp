@@ -35539,6 +35539,11 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 			eArmyPick = eSiegeUnit;
 		else if (eRangedUnit != NO_UNIT)
 			eArmyPick = eRangedUnit;
+		// (Economy's review of ae8e9ae, their fix H: GetAffordableWarUnits is per turn and doesn't see what other cities are
+		// training, so every city could start one the same turn; trio27 17F36EE7, 24 Composite Bowmen T125-T141) one of
+		// these extras at a time, empire-wide: none while a city is already training this unit's class
+		if (eArmyPick != eArmy && getUnitClassMaking((UnitClassTypes)GC.getUnitInfo(eArmyPick)->GetUnitClassType()) > 0)
+			eArmyPick = NO_UNIT;
 	}
 	// (0055) the army short of the plan too only while one more unit is affordable (IsStrikeUnitHold)
 	if (eArmyPick != NO_UNIT && ((bShort && !IsStrikeUnitHold()) || bMoreCore))
