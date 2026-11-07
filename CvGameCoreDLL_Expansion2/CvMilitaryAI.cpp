@@ -2427,7 +2427,7 @@ bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
 {
 	const StrikeStateTypes eState = GetStrikeState();
 	const bool bTarget = eOn != NO_PLAYER && (eOn == m_eTimingBuildupTarget || eOn == GetStrikeCityStateTarget());
-	// in the strike's war, until the strike is finished with its target, no second war either (169CA418: CP's sneak operation on
+	// in the strike's war, until the target's capital is taken, no second war either (169CA418: CP's sneak operation on
 	// Morocco declared at T76 while the strike's war on Ur had taken nothing)
 	if (eState == STRIKE_WAR)
 	{
@@ -2520,12 +2520,12 @@ const CvCity* CvMilitaryAI::GetStrikeObjectiveCity(PlayerTypes eTarget) const
 	return (pPlot && pPlot->isCity()) ? pPlot->getPlotCity() : NULL;
 }
 
-/// AI_AB_TEST (the user: "no, no flip flopping. aggressive civs choose targets and then eliminate them. completely." and
-/// "we can leave a single minor settlement, and then get a peace deal. but we take the capital every time"): the strike is
-/// finished with its target. Dead; or, once a city has been taken from it in this war (the lead's review: a capital held
-/// before the war doesn't count), its original capital is out of its hands (ours, or a third party's, or gone) and it has
-/// one city at most left, or none of its cities is a land attack target any more (what's left is out of an army's reach;
-/// the lead's checklist: a lock needs a release when its goal can't be reached)
+/// AI_AB_TEST (the user: "the goal is the enemy capital. if we take that, we can declare peace and let them have a minor
+/// settlement. i know sometimes you get penalties for eliminating civs completely"): the strike is finished with its target.
+/// Dead; or, once a city has been taken from it in this war (the lead's review: a capital held before the war doesn't
+/// count), its original capital is out of its hands (ours; or a third party's, or gone, so the goal can't be ours), or none of
+/// its cities is a land attack target any more (an unreachable capital or remnant; the lead's checklist: a lock needs a
+/// release when its goal can't be reached). Its other cities aren't the strike's to take
 bool CvMilitaryAI::IsStrikeTargetFinished(PlayerTypes eTarget) const
 {
 	if (eTarget == NO_PLAYER || !GET_PLAYER(eTarget).isAlive())
@@ -2533,7 +2533,7 @@ bool CvMilitaryAI::IsStrikeTargetFinished(PlayerTypes eTarget) const
 	if (GetStrikeTargetCaptures() <= m_iStrikeCapturedMark)
 		return false;
 	const CvCity* pCapital = GetStrikeObjectiveCity(eTarget);
-	if ((!pCapital || pCapital->getOwner() != eTarget) && GET_PLAYER(eTarget).getNumCities() <= 1)
+	if (!pCapital || pCapital->getOwner() != eTarget)
 		return true;
 	return !HaveStrikeLandAttackTarget(eTarget);
 }
@@ -2545,7 +2545,7 @@ int CvMilitaryAI::GetStrikeCaptureCount() const
 }
 
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
-/// strike's war against this player (alive, at war with us), until the strike is finished with it (IsStrikeTargetFinished). Read by the peace willingness,
+/// strike's war against this player (alive, at war with us), until the target's capital is taken (IsStrikeTargetFinished). Read by the peace willingness,
 /// the operations' aborts and the ownership gates. No release by losses (the user: "there is no 2nd place in civ ... they are
 /// ALL IN. Their is no retreating"): a city lost, a city in danger or the war nearly lost no longer release it
 bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
@@ -2556,7 +2556,7 @@ bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 		return false;
 	if (!GET_PLAYER(eEnemy).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eEnemy).getTeam()))
 		return false;
-	// the strike finished with its target (the user: eliminate it, the capital every time; IsStrikeTargetFinished)
+	// the target's capital taken (the user: "the goal is the enemy capital"; IsStrikeTargetFinished): peace is allowed
 	if (IsStrikeTargetFinished(eEnemy))
 		return false;
 	return true;
@@ -2677,12 +2677,13 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 	const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
 	if (!pCity || !pCity->plot()->isRevealed(eOurTeam) || plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) > 12)
 		return false;
-	// (the user: "we can leave a single minor settlement, and then get a peace deal") a civ already finished, its capital out of
-	// its hands and one city at most left, isn't a new target (the strike just finished with it)
-	if (bNewTarget && kOther.isMajorCiv() && kOther.getNumCities() <= 1)
+	// (the user: "if we take that, we can declare peace and let them have a minor settlement ... penalties for eliminating civs
+	// completely") a major whose original capital we hold isn't a new target: the strike is done with it, and its remnant isn't
+	// the strike's to take
+	if (bNewTarget && kOther.isMajorCiv())
 	{
 		const CvCity* pOriginalCapital = GetStrikeObjectiveCity(eTarget);
-		if (!pOriginalCapital || pOriginalCapital->getOwner() != eTarget)
+		if (pOriginalCapital && pOriginalCapital->getTeam() == eOurTeam)
 			return false;
 	}
 	return !bNewTarget || HaveStrikeLandAttackTarget(eTarget);
@@ -3245,14 +3246,14 @@ void CvMilitaryAI::UpdateStrikeState()
 		// the strike's war ends with its purpose (the lead's review: it outlived it, and its ownership of production, gold
 		// and research with it): a city taken (the war itself goes on, CP's), or peace with the target or the target gone
 		const PlayerTypes eWarTarget = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
-		// (the user: "aggressive civs choose targets and then eliminate them. completely" / "we take the capital every time") the
-		// target finished (IsStrikeTargetFinished): the strike goes on to its next target, back in BUILDUP (the army is there;
-		// the declaration waits for the take-the-city check). The bans and blocks hold
+		// (the user: "the goal is the enemy capital. if we take that, we can declare peace and let them have a minor settlement")
+		// the target finished (IsStrikeTargetFinished): no-retreat ends, so peace is CP's choice, and the strike goes on to its
+		// next target, back in BUILDUP (the army is there; the declaration waits for the take-the-city check). The bans hold
 		if (eWarTarget == NO_PLAYER || IsStrikeTargetFinished(eWarTarget))
 		{
 			eNew = STRIKE_BUILDUP;
 			strWhy = (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive()) ? "the target eliminated: the next target" :
-				"the target finished (its capital taken, one city at most left, or the rest out of reach): the next target";
+				"the target's capital taken (or out of reach): peace allowed, the next target";
 			m_iStrikeCityState = NO_PLAYER;
 			m_eTimingBuildupTarget = NO_PLAYER;
 			// the window reopens for the next target (the declaration block lets only the window's target through, and
@@ -3275,8 +3276,8 @@ void CvMilitaryAI::UpdateStrikeState()
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
-		// (the user: "they are ALL IN. Their is no retreating") no exit on losses: the war holds until the target is finished
-		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; until the target is finished, an
+		// (the user: "they are ALL IN. Their is no retreating") no exit on losses: the war holds until the target's capital is taken
+		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; until the target's capital is taken, an
 		// attack on it is always under way, aimed at its capital first
 		else
 		{
