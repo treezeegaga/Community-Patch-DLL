@@ -2612,12 +2612,13 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 	CvTacticalAnalysisMap* pMap = m_pPlayer->GetTacticalAI()->GetTacticalAnalysisMap();
 	CvTacticalDominanceZone* pLandZone = pMap ? pMap->GetZoneByCity(pCity, false) : NULL;
 	CvTacticalDominanceZone* pWaterZone = pMap ? pMap->GetZoneByCity(pCity, true) : NULL;
-	// (no land zone: unknown, no block; before the war the target's units aren't enemy strength, so this bites at war)
-	const bool bLandEnemy = pLandZone && pLandZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY;
+	// (the lead's review of 6bf8952) as the tactical AI: no land zone, or an enemy-dominated one, falls back to the water zone (a
+	// revealed city always has a land zone; before the war the target's units aren't enemy strength, so this bites at war)
+	const bool bLandEnemy = !pLandZone || pLandZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY;
 	const bool bWaterEnemy = !pWaterZone || pWaterZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY;
-	if (bLandEnemy && bWaterEnemy && !pCity->isInDangerOfFalling())
+	if (pMap && bLandEnemy && bWaterEnemy && !pCity->isInDangerOfFalling())
 	{
-		if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_DOMINATED) && eOwner < MAX_MAJOR_CIVS && GET_PLAYER(eOwner).isMajorCiv() &&
+		if (pLandZone && m_pPlayer->UsesCandidateAI(FIX_SIEGE_DOMINATED) && eOwner < MAX_MAJOR_CIVS && GET_PLAYER(eOwner).isMajorCiv() &&
 			GET_TEAM(eOurTeam).isAtWar(pCity->getTeam()) && vArmy.size() >= 3)
 			iMaxTurns = 3;
 		else
@@ -3490,9 +3491,10 @@ void CvMilitaryAI::UpdateStrikeState()
 		// build an income item (a Market, a Caravan). The strike ends and CP's economy and disbanding resume
 		// (STOP 18FA5DFB) not while the target is takeable and home is safe: a stalled build-up with a takeable target is as
 		// ready as it gets (IsStrikeAsReadyAsItGets) and declares
-		// (the lead's review of ae8e9ae) with home unsafe the exit stays: a stalled civ with a city in danger can't wait for good
-		// with the bans and the K-city cap held
-		else if (eNew == STRIKE_BUILDUP && !(m_bTakeable && IsStrikeHomeSafe()) && m_pPlayer->IsStrikeUnitHold() && !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets() &&
+		// (the lead's reviews of ae8e9ae and 6bf8952) no guard of its own: !IsStrikeAsReadyAsItGets already keeps a stalled build-up
+		// whose target is takeable, home safe and the formation's required slots filled. Takeable with a slot it can't fill or a
+		// city in danger, the strike ends (no indefinite wait with the bans and the K-city cap held)
+		else if (eNew == STRIKE_BUILDUP && m_pPlayer->IsStrikeUnitHold() && !IsTimingBuildupArmyReady() && !IsStrikeAsReadyAsItGets() &&
 			m_pPlayer->GetTreasury()->CalculateBaseNetGold() <= 0 && !CanBuildStrikeIncomeItem())
 			eNew = STRIKE_OVER, strWhy = CvString::format("stalled: no unit affordable, the army not ready, income negative and no income item to build (short: %s)",
 				GetStrikeReadinessGaps().c_str());
