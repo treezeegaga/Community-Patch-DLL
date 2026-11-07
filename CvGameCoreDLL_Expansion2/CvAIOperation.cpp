@@ -769,7 +769,16 @@ void CvAIOperation::SetToAbort(AIOperationAbortReason eReason)
 	// another enemy city), so it stays: the lead, bullygreedy24 17813E6E, the Celts' pillage op 3358 (2 Pictish Warriors)
 	// bounced between 23% and 45% progress T143-149 with abort 12 refused every turn. In WAR the strike requests a new city
 	// attack when none is under way
-	if (m_eCurrentState != AI_OPERATION_STATE_ABORTED && IsOffensive() && m_eOwner != NO_PLAYER && m_eEnemy != NO_PLAYER &&
+	// An operation with no units left in any army isn't retreating: it ends (the lead, crash 183D5D87 on ab-791ab9d: the last
+	// unit died, UnitWasRemoved asked HALF_STRENGTH, the gate refused it, and the empty operation stayed in MOVING_TO_TARGET,
+	// blocking the strike's new attacks and crashing LogOperationStatus on its NULL center of mass)
+	bool bHasUnits = false;
+	for (unsigned int uiArmy = 0; uiArmy < m_viArmyIDs.size() && !bHasUnits; uiArmy++)
+	{
+		CvArmyAI* pArmy = GetArmy(uiArmy);
+		bHasUnits = pArmy && pArmy->GetNumSlotsFilled() > 0;
+	}
+	if (bHasUnits && m_eCurrentState != AI_OPERATION_STATE_ABORTED && IsOffensive() && m_eOwner != NO_PLAYER && m_eEnemy != NO_PLAYER &&
 		GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeRefusingPeace(m_eEnemy) &&
 		(eReason == AI_ABORT_HALF_STRENGTH || eReason == AI_ABORT_TARGET_NOT_VALID ||
 		 eReason == AI_ABORT_WAR_STATE_CHANGE || eReason == AI_ABORT_DIPLO_OPINION_CHANGE || eReason == AI_ABORT_CANCELLED))
@@ -1251,6 +1260,8 @@ void CvAIOperation::LogOperationStatus(bool bPreTurn) const
 			for(unsigned int uiI = 0; uiI < m_viArmyIDs.size(); uiI++)
 			{
 				CvArmyAI* pThisArmy = GetArmy(uiI);
+				if (!pThisArmy)	// AI_AB_TEST (crash 183D5D87): logging never dereferences a missing army
+					continue;
 				szTemp2.Format("Recruiting Units for army %d; ", pThisArmy->GetID());
 				strTemp += szTemp2;
 
@@ -1284,12 +1295,14 @@ void CvAIOperation::LogOperationStatus(bool bPreTurn) const
 			for(unsigned int uiI = 0; uiI < m_viArmyIDs.size(); uiI++)
 			{
 				CvArmyAI* pThisArmy = GetArmy(uiI);
+				if (!pThisArmy)	// AI_AB_TEST (crash 183D5D87)
+					continue;
 				//we don't really need the center of mass but the variance
 				float varX=-1;
 				float varY=-1;
-				CvPlot* pCoM = pThisArmy->GetCenterOfMass(true,&varX,&varY);
+				CvPlot* pCoM = pThisArmy->GetCenterOfMass(true,&varX,&varY);	// NULL for an army with no units
 				szTemp2.Format("Gathering Forces for army %d; center (%d:%d); variance (%.2f:%.2f); free slots %d", 
-					pThisArmy->GetID(), pCoM->getX(), pCoM->getY(), varX, varY, pThisArmy->GetNumFormationEntries() - pThisArmy->GetNumSlotsFilled());
+					pThisArmy->GetID(), pCoM ? pCoM->getX() : -1, pCoM ? pCoM->getY() : -1, varX, varY, pThisArmy->GetNumFormationEntries() - pThisArmy->GetNumSlotsFilled());
 				strTemp += szTemp2;
 			}
 			break;
@@ -1298,9 +1311,11 @@ void CvAIOperation::LogOperationStatus(bool bPreTurn) const
 			for(unsigned int uiI = 0; uiI < m_viArmyIDs.size(); uiI++)
 			{
 				CvArmyAI* pThisArmy = GetArmy(uiI);
-				CvPlot* pCoM = pThisArmy->GetCenterOfMass(true);
+				if (!pThisArmy)	// AI_AB_TEST (crash 183D5D87)
+					continue;
+				CvPlot* pCoM = pThisArmy->GetCenterOfMass(true);	// NULL for an army with no units (the crash: pCoM->getY())
 				szTemp2.Format("Moving To Target with Army %d; center (%d:%d); target (%d:%d); Progress %d percent", 
-					pThisArmy->GetID(), pCoM->getX(), pCoM->getY(), m_iTargetX, m_iTargetY, PercentFromMusterPointToTarget());
+					pThisArmy->GetID(), pCoM ? pCoM->getX() : -1, pCoM ? pCoM->getY() : -1, m_iTargetX, m_iTargetY, PercentFromMusterPointToTarget());
 				strTemp += szTemp2;
 			}
 			break;
