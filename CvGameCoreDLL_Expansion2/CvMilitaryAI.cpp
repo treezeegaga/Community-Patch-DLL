@@ -336,6 +336,7 @@ void CvMilitaryAI::Reset()
 	m_bTakeable = false;
 	m_bStrikeTargetFinished = false;
 	m_bStrikeHoldingReachable = false;
+	m_bStrikeReady = false;
 	m_iStrikeNotReadyKey = 0;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
@@ -407,6 +408,7 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_bTakeable);
 	visitor(militaryAI.m_bStrikeTargetFinished);
 	visitor(militaryAI.m_bStrikeHoldingReachable);
+	visitor(militaryAI.m_bStrikeReady);
 	visitor(militaryAI.m_iStrikeSiege);
 	visitor(militaryAI.m_iStrikeDeclared);
 	visitor(militaryAI.m_iNumFreeCarriers);
@@ -2370,6 +2372,7 @@ bool CvMilitaryAI::ComputeStrikeTargetTakeable() const
 void CvMilitaryAI::RefreshStrikeSnapshot()
 {
 	m_bTakeable = ComputeStrikeTargetTakeable();
+	m_bStrikeReady = IsTimingBuildupArmyReady() || IsStrikeAsReadyAsItGets();	// after m_bTakeable, which both read
 	const PlayerTypes eHeld = GetStrikeCityStateTarget();
 	m_bStrikeHoldingReachable = eHeld != NO_PLAYER && GET_PLAYER(eHeld).isAlive() && IsStrikeTargetReachable(eHeld);
 	const PlayerTypes eWar = (eHeld != NO_PLAYER) ? eHeld : m_eTimingBuildupTarget;
@@ -2483,7 +2486,8 @@ bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
 	}
 	if (eState != STRIKE_PREP && eState != STRIKE_BUILDUP)
 		return false;
-	if (eState == STRIKE_BUILDUP && bTarget && m_iTimingBuildupStartTurn >= 0 && (IsTimingBuildupArmyReady() || IsStrikeAsReadyAsItGets()))
+	// the snapshot's readiness (the lead's review of 68df55d: the trade screen reaches here; readiness fills per-turn caches)
+	if (eState == STRIKE_BUILDUP && bTarget && m_iTimingBuildupStartTurn >= 0 && m_bStrikeReady)
 		return false;
 	return true;
 }
@@ -2596,51 +2600,80 @@ bool CvMilitaryAI::IsStrikeTargetDone(PlayerTypes eTarget) const
 	return !pCapital || pCapital->getOwner() != eTarget;
 }
 
-/// AI_AB_TEST (the lead's review of 647fdd3: the landmass test was weaker than the declaration's reach): a land army can get
-/// from our city nearest the target's nearest city to it. A land army path ignoring units and right of passage (as
-/// GetArmyPathsFromCity), passing MilitaryAIHelpers::ArmyPathIsGood (no third party's land or the target's other cities in
-/// the way), with no distance limit. Stable from turn to turn, unlike the attack-target list (which also needs an approach
-/// score, keeps one army type a muster city and drops 0 scores). Once a turn per target (not saved)
+/// AI_AB_TEST (the strike's reach; the lead's reviews of 647fdd3, 677f7a4 and 68df55d): the path test for it. Like
+/// MilitaryAIHelpers::ArmyPathIsGood (3 plots at most of a war zone or a third party's land; 3 at most near another city of
+/// ours, a better start), but the target's own cities on the way don't count: its capital stands behind its border cities
+static bool StrikeReachPathIsGood(const SPath& path, PlayerTypes eAttacker, PlayerTypes eTarget, int iStart)
+{
+	if (path.vPlots.size() < 4)
+		return true;
+	int iThirdPartyPlots = 0, iOurOtherCityPlots = 0;
+	for (size_t i = 3; i < path.vPlots.size() - 3; i++)
+	{
+		CvPlot* pPlot = GC.getMap().plot(path.vPlots[i].x, path.vPlots[i].y);
+		if (!pPlot || (GC.getGame().GetClosestCityDistanceInPlots(pPlot) > 3 && !pPlot->isOwned()))
+			continue;
+		CvCity* pCity = GC.getGame().GetClosestCityByPlots(pPlot);
+		if (!pCity || pCity->getOwner() == eTarget)
+			continue;
+		if (pCity->getOwner() == eAttacker)
+		{
+			if (pCity->GetID() != iStart && pPlot->getOwningCityID() == pCity->GetID())
+				iOurOtherCityPlots++;
+		}
+		else if (GET_PLAYER(eAttacker).IsAtWarWith(pCity->getOwner()))
+			iThirdPartyPlots++;
+		else if (pPlot->isOwned() && pPlot->getOwner() != eTarget && !pPlot->IsFriendlyTerritory(eAttacker))
+			iThirdPartyPlots++;
+	}
+	return iThirdPartyPlots < 3 && iOurOtherCityPlots < 3;
+}
+
+/// AI_AB_TEST (the strike's reach; the lead's reviews of 647fdd3, 677f7a4 and 68df55d): a land army can get to the target's
+/// goal city: a major's original capital while it holds it and once we've seen it (until then its nearest revealed city, so
+/// an early strike can pick it on the city it sees), a city-state's city. From any city of ours on the goal city's landmass
+/// (the nearest first, 3 tries at most): a land army path ignoring units and right of passage within that city's land
+/// trade-route range (GetArmyPathsFromCity's own limit), passing StrikeReachPathIsGood. No cache: our own turn only (the
+/// strike's picking, holding and snapshot, the diplomacy's window check); the UI reads the snapshot
 bool CvMilitaryAI::IsStrikeTargetReachable(PlayerTypes eTarget) const
 {
 	if (eTarget == NO_PLAYER || !GET_PLAYER(eTarget).isAlive())
 		return false;
-	bool bReach = false;
-	// (the lead's review of 677f7a4) the goal city: a major's original capital while it holds it (not the city nearest us, an
-	// island colony say), a city-state's city. Revealed, as GetArmyPathsFromCity's targets
+	const TeamTypes eOurTeam = m_pPlayer->getTeam();
 	const CvCity* pTheirs = NULL;
 	if (GET_PLAYER(eTarget).isMajorCiv())
 	{
 		const CvCity* pCapital = GetStrikeObjectiveCity(eTarget);
-		pTheirs = (pCapital && pCapital->getOwner() == eTarget) ? pCapital : NULL;
+		if (pCapital && pCapital->getOwner() == eTarget && pCapital->plot()->isAdjacentRevealed(eOurTeam))
+			pTheirs = pCapital;
+		else if (pCapital && pCapital->getOwner() != eTarget)
+			return false;	// done (IsStrikeTargetDone): no goal left
 	}
-	else
+	if (!pTheirs)
 		pTheirs = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
-	if (pTheirs && !pTheirs->plot()->isAdjacentRevealed(m_pPlayer->getTeam()))
-		pTheirs = NULL;
-	CvCity* pOurs = NULL;
-	int iBest = INT_MAX, iLoop = 0;
-	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pTheirs && pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	if (!pTheirs || !pTheirs->plot()->isAdjacentRevealed(eOurTeam))
+		return false;
+	const int iLandmass = pTheirs->plot()->getLandmass();
+	std::vector< std::pair<int, int> > vOurs;	// (distance, city ID) on the goal city's landmass
+	int iLoop = 0;
+	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+		if (pLoopCity->plot()->getLandmass() == iLandmass)
+			vOurs.push_back(std::make_pair(plotDistance(pLoopCity->getX(), pLoopCity->getY(), pTheirs->getX(), pTheirs->getY()), pLoopCity->GetID()));
+	std::sort(vOurs.begin(), vOurs.end());
+	for (size_t i = 0; i < vOurs.size() && i < 3; i++)
 	{
-		const int iDistance = plotDistance(pLoopCity->getX(), pLoopCity->getY(), pTheirs->getX(), pTheirs->getY());
-		if (iDistance < iBest)
-		{
-			iBest = iDistance;
-			pOurs = pLoopCity;
-		}
-	}
-	if (pTheirs && pOurs)
-	{
+		CvCity* pOurs = m_pPlayer->getCity(vOurs[i].second);
+		if (!pOurs)
+			continue;
 		SPathFinderUserData data(m_pPlayer->GetID(), PT_ARMY_LAND, NO_PLAYER, INT_MAX);
-		// (the lead's review of 677f7a4) GetArmyPathsFromCity's own range: the land trade-route distance
 		data.iMaxNormalizedDistance = m_pPlayer->GetTrade()->GetTradeRouteRange(DOMAIN_LAND, pOurs);
 		data.iFlags |= CvUnit::MOVEFLAG_IGNORE_RIGHT_OF_PASSAGE;
 		data.iFlags |= CvUnit::MOVEFLAG_IGNORE_ENEMIES;
 		SPath path = GC.GetStepFinder().GetPath(pOurs->plot(), pTheirs->plot(), data);
-		if (!!path)
-			bReach = MilitaryAIHelpers::ArmyPathIsGood(path, m_pPlayer->GetID(), eTarget, 3);
+		if (!!path && StrikeReachPathIsGood(path, m_pPlayer->GetID(), eTarget, pOurs->GetID()))
+			return true;
 	}
-	return bReach;
+	return false;
 }
 
 /// AI_AB_TEST (the lead's review of 12fe132): the strike holds a target an army can ever reach. While it doesn't, Economy's

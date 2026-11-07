@@ -2987,7 +2987,9 @@ bool CvTacticalAI::CheckForEnemiesNearArmy(CvArmyAI* pArmy)
 	//city's zone is enemy-dominated by definition (186D5858, Sofia), so this check made it gather into the blockers until the
 	//42-turn timeout; with no handover short of the walls (5f5334ee5), it attacks them instead
 	CvAIOperation* pArmyOp = GET_PLAYER(pArmy->GetOwner()).getAIOperation(pArmy->GetOperationID());
-	const bool bStrikeArmy = pArmyOp && pArmyOp->GetEnemy() != NO_PLAYER && m_pPlayer->isMajorCiv() && m_pPlayer->GetMilitaryAI()->IsStrikeNoRetreat(pArmyOp->GetEnemy());
+	// (the lead's review of 68df55d) only in the target's own city zone, not a third party's on the way
+	const bool bStrikeArmy = pArmyOp && pArmyOp->GetEnemy() != NO_PLAYER && m_pPlayer->isMajorCiv() && m_pPlayer->GetMilitaryAI()->IsStrikeNoRetreat(pArmyOp->GetEnemy()) &&
+		pZone && pZone->GetZoneCity() && pZone->GetZoneCity()->getOwner() == pArmyOp->GetEnemy();
 	if (!bStrikeArmy && pZone && pZone->GetZoneCity() && pZone->GetTerritoryType()==TACTICAL_TERRITORY_ENEMY && pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY)
 		return false;
 

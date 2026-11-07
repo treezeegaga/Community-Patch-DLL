@@ -197,9 +197,9 @@ public:
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
 	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
 	const CvCity* GetStrikeObjectiveCity(PlayerTypes eTarget) const;	// AI_AB_TEST: the target's original capital (the strike's objective)
-	bool IsStrikeTargetReachable(PlayerTypes eTarget) const;	// (computes a path: our own turn only)
+	bool IsStrikeTargetReachable(PlayerTypes eTarget) const;	// AI_AB_TEST: a land army path to its goal city (the capital once seen); our own turn only
 	void RefreshStrikeSnapshot();	// AI_AB_TEST: the strike's stored answers, in UpdateStrikeState
-	bool ComputeStrikeTargetTakeable() const;	// AI_AB_TEST: a land army path from our nearest city to its nearest one (stable reach)
+	bool ComputeStrikeTargetTakeable() const;	// AI_AB_TEST: the snapshot's takeable computation (our own turn only)
 	bool IsStrikeTargetDone(PlayerTypes eTarget) const;	// AI_AB_TEST: a major whose original capital is out of its hands
 	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
 	bool IsStrikeHoldingReachableTarget() const;	// AI_AB_TEST: the strike holds a target a land army can ever reach
@@ -454,7 +454,8 @@ private:
 	mutable bool m_bSiegeTrainable;
 	bool m_bTakeable;					// AI_AB_TEST strike snapshot (RefreshStrikeSnapshot, our own turn only; saved): takeable now,
 	bool m_bStrikeTargetFinished;		// the strike's target finished,
-	bool m_bStrikeHoldingReachable;		// and a held target an army can reach
+	bool m_bStrikeHoldingReachable;		// a held target an army can reach,
+	bool m_bStrikeReady;				// and the army ready or as ready as it gets (the declaration block)
 	int m_iStrikeNotReadyKey;			// AI_AB_TEST strike: the last logged "not ready" blockers (not saved; logs only)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;
