@@ -197,7 +197,9 @@ public:
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
 	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
 	const CvCity* GetStrikeObjectiveCity(PlayerTypes eTarget) const;	// AI_AB_TEST: the target's original capital (the strike's objective)
-	bool IsStrikeTargetOnOurLand(PlayerTypes eTarget) const;	// AI_AB_TEST: a city of it on a landmass where we have a city (stable reach)
+	bool IsStrikeTargetReachable(PlayerTypes eTarget) const;	// AI_AB_TEST: a land army path from our nearest city to its nearest one (stable reach)
+	bool IsStrikeTargetDone(PlayerTypes eTarget) const;	// AI_AB_TEST: a major whose original capital is out of its hands
+	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
 	bool IsStrikeHoldingReachableTarget() const;	// AI_AB_TEST: the strike holds a target a land army can ever reach
 	bool IsStrikeTargetFinished(PlayerTypes eTarget) const;	// AI_AB_TEST: dead, or (after a capture in this war) its original capital out of its hands, or out of reach
 	bool HavePreferredAttackTarget(PlayerTypes eEnemy) const;
@@ -439,7 +441,6 @@ private:
 	void UpdateStrikeState();
 	PlayerTypes FindStrikeCityState(bool bUnwalledOnly = false, PlayerTypes eExclude = NO_PLAYER) const;
 	PlayerTypes FindStrikeRetarget(PlayerTypes eExclude, const CvCity* pCurrent) const;	// a clearly easier city in reach, a major's or a city-state's
-	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
 	PlayerTypes FindStrikeMajorInReach() const;	// the nearest valid major in reach
 	bool IsStrikeCoreLineObsolete(UnitClassTypes eCoreClass) const;	// every unit on the core's strike line (to the plan's upgrade) obsolete (the strike's obsolete exit)
 	bool CanBuildStrikeIncomeItem() const;	// the capital can build a Market or a Caravan
@@ -451,6 +452,8 @@ private:
 	mutable bool m_bSiegeTrainable;
 	mutable int m_iTakeableTurn;		// AI_AB_TEST strike: IsStrikeTargetTakeableNow's turn and answer (not saved)
 	mutable bool m_bTakeable;
+	mutable int m_iReachTurn;			// AI_AB_TEST strike: IsStrikeTargetReachable's turn and answers per player (-1 unknown; not saved)
+	mutable std::vector<char> m_vReach;
 	int m_iStrikeNotReadyKey;			// AI_AB_TEST strike: the last logged "not ready" blockers (not saved; logs only)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;

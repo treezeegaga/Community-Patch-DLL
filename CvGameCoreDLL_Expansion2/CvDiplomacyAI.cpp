@@ -23833,6 +23833,9 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		{
 			if (eStrikeState != CvMilitaryAI::STRIKE_BUILDUP || !pPlayer->GetMilitaryAI()->IsStrikeArmyBuildable())
 				return NO_PLAYER; // planned only
+			// (War, the lead's review of 647fdd3) never a window on a target the strike can't take: a finished major's remnant
+			if (!pPlayer->GetMilitaryAI()->IsStrikeTargetValid(eBest, /*bNewTarget*/ false))
+				return NO_PLAYER;
 		}
 		else if (iTurn < 40 * iSpeed / 100)
 			return NO_PLAYER; // planned only
