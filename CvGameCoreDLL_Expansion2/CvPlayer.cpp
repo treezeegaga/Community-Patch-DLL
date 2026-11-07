@@ -35500,12 +35500,41 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	// too-weak army and no easier city waited forever, and its cities fell to CP's picks before the strike)
 	const bool bTooWeak = eStrikeState == CvMilitaryAI::STRIKE_BUILDUP && bTargetReachable && !GetMilitaryAI()->IsStrikeTargetTakeableNow();	// (0060) reachable
 	const bool bMoreCore = (eStrikeState == CvMilitaryAI::STRIKE_WAR || bTooWeak) && GetEconomicAI()->GetAffordableWarUnits(10) >= 1;
+	// (War, the user's ruling Nov 7: "4 archers slowly brought the city down"; 18BE1E3E: Greece's army grew to 29-32 units,
+	// nearly all melee, and La Venta never fell) too weak for the target with the plan's counts met: the city's damage comes
+	// from ranged and siege units (War's take-the-city math counts melee only where the tactical AI attacks the walls), so the
+	// extra unit is siege (the plan's class, else the Catapult line) while we have fewer siege than ranged support, else the
+	// ranged support; the core only if neither is trainable
+	UnitTypes eArmyPick = eArmy;
+	if (bTooWeak && !bShort && bMoreCore)
+	{
+		const UnitClassTypes eSiegeLine = (kPlan.eSiegeClass != NO_UNITCLASS) ? kPlan.eSiegeClass : (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_CATAPULT", true);
+		const UnitTypes eSiegeUnit = (eSiegeLine != NO_UNITCLASS) ? GetStrikeListTrainableOnLine(*this, eSiegeLine, pCity) : NO_UNIT;
+		UnitTypes eRangedUnit = NO_UNIT;
+		UnitClassTypes eRangedLine = NO_UNITCLASS;
+		const UnitClassTypes aeLines[2] = { kPlan.eSupportClass, kPlan.eCoreClass };
+		for (int i = 0; i < 2 && eRangedUnit == NO_UNIT; i++)
+		{
+			const UnitTypes eUnit = (aeLines[i] != NO_UNITCLASS) ? GetStrikeListTrainableOnLine(*this, aeLines[i], pCity) : NO_UNIT;
+			if (eUnit != NO_UNIT && GC.getUnitInfo(eUnit)->GetRangedCombat() > 0)
+			{
+				eRangedUnit = eUnit;
+				eRangedLine = aeLines[i];
+			}
+		}
+		const int iSiegeHave = (eSiegeLine != NO_UNITCLASS) ? CountStrikeListUnits(*this, eSiegeLine, false) : 0;
+		const int iRangedHave = (eRangedLine != NO_UNITCLASS) ? CountStrikeListUnits(*this, eRangedLine, false) : 0;
+		if (eSiegeUnit != NO_UNIT && (eRangedUnit == NO_UNIT || iSiegeHave < iRangedHave))
+			eArmyPick = eSiegeUnit;
+		else if (eRangedUnit != NO_UNIT)
+			eArmyPick = eRangedUnit;
+	}
 	// (0055) the army short of the plan too only while one more unit is affordable (IsStrikeUnitHold)
-	if (eArmy != NO_UNIT && ((bShort && !IsStrikeUnitHold()) || bMoreCore))
+	if (eArmyPick != NO_UNIT && ((bShort && !IsStrikeUnitHold()) || bMoreCore))
 	{
 		eOrder = ORDER_TRAIN;
-		iData = eArmy;
-		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : (bTooWeak ? "the army (too weak for the target, more core):" : "the army (the plan's counts met, more core):"), GC.getUnitInfo(eArmy)->GetDescription());
+		iData = eArmyPick;
+		LogStrikeList(*this, pCity, bShort ? "the army (short of the plan):" : (bTooWeak ? (eArmyPick != eArmy ? "the army (too weak for the target, ranged or siege):" : "the army (too weak for the target, more core):") : "the army (the plan's counts met, more core):"), GC.getUnitInfo(eArmyPick)->GetDescription());
 		return true;
 	}
 	// (0058, the lead) in WAR with nothing more to train for the army: income while net gold is below 0 (a Market, else a

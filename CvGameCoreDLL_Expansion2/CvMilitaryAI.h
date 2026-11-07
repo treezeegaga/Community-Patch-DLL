@@ -184,7 +184,7 @@ public:
 	};
 
 	// Requests for specific military operations
-	bool RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful=true, const CvCity* pPreferredCity=NULL);	// AI_AB_TEST: pPreferredCity, the strike's objective
+	bool RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful=true, const CvCity* pPreferredCity=NULL, bool* pbSiegeFed=NULL);	// AI_AB_TEST: pPreferredCity, the strike's objective; pbSiegeFed, SiegeFeed skipped it
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);
 	bool RequestBullyingOperation(PlayerTypes eEnemy);
@@ -248,6 +248,7 @@ public:
 	int GetLateStrikeFieldFloor() const;	// the plan's core + support
 	static const int STRIKE_TAKE_DAMAGE_PERCENT = 90;	// IsStrikeArmyStrongEnough's buffer (the user: "a little buffer"): our damage counted at 90%
 	static const int STRIKE_TAKE_LOSS_PERCENT = 110;	// and the city's damage to us at 110% (calibrated: the user's Marrakesh reads GO)
+	static const int STRIKE_TACTICAL_SIEGE_TURNS = 13;	// the tactical AI starts a siege only if its damage less the healing takes the city in 13 turns (CvTacticalAI, "too early for attacking"): takeable means within them
 	static const int EARLY_STRIKE_MELEE_MIN = 3;	// "bring two in case one dies" (the strike-plans research): 2 at the city, 1 spare
 	int GetEarlyStrikeUpgradeBill(int* piUnits = NULL, bool* pbTechSoon = NULL) const;	// upgrade-and-go (the user's Composite Bowmen)
 	bool IsEarlyStrikeHoldingUpgrades() const;	// no upgrades until the strike's army is built (Economy: keep the reserve)
@@ -283,6 +284,9 @@ public:
 	bool IsStrikeDeclarationBlocked(PlayerTypes eOn) const;	// before the strike (PREP, BUILDUP) no declaration of ours but the strike's on its target, when ready
 	bool IsStrikeArmyBuildable() const;	// the core, or the plan's pre-build, can be trained
 	bool IsStrikeClassBuildable(UnitClassTypes eClass) const;	// trainable now, or but for resources we own and have in use
+	bool IsStrikeBuildupStalled() const;	// no unit affordable, income negative, no income item: the build-up can't grow
+	CvString GetStrikeReadinessGaps() const;	// what keeps the build-up from as ready as it gets (logging)
+	bool HasStrikeCityAttackUnderWay(PlayerTypes eEnemy) const;	// a city attack operation against this player (not a rapid response)
 	bool IsStrikeAsReadyAsItGets() const;	// a normal army, 3 melee, and nothing more affordable
 	PlayerTypes GetStrikeCityStateTarget() const { return (PlayerTypes)m_iStrikeCityState; }	// EarlyStrike: a city-state when no major is in reach, or a re-target (major or city-state)
 	TimingBuildupPhase GetTimingBuildupPhase() const;
