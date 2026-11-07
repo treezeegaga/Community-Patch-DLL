@@ -209,6 +209,7 @@ void CvTacticalAI::RecruitUnits()
 {
 	int iLoop = 0;
 	m_CurrentTurnUnits.clear();
+	m_CapturerCities.clear();	// AI_AB_TEST (flag SiegeCapturer)
 
 	// Loop through our units
 	for(CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
@@ -1094,6 +1095,10 @@ void CvTacticalAI::ExecuteCaptureCityMoves(eAggressionLevel eMaxAggLvl)
 				if (FindEmbarkedUnitsAroundTarget(pPlot, 4))
 					ExecuteLandingOperation(pPlot);
 			}
+			//AI_AB_TEST (candidate, flag SiegeCapturer; the lead's review): nobody can strike it this turn (the ranged units fired
+			//elsewhere or stand back), but it's down to a third of its HP: bring melee units
+			else if (m_pPlayer->UsesCandidateAI(FIX_SIEGE_CAPTURER) && (pCity->GetMaxHitPoints() - pCity->getDamage()) * 3 <= pCity->GetMaxHitPoints())
+				MoveCapturersToCity(pCity);
 		}
 	}
 }
@@ -1107,23 +1112,41 @@ void CvTacticalAI::MoveCapturersToCity(CvCity* pCity)
 {
 	if (!pCity || pCity->getOwner() == m_pPlayer->GetID() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(pCity->getTeam()))
 		return;
+	// (the lead's review) once per city per turn (SiegePosture can handle a city at two aggression levels)
+	if (!m_CapturerCities.insert(pCity->plot()->GetPlotIndex()).second)
+		return;
+	const int iCityLandmass = pCity->plot()->getLandmass();
 	std::vector< std::pair<int, int> > vCandidates;	// (distance, unit ID)
 	for (list<int>::const_iterator it = m_CurrentTurnUnits.begin(); it != m_CurrentTurnUnits.end(); ++it)
 	{
 		CvUnit* pUnit = m_pPlayer->getUnit(*it);
+		// a unit that can capture (IsCanAttackWithMove: not ranged, not defensive-only), healthy enough not to be healing or
+		// about to die, on the city's landmass (no embarking on the way)
 		if (!pUnit || pUnit->TurnProcessed() || !pUnit->canMove() || pUnit->getDomainType() != DOMAIN_LAND || !pUnit->IsCombatUnit() ||
-			pUnit->IsCanAttackRanged() || pUnit->isNoCapture() || pUnit->isEmbarked() || pUnit->IsGarrisoned())
+			!pUnit->IsCanAttackWithMove() || pUnit->isNoCapture() || pUnit->isEmbarked() || pUnit->IsGarrisoned() ||
+			pUnit->shouldHeal(false) || pUnit->isProjectedToDieNextTurn() || pUnit->plot()->getLandmass() != iCityLandmass)
 			continue;
 		const int iDistance = plotDistance(pUnit->getX(), pUnit->getY(), pCity->getX(), pCity->getY());
-		if (iDistance <= 8)
+		if (iDistance > 8)
+			continue;
+		// not a defender: in a zone holding on (hedgehog), or within 3 tiles of one of our cities in danger of falling
+		CvTacticalDominanceZone* pUnitZone = GetTacticalAnalysisMap()->GetZoneByPlot(pUnit->plot());
+		if (pUnitZone && pUnitZone->GetPosture() == TACTICAL_POSTURE_HEDGEHOG)
+			continue;
+		bool bDefending = false;
+		int iCityLoop = 0;
+		for (const CvCity* pOurCity = m_pPlayer->firstCity(&iCityLoop); pOurCity != NULL && !bDefending; pOurCity = m_pPlayer->nextCity(&iCityLoop))
+			bDefending = pOurCity->isInDangerOfFalling() && plotDistance(pUnit->getX(), pUnit->getY(), pOurCity->getX(), pOurCity->getY()) <= 3;
+		if (!bDefending)
 			vCandidates.push_back(std::make_pair(iDistance, pUnit->GetID()));
 	}
 	std::sort(vCandidates.begin(), vCandidates.end());
 	int iSent = 0;
-	for (size_t i = 0; i < vCandidates.size() && iSent < 2; i++)
+	// at most 4 tries (each a pathfinder call or two), the nearest first; the path must be safe
+	for (size_t i = 0; i < vCandidates.size() && i < 4 && iSent < 2; i++)
 	{
 		CvUnit* pUnit = m_pPlayer->getUnit(vCandidates[i].second);
-		if (pUnit && MoveToEmptySpaceNearTarget(pUnit, pCity->plot(), DOMAIN_LAND, 4))
+		if (pUnit && MoveToEmptySpaceNearTarget(pUnit, pCity->plot(), DOMAIN_LAND, 4, /*bMustBeSafePath*/ true))
 		{
 			if (GC.getLogging() && GC.getAILogging())
 				LogTacticalMessage(CvString::format("SiegeCapturer: %s %d moving to %s (city HP %d, %d tiles away)", pUnit->getUnitInfo().GetDescription(),
