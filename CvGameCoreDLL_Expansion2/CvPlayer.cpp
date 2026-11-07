@@ -35339,6 +35339,34 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 		return false;
 	}
 
+	// a worker where a city has none in its area
+	// (0063) the capital too, and before its list: Mongolia's list (trial29 18B3086C, ab-03494ee) has no Worker and this
+	// rule skipped the capital, so its first Worker came at T53; its Horse tile, in its borders since T25, was pastured
+	// only then and the list's Chariot Archer waited T29-T60. A city in danger takes its defender first (above). A capital
+	// whose list has a Worker item follows the list (the user: "literally just follow the list")
+	bool bListHasWorker = false;
+	if (pCity->isCapital())
+	{
+		const UnitClassTypes eWorkerClass = (UnitClassTypes)GC.getInfoTypeForString("UNITCLASS_WORKER", true);
+		for (int i = 0; i < kPlan.iNumBuilds && !bListHasWorker; i++)
+			bListHasWorker = kPlan.aBuilds[i].bUnit && kPlan.aBuilds[i].iClass == (int)eWorkerClass;
+	}
+	if (!bListHasWorker)
+	{
+		bool bWorker = false;
+		int iLoop = 0;
+		for (const CvUnit* pUnit = firstUnit(&iLoop); pUnit != NULL && !bWorker; pUnit = nextUnit(&iLoop))
+			bWorker = pUnit->AI_getUnitAIType() == UNITAI_WORKER && pUnit->plot() && pUnit->plot()->getArea() == pCity->plot()->getArea();
+		const UnitTypes eWorker = bWorker ? NO_UNIT : GetSpecificUnitType("UNITCLASS_WORKER", true);
+		if (eWorker != NO_UNIT && pCity->canTrain(eWorker) && getUnitClassMaking((UnitClassTypes)GC.getUnitInfo(eWorker)->GetUnitClassType()) == 0)
+		{
+			eOrder = ORDER_TRAIN;
+			iData = eWorker;
+			LogStrikeList(*this, pCity, "a worker (none in this area)", NULL);
+			return true;
+		}
+	}
+
 	// (0054) a late strike's PREP held for income (net gold under +2, IsLateStrikeUnitHold): an income item comes first, a
 	// Market, else a Caravan where a trade route is free, so the hold lifts. Trial ab-791ab9d 172518A7: Karakorum's list
 	// waited on its held Chariot Archer from T29 to T85 with net gold at 0
@@ -35445,23 +35473,6 @@ bool CvPlayer::GetStrikeListProduction(CvCity* pCity, OrderTypes& eOrder, int& i
 	{
 		bListRuns = false;
 		return false;
-	}
-
-	// a worker where a city has none in its area
-	if (!pCity->isCapital())
-	{
-		bool bWorker = false;
-		int iLoop = 0;
-		for (const CvUnit* pUnit = firstUnit(&iLoop); pUnit != NULL && !bWorker; pUnit = nextUnit(&iLoop))
-			bWorker = pUnit->AI_getUnitAIType() == UNITAI_WORKER && pUnit->plot() && pUnit->plot()->getArea() == pCity->plot()->getArea();
-		const UnitTypes eWorker = bWorker ? NO_UNIT : GetSpecificUnitType("UNITCLASS_WORKER", true);
-		if (eWorker != NO_UNIT && pCity->canTrain(eWorker) && getUnitClassMaking((UnitClassTypes)GC.getUnitInfo(eWorker)->GetUnitClassType()) == 0)
-		{
-			eOrder = ORDER_TRAIN;
-			iData = eWorker;
-			LogStrikeList(*this, pCity, "a worker (none in this area)", NULL);
-			return true;
-		}
 	}
 
 	const CvMilitaryAI::StrikeStateTypes eStrikeState = GetMilitaryAI()->GetStrikeState();
