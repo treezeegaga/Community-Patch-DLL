@@ -204,6 +204,7 @@ public:
 	bool IsStrikeTargetHoldable(PlayerTypes eTarget, bool bAtStrikeWar) const;	// AI_AB_TEST: the one hold test (IsStrikeTargetValid for a held target)
 	bool IsStrikeTargetDone(PlayerTypes eTarget) const;	// AI_AB_TEST: a major whose original capital is out of its hands
 	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
+	bool IsStrikeTargetValidForUs(PlayerTypes eTarget) const;	// AI_AB_TEST: the hold test for our held target, the new-pick test for any other
 	bool IsStrikeHoldingReachableTarget() const;	// AI_AB_TEST: the strike holds a target a land army can ever reach
 	bool IsStrikeTargetFinished(PlayerTypes eTarget) const;	// AI_AB_TEST: dead, or (after a capture in this war) its original capital out of its hands, or out of reach
 	bool HavePreferredAttackTarget(PlayerTypes eEnemy) const;

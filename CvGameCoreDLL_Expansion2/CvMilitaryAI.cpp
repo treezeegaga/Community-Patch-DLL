@@ -2894,6 +2894,13 @@ bool CvMilitaryAI::IsStrikeTargetHoldable(PlayerTypes eTarget, bool bAtStrikeWar
 	return bAtStrikeWar || IsStrikeTargetOnOurLand(eTarget);
 }
 
+/// AI_AB_TEST (the lead's check of 578de30): the right test for this target: the hold test for our held target, the new-pick
+/// test (with reach) for any other
+bool CvMilitaryAI::IsStrikeTargetValidForUs(PlayerTypes eTarget) const
+{
+	return IsStrikeTargetValid(eTarget, /*bNewTarget*/ eTarget != GetStrikeCityStateTarget());
+}
+
 /// the nearest major the strike can go for (IsStrikeTargetValid), by its nearest city's distance to our capital
 PlayerTypes CvMilitaryAI::FindStrikeMajorInReach() const
 {
@@ -3203,7 +3210,7 @@ void CvMilitaryAI::UpdateStrikeState()
 		PlayerTypes eWindow = (m_iTimingBuildupStartTurn >= 0) ? m_eTimingBuildupTarget : NO_PLAYER;
 		// (the lead's review of 647fdd3) CP's window on a target the strike can't take (a finished major's remnant): closed, so
 		// the declaration block and the readiness don't measure against it. A held target reopens it (the diplomacy)
-		if (eWindow != NO_PLAYER && eWindow != eCS && !IsStrikeTargetValid(eWindow, /*bNewTarget*/ false))
+		if (eWindow != NO_PLAYER && eWindow != eCS && !IsStrikeTargetValidForUs(eWindow))	// (the lead: not held, so the new-pick test)
 		{
 			m_eTimingBuildupTarget = NO_PLAYER;
 			m_iTimingBuildupStartTurn = -1;
