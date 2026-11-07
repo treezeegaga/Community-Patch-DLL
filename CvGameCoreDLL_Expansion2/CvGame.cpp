@@ -11387,6 +11387,11 @@ void CvGame::Serialize(Game& game, Visitor& visitor)
 	// AI_AB_TEST: the test pack's saves only, so the normal pack's save format is unchanged
 	if (MOD_AI_AB_TEST)
 	{
+		// (the lead, Nov 7: saves load across builds) a version, always written first; a new member goes last, read only when
+		// the save's version has it, else its default (visitor.loadAssign)
+		static const uint AB_GAME_TAIL_VERSION = 1;
+		uint uiABTail = AB_GAME_TAIL_VERSION;
+		visitor(uiABTail);
 		// the masks are two 64-bit words each (128 flags)
 		for (int iWord = 0; iWord < ABTestFixMask::NUM_WORDS; iWord++)
 		{

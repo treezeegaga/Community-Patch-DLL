@@ -706,13 +706,21 @@ void CvDiplomacyAI::Serialize(DiplomacyAI& diplomacyAI, Visitor& visitor)
 	visitor(diplomacyAI.m_aiVassalGoldPerTurnTaxedSinceVassalStarted);
 	visitor(diplomacyAI.m_aiVassalGoldPerTurnCollectedSinceVassalStarted);
 
-	// AI_AB_TEST (appended last, so the rest of the layout is unchanged)
-	visitor(diplomacyAI.m_eNewAIConquestTarget);
-	visitor(diplomacyAI.m_aiNumDealsBrokenByWar);
-	visitor(diplomacyAI.m_eSpoilerGrudge);
-	visitor(diplomacyAI.m_iSpoilerBehindTurns);
-	visitor(diplomacyAI.m_iSpoilerBehindStartRatio);
-	visitor(diplomacyAI.m_iSpoilerLastTurn);
+	// AI_AB_TEST (the lead, Nov 7: saves load across builds): our members, last, behind a version that's always written. A new
+	// member goes only here: bump the version, read it only when the save's version has it, else its default
+	// (visitor.loadAssign). Saves from before the version don't load (once)
+	static const uint AB_DIPLOMACY_TAIL_VERSION = 1;
+	uint uiABTail = AB_DIPLOMACY_TAIL_VERSION;
+	visitor(uiABTail);
+	if (uiABTail >= 1)
+	{
+		visitor(diplomacyAI.m_eNewAIConquestTarget);
+		visitor(diplomacyAI.m_aiNumDealsBrokenByWar);
+		visitor(diplomacyAI.m_eSpoilerGrudge);
+		visitor(diplomacyAI.m_iSpoilerBehindTurns);
+		visitor(diplomacyAI.m_iSpoilerBehindStartRatio);
+		visitor(diplomacyAI.m_iSpoilerLastTurn);
+	}
 }
 
 /// Serialization read

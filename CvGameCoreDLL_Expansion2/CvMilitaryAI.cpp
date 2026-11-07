@@ -22,6 +22,9 @@
 // must be included after all other headers
 #include "LintFree.h"
 
+// AI_AB_TEST: the version of CvMilitaryAI's tail block of our members (Serialize); bump it when a member is added there
+static const uint AB_MILITARY_TAIL_VERSION = 1;
+
 // set this to 1 in debugger if needed
 int gDebugOutput = 0;
 
@@ -393,26 +396,6 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iVisibleBarbarianCount);
 	visitor(militaryAI.m_iRecLandUnits);
 	visitor(militaryAI.m_iRecExplorerUnits);
-	visitor(militaryAI.m_iTimingBuildupStartTurn);
-	visitor(militaryAI.m_eTimingBuildupTarget);
-	visitor(militaryAI.m_bTimingBuildupSaving);
-	visitor(militaryAI.m_iTimingBuildupPausedTurns);
-	visitor(militaryAI.m_iStrikeState);
-	visitor(militaryAI.m_iStrikeWarsDeclaredMark);
-	visitor(militaryAI.m_iStrikeWarsOnUsMark);
-	visitor(militaryAI.m_iStrikeCapturedMark);
-	visitor(militaryAI.m_iStrikeLostMark);
-	visitor(militaryAI.m_iStrikeCitiesAtWar);
-	visitor(militaryAI.m_iStrikeArmyAtWar);
-	visitor(militaryAI.m_iStrikeCityState);
-	// AI_AB_TEST (the lead's review of 677f7a4: multiplayer sync) the strike's snapshot, computed only in UpdateStrikeState
-	visitor(militaryAI.m_bTakeable);
-	visitor(militaryAI.m_bStrikeTargetFinished);
-	visitor(militaryAI.m_bStrikeHoldingReachable);
-	visitor(militaryAI.m_bStrikeReady);
-	visitor(militaryAI.m_bStrikeUpgradeGo);
-	visitor(militaryAI.m_iStrikeSiege);
-	visitor(militaryAI.m_iStrikeDeclared);
 	visitor(militaryAI.m_iNumFreeCarriers);
 	visitor(militaryAI.m_iNumArcherLandUnits);
 	visitor(militaryAI.m_iNumSiegeLandUnits);
@@ -436,6 +419,37 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(MakeConstSpan(militaryAI.m_pabUsingStrategy, iNumMilitaryAIStrategies));
 	visitor(MakeConstSpan(militaryAI.m_paiTurnStrategyAdopted, iNumMilitaryAIStrategies));
 	visitor(militaryAI.m_aiWarFocus);
+
+	// AI_AB_TEST (the lead, Nov 7: saves load across builds, to test from a save just before a failure): our members, last,
+	// behind a version that's always written. A new member goes only here: bump AB_MILITARY_TAIL_VERSION, read it only when
+	// the save's version has it, and give it its default otherwise (visitor.loadAssign). No peek-and-rewind: the save stream
+	// (FMemoryStreamRLE) can't seek back. Saves from before this version don't load (once)
+	uint uiABTail = AB_MILITARY_TAIL_VERSION;
+	visitor(uiABTail);
+	if (uiABTail >= 1)
+	{
+		visitor(militaryAI.m_iTimingBuildupStartTurn);
+		visitor(militaryAI.m_eTimingBuildupTarget);
+		visitor(militaryAI.m_bTimingBuildupSaving);
+		visitor(militaryAI.m_iTimingBuildupPausedTurns);
+		visitor(militaryAI.m_iStrikeState);
+		visitor(militaryAI.m_iStrikeWarsDeclaredMark);
+		visitor(militaryAI.m_iStrikeWarsOnUsMark);
+		visitor(militaryAI.m_iStrikeCapturedMark);
+		visitor(militaryAI.m_iStrikeLostMark);
+		visitor(militaryAI.m_iStrikeCitiesAtWar);
+		visitor(militaryAI.m_iStrikeArmyAtWar);
+		visitor(militaryAI.m_iStrikeCityState);
+		// (the lead's review of 677f7a4: multiplayer sync) the strike's snapshot, computed only in UpdateStrikeState
+		visitor(militaryAI.m_bTakeable);
+		visitor(militaryAI.m_bStrikeTargetFinished);
+		visitor(militaryAI.m_bStrikeHoldingReachable);
+		visitor(militaryAI.m_bStrikeReady);
+		visitor(militaryAI.m_bStrikeUpgradeGo);
+		visitor(militaryAI.m_iStrikeSiege);
+		visitor(militaryAI.m_iStrikeDeclared);
+	}
+	// version 2 and later: here, e.g. if (uiABTail >= 2) visitor(militaryAI.m_iNew); else visitor.loadAssign(militaryAI.m_iNew, 0);
 }
 
 /// Serialization read
