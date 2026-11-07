@@ -1048,7 +1048,9 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 		//skip teammates and allied city states
 		if (kLoopPlayer.getTeam() == m_pPlayer->getTeam())
 			continue;
-		if (kLoopPlayer.GetMinorCivAI()->GetAlly() == m_pPlayer->GetID())
+		//AI_AB_TEST (the user: no flip flopping): not the strike's held target, even allied (178B8F13: the Huns allied their own
+		//target Hong Kong through its quests; it stays the target and must stay an attack target)
+		if (kLoopPlayer.GetMinorCivAI()->GetAlly() == m_pPlayer->GetID() && (PlayerTypes)iPlayer != GetStrikeCityStateTarget())
 			continue;
 
 		//don't need to filter for coastal cities, pathfinder will sort it out
@@ -2518,36 +2520,22 @@ const CvCity* CvMilitaryAI::GetStrikeObjectiveCity(PlayerTypes eTarget) const
 	return (pPlot && pPlot->isCity()) ? pPlot->getPlotCity() : NULL;
 }
 
-/// the strike's job is done: the target's original capital is ours. If the target no longer holds it (a third party took
-/// it, or it's gone), the old rule: a city taken from the target since the strike's war began. A city-state's one city is
-/// its capital
-bool CvMilitaryAI::IsStrikeObjectiveTaken(PlayerTypes eTarget) const
+/// AI_AB_TEST (the user: "no, no flip flopping. aggressive civs choose targets and then eliminate them. completely." and
+/// "we can leave a single minor settlement, and then get a peace deal. but we take the capital every time"): the strike is
+/// finished with its target. Dead; or, once a city has been taken from it in this war (the lead's review: a capital held
+/// before the war doesn't count), its original capital is out of its hands (ours, or a third party's, or gone) and it has
+/// one city at most left, or none of its cities is a land attack target any more (what's left is out of an army's reach;
+/// the lead's checklist: a lock needs a release when its goal can't be reached)
+bool CvMilitaryAI::IsStrikeTargetFinished(PlayerTypes eTarget) const
 {
-	// (the lead's review of 227f759) nothing taken from the target in this war: never done, even if its capital is already
-	// ours (a counter-attack in PREP or BUILDUP, a deal)
+	if (eTarget == NO_PLAYER || !GET_PLAYER(eTarget).isAlive())
+		return true;
 	if (GetStrikeTargetCaptures() <= m_iStrikeCapturedMark)
 		return false;
-	// a city taken: done unless the target still holds its capital and an army can reach it (a land attack target). An
-	// unreachable capital (across water, behind a choke) falls back to the old rule, the first capture (the lead's review: a
-	// widened lock needs the old release when the later goal can't be reached)
-	const CvCity* pObjective = GetStrikeObjectiveCity(eTarget);
-	if (pObjective && pObjective->getOwner() == eTarget && IsPossibleAttackTarget(pObjective, ARMY_TYPE_LAND))
-		return false;
-	return true;
-}
-
-/// (the lead's review of 227f759) the strike's army is spent against the target's capital: the field army can't take it
-/// (the strike's math) and one more unit isn't affordable for 10 turns. No capital held by the target: false
-bool CvMilitaryAI::IsStrikeArmySpent(PlayerTypes eTarget) const
-{
-	const CvCity* pObjective = GetStrikeObjectiveCity(eTarget);
-	if (!pObjective || pObjective->getOwner() != eTarget)
-		return false;
-	if (m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(10) >= 1)
-		return false;
-	std::vector<const CvUnit*> vUnits;
-	GetStrikeFieldUnits(m_pPlayer, vUnits);
-	return !StrikeUnitsTakeCity(vUnits, pObjective);
+	const CvCity* pCapital = GetStrikeObjectiveCity(eTarget);
+	if ((!pCapital || pCapital->getOwner() != eTarget) && GET_PLAYER(eTarget).getNumCities() <= 1)
+		return true;
+	return !HaveStrikeLandAttackTarget(eTarget);
 }
 
 /// cities taken from majors and from city-states (AB_COUNT_CITIES_CAPTURED counts majors only)
@@ -2557,7 +2545,7 @@ int CvMilitaryAI::GetStrikeCaptureCount() const
 }
 
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
-/// strike's war against this player (alive, at war with us), until its capital is taken (IsStrikeObjectiveTaken). Read by the peace willingness,
+/// strike's war against this player (alive, at war with us), until the strike is finished with it (IsStrikeTargetFinished). Read by the peace willingness,
 /// the operations' aborts and the ownership gates. Released on a game-state loss (the lead's review: no fight to the death):
 /// a city of ours lost since the war began, our capital in danger of falling, or the war nearly lost (CP's
 /// WAR_STATE_NEARLY_DEFEATED; not DEFENSIVE, which is the abort gate 4 refuses)
@@ -2569,8 +2557,8 @@ bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 		return false;
 	if (!GET_PLAYER(eEnemy).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eEnemy).getTeam()))
 		return false;
-	// the strike's objective taken: the target's capital (the user, the trio game; before, the first city taken from it)
-	if (IsStrikeObjectiveTaken(eEnemy))
+	// the strike finished with its target (the user: eliminate it, the capital every time; IsStrikeTargetFinished)
+	if (IsStrikeTargetFinished(eEnemy))
 		return false;
 	// a city of ours lost since the war began, to anyone (majors, city-states, barbarians: our count fell, or the majors counter
 	// rose), or any city of ours in danger of falling (the lead: DEFENSIVE releases when a city is in danger)
@@ -2698,6 +2686,14 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 	const CvCity* pCity = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
 	if (!pCity || !pCity->plot()->isRevealed(eOurTeam) || plotDistance(pCapital->getX(), pCapital->getY(), pCity->getX(), pCity->getY()) > 12)
 		return false;
+	// (the user: "we can leave a single minor settlement, and then get a peace deal") a civ already finished, its capital out of
+	// its hands and one city at most left, isn't a new target (the strike just finished with it)
+	if (bNewTarget && kOther.isMajorCiv() && kOther.getNumCities() <= 1)
+	{
+		const CvCity* pOriginalCapital = GetStrikeObjectiveCity(eTarget);
+		if (!pOriginalCapital || pOriginalCapital->getOwner() != eTarget)
+			return false;
+	}
 	return !bNewTarget || HaveStrikeLandAttackTarget(eTarget);
 }
 
@@ -2927,7 +2923,15 @@ void CvMilitaryAI::UpdateStrikeState()
 	// kept while alive (BUILDUP's own check re-validates it)
 	const PlayerTypes eOldCS = GetStrikeCityStateTarget();
 	PlayerTypes eCS = NO_PLAYER;
-	if (bEarly && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
+	// AI_AB_TEST (the user: "no, no flip flopping. aggressive civs choose targets and then eliminate them. completely."): a
+	// target once picked is held while it's alive and not on our team. No re-pick, no re-target, no giving way to a major
+	if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && GET_PLAYER(eOldCS).getTeam() != m_pPlayer->getTeam() &&
+		!GET_TEAM(GET_PLAYER(eOldCS).getTeam()).IsVassal(m_pPlayer->getTeam()) && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
+		eCS = eOldCS;
+	// the first pick in PREP: CP's committed major in reach is held as soon as it's valid
+	else if (bEarly && eNew == STRIKE_PREP && bInReach && IsStrikeTargetValid(eTarget))
+		eCS = eTarget;
+	else if (bEarly && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
 	{
 		if (eNew != STRIKE_PREP)
 		{
@@ -2996,7 +3000,10 @@ void CvMilitaryAI::UpdateStrikeState()
 		const char* szHow = "";
 		// (the strike's reach, 17A1A659) a held target first while an army can reach it; then the new ones (all reachable); a held
 		// target out of reach only when nothing reachable is left (a turn out of the attack targets doesn't re-target)
-		if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ true))
+		// (the user: no flip flopping) the held target, while alive
+		if (eCS != NO_PLAYER)
+			eKeep = eCS, szHow = "the held target";
+		else if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ true))
 			eKeep = eWindow, szHow = "the build-up's target";
 		else if (IsStrikeTargetValid(eTarget, /*bNewTarget*/ true))
 			eKeep = eTarget, szHow = "the current target";
@@ -3012,19 +3019,21 @@ void CvMilitaryAI::UpdateStrikeState()
 			eKeep = eTarget, szHow = "the current target (no army path this turn)";
 		else
 			eKeep = NO_PLAYER;
+		// no target in reach: wait in BUILDUP and pick one when it comes (178B8F13: the Huns went OVER at T40, Jakarta came in
+		// reach at T42; the user: aggressive civs choose targets). Not an exit
 		if (eKeep == NO_PLAYER)
 		{
-			eNew = STRIKE_OVER;
-			strWhy = "no target in reach (no major or city-state the strike can declare on and reach)";
+			eTarget = NO_PLAYER;
+			pTargetCity = NULL;
+			bInReach = false;
 		}
-		else if (eKeep != eTarget || (eWindow != NO_PLAYER && eKeep != eWindow))
+		else if (eKeep != eTarget || (eWindow != NO_PLAYER && eKeep != eWindow) || GetStrikeCityStateTarget() != eKeep)
 		{
 			if (GC.getLogging() && GC.getAILogging())
 				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s -> %s (%s; the build-up's target %s; %s)",
 					eTarget != NO_PLAYER ? GET_PLAYER(eTarget).getCivilizationShortDescription() : "none", GET_PLAYER(eKeep).getCivilizationShortDescription(), szHow,
 					eWindow != NO_PLAYER ? GET_PLAYER(eWindow).getCivilizationShortDescription() : "none", bEarly ? "EarlyStrike" : "LateStrike"));
-			if (eKeep != eTarget)
-				m_iStrikeCityState = eKeep;
+			m_iStrikeCityState = eKeep;	// held from now on (the user: no flip flopping)
 			if (eWindow != NO_PLAYER)
 				m_eTimingBuildupTarget = eKeep;
 			// a new city to take: its siege and takeable answers start over (the window's own target only pinned: kept)
@@ -3033,8 +3042,7 @@ void CvMilitaryAI::UpdateStrikeState()
 				m_iStrikeSiege = 0;
 				m_iTakeableTurn = -1;
 			}
-			if (eKeep != eTarget)
-				eCS = eKeep;
+			eCS = eKeep;
 			eTarget = eKeep;
 			pTargetCity = m_pPlayer->GetClosestCityToUsByPlots(eKeep);
 			bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
@@ -3099,7 +3107,8 @@ void CvMilitaryAI::UpdateStrikeState()
 		// build-up brings siege. Never OVER for this
 		else if (eNew == STRIKE_BUILDUP && pTargetCity && m_iStrikeSiege == 0 && !IsStrikeArmyStrongEnough(pTargetCity))
 		{
-			const PlayerTypes eRetarget = FindStrikeRetarget(eTarget, pTargetCity);
+			// (the user: no flip flopping) no re-target to an easier city: the build-up brings siege
+			const PlayerTypes eRetarget = NO_PLAYER;
 			if (eRetarget != NO_PLAYER)
 			{
 				const CvCity* pNewCity = m_pPlayer->GetClosestCityToUsByPlots(eRetarget);
@@ -3129,8 +3138,8 @@ void CvMilitaryAI::UpdateStrikeState()
 					plotDistance(pLoopUnit->getX(), pLoopUnit->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 8)
 					iCounters++;
 			}
-			if (iCounters >= 3)
-				eNew = STRIKE_OVER, strWhy = CvString::format("the target fields the counter (%d units with a bonus against our core)", iCounters);
+			// (the user: no flip flopping) the target's counter units are no exit: the target is held
+			(void)iCounters;
 		}
 		// Personality's plan exits (China's from the research): the target city too strong, the plan's counter units seen near
 		// it, or the city on a hill
@@ -3147,16 +3156,11 @@ void CvMilitaryAI::UpdateStrikeState()
 						iPlanCounters++;
 				}
 			}
-			if (kPlan.iExitCityStrength > 0 && pTargetCity->getStrengthValue() / 100 >= kPlan.iExitCityStrength)
-				eNew = STRIKE_OVER, strWhy = CvString::format("the target city's defence %d is at the plan's limit %d", pTargetCity->getStrengthValue() / 100, kPlan.iExitCityStrength);
-			else if (iPlanCounters >= 2)
-				eNew = STRIKE_OVER, strWhy = CvString::format("the plan's counter units near the target (%d)", iPlanCounters);
-			else if (kPlan.bExitRoughTarget && pTargetCity->plot()->isHills())
-				eNew = STRIKE_OVER, strWhy = "the target city is on a hill (the plan's rough-target exit)";
+			// (the user: no flip flopping) the plan's target exits (city strength, counter units, a hill) are no exit: the target is
+			// held, and the build-up brings siege and more core (Economy 0053)
+			(void)iPlanCounters;
 		}
-		if (eNew == STRIKE_PREP && bEarly && !bInReach && GetEarlyStrikeMeleeUnits() >= EARLY_STRIKE_MELEE_MIN &&
-			TimingBuildupFieldUnits(m_pPlayer, this, m_pPlayer->GetNumUnitsWithUnitAI(UNITAI_CITY_BOMBARD, false, true)) >= 8)
-			eNew = STRIKE_OVER, strWhy = "the army is built and no target is in reach";
+		// (the user: aggressive civs choose targets) no "army built, no target in reach" exit: PREP waits for a target
 	}
 
 	// a strike's build-up: why it isn't ready yet, logged when the blockers change (the lead: a long BUILDUP must say what held
@@ -3242,22 +3246,39 @@ void CvMilitaryAI::UpdateStrikeState()
 		// the strike's war ends with its purpose (the lead's review: it outlived it, and its ownership of production, gold
 		// and research with it): a city taken (the war itself goes on, CP's), or peace with the target or the target gone
 		const PlayerTypes eWarTarget = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
-		// (the user, the trio game) its purpose is the target's capital, not its first city
-		if (eWarTarget != NO_PLAYER && IsStrikeObjectiveTaken(eWarTarget))
-			eNew = STRIKE_OVER, strWhy = "the target's capital taken: the strike's job is done (the war goes on as CP's)";
-		// (the lead's review of 227f759) a city taken, and the army spent: the field army can't take the capital and no more
-		// units are affordable (the stalled-BUILDUP exit's measure). Game state, no turn count
-		else if (eWarTarget != NO_PLAYER && GetStrikeTargetCaptures() > m_iStrikeCapturedMark && IsStrikeArmySpent(eWarTarget))
-			eNew = STRIKE_OVER, strWhy = "a city taken, then the army spent (it can't take the capital and nothing more is affordable): the war goes on as CP's";
-		else if (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
-			eNew = STRIKE_OVER, strWhy = iCaptured > m_iStrikeCapturedMark ? "peace with the target (or it's gone), its capital not taken" : "peace with the target (or it's gone), nothing taken";
+		// (the user: "aggressive civs choose targets and then eliminate them. completely" / "we take the capital every time") the
+		// target finished (IsStrikeTargetFinished): the strike goes on to its next target, back in BUILDUP (the army is there;
+		// the declaration waits for the take-the-city check). The bans and blocks hold
+		if (eWarTarget == NO_PLAYER || IsStrikeTargetFinished(eWarTarget))
+		{
+			eNew = STRIKE_BUILDUP;
+			strWhy = (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive()) ? "the target eliminated: the next target" :
+				"the target finished (its capital taken, one city at most left, or the rest out of reach): the next target";
+			m_iStrikeCityState = NO_PLAYER;
+			m_eTimingBuildupTarget = NO_PLAYER;
+			m_iStrikeSiege = 0;
+			m_iTakeableTurn = -1;
+			m_iStrikeWarsDeclaredMark = iWarsDeclared;
+			m_iStrikeWarsOnUsMark = iWarsOnUs;
+		}
+		// peace with a target not finished (a loss released no-retreat, or a forced peace): the target is held, and the strike
+		// builds up and declares again when it can
+		else if (!GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
+		{
+			eNew = STRIKE_BUILDUP;
+			strWhy = "peace with the target, not finished: the target is held, the strike builds up again";
+			m_iStrikeSiege = 0;
+			m_iTakeableTurn = -1;
+			m_iStrikeWarsDeclaredMark = iWarsDeclared;
+			m_iStrikeWarsOnUsMark = iWarsOnUs;
+		}
 		// a lasting loss (the lead's review: WAR had no exit when losing, and kept production and the wonder ban for good): no
 		// retreat released by a city lost or the war nearly lost. A city in danger releases it too, but passes, so OVER waits
 		// until home is safe again
 		else if (!IsStrikeNoRetreat(eWarTarget) && IsStrikeHomeSafe())
 			eNew = STRIKE_OVER, strWhy = "no-retreat released by a loss (a city lost or the war nearly lost): the war goes on as CP's";
-		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; until the target's capital
-		// is taken, an attack on the strike's target is always under way, aimed at the capital
+		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; until the target is finished, an
+		// attack on it is always under way, aimed at its capital first
 		else
 		{
 			const PlayerTypes eStrikeEnemy = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
