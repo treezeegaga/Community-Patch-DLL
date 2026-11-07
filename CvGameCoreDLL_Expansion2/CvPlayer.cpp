@@ -34054,9 +34054,12 @@ TechTypes CvPlayer::GetLateStrikeTech() const
 /// EarlyStrike: K cities before the strike; past K, no settlers until it's over
 bool CvPlayer::IsEarlyStrikeCityCapReached() const
 {
-	// the cap holds until the strike is OVER (War's game-state exits), through the war itself; no turn limit
+	// the cap holds until the strike is OVER (War's game-state exits), through the war itself; no turn limit.
+	// (0061) And only until the strike's first declaration: K is the plan's cities BEFORE the strike. Since the user's "no flip
+	// flopping" (War: a finished target sends WAR back to BUILDUP for the next one, OVER is rare), "until OVER" became all
+	// game, and a strike civ waiting in a target-less BUILDUP could neither expand nor fight
 	if (!MOD_AI_AB_TEST || !IsCandidateWarmonger(FIX_EARLY_STRIKE) || GetEarlyStrikeCoreClass() == NO_UNITCLASS || !GetMilitaryAI() ||
-		GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_OVER)
+		GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_OVER || GetMilitaryAI()->HasStrikeDeclared())
 		return false;
 	CvEarlyStrikePlan kPlan;
 	return GetEarlyStrikePlan(kPlan) && getNumCities() >= kPlan.iMaxCities;
