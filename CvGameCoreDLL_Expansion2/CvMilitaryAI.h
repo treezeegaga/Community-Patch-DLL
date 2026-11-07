@@ -197,6 +197,7 @@ public:
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
 	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
 	const CvCity* GetStrikeObjectiveCity(PlayerTypes eTarget) const;	// AI_AB_TEST: the target's original capital (the strike's objective)
+	bool IsStrikeArmySpent(PlayerTypes eTarget) const;	// AI_AB_TEST: the field army can't take the target's capital and nothing more is affordable
 	bool IsStrikeObjectiveTaken(PlayerTypes eTarget) const;	// AI_AB_TEST: that capital is ours (or, with it out of the target's hands, a city taken from it)
 	bool HavePreferredAttackTarget(PlayerTypes eEnemy) const;
 	bool IsPossibleAttackTarget(const CvCity* pCity, ArmyType eArmyType) const;
@@ -265,7 +266,7 @@ public:
 	bool StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits, const CvCity* pCity, int* piTurnsNeeded = NULL) const;	// the strike's math for these units, defenders near the city subtracted
 	bool IsStrikeRefusingPeace(PlayerTypes eOther) const;	// ownership gate (2-4): no peace, approach WAR, no retreat aborts toward this player
 	bool IsStrikeKeepingUnit(const CvUnit* pUnit) const;	// ownership gate (5): a strike unit no CP system disbands or gifts
-	bool IsStrikeOwningOperations() const;	// ownership gate (4): PREP, BUILDUP, or WAR before a city is taken
+	bool IsStrikeOwningOperations() const;	// ownership gate (4): PREP, BUILDUP, or WAR before the target's capital is taken
 	bool IsStrikeOperationTarget(PlayerTypes eOther) const;	// a player the strike's army may attack
 	int GetStrikeCaptureCount() const;	// cities captured from majors and city-states
 	int GetStrikeTargetCaptures() const;	// our cities whose previous owner is the strike's target (the strike's capture measure)

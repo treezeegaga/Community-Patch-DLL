@@ -1072,7 +1072,7 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful, const CvCity* pPreferredCity)
 {
 	// AI_AB_TEST (the strike's ownership, gate 4: the army's operations; the lead, bullygreedy23 169CA418): while the strike
-	// is on (PREP, BUILDUP, or WAR before a city is taken) its army attacks only the strike's target, or a player already at
+	// is on (PREP, BUILDUP, or WAR before the target's capital is taken) its army attacks only the strike's target, or a player already at
 	// war with us. CP's own attacks on another player (sneak operations on its conquest target, coop wars, CS quests) don't
 	// start; in 169CA418 they gathered the army at Marrakech while the strike was at war with Ur
 	if (IsStrikeOwningOperations() && !IsStrikeOperationTarget(eIntendedTarget))
@@ -1098,12 +1098,11 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 
 		CvPlot* pMusterPlot = m_potentialAttackTargets[i].GetMusterPlot();
 		CvPlot* pTargetPlot = m_potentialAttackTargets[i].GetTargetPlot();
-		if (iPass == 0)
-		{
-			if (pTargetPlot != pPreferredPlot)
-				continue;
-			bPreferredListed = true;
-		}
+		// (the lead's review of 227f759) pass 0 is the capital's land entries only; it counts as handled only when its
+		// operation starts (returned below) or SiegeFeed skips it (under siege). A failed or sea-only capital falls through to
+		// the target's other cities in pass 1
+		if (iPass == 0 && (pTargetPlot != pPreferredPlot || m_potentialAttackTargets[i].m_armyType != ARMY_TYPE_LAND))
+			continue;
 		PlayerTypes eTargetPlayer = pTargetPlot->getOwner();
 		if (eTargetPlayer != eIntendedTarget)
 			continue;
@@ -1125,6 +1124,8 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 						GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription(),
 						pTargetPlot->getPlotCity()->getNameNoSpace().c_str(), pSiegeZone->GetTotalFriendlyUnitCount()).c_str());
 				}
+				if (iPass == 0)
+					bPreferredListed = true;	// the capital is under siege already: no attack elsewhere
 				continue;
 			}
 		}
@@ -2318,6 +2319,20 @@ bool CvMilitaryAI::IsStrikeArmyStrongEnough(const CvCity* pCity, int* piTurnsNee
 	return StrikeArmyTakesCity(pCity, vArmy, piTurnsNeeded);
 }
 
+/// the field army: our land combat units but the garrisons (the lead's review: a city's garrison doesn't march)
+static void GetStrikeFieldUnits(const CvPlayer* pPlayer, std::vector<const CvUnit*>& vUnits)
+{
+	vUnits.clear();
+	int iLoop = 0;
+	for (const CvUnit* pLoopUnit = pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || (!pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged()) ||
+			pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pLoopUnit->isDelayedDeath() || pLoopUnit->IsGarrisoned())
+			continue;
+		vUnits.push_back(pLoopUnit);
+	}
+}
+
 /// the user: "only start the attack if the city is takeable": the land combat units we have (siege included, as they are)
 /// against the strike's target's nearest city. No target city: false
 bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
@@ -2334,16 +2349,8 @@ bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
 	// no army path to the target, nothing to take (the strike's reach, 17A1A659: no declaration on a city no army can reach)
 	if (!pCity || !HaveStrikeLandAttackTarget(eTarget))
 		return false;
-	// the field army: our land combat units but the garrisons (the lead's review: a city's garrison doesn't march)
 	std::vector<const CvUnit*> vUnits;
-	int iLoop = 0;
-	for (const CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
-	{
-		if (pLoopUnit->getDomainType() != DOMAIN_LAND || (!pLoopUnit->IsCombatUnit() && !pLoopUnit->IsCanAttackRanged()) ||
-			pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE || pLoopUnit->isDelayedDeath() || pLoopUnit->IsGarrisoned())
-			continue;
-		vUnits.push_back(pLoopUnit);
-	}
+	GetStrikeFieldUnits(m_pPlayer, vUnits);
 	m_bTakeable = StrikeUnitsTakeCity(vUnits, pCity, piTurnsNeeded);
 	return m_bTakeable;
 }
@@ -2418,7 +2425,7 @@ bool CvMilitaryAI::IsStrikeDeclarationBlocked(PlayerTypes eOn) const
 {
 	const StrikeStateTypes eState = GetStrikeState();
 	const bool bTarget = eOn != NO_PLAYER && (eOn == m_eTimingBuildupTarget || eOn == GetStrikeCityStateTarget());
-	// in the strike's war, until a city is taken from the target, no second war either (169CA418: CP's sneak operation on
+	// in the strike's war, until the target's capital is taken, no second war either (169CA418: CP's sneak operation on
 	// Morocco declared at T76 while the strike's war on Ur had taken nothing)
 	if (eState == STRIKE_WAR)
 	{
@@ -2446,7 +2453,7 @@ bool CvMilitaryAI::IsStrikeRefusingPeace(PlayerTypes eOther) const
 		GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOther).getTeam());
 }
 
-/// the strike's ownership (gate 4, operations): PREP, BUILDUP, or WAR before a city is taken from the target
+/// the strike's ownership (gate 4, operations): PREP, BUILDUP, or WAR before the target's capital is taken
 bool CvMilitaryAI::IsStrikeOwningOperations() const
 {
 	if (m_pPlayer->isHuman() || !m_pPlayer->isMajorCiv())
@@ -2516,12 +2523,31 @@ const CvCity* CvMilitaryAI::GetStrikeObjectiveCity(PlayerTypes eTarget) const
 /// its capital
 bool CvMilitaryAI::IsStrikeObjectiveTaken(PlayerTypes eTarget) const
 {
-	const CvCity* pObjective = GetStrikeObjectiveCity(eTarget);
-	if (pObjective && pObjective->getTeam() == m_pPlayer->getTeam())
-		return true;
-	if (pObjective && pObjective->getOwner() == eTarget)
+	// (the lead's review of 227f759) nothing taken from the target in this war: never done, even if its capital is already
+	// ours (a counter-attack in PREP or BUILDUP, a deal)
+	if (GetStrikeTargetCaptures() <= m_iStrikeCapturedMark)
 		return false;
-	return GetStrikeTargetCaptures() > m_iStrikeCapturedMark;
+	// a city taken: done unless the target still holds its capital and an army can reach it (a land attack target). An
+	// unreachable capital (across water, behind a choke) falls back to the old rule, the first capture (the lead's review: a
+	// widened lock needs the old release when the later goal can't be reached)
+	const CvCity* pObjective = GetStrikeObjectiveCity(eTarget);
+	if (pObjective && pObjective->getOwner() == eTarget && IsPossibleAttackTarget(pObjective, ARMY_TYPE_LAND))
+		return false;
+	return true;
+}
+
+/// (the lead's review of 227f759) the strike's army is spent against the target's capital: the field army can't take it
+/// (the strike's math) and one more unit isn't affordable for 10 turns. No capital held by the target: false
+bool CvMilitaryAI::IsStrikeArmySpent(PlayerTypes eTarget) const
+{
+	const CvCity* pObjective = GetStrikeObjectiveCity(eTarget);
+	if (!pObjective || pObjective->getOwner() != eTarget)
+		return false;
+	if (m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(10) >= 1)
+		return false;
+	std::vector<const CvUnit*> vUnits;
+	GetStrikeFieldUnits(m_pPlayer, vUnits);
+	return !StrikeUnitsTakeCity(vUnits, pObjective);
 }
 
 /// cities taken from majors and from city-states (AB_COUNT_CITIES_CAPTURED counts majors only)
@@ -2531,7 +2557,7 @@ int CvMilitaryAI::GetStrikeCaptureCount() const
 }
 
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
-/// strike's war against this player (alive, at war with us), until a city is taken from it. Read by the peace willingness,
+/// strike's war against this player (alive, at war with us), until its capital is taken (IsStrikeObjectiveTaken). Read by the peace willingness,
 /// the operations' aborts and the ownership gates. Released on a game-state loss (the lead's review: no fight to the death):
 /// a city of ours lost since the war began, our capital in danger of falling, or the war nearly lost (CP's
 /// WAR_STATE_NEARLY_DEFEATED; not DEFENSIVE, which is the abort gate 4 refuses)
@@ -3219,6 +3245,10 @@ void CvMilitaryAI::UpdateStrikeState()
 		// (the user, the trio game) its purpose is the target's capital, not its first city
 		if (eWarTarget != NO_PLAYER && IsStrikeObjectiveTaken(eWarTarget))
 			eNew = STRIKE_OVER, strWhy = "the target's capital taken: the strike's job is done (the war goes on as CP's)";
+		// (the lead's review of 227f759) a city taken, and the army spent: the field army can't take the capital and no more
+		// units are affordable (the stalled-BUILDUP exit's measure). Game state, no turn count
+		else if (eWarTarget != NO_PLAYER && GetStrikeTargetCaptures() > m_iStrikeCapturedMark && IsStrikeArmySpent(eWarTarget))
+			eNew = STRIKE_OVER, strWhy = "a city taken, then the army spent (it can't take the capital and nothing more is affordable): the war goes on as CP's";
 		else if (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
 			eNew = STRIKE_OVER, strWhy = iCaptured > m_iStrikeCapturedMark ? "peace with the target (or it's gone), its capital not taken" : "peace with the target (or it's gone), nothing taken";
 		// a lasting loss (the lead's review: WAR had no exit when losing, and kept production and the wonder ban for good): no
@@ -3226,8 +3256,8 @@ void CvMilitaryAI::UpdateStrikeState()
 		// until home is safe again
 		else if (!IsStrikeNoRetreat(eWarTarget) && IsStrikeHomeSafe())
 			eNew = STRIKE_OVER, strWhy = "no-retreat released by a loss (a city lost or the war nearly lost): the war goes on as CP's";
-		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; while nothing is taken from the
-		// strike's target, an attack on it is always under way
+		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; until the target's capital
+		// is taken, an attack on the strike's target is always under way, aimed at the capital
 		else
 		{
 			const PlayerTypes eStrikeEnemy = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;

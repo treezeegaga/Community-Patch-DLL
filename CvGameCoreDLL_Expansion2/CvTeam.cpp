@@ -1223,7 +1223,7 @@ static bool IsStrikeDeclarationRefused(CvTeam& kTeam, TeamTypes eTarget)
 }
 
 /// AI_AB_TEST (the strike's ownership, gate 2; the lead's audit): an AI strike civ on either team refuses peace with a member
-/// of the other (CvMilitaryAI::IsStrikeRefusingPeace: no retreat until a city is taken)
+/// of the other (CvMilitaryAI::IsStrikeRefusingPeace: no retreat until the target's capital is taken)
 static bool IsStrikePeaceRefused(CvTeam& kTeam, TeamTypes eOther)
 {
 	const vector<PlayerTypes>& vMembers = kTeam.getPlayers();
@@ -2187,7 +2187,7 @@ void CvTeam::DoNowAtWarOrPeace(TeamTypes eTeam, bool bWar, vector<pair<PlayerTyp
 //	------------------------------------------------------------------------------------------------
 void CvTeam::makePeace(TeamTypes eTeam, bool bBumpUnits, bool bSuppressNotification, PlayerTypes eOriginatingPlayer)
 {
-	// AI_AB_TEST (the strike's ownership, gate 2): every peace passes here; a strike civ makes none with its target until a city
+	// AI_AB_TEST (the strike's ownership, gate 2): every peace passes here; a strike civ makes none with its target until its capital
 	// is taken. Deals are refused at their items first (IsStrikePeaceRefusedWith in CvDeal::IsPossibleToTradeItem), so none
 	// half-executes. Only an AI's own peace between teams with no human (the lead's review: not Lua's Teams:MakePeace, not
 	// the game's vassal liberation, not a human's)
@@ -2198,7 +2198,7 @@ void CvTeam::makePeace(TeamTypes eTeam, bool bBumpUnits, bool bSuppressNotificat
 		IsStrikePeaceRefused(GET_TEAM(GET_PLAYER(eOriginatingPlayer).getTeam()), GET_PLAYER(eOriginatingPlayer).getTeam() == GetID() ? eTeam : GetID()))
 	{
 		if (GC.getLogging() && GC.getAILogging() && getLeaderID() != NO_PLAYER && GET_PLAYER(getLeaderID()).isMajorCiv())
-			GET_PLAYER(getLeaderID()).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: CvTeam::makePeace with team %d refused (gate 2: no retreat until a city is taken)", (int)eTeam));
+			GET_PLAYER(getLeaderID()).GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: CvTeam::makePeace with team %d refused (gate 2: no retreat until the target's capital is taken)", (int)eTeam));
 		return;
 	}
 	DoMakePeace(eOriginatingPlayer, true, eTeam, bBumpUnits, bSuppressNotification);

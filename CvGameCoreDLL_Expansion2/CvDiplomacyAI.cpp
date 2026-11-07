@@ -23562,7 +23562,7 @@ PlayerTypes CvDiplomacyAI::GetNewAIConquestTarget(const char*& szReason)
 		pPlayer->GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_BUILDUP && pPlayer->GetMilitaryAI()->GetStrikeCityStateTarget() != NO_PLAYER;
 	if (!pPlayer->isMajorCiv() || pPlayer->getNumCities() == 0 || (pPlayer->IsAtWarAnyMajor() && !bStrikeThroughWar) || pPlayer->isHuman())
 		return NO_PLAYER;
-	// AI_AB_TEST (the strike's ownership; the lead's review): in the strike's war on its city-state, before a city is taken, CP
+	// AI_AB_TEST (the strike's ownership; the lead's review): in the strike's war on its city-state, before the target's capital is taken, CP
 	// holds no major target either (169CA418: CP re-committed to Morocco during the war on Ur)
 	{
 		const CvMilitaryAI* pStrikeMilitary = pPlayer->GetMilitaryAI();
@@ -25892,12 +25892,12 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 			}
 
 			// AI_AB_TEST (EarlyStrike, LateStrike; the user: "i dont think there should be any retreat once you commit"): no peace
-			// with the strike's target until a city is taken from it
+			// with the strike's target until its capital is taken
 			if (GetPlayer()->GetMilitaryAI()->IsStrikeNoRetreat(eLoopPlayer))
 			{
 				if (bMajor)
 				{
-					RefusePeaceTreaty(eLoopPlayer, CvString("STRIKE: no retreat until a city is taken"));
+					RefusePeaceTreaty(eLoopPlayer, CvString("STRIKE: no retreat until the target's capital is taken"));
 					vPeaceBlockedMajors.push_back(eLoopPlayer);
 				}
 				continue;
@@ -26051,7 +26051,7 @@ void CvDiplomacyAI::DoUpdatePeaceTreatyWillingness(bool bMyTurn)
 				continue;
 
 			// AI_AB_TEST (strike; the lead, bullygreedy23 167DE984): never with the strike's own city-state target during its
-			// build-up and war until a city is taken (the user: no retreat once committed). The strike's declaration was undone
+			// build-up and war until the target's capital is taken (the user: no retreat once committed). The strike's declaration was undone
 			// here every turn
 			{
 				const CvMilitaryAI* pStrikeMilitary = GetPlayer()->GetMilitaryAI();
