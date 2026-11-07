@@ -3601,16 +3601,18 @@ void CvMilitaryAI::UpdateStrikeState()
 			const int iAffordable = m_pPlayer->GetEconomicAI()->GetAffordableWarUnits(20);
 			const bool bBuilt = IsTimingBuildupArmyBuilt();
 			const int iKey = 1 + iSiege + 8 * GetTimingBuildupSiegeTarget() + 64 * iField + 4096 * GetTimingBuildupFieldTarget() + (bPlanArmy ? 1 << 20 : 0) +
-				(iBill > 0 ? 1 << 21 : 0) + (iMelee >= EARLY_STRIKE_MELEE_MIN ? 1 << 22 : 0) + (iAffordable > 0 ? 1 << 23 : 0) + (bBuilt ? 1 << 24 : 0);
+				(iBill > 0 ? 1 << 21 : 0) + (iMelee >= EARLY_STRIKE_MELEE_MIN ? 1 << 22 : 0) + (iAffordable > 0 ? 1 << 23 : 0) + (bBuilt ? 1 << 24 : 0) +
+				(m_bTakeable ? 1 << 25 : 0);	// (1B02BA85) the army on hand's answer too
 			if (iKey != m_iStrikeNotReadyKey)
 			{
 				m_iStrikeNotReadyKey = iKey;
 				const CvStrikePlan& kStrikePlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 				int iTurnsToTake = -1;
 				const bool bTakeable = IsStrikeArmyStrongEnough(pTargetCity, &iTurnsToTake);
-				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: not ready (target %s defence %d: the plan's army %s%s; normal army %s: field %d/%d, siege %d/%d; plan army %s: core line %d/%d, support line %d/%d, upgrade tech %s, plan bill %d; upgrade bill %d (gold %d); melee %d/%d; affordable %d more)",
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: not ready (target %s defence %d: the plan's army %s%s; the army on hand %s; normal army %s: field %d/%d, siege %d/%d; plan army %s: core line %d/%d, support line %d/%d, upgrade tech %s, plan bill %d; upgrade bill %d (gold %d); melee %d/%d; affordable %d more)",
 					pTargetCity ? pTargetCity->getNameNoSpace().c_str() : "-", pTargetCity ? pTargetCity->getStrengthValue() / 100 : -1,
 					bTakeable ? "takes it" : "can't take it", (bTakeable && iTurnsToTake > 0) ? CvString::format(" in about %d turns", iTurnsToTake).c_str() : "",
+					m_bTakeable ? "takes it" : "can't take it",
 					bBuilt ? "built" : "short", iField, GetTimingBuildupFieldTarget(), iSiege, GetTimingBuildupSiegeTarget(), bPlanArmy ? "ready" : "short",
 					m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kStrikePlan.eCoreClass), kStrikePlan.iCoreTarget,
 					m_pPlayer->GetGrandStrategyAI()->CountStrikeClassLine(kStrikePlan.eSupportClass), kStrikePlan.iSupportTarget,
@@ -3720,6 +3722,29 @@ void CvMilitaryAI::UpdateStrikeState()
 					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: no attack under way on %s; city attack requested (%s)",
 						GET_PLAYER(eStrikeEnemy).getCivilizationShortDescription(), bRequested ? "started" : bSiegeFed ? "not started: under siege already (SiegeFeed)" :
 						HaveStrikeLandAttackTarget(eStrikeEnemy) ? "not possible this turn" : "not possible: no land attack target, no army path"));
+			}
+			// (the lead, 1B02BA85: Assyria's WAR wrote nothing T93-T150 while its attacks ran) every 10 turns, the city attacks under way
+			else if (eStrikeEnemy != NO_PLAYER && GC.getLogging() && GC.getAILogging() && GC.getGame().getGameTurn() % 10 == 0)
+			{
+				CvString strOps;
+				for (size_t iOp = 0; iOp < m_pPlayer->getNumAIOperations(); iOp++)
+				{
+					CvAIOperation* pOp = m_pPlayer->getAIOperationByIndex(iOp);
+					if (!pOp || pOp->GetEnemy() != eStrikeEnemy)
+						continue;
+					const AIOperationTypes eOpType = pOp->GetOperationType();
+					if (eOpType != AI_OPERATION_CITY_ATTACK_LAND && eOpType != AI_OPERATION_CITY_ATTACK_NAVAL && eOpType != AI_OPERATION_CITY_ATTACK_COMBINED)
+						continue;
+					const CvPlot* pOpTarget = pOp->GetTargetPlot();
+					CvArmyAI* pOpArmy = pOp->GetArmy(0);
+					const CvPlot* pCoM = pOpArmy ? pOpArmy->GetCenterOfMass() : NULL;
+					strOps += CvString::format("op %d on %s, state %d since T%d, %d units, %d tiles out; ", pOp->GetID(),
+						(pOpTarget && pOpTarget->isCity()) ? pOpTarget->getPlotCity()->getNameNoSpace().c_str() : "-", (int)pOp->GetOperationState(),
+						pOp->GetTurnStarted(), pOpArmy ? (int)pOpArmy->GetNumSlotsFilled() : 0, (pCoM && pOpTarget) ? plotDistance(*pCoM, *pOpTarget) : -1);
+				}
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: WAR on %s, its nearest city %s; attacks under way: %s",
+					GET_PLAYER(eStrikeEnemy).getCivilizationShortDescription(), m_bTakeable ? "takeable by the army on hand" : "not takeable by the army on hand",
+					strOps.empty() ? "none" : strOps.c_str()));
 			}
 		}
 	}
