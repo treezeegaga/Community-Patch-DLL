@@ -2546,9 +2546,8 @@ int CvMilitaryAI::GetStrikeCaptureCount() const
 
 /// no retreat once the strike is committed (the user: "i dont think there should be any retreat once you commit"): at the
 /// strike's war against this player (alive, at war with us), until the strike is finished with it (IsStrikeTargetFinished). Read by the peace willingness,
-/// the operations' aborts and the ownership gates. Released on a game-state loss (the lead's review: no fight to the death):
-/// a city of ours lost since the war began, our capital in danger of falling, or the war nearly lost (CP's
-/// WAR_STATE_NEARLY_DEFEATED; not DEFENSIVE, which is the abort gate 4 refuses)
+/// the operations' aborts and the ownership gates. No release by losses (the user: "there is no 2nd place in civ ... they are
+/// ALL IN. Their is no retreating"): a city lost, a city in danger or the war nearly lost no longer release it
 bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 {
 	if (eEnemy == NO_PLAYER || GetStrikeState() != STRIKE_WAR)
@@ -2559,14 +2558,6 @@ bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 		return false;
 	// the strike finished with its target (the user: eliminate it, the capital every time; IsStrikeTargetFinished)
 	if (IsStrikeTargetFinished(eEnemy))
-		return false;
-	// a city of ours lost since the war began, to anyone (majors, city-states, barbarians: our count fell, or the majors counter
-	// rose), or any city of ours in danger of falling (the lead: DEFENSIVE releases when a city is in danger)
-	if (GC.getGame().GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_LOST) > m_iStrikeLostMark || m_pPlayer->getNumCities() < m_iStrikeCitiesAtWar)
-		return false;
-	if (!IsStrikeHomeSafe())
-		return false;
-	if (GET_PLAYER(eEnemy).isMajorCiv() && m_pPlayer->GetDiplomacyAI()->GetWarState(eEnemy) == WAR_STATE_NEARLY_DEFEATED)
 		return false;
 	return true;
 }
@@ -3272,7 +3263,7 @@ void CvMilitaryAI::UpdateStrikeState()
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
-		// peace with a target not finished (a loss released no-retreat, or a forced peace): the target is held, and the strike
+		// peace with a target not finished (a peace forced on us, e.g. by a vassal's master): the target is held, and the strike
 		// builds up and declares again when it can
 		else if (!GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
 		{
@@ -3284,11 +3275,7 @@ void CvMilitaryAI::UpdateStrikeState()
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
-		// a lasting loss (the lead's review: WAR had no exit when losing, and kept production and the wonder ban for good): no
-		// retreat released by a city lost or the war nearly lost. A city in danger releases it too, but passes, so OVER waits
-		// until home is safe again
-		else if (!IsStrikeNoRetreat(eWarTarget) && IsStrikeHomeSafe())
-			eNew = STRIKE_OVER, strWhy = "no-retreat released by a loss (a city lost or the war nearly lost): the war goes on as CP's";
+		// (the user: "they are ALL IN. Their is no retreating") no exit on losses: the war holds until the target is finished
 		// the strike's ownership (gate 4, the lead's audit): CP picks its own attack targets; until the target is finished, an
 		// attack on it is always under way, aimed at its capital first
 		else
