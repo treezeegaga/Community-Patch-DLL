@@ -2518,6 +2518,48 @@ void CvGrandStrategyAI::CompleteStrikeLists(CvStrikePlan& kPlan) const
 			kPlan.aeTechs[kPlan.iNumTechs++] = aeNeeded[i];
 	}
 	OrderStrikeLists(kPlan);
+	AddStrikeGuard(kPlan);
+}
+
+/// AI_AB_TEST (Personality; Economy for the lead, 2026-11-07: Persia 18DA3905 lost 5 Workers and 3 Settlers to barbarians
+/// between T12 and T87 and had 1 city until T110, its default list Worker, Settler, Settler, Immortal; Greece 18BE1E3E lost
+/// a Worker at T27 and a Settler at T34 with Monument, Settler, Settler, Hoplite). One combat unit trainable from the start
+/// (no prerequisite tech, not a Scout: in practice the civ's Warrior) goes before the first Settler or Worker unless one
+/// is already ahead of it. A unit that needs a tech doesn't count: the executor passes over it until the tech is in, so the
+/// civilian goes out first. Game data only (the civ's unit for the class), so the plan stays multiplayer-safe.
+void CvGrandStrategyAI::AddStrikeGuard(CvStrikePlan& kPlan) const
+{
+	if (!m_pPlayer || !kPlan.bValid)
+		return;
+	const int iSettler = GC.getInfoTypeForString("UNITCLASS_SETTLER", true);
+	const int iWorker = GC.getInfoTypeForString("UNITCLASS_WORKER", true);
+	const int iScout = GC.getInfoTypeForString("UNITCLASS_SCOUT", true);
+	const int iWarrior = GC.getInfoTypeForString("UNITCLASS_WARRIOR", true);
+	if (iWarrior < 0)
+		return;
+	for (int iItem = 0; iItem < kPlan.iNumBuilds; iItem++)
+	{
+		const CvStrikeBuildItem& kItem = kPlan.aBuilds[iItem];
+		if (!kItem.bUnit)
+			continue;
+		if (kItem.iClass == iSettler || kItem.iClass == iWorker)
+		{
+			// nothing to guard it so far: a Warrior goes in here (the last item drops off a full list)
+			const int iLast = min(kPlan.iNumBuilds, STRIKE_LIST_MAX - 1);
+			for (int iMove = iLast; iMove > iItem; iMove--)
+				kPlan.aBuilds[iMove] = kPlan.aBuilds[iMove - 1];
+			kPlan.aBuilds[iItem].bUnit = true;
+			kPlan.aBuilds[iItem].iClass = iWarrior;
+			kPlan.iNumBuilds = iLast + 1;
+			return;
+		}
+		if (kItem.iClass == iScout)
+			continue;
+		const UnitTypes eUnit = m_pPlayer->GetSpecificUnitType((UnitClassTypes)kItem.iClass);
+		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+		if (pkUnit && pkUnit->GetCombat() > 0 && pkUnit->GetPrereqAndTech() == NO_TECH)
+			return;	// a guard is already ahead of the first civilian
+	}
 }
 
 /// AI_AB_TEST (Personality): is eA a prerequisite of eB, at any depth? (a few levels: enough for the early tree)
