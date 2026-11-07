@@ -2983,7 +2983,12 @@ bool CvTacticalAI::CheckForEnemiesNearArmy(CvArmyAI* pArmy)
 	//we probably didn't see all enemy units, so doublecheck ... don't get drawn into the wrong fight
 	CvCity* pClosestCity = GC.getGame().GetClosestCityByPlots(pClosestEnemyPlot, NO_PLAYER);
 	CvTacticalDominanceZone* pZone = m_pPlayer->GetTacticalAI()->GetTacticalAnalysisMap()->GetZoneByCity(pClosestCity,pArmy->GetType()!=ARMY_TYPE_LAND);
-	if (pZone && pZone->GetZoneCity() && pZone->GetTerritoryType()==TACTICAL_TERRITORY_ENEMY && pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY)
+	//AI_AB_TEST (the strike; the lead's review of 677f7a4): an army against the strike's target fights its way in. Its target
+	//city's zone is enemy-dominated by definition (186D5858, Sofia), so this check made it gather into the blockers until the
+	//42-turn timeout; with no handover short of the walls (5f5334ee5), it attacks them instead
+	CvAIOperation* pArmyOp = GET_PLAYER(pArmy->GetOwner()).getAIOperation(pArmy->GetOperationID());
+	const bool bStrikeArmy = pArmyOp && pArmyOp->GetEnemy() != NO_PLAYER && m_pPlayer->isMajorCiv() && m_pPlayer->GetMilitaryAI()->IsStrikeNoRetreat(pArmyOp->GetEnemy());
+	if (!bStrikeArmy && pZone && pZone->GetZoneCity() && pZone->GetTerritoryType()==TACTICAL_TERRITORY_ENEMY && pZone->GetOverallDominanceFlag() == TACTICAL_DOMINANCE_ENEMY)
 		return false;
 
 	return TacticalAIHelpers::FindAndExecuteBestUnitAssignments(m_pPlayer->GetID(), ourUnitsFinal, pClosestEnemyPlot, AL_MEDIUM);

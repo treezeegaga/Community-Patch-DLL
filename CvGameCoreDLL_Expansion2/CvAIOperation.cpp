@@ -1835,7 +1835,10 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 			CvPlot *pCenterOfMass = pThisArmy->GetCenterOfMass();
 			if (pCenterOfMass && pTarget)
 			{
-				bool bInPlace = (plotDistance(*pCenterOfMass, *pTarget) <= GetDeployRange()) && (pThisArmy->GetFurthestUnitDistance(pTarget) < 2*GetDeployRange());
+				//AI_AB_TEST (the strike; the lead's review of 677f7a4): against the strike's target the centre at the walls is enough
+				//(one stuck unit doesn't hold the army)
+				const bool bStrikeTargetOp = GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy);
+				bool bInPlace = (plotDistance(*pCenterOfMass, *pTarget) <= GetDeployRange()) && (bStrikeTargetOp || pThisArmy->GetFurthestUnitDistance(pTarget) < 2*GetDeployRange());
 
 				//check for nearby enemy (for sneak attacks)
 				if (!bInPlace && GET_PLAYER(m_eOwner).IsAtPeaceWith(m_eEnemy))
@@ -1916,8 +1919,7 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 				//operation hands over only at the walls (the distance check above); stalled on contact, its units keep making
 				//opportunity attacks on the blockers (CheckForEnemiesNearArmy) and the rest gather, until the way is clear or the
 				//operation's own timeout
-				const bool bStrikeTarget = GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy);
-				if (bMarchOn && !bInPlace && !bStrikeTarget && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy) && plotDistance(*pCenterOfMass, *pTarget) <= 2*GetDeployRange() &&
+				if (bMarchOn && !bInPlace && !bStrikeTargetOp && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy) && plotDistance(*pCenterOfMass, *pTarget) <= 2*GetDeployRange() &&
 					GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).GetNumTurnsAtWar(GET_PLAYER(m_eEnemy).getTeam()) >= 3 &&
 					m_progressToTarget.size() >= 3 && m_progressToTarget[0] <= m_progressToTarget[2])
 				{

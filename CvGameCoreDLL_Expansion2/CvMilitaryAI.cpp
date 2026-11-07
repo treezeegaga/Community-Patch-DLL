@@ -333,10 +333,9 @@ void CvMilitaryAI::Reset()
 	m_iArmyQualityTurn = -1;
 	m_iSiegeTrainableTurn = -1;
 	m_bSiegeTrainable = true;
-	m_iTakeableTurn = -1;
 	m_bTakeable = false;
-	m_iReachTurn = -1;
-	m_vReach.clear();
+	m_bStrikeTargetFinished = false;
+	m_bStrikeHoldingReachable = false;
 	m_iStrikeNotReadyKey = 0;
 	m_iArmyQualityFloor = 0;
 	m_iArmyQualityRangedFloor = 0;
@@ -404,6 +403,10 @@ void CvMilitaryAI::Serialize(MilitaryAI& militaryAI, Visitor& visitor)
 	visitor(militaryAI.m_iStrikeCitiesAtWar);
 	visitor(militaryAI.m_iStrikeArmyAtWar);
 	visitor(militaryAI.m_iStrikeCityState);
+	// AI_AB_TEST (the lead's review of 677f7a4: multiplayer sync) the strike's snapshot, computed only in UpdateStrikeState
+	visitor(militaryAI.m_bTakeable);
+	visitor(militaryAI.m_bStrikeTargetFinished);
+	visitor(militaryAI.m_bStrikeHoldingReachable);
 	visitor(militaryAI.m_iStrikeSiege);
 	visitor(militaryAI.m_iStrikeDeclared);
 	visitor(militaryAI.m_iNumFreeCarriers);
@@ -2339,15 +2342,18 @@ static void GetStrikeFieldUnits(const CvPlayer* pPlayer, std::vector<const CvUni
 
 /// the user: "only start the attack if the city is takeable": the land combat units we have (siege included, as they are)
 /// against the strike's target's nearest city. No target city: false
+/// (the lead's review of 677f7a4: multiplayer sync) the stored answer, computed in UpdateStrikeState during our own turn
+/// (RefreshStrikeSnapshot) and saved: the trade screen and other UI paths read it, never compute it
 bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
 {
 	if (piTurnsNeeded)
 		*piTurnsNeeded = -1;
-	const int iTurn = GC.getGame().getGameTurn();
-	if (!piTurnsNeeded && m_iTakeableTurn == iTurn)	// asked often (production, readiness): once a turn
-		return m_bTakeable;
-	m_iTakeableTurn = iTurn;
-	m_bTakeable = false;
+	return m_bTakeable;
+}
+
+/// the computation behind it (our own turn only)
+bool CvMilitaryAI::ComputeStrikeTargetTakeable() const
+{
 	const PlayerTypes eTarget = (m_eTimingBuildupTarget != NO_PLAYER) ? m_eTimingBuildupTarget : GetStrikeCityStateTarget();
 	const CvCity* pCity = (eTarget != NO_PLAYER) ? m_pPlayer->GetClosestCityToUsByPlots(eTarget) : NULL;
 	// no army path to the target, nothing to take (the strike's reach, 17A1A659: no declaration on a city no army can reach)
@@ -2355,8 +2361,19 @@ bool CvMilitaryAI::IsStrikeTargetTakeableNow(int* piTurnsNeeded) const
 		return false;
 	std::vector<const CvUnit*> vUnits;
 	GetStrikeFieldUnits(m_pPlayer, vUnits);
-	m_bTakeable = StrikeUnitsTakeCity(vUnits, pCity, piTurnsNeeded);
-	return m_bTakeable;
+	return StrikeUnitsTakeCity(vUnits, pCity);
+}
+
+/// AI_AB_TEST (the lead's review of 677f7a4: multiplayer sync) the strike's game-state answers that UI paths reach (the trade
+/// screen's IsPossibleToTradeItem -> the declaration block -> readiness / no-retreat; canTrain -> the K-city cap): computed here,
+/// in UpdateStrikeState during our own turn, and saved. Nothing outside our turn computes them
+void CvMilitaryAI::RefreshStrikeSnapshot()
+{
+	m_bTakeable = ComputeStrikeTargetTakeable();
+	const PlayerTypes eHeld = GetStrikeCityStateTarget();
+	m_bStrikeHoldingReachable = eHeld != NO_PLAYER && GET_PLAYER(eHeld).isAlive() && IsStrikeTargetReachable(eHeld);
+	const PlayerTypes eWar = (eHeld != NO_PLAYER) ? eHeld : m_eTimingBuildupTarget;
+	m_bStrikeTargetFinished = eWar != NO_PLAYER && IsStrikeTargetFinished(eWar);
 }
 
 /// these units against the city (the strike's take-the-city math, StrikeArmyTakesCity), less one of ours for each land
@@ -2390,10 +2407,15 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 	}
 	else
 	{
-		// (the lead's review of 647fdd3) at war: every major at war with us, the pact's partners now among them
-		for (int iMajor = 0; iMajor < MAX_MAJOR_CIVS; iMajor++)
-			if ((PlayerTypes)iMajor != eOwner && GET_PLAYER((PlayerTypes)iMajor).isAlive() && GET_TEAM(eOurTeam).isAtWar(GET_PLAYER((PlayerTypes)iMajor).getTeam()))
-				vDefending.push_back((PlayerTypes)iMajor);
+		// (the lead's reviews of 647fdd3 and 677f7a4) at war: every civ at war with us and not with the city's owner (the pact's
+		// partners among them; a third party besieging the same city isn't a defender), city-states too; not barbarians
+		for (int iOther = 0; iOther < MAX_CIV_PLAYERS; iOther++)
+		{
+			const PlayerTypes eOther = (PlayerTypes)iOther;
+			if (eOther != eOwner && GET_PLAYER(eOther).isAlive() && GET_TEAM(eOurTeam).isAtWar(GET_PLAYER(eOther).getTeam()) &&
+				!GET_TEAM(GET_PLAYER(eOther).getTeam()).isAtWar(pCity->getTeam()))
+				vDefending.push_back(eOther);
+		}
 	}
 	for (size_t iD = 0; iD < vDefending.size(); iD++)
 	{
@@ -2583,19 +2605,22 @@ bool CvMilitaryAI::IsStrikeTargetReachable(PlayerTypes eTarget) const
 {
 	if (eTarget == NO_PLAYER || !GET_PLAYER(eTarget).isAlive())
 		return false;
-	const int iTurn = GC.getGame().getGameTurn();
-	if (m_iReachTurn != iTurn || (int)m_vReach.size() != MAX_PLAYERS)
-	{
-		m_iReachTurn = iTurn;
-		m_vReach.assign(MAX_PLAYERS, -1);
-	}
-	if (m_vReach[eTarget] >= 0)
-		return m_vReach[eTarget] == 1;
 	bool bReach = false;
-	const CvCity* pTheirs = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
-	const CvCity* pOurs = NULL;
+	// (the lead's review of 677f7a4) the goal city: a major's original capital while it holds it (not the city nearest us, an
+	// island colony say), a city-state's city. Revealed, as GetArmyPathsFromCity's targets
+	const CvCity* pTheirs = NULL;
+	if (GET_PLAYER(eTarget).isMajorCiv())
+	{
+		const CvCity* pCapital = GetStrikeObjectiveCity(eTarget);
+		pTheirs = (pCapital && pCapital->getOwner() == eTarget) ? pCapital : NULL;
+	}
+	else
+		pTheirs = m_pPlayer->GetClosestCityToUsByPlots(eTarget);
+	if (pTheirs && !pTheirs->plot()->isAdjacentRevealed(m_pPlayer->getTeam()))
+		pTheirs = NULL;
+	CvCity* pOurs = NULL;
 	int iBest = INT_MAX, iLoop = 0;
-	for (const CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pTheirs && pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pTheirs && pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
 	{
 		const int iDistance = plotDistance(pLoopCity->getX(), pLoopCity->getY(), pTheirs->getX(), pTheirs->getY());
 		if (iDistance < iBest)
@@ -2607,13 +2632,14 @@ bool CvMilitaryAI::IsStrikeTargetReachable(PlayerTypes eTarget) const
 	if (pTheirs && pOurs)
 	{
 		SPathFinderUserData data(m_pPlayer->GetID(), PT_ARMY_LAND, NO_PLAYER, INT_MAX);
+		// (the lead's review of 677f7a4) GetArmyPathsFromCity's own range: the land trade-route distance
+		data.iMaxNormalizedDistance = m_pPlayer->GetTrade()->GetTradeRouteRange(DOMAIN_LAND, pOurs);
 		data.iFlags |= CvUnit::MOVEFLAG_IGNORE_RIGHT_OF_PASSAGE;
 		data.iFlags |= CvUnit::MOVEFLAG_IGNORE_ENEMIES;
 		SPath path = GC.GetStepFinder().GetPath(pOurs->plot(), pTheirs->plot(), data);
 		if (!!path)
 			bReach = MilitaryAIHelpers::ArmyPathIsGood(path, m_pPlayer->GetID(), eTarget, 3);
 	}
-	m_vReach[eTarget] = bReach ? 1 : 0;
 	return bReach;
 }
 
@@ -2622,7 +2648,8 @@ bool CvMilitaryAI::IsStrikeTargetReachable(PlayerTypes eTarget) const
 bool CvMilitaryAI::IsStrikeHoldingReachableTarget() const
 {
 	const PlayerTypes eHeld = GetStrikeCityStateTarget();
-	return eHeld != NO_PLAYER && GET_PLAYER(eHeld).isAlive() && IsStrikeTargetReachable(eHeld);
+	(void)eHeld;
+	return m_bStrikeHoldingReachable;	// the snapshot (canTrain reaches here from the UI)
 }
 
 /// cities taken from majors and from city-states (AB_COUNT_CITIES_CAPTURED counts majors only)
@@ -2644,7 +2671,7 @@ bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 	if (!GET_PLAYER(eEnemy).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eEnemy).getTeam()))
 		return false;
 	// the target's capital taken (the user: "the goal is the enemy capital"; IsStrikeTargetFinished): peace is allowed
-	if (IsStrikeTargetFinished(eEnemy))
+	if (m_bStrikeTargetFinished)	// the snapshot (UI paths reach here: the trade screen, the peace gates)
 		return false;
 	return true;
 }
@@ -2770,7 +2797,8 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 		return false;
 	// a new target is an attack target now (the declaration needs it); a held one, one a land army can reach (stable; the
 	// lead's review of 647fdd3: the "no army path this turn" fallbacks re-pinned an unreachable target)
-	return bNewTarget ? HaveStrikeLandAttackTarget(eTarget) : IsStrikeTargetReachable(eTarget);
+	// (the lead's review of 677f7a4) a new target needs both: an attack target now and its goal city reachable
+	return bNewTarget ? (HaveStrikeLandAttackTarget(eTarget) && IsStrikeTargetReachable(eTarget)) : IsStrikeTargetReachable(eTarget);
 }
 
 /// the nearest major the strike can go for (IsStrikeTargetValid), by its nearest city's distance to our capital
@@ -3138,7 +3166,6 @@ void CvMilitaryAI::UpdateStrikeState()
 			if (eWindow == NO_PLAYER || eKeep != eWindow)
 			{
 				m_iStrikeSiege = 0;
-				m_iTakeableTurn = -1;
 			}
 			eCS = eKeep;
 			eTarget = eKeep;
@@ -3153,6 +3180,7 @@ void CvMilitaryAI::UpdateStrikeState()
 			eCS = eKeep;
 		}
 	}
+	RefreshStrikeSnapshot();	// the target is settled for this turn: the exits and readiness below read it
 	const bool bAtCSWar = eCS != NO_PLAYER && GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eCS).getTeam());
 	const CvStrikePlan& kPlan = m_pPlayer->GetGrandStrategyAI()->GetStrikePlan();
 	const UnitClassTypes eCoreClass = bEarly ? GetEarlyStrikeCore() : kPlan.eCoreClass;
@@ -3358,7 +3386,6 @@ void CvMilitaryAI::UpdateStrikeState()
 			// StartTimingBuildup sets the target only when the window is closed)
 			m_iTimingBuildupStartTurn = -1;
 			m_iStrikeSiege = 0;
-			m_iTakeableTurn = -1;
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
@@ -3370,7 +3397,6 @@ void CvMilitaryAI::UpdateStrikeState()
 			strWhy = "peace with the target, not finished: the target is held, the strike builds up again";
 			m_iTimingBuildupStartTurn = -1;	// the window reopens on the held target
 			m_iStrikeSiege = 0;
-			m_iTakeableTurn = -1;
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
 		}
@@ -3404,6 +3430,7 @@ void CvMilitaryAI::UpdateStrikeState()
 				bEarly ? "EarlyStrike" : "LateStrike"));
 		}
 	}
+	RefreshStrikeSnapshot();	// the turn's final state (a target finished or released above)
 }
 
 /// a normal army (cities + 4 field units), 3 melee that can take a city, and nothing more affordable (WarBudget's measure):

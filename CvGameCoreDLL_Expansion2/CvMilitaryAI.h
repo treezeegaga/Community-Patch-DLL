@@ -197,7 +197,9 @@ public:
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
 	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
 	const CvCity* GetStrikeObjectiveCity(PlayerTypes eTarget) const;	// AI_AB_TEST: the target's original capital (the strike's objective)
-	bool IsStrikeTargetReachable(PlayerTypes eTarget) const;	// AI_AB_TEST: a land army path from our nearest city to its nearest one (stable reach)
+	bool IsStrikeTargetReachable(PlayerTypes eTarget) const;	// (computes a path: our own turn only)
+	void RefreshStrikeSnapshot();	// AI_AB_TEST: the strike's stored answers, in UpdateStrikeState
+	bool ComputeStrikeTargetTakeable() const;	// AI_AB_TEST: a land army path from our nearest city to its nearest one (stable reach)
 	bool IsStrikeTargetDone(PlayerTypes eTarget) const;	// AI_AB_TEST: a major whose original capital is out of its hands
 	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
 	bool IsStrikeHoldingReachableTarget() const;	// AI_AB_TEST: the strike holds a target a land army can ever reach
@@ -450,10 +452,9 @@ private:
 	mutable int m_iArmyQualityTurn;		// AI_AB_TEST ArmyQuality: the turn the floor was computed (not saved, recomputed)
 	mutable int m_iSiegeTrainableTurn;	// AI_AB_TEST strike: the turn the siege check was made, and its answer (not saved)
 	mutable bool m_bSiegeTrainable;
-	mutable int m_iTakeableTurn;		// AI_AB_TEST strike: IsStrikeTargetTakeableNow's turn and answer (not saved)
-	mutable bool m_bTakeable;
-	mutable int m_iReachTurn;			// AI_AB_TEST strike: IsStrikeTargetReachable's turn and answers per player (-1 unknown; not saved)
-	mutable std::vector<char> m_vReach;
+	bool m_bTakeable;					// AI_AB_TEST strike snapshot (RefreshStrikeSnapshot, our own turn only; saved): takeable now,
+	bool m_bStrikeTargetFinished;		// the strike's target finished,
+	bool m_bStrikeHoldingReachable;		// and a held target an army can reach
 	int m_iStrikeNotReadyKey;			// AI_AB_TEST strike: the last logged "not ready" blockers (not saved; logs only)
 	mutable int m_iArmyQualityFloor;
 	mutable int m_iArmyQualityRangedFloor;
