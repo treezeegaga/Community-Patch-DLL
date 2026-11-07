@@ -1069,7 +1069,7 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 	return GC.GetStepFinder().GetMultiplePaths(pMusterCity->plot(), vPotentialTargets, data);
 }
 
-bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
+bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful, const CvCity* pPreferredCity)
 {
 	// AI_AB_TEST (the strike's ownership, gate 4: the army's operations; the lead, bullygreedy23 169CA418): while the strike
 	// is on (PREP, BUILDUP, or WAR before a city is taken) its army attacks only the strike's target, or a player already at
@@ -1083,6 +1083,12 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 		return false;
 	}
 
+	//AI_AB_TEST (the strike's objective, the target's capital; the user, the trio game): with a preferred city, only that city
+	//while it is an attack target (pass 0); otherwise the usual best-scored city of the target (pass 1)
+	const CvPlot* pPreferredPlot = pPreferredCity ? pPreferredCity->plot() : NULL;
+	bool bPreferredListed = false;
+	for (int iPass = pPreferredPlot ? 0 : 1; iPass < 2 && !bPreferredListed; iPass++)
+	{
 	//note that a given target might be repeated with different muster points / army types
 	for (size_t i = 0; i < m_potentialAttackTargets.size(); i++)
 	{
@@ -1092,6 +1098,12 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 
 		CvPlot* pMusterPlot = m_potentialAttackTargets[i].GetMusterPlot();
 		CvPlot* pTargetPlot = m_potentialAttackTargets[i].GetTargetPlot();
+		if (iPass == 0)
+		{
+			if (pTargetPlot != pPreferredPlot)
+				continue;
+			bPreferredListed = true;
+		}
 		PlayerTypes eTargetPlayer = pTargetPlot->getOwner();
 		if (eTargetPlayer != eIntendedTarget)
 			continue;
@@ -1171,6 +1183,7 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 				pLog->Msg( msg.c_str() );
 			}
 		}
+	}
 	}
 
 	return false;
@@ -2487,6 +2500,30 @@ int CvMilitaryAI::GetStrikeTargetCaptures() const
 	return iCount;
 }
 
+/// AI_AB_TEST (the strike's objective; the user, the trio game: "huns took indonesias first city easily, but then the game ai
+/// took over from the strike ai ... maybe we need to have the strike last until the capital is conquered"): the target's
+/// original capital, wherever it stands now. NULL: not on the map (razed, or the target never had one)
+const CvCity* CvMilitaryAI::GetStrikeObjectiveCity(PlayerTypes eTarget) const
+{
+	if (eTarget == NO_PLAYER)
+		return NULL;
+	const CvPlot* pPlot = GC.getMap().plot(GET_PLAYER(eTarget).GetOriginalCapitalX(), GET_PLAYER(eTarget).GetOriginalCapitalY());
+	return (pPlot && pPlot->isCity()) ? pPlot->getPlotCity() : NULL;
+}
+
+/// the strike's job is done: the target's original capital is ours. If the target no longer holds it (a third party took
+/// it, or it's gone), the old rule: a city taken from the target since the strike's war began. A city-state's one city is
+/// its capital
+bool CvMilitaryAI::IsStrikeObjectiveTaken(PlayerTypes eTarget) const
+{
+	const CvCity* pObjective = GetStrikeObjectiveCity(eTarget);
+	if (pObjective && pObjective->getTeam() == m_pPlayer->getTeam())
+		return true;
+	if (pObjective && pObjective->getOwner() == eTarget)
+		return false;
+	return GetStrikeTargetCaptures() > m_iStrikeCapturedMark;
+}
+
 /// cities taken from majors and from city-states (AB_COUNT_CITIES_CAPTURED counts majors only)
 int CvMilitaryAI::GetStrikeCaptureCount() const
 {
@@ -2506,8 +2543,8 @@ bool CvMilitaryAI::IsStrikeNoRetreat(PlayerTypes eEnemy) const
 		return false;
 	if (!GET_PLAYER(eEnemy).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eEnemy).getTeam()))
 		return false;
-	// a city taken from the target (not any capture: a counter-attack on a third party isn't the strike's; the lead's review)
-	if (GetStrikeTargetCaptures() > m_iStrikeCapturedMark)
+	// the strike's objective taken: the target's capital (the user, the trio game; before, the first city taken from it)
+	if (IsStrikeObjectiveTaken(eEnemy))
 		return false;
 	// a city of ours lost since the war began, to anyone (majors, city-states, barbarians: our count fell, or the majors counter
 	// rose), or any city of ours in danger of falling (the lead: DEFENSIVE releases when a city is in danger)
@@ -3179,10 +3216,11 @@ void CvMilitaryAI::UpdateStrikeState()
 		// the strike's war ends with its purpose (the lead's review: it outlived it, and its ownership of production, gold
 		// and research with it): a city taken (the war itself goes on, CP's), or peace with the target or the target gone
 		const PlayerTypes eWarTarget = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
-		if (iCaptured > m_iStrikeCapturedMark)
-			eNew = STRIKE_OVER, strWhy = "a city taken: the strike's job is done (the war goes on as CP's)";
+		// (the user, the trio game) its purpose is the target's capital, not its first city
+		if (eWarTarget != NO_PLAYER && IsStrikeObjectiveTaken(eWarTarget))
+			eNew = STRIKE_OVER, strWhy = "the target's capital taken: the strike's job is done (the war goes on as CP's)";
 		else if (eWarTarget == NO_PLAYER || !GET_PLAYER(eWarTarget).isAlive() || !GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eWarTarget).getTeam()))
-			eNew = STRIKE_OVER, strWhy = "peace with the target (or it's gone), nothing taken";
+			eNew = STRIKE_OVER, strWhy = iCaptured > m_iStrikeCapturedMark ? "peace with the target (or it's gone), its capital not taken" : "peace with the target (or it's gone), nothing taken";
 		// a lasting loss (the lead's review: WAR had no exit when losing, and kept production and the wonder ban for good): no
 		// retreat released by a city lost or the war nearly lost. A city in danger releases it too, but passes, so OVER waits
 		// until home is safe again
@@ -3195,7 +3233,10 @@ void CvMilitaryAI::UpdateStrikeState()
 			const PlayerTypes eStrikeEnemy = (eCS != NO_PLAYER) ? eCS : m_eTimingBuildupTarget;
 			if (eStrikeEnemy != NO_PLAYER && IsStrikeNoRetreat(eStrikeEnemy) && m_pPlayer->getFirstOffensiveAIOperation(eStrikeEnemy) == NULL)
 			{
-				const bool bRequested = RequestCityAttack(eStrikeEnemy, 2, false);
+				// at the target's capital while the target holds it (the user, the trio game: after the first city the army
+				// scattered); RequestCityAttack falls back to the target's best city when the capital isn't an attack target
+				const CvCity* pObjective = GetStrikeObjectiveCity(eStrikeEnemy);
+				const bool bRequested = RequestCityAttack(eStrikeEnemy, 2, false, (pObjective && pObjective->getOwner() == eStrikeEnemy) ? pObjective : NULL);
 				if (GC.getLogging() && GC.getAILogging())
 					m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: no attack under way on %s; city attack requested (%s)",
 						GET_PLAYER(eStrikeEnemy).getCivilizationShortDescription(), bRequested ? "started" :

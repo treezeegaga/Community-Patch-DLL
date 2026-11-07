@@ -184,7 +184,7 @@ public:
 	};
 
 	// Requests for specific military operations
-	bool RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful=true);
+	bool RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful=true, const CvCity* pPreferredCity=NULL);	// AI_AB_TEST: pPreferredCity, the strike's objective
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);
 	bool RequestBullyingOperation(PlayerTypes eEnemy);
@@ -196,6 +196,8 @@ public:
 	// Finding best cities to target
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
 	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
+	const CvCity* GetStrikeObjectiveCity(PlayerTypes eTarget) const;	// AI_AB_TEST: the target's original capital (the strike's objective)
+	bool IsStrikeObjectiveTaken(PlayerTypes eTarget) const;	// AI_AB_TEST: that capital is ours (or, with it out of the target's hands, a city taken from it)
 	bool HavePreferredAttackTarget(PlayerTypes eEnemy) const;
 	bool IsPossibleAttackTarget(const CvCity* pCity, ArmyType eArmyType) const;
 	bool IsPreferredAttackTarget(const CvCity* pCity) const;
