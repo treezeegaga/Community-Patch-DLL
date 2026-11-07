@@ -197,6 +197,8 @@ public:
 	bool HavePossibleAttackTarget(PlayerTypes eEnemy) const;
 	bool HaveStrikeLandAttackTarget(PlayerTypes eEnemy) const;	// AI_AB_TEST: a city of eEnemy is a land attack target (the strike's reach)
 	const CvCity* GetStrikeObjectiveCity(PlayerTypes eTarget) const;	// AI_AB_TEST: the target's original capital (the strike's objective)
+	bool IsStrikeTargetOnOurLand(PlayerTypes eTarget) const;	// AI_AB_TEST: a city of it on a landmass where we have a city (stable reach)
+	bool IsStrikeHoldingReachableTarget() const;	// AI_AB_TEST: the strike holds a target a land army can ever reach
 	bool IsStrikeTargetFinished(PlayerTypes eTarget) const;	// AI_AB_TEST: dead, or (after a capture in this war) its original capital out of its hands, or out of reach
 	bool HavePreferredAttackTarget(PlayerTypes eEnemy) const;
 	bool IsPossibleAttackTarget(const CvCity* pCity, ArmyType eArmyType) const;

@@ -34062,6 +34062,10 @@ bool CvPlayer::IsEarlyStrikeCityCapReached() const
 	if (!MOD_AI_AB_TEST || !IsCandidateWarmonger(FIX_EARLY_STRIKE) || GetEarlyStrikeCoreClass() == NO_UNITCLASS || !GetMilitaryAI() ||
 		GetMilitaryAI()->GetStrikeState() == CvMilitaryAI::STRIKE_OVER || GetMilitaryAI()->HasStrikeDeclared())
 		return false;
+	// (War, the lead's review of 12fe132) and only while the strike holds a target a land army can reach: a strike waiting for
+	// one expands (the bans and the declaration block hold)
+	if (!GetMilitaryAI()->IsStrikeHoldingReachableTarget())
+		return false;
 	CvEarlyStrikePlan kPlan;
 	return GetEarlyStrikePlan(kPlan) && getNumCities() >= kPlan.iMaxCities;
 }

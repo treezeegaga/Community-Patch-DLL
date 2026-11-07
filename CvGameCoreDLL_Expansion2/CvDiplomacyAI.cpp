@@ -44737,6 +44737,16 @@ bool CvDiplomacyAI::IsDoFAcceptable(PlayerTypes ePlayer)
 	if (IsAtWar(ePlayer))
 		return false;
 
+	// AI_AB_TEST (War, the lead's review of 12fe132): no friendship with the strike's held target (all in: the strike declares
+	// on it when ready, so a friendship would only be a backstab or a wait)
+	{
+		const CvMilitaryAI* pStrike = GetPlayer()->GetMilitaryAI();
+		const CvMilitaryAI::StrikeStateTypes eStrike = pStrike->GetStrikeState();
+		if (pStrike->GetStrikeCityStateTarget() == ePlayer &&
+			(eStrike == CvMilitaryAI::STRIKE_PREP || eStrike == CvMilitaryAI::STRIKE_BUILDUP || eStrike == CvMilitaryAI::STRIKE_WAR))
+			return false;
+	}
+
 	// Not if we broke off a DoF with them recently
 	if (GET_PLAYER(ePlayer).GetDiplomacyAI()->IsDoFBroken(GetID()) && GET_PLAYER(ePlayer).GetDiplomacyAI()->GetTurnsSinceDoFBroken(GetID()) < 30)
 		return false;

@@ -2377,12 +2377,25 @@ bool CvMilitaryAI::StrikeUnitsTakeCity(const std::vector<const CvUnit*>& vUnits,
 	}
 	int iDefenders = 0, iLoop = 0;
 	const PlayerTypes eOwner = pCity->getOwner();
-	for (const CvUnit* pDefender = GET_PLAYER(eOwner).firstUnit(&iLoop); pDefender != NULL; pDefender = GET_PLAYER(eOwner).nextUnit(&iLoop))
+	// the owner's units, and (before our war on it) those of the majors its defensive pacts would bring in (the lead's review of
+	// 12fe132: under the user's all-in rule the strike declares into a pact, so the math counts the pact's units at the city)
+	std::vector<PlayerTypes> vDefending(1, eOwner);
+	if (!GET_TEAM(m_pPlayer->getTeam()).isAtWar(pCity->getTeam()))
 	{
-		// not the garrison: the city's strength has it (the lead's review)
-		if (pDefender->getDomainType() == DOMAIN_LAND && pDefender->IsCombatUnit() && !pDefender->isDelayedDeath() &&
-			pDefender->plot() != pCity->plot() && plotDistance(pDefender->getX(), pDefender->getY(), pCity->getX(), pCity->getY()) <= 3)
-			iDefenders++;
+		std::vector<PlayerTypes> vPact = m_pPlayer->GetDiplomacyAI()->GetDefensiveWarAllies(eOwner, /*bIncludeMinors*/ false, /*bReverseMode*/ true, /*bNewWarsOnly*/ true);
+		vDefending.insert(vDefending.end(), vPact.begin(), vPact.end());
+	}
+	for (size_t iD = 0; iD < vDefending.size(); iD++)
+	{
+		if (vDefending[iD] == NO_PLAYER || vDefending[iD] == m_pPlayer->GetID())
+			continue;
+		for (const CvUnit* pDefender = GET_PLAYER(vDefending[iD]).firstUnit(&iLoop); pDefender != NULL; pDefender = GET_PLAYER(vDefending[iD]).nextUnit(&iLoop))
+		{
+			// not the garrison: the city's strength has it (the lead's review)
+			if (pDefender->getDomainType() == DOMAIN_LAND && pDefender->IsCombatUnit() && !pDefender->isDelayedDeath() &&
+				pDefender->plot() != pCity->plot() && plotDistance(pDefender->getX(), pDefender->getY(), pCity->getX(), pCity->getY()) <= 3)
+				iDefenders++;
+		}
 	}
 	// one of ours per defender, from the largest melee group first, then ranged
 	for (int iTied = 0; iTied < iDefenders; iTied++)
@@ -2535,7 +2548,32 @@ bool CvMilitaryAI::IsStrikeTargetFinished(PlayerTypes eTarget) const
 	const CvCity* pCapital = GetStrikeObjectiveCity(eTarget);
 	if (!pCapital || pCapital->getOwner() != eTarget)
 		return true;
-	return !HaveStrikeLandAttackTarget(eTarget);
+	// (the lead's review of 12fe132) a stable reach test: none of its cities on a landmass where we have a city
+	return !IsStrikeTargetOnOurLand(eTarget);
+}
+
+/// AI_AB_TEST (the lead's review of 12fe132): a city of this player stands on a landmass where we have a city, so a land army
+/// can ever reach it. Stable from turn to turn, unlike the attack-target list
+bool CvMilitaryAI::IsStrikeTargetOnOurLand(PlayerTypes eTarget) const
+{
+	if (eTarget == NO_PLAYER)
+		return false;
+	std::vector<int> vOurLand;
+	int iLoop = 0;
+	for (const CvCity* pOurCity = m_pPlayer->firstCity(&iLoop); pOurCity != NULL; pOurCity = m_pPlayer->nextCity(&iLoop))
+		vOurLand.push_back(pOurCity->plot()->getLandmass());
+	for (const CvCity* pTheirCity = GET_PLAYER(eTarget).firstCity(&iLoop); pTheirCity != NULL; pTheirCity = GET_PLAYER(eTarget).nextCity(&iLoop))
+		if (std::find(vOurLand.begin(), vOurLand.end(), pTheirCity->plot()->getLandmass()) != vOurLand.end())
+			return true;
+	return false;
+}
+
+/// AI_AB_TEST (the lead's review of 12fe132): the strike holds a target an army can ever reach. While it doesn't, Economy's
+/// K-city cap lifts so a waiting strike civ can expand (the bans and the declaration block hold)
+bool CvMilitaryAI::IsStrikeHoldingReachableTarget() const
+{
+	const PlayerTypes eHeld = GetStrikeCityStateTarget();
+	return eHeld != NO_PLAYER && GET_PLAYER(eHeld).isAlive() && IsStrikeTargetOnOurLand(eHeld);
 }
 
 /// cities taken from majors and from city-states (AB_COUNT_CITIES_CAPTURED counts majors only)
@@ -2680,7 +2718,7 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 	// (the user: "if we take that, we can declare peace and let them have a minor settlement ... penalties for eliminating civs
 	// completely") a major whose original capital we hold isn't a new target: the strike is done with it, and its remnant isn't
 	// the strike's to take
-	if (bNewTarget && kOther.isMajorCiv())
+	if (kOther.isMajorCiv())	// (the lead's review: everywhere, not only for a new target)
 	{
 		const CvCity* pOriginalCapital = GetStrikeObjectiveCity(eTarget);
 		if (pOriginalCapital && pOriginalCapital->getTeam() == eOurTeam)
@@ -2924,19 +2962,21 @@ void CvMilitaryAI::UpdateStrikeState()
 		(GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOldCS).getTeam()) ||
 		 GET_TEAM(m_pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eOldCS).getTeam(), m_pPlayer->GetID()) ||
 		 GET_TEAM(m_pPlayer->getTeam()).isForcePeace(GET_PLAYER(eOldCS).getTeam()));
-	if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && GET_PLAYER(eOldCS).getTeam() != m_pPlayer->getTeam() &&
-		!GET_TEAM(GET_PLAYER(eOldCS).getTeam()).IsVassal(m_pPlayer->getTeam()) && bHeldFightable &&
-		(eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
+	// (the lead's review of 12fe132) and one an army can ever reach: a city of it on a landmass where we have a city (a stable
+	// test; the attack-target list can drop a city for a turn). The same test decides "finished" for an unreachable remnant
+	const bool bOldHoldable = eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && GET_PLAYER(eOldCS).getTeam() != m_pPlayer->getTeam() &&
+		!GET_TEAM(GET_PLAYER(eOldCS).getTeam()).IsVassal(m_pPlayer->getTeam()) && bHeldFightable && IsStrikeTargetOnOurLand(eOldCS);
+	if (bOldHoldable && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
 		eCS = eOldCS;
 	// the first pick in PREP: CP's committed major in reach is held as soon as it's valid
 	else if (bEarly && eNew == STRIKE_PREP && bInReach && IsStrikeTargetValid(eTarget))
 		eCS = eTarget;
 	else if (bEarly && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
 	{
+		// (the lead's review of 12fe132) BUILDUP and WAR keep only a holdable target (above): one that can never be fought is
+		// released here, not kept because it's alive
 		if (eNew != STRIKE_PREP)
 		{
-			if (eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive())
-				eCS = eOldCS;
 		}
 		// (also while CP's committed target is the pinned major itself: the pin made it the committed target, and dropping it
 		// let CP's own loop reject it the next turn, a flip every turn; the lead's third review)
@@ -2948,24 +2988,27 @@ void CvMilitaryAI::UpdateStrikeState()
 			const bool bMajorNow = eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isMinorCiv() && FindStrikeMajorInReach() != NO_PLAYER;
 			// (the strike's reach, 17A1A659) the pin is kept while an army can reach it; unreachable, a reachable target takes
 			// over, and with none the pin stays (a turn out of the attack targets doesn't re-target)
-			if (!bMajorNow && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ true))
+			if (!bMajorNow && bOldHoldable && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ true))
 				eCS = eOldCS;
 			else
 			{
 				eCS = FindStrikeMajorInReach();
 				if (eCS == NO_PLAYER)
 					eCS = FindStrikeCityState();
-				if (eCS == NO_PLAYER && !bMajorNow && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ false))
+				if (eCS == NO_PLAYER && !bMajorNow && bOldHoldable && IsStrikeTargetValid(eOldCS, /*bNewTarget*/ false))
 					eCS = eOldCS;
 			}
 		}
 	}
 	// LateStrike: a pinned target (a re-target, or the BUILDUP target check below) holds through BUILDUP and WAR
-	else if (bLate && (eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR) && eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive())
+	else if (bLate && (eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR) && bOldHoldable)
 		eCS = eOldCS;
 	if (eCS != eOldCS)
 	{
 		m_iStrikeCityState = eCS;
+		// a released target leaves the window too, so WAR sees no target and goes back to BUILDUP for the next one
+		if (eOldCS != NO_PLAYER && eCS == NO_PLAYER && m_eTimingBuildupTarget == eOldCS)
+			m_eTimingBuildupTarget = NO_PLAYER;
 		if (GC.getLogging() && GC.getAILogging())
 		{
 			if (eCS != NO_PLAYER)
@@ -2977,7 +3020,8 @@ void CvMilitaryAI::UpdateStrikeState()
 			}
 			else
 				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: target %s dropped (%s)", GET_PLAYER(eOldCS).getCivilizationShortDescription(),
-					!GET_PLAYER(eOldCS).isAlive() ? "dead" : bInReach ? "a committed major in reach" : "no longer qualifies, no other target in reach"));
+					!GET_PLAYER(eOldCS).isAlive() ? "dead" : !bOldHoldable ? "it can never be fought: our vassal, no declaration possible, or no city on our land" :
+					bInReach ? "a committed major in reach" : "no longer qualifies, no other target in reach"));
 		}
 	}
 	if (eCS != NO_PLAYER)
@@ -3089,7 +3133,7 @@ void CvMilitaryAI::UpdateStrikeState()
 			{
 				eNew = STRIKE_WAR;
 				strWhy = "the target declared war on us: the strike's war";
-				m_iStrikeCapturedMark = iCaptured;
+				m_iStrikeCapturedMark = GetStrikeTargetCaptures();	// after the pin (the lead's review: iCaptured is from before it)
 				m_iStrikeLostMark = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_LOST);
 				m_iStrikeCitiesAtWar = m_pPlayer->getNumCities();
 				m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
@@ -3234,7 +3278,7 @@ void CvMilitaryAI::UpdateStrikeState()
 	{
 		eNew = STRIKE_WAR;
 		strWhy = IsTimingBuildupArmyReady() ? "declared, the army ready" : "declared, as ready as it got";
-		m_iStrikeCapturedMark = iCaptured;
+		m_iStrikeCapturedMark = GetStrikeTargetCaptures();	// after the pin (the lead's review: iCaptured is from before it)
 		m_iStrikeLostMark = kGame.GetABTestCount(m_pPlayer->GetID(), AB_COUNT_CITIES_LOST);
 		m_iStrikeCitiesAtWar = m_pPlayer->getNumCities();
 		m_iStrikeArmyAtWar = m_pPlayer->GetNumUnitsWithDomain(DOMAIN_LAND, true);
