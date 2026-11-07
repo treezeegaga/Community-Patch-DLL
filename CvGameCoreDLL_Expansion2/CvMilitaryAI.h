@@ -201,6 +201,7 @@ public:
 	void RefreshStrikeSnapshot();	// AI_AB_TEST: the strike's stored answers, in UpdateStrikeState
 	bool ComputeStrikeTargetTakeable() const;	// AI_AB_TEST: the snapshot's takeable computation (our own turn only)
 	bool IsStrikeTargetOnOurLand(PlayerTypes eTarget) const;	// AI_AB_TEST: a city of it on a landmass where we have a city (the hold's release before war)
+	bool IsStrikeTargetHoldable(PlayerTypes eTarget, bool bAtStrikeWar) const;	// AI_AB_TEST: the one hold test (IsStrikeTargetValid for a held target)
 	bool IsStrikeTargetDone(PlayerTypes eTarget) const;	// AI_AB_TEST: a major whose original capital is out of its hands
 	bool IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget = true) const;	// a target the strike can still declare on and reach
 	bool IsStrikeHoldingReachableTarget() const;	// AI_AB_TEST: the strike holds a target a land army can ever reach

@@ -2379,7 +2379,9 @@ void CvMilitaryAI::RefreshStrikeSnapshot()
 	m_bStrikeUpgradeGo = IsTimingBuildupArmyBuilt() || HasTimingBuildupWindowEnded() || m_pPlayer->GetGrandStrategyAI()->IsStrikeArmyReady() ||
 		IsStrikeAsReadyAsItGets();
 	const PlayerTypes eHeld = GetStrikeCityStateTarget();
-	m_bStrikeHoldingReachable = eHeld != NO_PLAYER && GET_PLAYER(eHeld).isAlive() && IsStrikeTargetOnOurLand(eHeld);
+	// (the lead's ruling on the review of cbebe77) the K-city cap lifts while the held target isn't a land attack target now:
+	// a civ that can't fight its target can expand (0061's intent; the bans stay)
+	m_bStrikeHoldingReachable = eHeld != NO_PLAYER && GET_PLAYER(eHeld).isAlive() && HaveStrikeLandAttackTarget(eHeld);
 	const PlayerTypes eWar = (eHeld != NO_PLAYER) ? eHeld : m_eTimingBuildupTarget;
 	m_bStrikeTargetFinished = eWar != NO_PLAYER && IsStrikeTargetFinished(eWar);
 }
@@ -2816,6 +2818,9 @@ PlayerTypes CvMilitaryAI::FindStrikeRetarget(PlayerTypes eExclude, const CvCity*
 /// CP's military AI scores) only for a new target: it can drop out for a turn, and a target already held stays
 bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) const
 {
+	// (the lead's review of cbebe77) a held target: the hold test, so the diplomacy's window opens on any held target
+	if (!bNewTarget)
+		return IsStrikeTargetHoldable(eTarget, GetStrikeState() == STRIKE_WAR);
 	const CvCity* pCapital = m_pPlayer->getCapitalCity();
 	if (eTarget == NO_PLAYER || !pCapital)
 		return false;
@@ -2864,8 +2869,29 @@ bool CvMilitaryAI::IsStrikeTargetValid(PlayerTypes eTarget, bool bNewTarget) con
 	// a new target is an attack target now (the declaration needs it); a held one, one a land army can reach (stable; the
 	// lead's review of 647fdd3: the "no army path this turn" fallbacks re-pinned an unreachable target)
 	// (the lead's review of 677f7a4) a new target needs both: an attack target now and its goal city reachable
-	// (the lead's review of 88cf09c) reach gates only a new pick; a held one needs a city on a landmass where we have one
-	return bNewTarget ? (HaveStrikeLandAttackTarget(eTarget) && IsStrikeTargetReachable(eTarget)) : IsStrikeTargetOnOurLand(eTarget);
+	// (the lead's review of 88cf09c) reach gates only a new pick (a held one returned above)
+	return HaveStrikeLandAttackTarget(eTarget) && IsStrikeTargetReachable(eTarget);
+}
+
+/// AI_AB_TEST (the user: no flip flopping; the lead's reviews of 88cf09c and cbebe77): a held target stays held while it's
+/// alive, not on our team, not our vassal, fightable (at war with us, declarable, or a peace treaty's turns, which pass), and
+/// not done (IsStrikeTargetDone: its capital out of its hands). No reach, distance, friendship or pact test once held (a pact
+/// is fought: the take-the-city math counts the partners' units). The one release so no wait lasts for good: before the war,
+/// no city of it on a landmass where we have a city
+bool CvMilitaryAI::IsStrikeTargetHoldable(PlayerTypes eTarget, bool bAtStrikeWar) const
+{
+	if (eTarget == NO_PLAYER || eTarget == m_pPlayer->GetID())
+		return false;
+	const CvPlayer& kOther = GET_PLAYER(eTarget);
+	const TeamTypes eOurTeam = m_pPlayer->getTeam();
+	if (!kOther.isAlive() || kOther.isBarbarian() || kOther.getTeam() == eOurTeam || GET_TEAM(kOther.getTeam()).IsVassal(eOurTeam))
+		return false;
+	if (!GET_TEAM(eOurTeam).isAtWar(kOther.getTeam()) && !GET_TEAM(eOurTeam).canDeclareWar(kOther.getTeam(), m_pPlayer->GetID()) &&
+		!GET_TEAM(eOurTeam).isForcePeace(kOther.getTeam()))
+		return false;
+	if (IsStrikeTargetDone(eTarget))
+		return false;
+	return bAtStrikeWar || IsStrikeTargetOnOurLand(eTarget);
 }
 
 /// the nearest major the strike can go for (IsStrikeTargetValid), by its nearest city's distance to our capital
@@ -3098,16 +3124,9 @@ void CvMilitaryAI::UpdateStrikeState()
 	// A held target is released only when it can never be fought (the lead's review: a wait must not hold the bans and
 	// production for good): not at war with it and no declaration possible for a reason that doesn't pass by itself. A peace
 	// treaty's turns pass (isForcePeace): the strike waits. A test builder's role, a master we can't fight, passive modes: dropped
-	const bool bHeldFightable = eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() &&
-		(GET_TEAM(m_pPlayer->getTeam()).isAtWar(GET_PLAYER(eOldCS).getTeam()) ||
-		 GET_TEAM(m_pPlayer->getTeam()).canDeclareWar(GET_PLAYER(eOldCS).getTeam(), m_pPlayer->GetID()) ||
-		 GET_TEAM(m_pPlayer->getTeam()).isForcePeace(GET_PLAYER(eOldCS).getTeam()));
-	// (the lead's review of 88cf09c: reach gates only a new pick) and not done (IsStrikeTargetDone: its capital out of its
-	// hands). No reach test for a held target: a reach failure mid-war dropped it with nothing taken. The one exception, so no
-	// wait lasts for good: before the war, a held target with no city on a landmass where we have a city (stable, coarse)
-	const bool bOldHoldable = eOldCS != NO_PLAYER && GET_PLAYER(eOldCS).isAlive() && GET_PLAYER(eOldCS).getTeam() != m_pPlayer->getTeam() &&
-		!GET_TEAM(GET_PLAYER(eOldCS).getTeam()).IsVassal(m_pPlayer->getTeam()) && bHeldFightable && !IsStrikeTargetDone(eOldCS) &&
-		(eNew == STRIKE_WAR || IsStrikeTargetOnOurLand(eOldCS));
+	// (the lead's reviews of 88cf09c and cbebe77) one hold test, IsStrikeTargetHoldable, shared with IsStrikeTargetValid for a
+	// held target (the diplomacy's window). No reach test once held
+	const bool bOldHoldable = IsStrikeTargetHoldable(eOldCS, eNew == STRIKE_WAR);
 	if (bOldHoldable && (eNew == STRIKE_PREP || eNew == STRIKE_BUILDUP || eNew == STRIKE_WAR))
 		eCS = eOldCS;
 	// the first pick in PREP: CP's committed major in reach is held as soon as it's valid
@@ -3170,7 +3189,8 @@ void CvMilitaryAI::UpdateStrikeState()
 	{
 		eTarget = eCS;
 		pTargetCity = m_pPlayer->GetClosestCityToUsByPlots(eCS);
-		bInReach = pTargetCity && pCapital && plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12;
+		// (the lead's review of cbebe77) a held target is in reach: it was picked with reach, and the 12 tiles were checked then
+		bInReach = pTargetCity && pCapital && (eCS == eOldCS || plotDistance(pCapital->getX(), pCapital->getY(), pTargetCity->getX(), pTargetCity->getY()) <= 12);
 	}
 	// the strike's target, checked each BUILDUP turn (the lead's review: before the strike only the strike's own declaration is
 	// allowed, so a stale target was a deadlock: a defensive pact, CP's committed target changing under an open window, the
@@ -3205,12 +3225,9 @@ void CvMilitaryAI::UpdateStrikeState()
 			eKeep = eCommitted, szHow = "the committed target";
 		else if ((eKeep = FindStrikeMajorInReach()) != NO_PLAYER)
 			szHow = "the nearest major in reach";
-		else if ((eKeep = FindStrikeCityState()) != NO_PLAYER && IsStrikeTargetValid(eKeep, /*bNewTarget*/ false))
+		// (the lead's review of cbebe77) a new pick, with reach; no held-target fallbacks here (a held target is eCS, above)
+		else if ((eKeep = FindStrikeCityState()) != NO_PLAYER && IsStrikeTargetValid(eKeep, /*bNewTarget*/ true))
 			szHow = "the nearest city-state in reach";
-		else if (IsStrikeTargetValid(eWindow, /*bNewTarget*/ false))
-			eKeep = eWindow, szHow = "the build-up's target (no army path this turn)";
-		else if (IsStrikeTargetValid(eTarget, /*bNewTarget*/ false))
-			eKeep = eTarget, szHow = "the current target (no army path this turn)";
 		else
 			eKeep = NO_PLAYER;
 		// no target in reach: wait in BUILDUP and pick one when it comes (178B8F13: the Huns went OVER at T40, Jakarta came in
@@ -3446,9 +3463,12 @@ void CvMilitaryAI::UpdateStrikeState()
 		if (eWarTarget == NO_PLAYER || IsStrikeTargetFinished(eWarTarget))
 		{
 			eNew = STRIKE_BUILDUP;
+			// (the lead's review of cbebe77) why: the capital taken by us or by a third party, the target dead, or released
+			const CvCity* pGoal = (eWarTarget != NO_PLAYER) ? GetStrikeObjectiveCity(eWarTarget) : NULL;
 			strWhy = (eWarTarget == NO_PLAYER) ? "the target released (its capital out of its hands, or it can't be fought): the next target" :
 				!GET_PLAYER(eWarTarget).isAlive() ? "the target eliminated: the next target" :
-				"the target's capital taken (or out of reach): peace allowed, the next target";
+				(pGoal && pGoal->getTeam() == m_pPlayer->getTeam()) ? "the target's capital taken by us: peace allowed, the next target" :
+				"the target's capital taken by a third party (or gone): the next target";
 			m_iStrikeCityState = NO_PLAYER;
 			m_eTimingBuildupTarget = NO_PLAYER;
 			// the window reopens for the next target (the declaration block lets only the window's target through, and
