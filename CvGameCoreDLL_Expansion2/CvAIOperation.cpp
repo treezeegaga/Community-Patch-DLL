@@ -2181,6 +2181,17 @@ bool CvAIOperationCivilian::CheckTransitionToNextStage()
 				((iTurnsWaited >= 3 && SettlerTripLooksSafe(pCivilian, GetTargetPlot())) ||
 				 (iTurnsWaited >= 5 && pCivilian->GetDanger() == 0 && pCivilian->GetDanger(GetTargetPlot()) == 0) ||
 				 iTurnsWaited >= 15);
+			// AI_AB_TEST (candidate, flag StrikeEscort; the user: "this should never happen to an aggressive early strike civ who has
+			// been barb hunting"): a strike civ's Settler waits for its escort while the civ has any land combat unit. Persia
+			// (18DA3905) lost 3 Settlers on the same trip, each after "the trip looks safe, going alone"; Greece (18BE1E3E) lost 1
+			if (bGoAlone && m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesCandidateAI(FIX_STRIKE_ESCORT) &&
+				(GET_PLAYER(m_eOwner).GetMilitaryAI()->IsEarlyStrikeCiv() || GET_PLAYER(m_eOwner).GetMilitaryAI()->IsLateStrikeCiv()) &&
+				GET_PLAYER(m_eOwner).GetNumUnitsWithDomain(DOMAIN_LAND, true) > 0)
+			{
+				bGoAlone = false;
+				if (iTurnsWaited == 3)
+					LogOperationSpecialMessage("StrikeEscort: a strike civ's Settler waits for its escort");
+			}
 			if (m_eType == AI_OPERATION_FOUND_CITY && GET_PLAYER(m_eOwner).UsesNewAI() && bGoAlone &&
 				pThisArmy->GetNumFormationEntries() > 1 && pThisArmy->GetSlotStatus(1)->IsFree())
 			{

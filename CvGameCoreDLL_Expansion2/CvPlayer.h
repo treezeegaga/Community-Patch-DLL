@@ -326,6 +326,9 @@ enum CandidateFixTypes
 							// research follows the plan's list; the first tree is the plan's. Personality's rows carry the lists. Off in the bundle
 	FIX_SIEGE_CAPTURER,		// War (the user: Persia brought Addis Ababa to 0 HP with no melee to take it): a city at war down to a third of
 							// its HP with no melee unit able to strike it this turn draws our two nearest free melee units (4 turns). Off in the bundle
+	FIX_STRIKE_ESCORT,		// War (the user: "this should never happen to an aggressive early strike civ who has been barb hunting"; Persia
+							// 18DA3905 lost 3 Settlers going alone, Greece 18BE1E3E 1): a strike civ's Settler never goes without an escort
+							// while it has a land combat unit. Off in the bundle
 	NUM_CANDIDATE_FIXES
 };
 // AI_AB_TEST: ABTestFixMask, a set of candidate flags, is defined in CustomMods.h (128 bits)
