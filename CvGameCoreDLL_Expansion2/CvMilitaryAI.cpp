@@ -3644,13 +3644,43 @@ void CvMilitaryAI::UpdateStrikeState()
 		// K cities; late, the upgrade tech in reach, K cities and half the upgrade bill saved); EarlyStrike also wants a target
 		// in reach that its plan can take
 		const bool bEconomyReady = m_pPlayer->GetGrandStrategyAI()->IsStrikeEconomyReady();
-		const bool bTrigger = bEconomyReady && (bEarly ? (bInReach && IsStrikeArmyBuildable()) : true);
-		if (bTrigger)
+		const bool bArmyBuildable = IsStrikeArmyBuildable();
+		const bool bTrigger = bEconomyReady && (bEarly ? (bInReach && bArmyBuildable) : true);
+		// (the lead, 1B22084A: Persia's early strike held Yerevan from T4 and sat in PREP for 150 turns with its army complete
+		// from about T100 and 10 cities) a game-state way out: the plan's army is out (core and support at their counts, upgrade
+		// lines included) and a target is held in reach. The army is what PREP waits for; once it exists, the build-up starts
+		CvGrandStrategyAI* pGrand = m_pPlayer->GetGrandStrategyAI();
+		const CvStrikePlan& kPrepPlan = pGrand->GetStrikePlan();
+		const bool bPlanArmyOut = kPrepPlan.bValid && kPrepPlan.eCoreClass != NO_UNITCLASS &&
+			pGrand->CountStrikeClassLine(kPrepPlan.eCoreClass) >= kPrepPlan.iCoreTarget &&
+			(kPrepPlan.eSupportClass == NO_UNITCLASS || pGrand->CountStrikeClassLine(kPrepPlan.eSupportClass) >= kPrepPlan.iSupportTarget);
+		const bool bArmyOutTrigger = !bTrigger && bPlanArmyOut && eCS != NO_PLAYER && bInReach && pTargetCity != NULL;
+		if (bTrigger || bArmyOutTrigger)
 		{
 			eNew = STRIKE_BUILDUP;
-			strWhy = bEarly ? CvString::format("economy-ready, target %s in reach, core trainable", pTargetCity->getNameNoSpace().c_str()) : CvString("economy-ready");
+			strWhy = bArmyOutTrigger ? CvString::format("the plan's army is out, target %s held in reach", pTargetCity->getNameNoSpace().c_str()) :
+				bEarly ? CvString::format("economy-ready, target %s in reach, core trainable", pTargetCity->getNameNoSpace().c_str()) : CvString("economy-ready");
 			m_iStrikeWarsDeclaredMark = iWarsDeclared;
 			m_iStrikeWarsOnUsMark = iWarsOnUs;
+		}
+		// (1B22084A: no line said what held PREP) what holds it, when that changes
+		else if (GC.getLogging() && GC.getAILogging() && kPrepPlan.bValid && kPrepPlan.eCoreClass != NO_UNITCLASS)
+		{
+			const int iCoreOut = pGrand->CountStrikeClassLine(kPrepPlan.eCoreClass);
+			const int iSupportOut = (kPrepPlan.eSupportClass != NO_UNITCLASS) ? pGrand->CountStrikeClassLine(kPrepPlan.eSupportClass) : 0;
+			const bool bCoreBuildable = IsStrikeClassBuildable(kPrepPlan.eCoreClass);
+			const bool bCitiesDone = m_pPlayer->getNumCities() >= kPrepPlan.iMaxCitiesBeforeStrike || m_pPlayer->IsBoxedInForSettling();
+			const int iKey = 1 + (bEconomyReady ? 2 : 0) + (bArmyBuildable ? 4 : 0) + (bInReach ? 8 : 0) + (bCoreBuildable ? 16 : 0) + (bCitiesDone ? 32 : 0) +
+				64 * min(iCoreOut, 63) + 4096 * min(iSupportOut, 63) + (eCS != NO_PLAYER ? 1 << 18 : 0);
+			if (iKey != m_iStrikeNotReadyKey)
+			{
+				m_iStrikeNotReadyKey = iKey;
+				m_pPlayer->GetTacticalAI()->LogTacticalMessage(CvString::format("Strike: PREP holds (economy-ready %s: core trainable %s, core %d/%d before the settler, cities %d/%d%s; %s; target %s%s; the plan's army %d/%d core, %d/%d support; %s)",
+					bEconomyReady ? "yes" : "no", bCoreBuildable ? "yes" : "no", iCoreOut, kPrepPlan.iCoreBeforeSettler, m_pPlayer->getNumCities(), kPrepPlan.iMaxCitiesBeforeStrike,
+					m_pPlayer->IsBoxedInForSettling() ? " (boxed in)" : "", bEarly ? (bArmyBuildable ? "the early core trainable" : "the early core NOT trainable") : "late",
+					eCS != NO_PLAYER ? GET_PLAYER(eCS).getCivilizationShortDescription() : "none", bInReach ? " in reach" : " not in reach",
+					iCoreOut, kPrepPlan.iCoreTarget, iSupportOut, kPrepPlan.iSupportTarget, bEarly ? "EarlyStrike" : "LateStrike"));
+			}
 		}
 	}
 	else if (eNew == STRIKE_BUILDUP && ((m_pPlayer->IsAtWarAnyMajor() && iWarsDeclared > m_iStrikeWarsDeclaredMark) || bAtCSWar))
