@@ -1910,7 +1910,14 @@ bool CvAIOperationMilitary::CheckTransitionToNextStage()
 					bInPlace = false;
 				}
 				//(stalled at war: the turns waiting at the border at peace don't count, else it fires on the first turn of the war)
-				if (bMarchOn && !bInPlace && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy) && plotDistance(*pCenterOfMass, *pTarget) <= 2*GetDeployRange() &&
+				//AI_AB_TEST (the strike; the lead's go, trial28 186D5858 Sofia, 171787CD Kyzyl, 17813E6E Boston): not against the
+				//strike's target. There the army was handed over 4-6 tiles out after 3 turns of contact with the target's field
+				//units, the tactical AI withdrew from the city's empty zone and the army dissolved. Against the strike's target the
+				//operation hands over only at the walls (the distance check above); stalled on contact, its units keep making
+				//opportunity attacks on the blockers (CheckForEnemiesNearArmy) and the rest gather, until the way is clear or the
+				//operation's own timeout
+				const bool bStrikeTarget = GET_PLAYER(m_eOwner).isMajorCiv() && GET_PLAYER(m_eOwner).GetMilitaryAI()->IsStrikeNoRetreat(m_eEnemy);
+				if (bMarchOn && !bInPlace && !bStrikeTarget && GET_PLAYER(m_eOwner).IsAtWarWith(m_eEnemy) && plotDistance(*pCenterOfMass, *pTarget) <= 2*GetDeployRange() &&
 					GET_TEAM(GET_PLAYER(m_eOwner).getTeam()).GetNumTurnsAtWar(GET_PLAYER(m_eEnemy).getTeam()) >= 3 &&
 					m_progressToTarget.size() >= 3 && m_progressToTarget[0] <= m_progressToTarget[2])
 				{
