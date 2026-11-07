@@ -2263,11 +2263,13 @@ void CvGrandStrategyAI::MakeStrikePlan(const CvStrategyProfile& kProfile, CvStri
 		// LateStrike (off; one flag with War's window and Economy's book): economy first, pre-build, save the gold, upgrade the turn the tech lands and strike.
 		// Zulu (glory7, Deity Challenge #1): a ranged-led wave at T90-100 with Spearmen upgraded to Impi at Civil Service.
 		// Mongolia (Deity Challenge #8): Chariot Archers kept alive and upgraded to Keshiks at Chivalry, T92-105, 8+ Keshiks
-		// and 2 Horsemen to capture. Assyria (imMapex): Composite Bowmen with 1-2 Siege Towers and 1-2 melee, T80-110.
+		// and 2 Horsemen to capture. Sized to about 4 Horses (the user, 2026-11-07, trial29 18B3086C: "horses arent that
+		// rare, but having 10 seems very unlikely"; a Horse tile gives 2): 4 Chariot Archers into 4 Keshiks, 2 Spearmen to
+		// capture, a Catapult, and Archers in the list for the rest. Assyria (imMapex): Composite Bowmen with 1-2 Siege Towers and 1-2 melee, T80-110.
 		// Japan (low confidence): Swordsmen upgraded to Samurai at Steel, T95-105. Songhai (low confidence): Horsemen
 		// clearing camps for triple gold, upgraded to Mandekalu at Chivalry.
 		{ "CIVILIZATION_ZULU",     "UNITCLASS_PIKEMAN",        5, "UNITCLASS_ARCHER",   8, NULL,                 0, "TECH_CIVIL_SERVICE", 0, 4, 90, 100, 120, "POLICY_BRANCH_LIBERTY",   "UNITCLASS_SPEARMAN",       5,  90, true, true },
-		{ "CIVILIZATION_MONGOL",   "UNITCLASS_KNIGHT",         8, "UNITCLASS_HORSEMAN", 2, NULL,                 0, "TECH_CHIVALRY",      0, 3, 95, 105, 120, "POLICY_BRANCH_HONOR",     "UNITCLASS_CHARIOT_ARCHER", 8, 140, true, true },
+		{ "CIVILIZATION_MONGOL",   "UNITCLASS_KNIGHT",         4, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 1, "TECH_CHIVALRY",      0, 3, 95, 105, 120, "POLICY_BRANCH_HONOR",     "UNITCLASS_CHARIOT_ARCHER", 4, 140, true, true },
 		{ "CIVILIZATION_ASSYRIA",  "UNITCLASS_ARCHER",         5, "UNITCLASS_SPEARMAN", 2, "UNITCLASS_CATAPULT", 2, "TECH_CONSTRUCTION",  0, 3, 80,  95, 110, "POLICY_BRANCH_TRADITION", NULL,                       0,  75, true, false },
 		{ "CIVILIZATION_JAPAN",    "UNITCLASS_LONGSWORDSMAN",  7, "UNITCLASS_ARCHER",   4, NULL,                 0, "TECH_STEEL",         0, 3, 100, 105, 120, "POLICY_BRANCH_TRADITION", "UNITCLASS_SWORDSMAN",      7, 100, true, true },
 		// China (the user, 2026-11-05: "cho ko nu rush?"; the lead's research, STRIKE_PLANS_RESEARCH.md "China (Chu-Ko-Nu
@@ -2794,7 +2796,7 @@ void CvGrandStrategyAI::SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) c
 		// Huns (S4 Cromagnus): Scout, Monument, then Horse Archers continuously, a Warrior or Ram as needed; 1-2 cities
 		// ([I]: the one settler's place). Research: The Wheel, a luxury, Bronze Working, Horseback Riding, then Writing/Math
 		{ "CIVILIZATION_HUNS", true,
-			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_CHARIOT_ARCHER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SPEARMAN UNITCLASS_CHARIOT_ARCHER UNITCLASS_SPEARMAN UNITCLASS_WARRIOR UNITCLASS_CHARIOT_ARCHER",
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_WORKER UNITCLASS_CHARIOT_ARCHER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SPEARMAN UNITCLASS_CHARIOT_ARCHER UNITCLASS_SPEARMAN UNITCLASS_WARRIOR UNITCLASS_CHARIOT_ARCHER",
 			"TECH_THE_WHEEL LUXURY TECH_BRONZE_WORKING TECH_HORSEBACK_RIDING TECH_WRITING TECH_MATHEMATICS" },
 		// Aztec (the user's game, which the sources fit): Jaguar x3, Worker, Settler, Archer x4, Jaguar x2.
 		// Research: a luxury, Archery, Construction
@@ -2809,12 +2811,12 @@ void CvGrandStrategyAI::SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) c
 		// Greece ([I] + S21: Monuments first, then units, no Granaries; 2-3 cities). Research: Bronze Working, Archery,
 		// Horseback Riding, Construction
 		{ "CIVILIZATION_GREECE", true,
-			"BUILDINGCLASS_MONUMENT UNITCLASS_SPEARMAN UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_ARCHER",
+			"BUILDINGCLASS_MONUMENT UNITCLASS_SPEARMAN UNITCLASS_WORKER UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_ARCHER",
 			"TECH_BRONZE_WORKING TECH_ARCHERY LUXURY TECH_HORSEBACK_RIDING TECH_CONSTRUCTION" },
 		// Celts (S7/S22 + [I]: Scout, Monument, Pictish Warrior x2 for barbarians, Settler, then Pictish Warriors and
 		// Archers). Research: Bronze Working early, Archery, Construction
 		{ "CIVILIZATION_CELTS", true,
-			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_SPEARMAN UNITCLASS_SPEARMAN UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SPEARMAN",
+			"UNITCLASS_SCOUT BUILDINGCLASS_MONUMENT UNITCLASS_WORKER UNITCLASS_SPEARMAN UNITCLASS_SPEARMAN UNITCLASS_SETTLER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SETTLER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SPEARMAN",
 			"TECH_BRONZE_WORKING LUXURY TECH_ARCHERY TECH_CONSTRUCTION" },
 		// Zulu (S24 glory7): Scout, Monument, Scout, Granary, Shrine, Archer x3, Worker, Pyramids, Archer, Settler; then
 		// Ikanda (Barracks), Spearmen. Research: Pottery, Archery, Mining, Animal Husbandry, Masonry, luxury, Construction,
@@ -2824,10 +2826,13 @@ void CvGrandStrategyAI::SetStrikeLists(CvStrikePlan& kPlan, const char* szCiv) c
 			"TECH_POTTERY TECH_ARCHERY TECH_MINING TECH_ANIMAL_HUSBANDRY TECH_MASONRY LUXURY TECH_CONSTRUCTION TECH_BRONZE_WORKING TECH_HORSEBACK_RIDING TECH_WRITING TECH_CURRENCY TECH_MACHINERY TECH_CIVIL_SERVICE" },
 		// Mongolia (S26 fils): Scout, Scout, Granary, Shrine, Caravan, Chariot Archer, Settler, Chariot Archer, Settler.
 		// Research (hicks53081): Pottery, Writing, Animal Husbandry, Mining, Archery, Trapping, The Wheel, Bronze Working,
-		// Philosophy, Civil Service, Currency, Chivalry
+		// Philosophy, Civil Service, Currency, Chivalry.
+		// trial29 (18B3086C): no Worker until T53 left the capital's Horses unworked, so the Pasture and the first Chariot
+		// Archer waited to T60. [I] A Worker 3rd, Animal Husbandry (Horses, the Caravan) and The Wheel early; then the
+		// army sized to about 4 Horses: Archers, 2 Spearmen and a Catapult after the 4 Chariot Archers.
 		{ "CIVILIZATION_MONGOL", false,
-			"UNITCLASS_SCOUT UNITCLASS_SCOUT BUILDINGCLASS_GRANARY BUILDINGCLASS_SHRINE UNITCLASS_CARAVAN UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_CHARIOT_ARCHER",
-			"TECH_POTTERY TECH_WRITING TECH_ANIMAL_HUSBANDRY TECH_MINING TECH_ARCHERY TECH_TRAPPING TECH_THE_WHEEL TECH_BRONZE_WORKING TECH_PHILOSOPHY TECH_CIVIL_SERVICE TECH_CURRENCY TECH_CHIVALRY" },
+			"UNITCLASS_SCOUT UNITCLASS_SCOUT UNITCLASS_WORKER BUILDINGCLASS_GRANARY BUILDINGCLASS_SHRINE UNITCLASS_CARAVAN UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_SETTLER UNITCLASS_CHARIOT_ARCHER UNITCLASS_CHARIOT_ARCHER UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_ARCHER UNITCLASS_SPEARMAN UNITCLASS_CATAPULT",
+			"TECH_POTTERY TECH_ANIMAL_HUSBANDRY TECH_THE_WHEEL TECH_WRITING TECH_MINING TECH_ARCHERY TECH_TRAPPING TECH_BRONZE_WORKING TECH_MATHEMATICS TECH_PHILOSOPHY TECH_CIVIL_SERVICE TECH_CURRENCY TECH_CHIVALRY" },
 		// Assyria (S28 imMapex): Scout, Scout, Temple of Artemis, Shrine, Worker, Archer, Settler, Granary, Composite Bowman
 		// x2, Siege Tower, Composite Bowman, Royal Library (Library), Caravan, National College. Research: Archery, Mining,
 		// luxury, Construction, luxury, Mathematics, Writing, Philosophy
