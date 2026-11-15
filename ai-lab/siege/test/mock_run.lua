@@ -121,7 +121,7 @@ local function newPlayer(id, isMinor)
 	function m:SetJONSCulture(v) assert(v == 0) end
 	function m:SetFaith(v) assert(v == 0) end
 	function m:ChangeExtraHappinessPerCity(v) assert(type(v) == "number") end
-	function m:ChangeNumResourceTotal(r, v) assert(type(r) == "number" and type(v) == "number") end
+	function m:ChangeNumResourceTotal(r, v, fromBuilding, fromEvent) assert(type(r) == "number" and type(v) == "number" and fromBuilding == false and fromEvent == true, "resources must be booked as from an event") end
 	function m:InitCity(x, y, ...)
 		assert(select("#", ...) == 0, "InitCity's optional arguments are read as numbers; pass none")
 		local plot = Map.GetPlot(x, y)

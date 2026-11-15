@@ -688,7 +688,8 @@ local function startLab()
 		player:ChangeExtraHappinessPerCity(20)
 		for _, name in ipairs({ "RESOURCE_IRON", "RESOURCE_HORSE" }) do
 			local id = typeID(name)
-			if id then player:ChangeNumResourceTotal(id, 30) end
+			-- Booked as coming from an event: the game checks its "from tiles" count against the map every turn.
+			if id then player:ChangeNumResourceTotal(id, 30, false, true) end
 		end
 	end
 	if not ensureWar() then
