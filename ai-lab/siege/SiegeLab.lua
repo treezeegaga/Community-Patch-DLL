@@ -23,6 +23,7 @@ local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
 local NO_PLAYER = -1
+local NO_FLOWDIRECTION = 7   -- FlowDirectionTypes in CvEnums.h: the six directions, a count, then this (not -1)
 
 -- The arena: a rectangle of flat grassland. The target city sits TARGET_DX east of its centre and the
 -- attacker's home city HOME_DX west of it, 12 tiles apart on the same row.
@@ -116,9 +117,9 @@ local function clearPlot(plot)
 	plot:SetResourceType(-1, 0, false)
 	plot:SetImprovementType(-1, NO_PLAYER, false)
 	plot:SetRouteType(-1, NO_PLAYER)
-	plot:SetWOfRiver(false, -1)
-	plot:SetNWOfRiver(false, -1)
-	plot:SetNEOfRiver(false, -1)
+	if plot:IsWOfRiver() then plot:SetWOfRiver(false, NO_FLOWDIRECTION) end
+	if plot:IsNWOfRiver() then plot:SetNWOfRiver(false, NO_FLOWDIRECTION) end
+	if plot:IsNEOfRiver() then plot:SetNEOfRiver(false, NO_FLOWDIRECTION) end
 end
 
 local function setLand(plot, plotType, terrainName)

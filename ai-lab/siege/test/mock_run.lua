@@ -30,7 +30,7 @@ local plots, players, teams = {}, {}, {}
 local nextUnitID, nextCityID = 1, 1
 
 local function newPlot(x, y)
-	local p = { x = x, y = y, water = (x < 6), mountain = false, city = nil, units = {} }
+	local p = { x = x, y = y, water = (x < 6), mountain = false, city = nil, units = {}, river = ((x + y) % 4 == 0) }
 	local m = {}
 	function m:GetX() return p.x end
 	function m:GetY() return p.y end
@@ -43,7 +43,10 @@ local function newPlot(x, y)
 	function m:SetResourceType(r, n, b) assert(type(r) == "number" and type(n) == "number" and type(b) == "boolean") end
 	function m:SetImprovementType(i, pl, b) assert(type(i) == "number" and type(pl) == "number" and type(b) == "boolean") end
 	function m:SetRouteType(r, pl) assert(type(r) == "number" and type(pl) == "number") end
-	function m:SetWOfRiver(b, d) assert(type(b) == "boolean" and type(d) == "number") end
+	-- Every fourth plot has a river on one side. The engine asserts on any "no direction" value but 7.
+	function m:IsWOfRiver() return p.river end
+	function m:SetWOfRiver(b, d) assert(b == false and d == 7, "river removal must pass NO_FLOWDIRECTION (7)") p.river = false end
+	m.IsNWOfRiver, m.IsNEOfRiver = m.IsWOfRiver, m.IsWOfRiver
 	m.SetNWOfRiver, m.SetNEOfRiver = m.SetWOfRiver, m.SetWOfRiver
 	function m:SetPlotType(t, a, b, c)
 		assert(type(t) == "number" and type(a) == "boolean" and type(b) == "boolean" and type(c) == "boolean")
