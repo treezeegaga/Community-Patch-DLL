@@ -1,0 +1,5 @@
+2026-11-15T16:17:57
+7211208|Button|OK
+41289760|Button|Cancel
+9307604|Static|
+3934088|Static|An error in the code has occurred. Please report the issue at https://github.com/LoneGazebo/Community-Patch-DLL/issues so it can be fixed. /  / Please provide the VP version number, the list of other mods in use, and a screenshot of this message. If possible, attach a savegame from immediately before the bug occurs. /  / You may continue playing, but unexpected behavior might occur. It is recommended to wait until a hotfix has been released that resolves the issue. /  / ================== / Detailed information: / Expression: m_iOverflowResearch >= 0 / File: CvPlayer.cpp / Line: 30402 / ================== / Cancel - Exit the game.  / OK - Continue playing. This warning will not be shown again in the current session.
