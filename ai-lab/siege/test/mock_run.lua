@@ -102,6 +102,11 @@ local function newCity(owner, x, y)
 	function m:SetPopulation(v, reassign) assert(type(v) == "number" and reassign == true) c.pop = v end
 	function m:SetNumRealBuilding(b, n) assert(type(b) == "number" and type(n) == "number") end
 	function m:SetProduction(v) assert(v == 0) end
+	function m:ChangeBaseYieldRateFromMisc(yield, change)
+		assert(type(yield) == "number" and type(change) == "number")
+		c.extraGold = (c.extraGold or 0) + change
+		assert(c.extraGold >= 0, "a city's extra gold must not go negative")
+	end
 	function m:SetOverflowProduction(v) assert(v == 0) end
 	m._c = c
 	return strict(m, "city")
@@ -116,7 +121,13 @@ local function newPlayer(id, isMinor)
 	function m:GetTeam() return id end
 	function m:GetNumCities() local n = 0 for _ in pairs(m._cities) do n = n + 1 end return n end
 	function m:GetCivilizationShortDescription() return "Civ" .. id end
-	function m:CalculateGoldRate() return -3 end
+	-- Upkeep grows with the turn count, as in the game; cities add whatever extra gold they were given.
+	function m:CalculateGoldRate()
+		local units, extra = 0, 0
+		for _ in pairs(m._units) do units = units + 1 end
+		for _, city in pairs(m._cities) do extra = extra + (city._c.extraGold or 0) end
+		return 3 - math.floor(units * (1 + turn / 60)) + extra
+	end
 	function m:SetGold(v) assert(type(v) == "number") end
 	function m:SetJONSCulture(v) assert(v == 0) end
 	function m:SetFaith(v) assert(v == 0) end
@@ -211,7 +222,7 @@ Game = strict({
 	GetGameSpeedType = function() return 0 end,
 }, "Game")
 
-local typeNames = { "TECH_AGRICULTURE", "TECH_ARCHERY", "TECH_MASONRY", "TECH_BRONZE_WORKING", "TECH_THE_WHEEL",
+local typeNames = { "YIELD_FOOD", "YIELD_PRODUCTION", "YIELD_GOLD", "TECH_AGRICULTURE", "TECH_ARCHERY", "TECH_MASONRY", "TECH_BRONZE_WORKING", "TECH_THE_WHEEL",
 	"TECH_CONSTRUCTION", "TECH_IRON_WORKING", "TECH_MATHEMATICS",
 	"UNIT_WARRIOR", "UNIT_ARCHER", "UNIT_SPEARMAN", "UNIT_COMPOSITE_BOWMAN", "UNIT_SWORDSMAN", "UNIT_CATAPULT",
 	"BUILDING_WALLS", "TERRAIN_GRASS", "TERRAIN_MOUNTAIN", "FEATURE_FOREST", "RESOURCE_IRON", "RESOURCE_HORSE" }
@@ -313,6 +324,9 @@ for _, line in ipairs(log) do
 		assert(n == fields[kind], kind .. " has " .. n .. " fields, expected " .. fields[kind] .. ": " .. body)
 	end
 	if kind == "RESULT" and body:match("^RESULT,[^,]+,%d+,1,") then captured = captured + 1 end
+	if kind == "START" then
+		assert(body:match(",(%-?%d+)$") == "10", "the attacker's income should be levelled at the start of a battle: " .. body)
+	end
 end
 local expected = #SiegeLabScenarios[SiegeLabConfig.set] * SiegeLabConfig.repeats
 realPrint(string.format("-- %d scenarios staged, %d results, %d captured, %d turns scored, %d warnings, %d errors",

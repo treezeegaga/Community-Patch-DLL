@@ -66,8 +66,8 @@ Options for the installer: `-Set march`, `-Only small_vs_weak,large_vs_medium`, 
   defender alive when the target falls, and stops a capture counting toward a domination victory.
 - Siege scenarios place the army 3 tiles from the city, melee in front, marked as "just delivered by an
   operation": the state in which the stock AI hands an army over to its tactical AI.
-- Each turn, both sides are held still outside the battle: treasury reset to 60 gold, culture and faith to
-  0, city production to 0, and any unit that wasn't staged is removed. So no reinforcements, purchases,
+- Each turn, both sides are held still outside the battle: treasury reset to 60 gold, income levelled at +10 a turn, culture and
+  faith to 0, city production to 0, and any unit that wasn't staged is removed. So no reinforcements, purchases,
   upgrades or policies.
 - A battle ends when the city falls, the attackers are all dead, or its turns run out. Then everything is
   wiped and the next one is staged.
@@ -118,8 +118,10 @@ baseline and the human reference.
   a side can research an early tech during one, and war weariness may build up (each side gets +20
   happiness per city to cover it). If repeats disagree, shorten runs with `-Only`.
 - **The city in a siege scenario is never the defender's capital**, so it has no Palace.
-- **Upkeep.** Both sides have one small city, so a large army runs a deficit; the treasury reset covers
-  it, but the AI may still react to a negative income. `AttackerGoldRate` shows how negative.
+- **Upkeep.** Unit upkeep rises with the turn count, and in the first run it reached 60 gold a turn, which
+  made the AI disband units and hold back in later battles. The lab now tops up each side's permanent city
+  every turn so both sides' income stays at +10. `AttackerGoldRate` should read 10 for every battle; if it
+  doesn't, the top-up isn't working.
 - **Removed units.** A Great General earned in a battle is removed like any other unstaged unit.
 - **Scoring uses experience gains** to tell whether units fought. If a unit can fight without gaining
   experience, `EngagedTurns` undercounts; `MaxDamage` doesn't depend on it.

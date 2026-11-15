@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 2
+local VERSION = 3
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -29,7 +29,8 @@ local NO_FLOWDIRECTION = 7   -- FlowDirectionTypes in CvEnums.h: the six directi
 -- attacker's home city HOME_DX west of it, 12 tiles apart on the same row.
 local HALF_W, HALF_H = 12, 6
 local TARGET_DX, HOME_DX = 3, -9
-local TREASURY = 60   -- both sides are reset to this each turn: enough to cover upkeep, too little to buy or upgrade
+local TREASURY = 60   -- both sides are reset to this each turn: too little to buy or upgrade anything
+local GOLD_RATE = 10  -- both sides' income per turn is held here, whatever their units cost
 
 local lab = nil       -- state of the run; nil until the lab starts
 local cur = nil       -- state of the scenario being played
@@ -359,10 +360,28 @@ end
 -- Keeping the two sides still between scenarios and turns
 ------------------------------------------------------------------------------------------------------------
 
+-- Unit upkeep rises with the turn count, so over a long run an army that broke even in the first battle
+-- costs 60 gold a turn by the last, and the AI starts disbanding units and holding back. To keep every
+-- battle on the same footing, each side's permanent city gets whatever extra gold makes the side's income
+-- GOLD_RATE. One step per call: called every turn, it follows the army as units die.
+local function balanceIncome(playerID)
+	local player = Players[playerID]
+	local city = lab.incomePlot[playerID]:GetPlotCity()
+	if not city or city:GetOwner() ~= playerID then return end
+	local extra = (lab.extraGold[playerID] or 0) + GOLD_RATE - player:CalculateGoldRate()
+	if extra < 0 then extra = 0 end
+	local change = extra - (lab.extraGold[playerID] or 0)
+	if change ~= 0 then
+		city:ChangeBaseYieldRateFromMisc(GameInfoTypes.YIELD_GOLD or 2, change)
+		lab.extraGold[playerID] = extra
+	end
+end
+
 -- Run at the start of a side's turn: no purchases or upgrades, no policies or pantheons, nothing finishes
--- in a city, and anything that isn't part of the staged battle is removed.
+-- in a city, income is levelled, and anything that isn't part of the staged battle is removed.
 local function holdStill(playerID, roster)
 	local player = Players[playerID]
+	balanceIncome(playerID)
 	player:SetGold(TREASURY)
 	player:SetJONSCulture(0)
 	player:SetFaith(0)
@@ -466,6 +485,8 @@ local function beginScenario()
 		return
 	end
 
+	balanceIncome(lab.attacker)
+	balanceIncome(lab.defender)
 	city:UpdateStrengthValue()
 	cur.cityMaxHP = city:GetMaxHitPoints()
 	out(string.format("START,%s,%d,%d,%d,%d,%d,%d,%d", sc.name, cur.rep, Game.GetGameTurn(),
@@ -693,6 +714,8 @@ local function startLab()
 		lab = nil
 		return
 	end
+	lab.incomePlot = { [attackerID] = Map.GetPlot(lab.hx, lab.hy), [defenderID] = reservePlot }
+	lab.extraGold = {}
 	lab.cleaning = true
 	for id = 0, maxPlayers() - 1 do
 		local player = Players[id]
