@@ -84,7 +84,13 @@ if (-not $NoSave) {
     Write-Output "Saved $resultsPath"
     Write-Output "Saved $turnsPath"
     # The game's own tactical AI logs say why it did or didn't attack; keep them with the results.
-    $aiLogs = @(Get-ChildItem (Split-Path $Log) -Filter "*Tactical*" -File -ErrorAction SilentlyContinue)
+    # Only logs from this launch count: Civ V leaves old files behind when AILog is off, so skip any file that is
+    # older than the launch (APP.log is rewritten at launch; without it, 12 hours before Lua.log's last write).
+    $logFolder = Split-Path $Log
+    $launch = (Get-Item $Log).LastWriteTime.AddHours(-12)
+    $appLog = Join-Path $logFolder "APP.log"
+    if (Test-Path $appLog) { $launch = (Get-Item $appLog).LastWriteTime.AddMinutes(-2) }
+    $aiLogs = @(Get-ChildItem $logFolder -Filter "*Tactical*" -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -ge $launch })
     if ($aiLogs.Count -gt 0) {
         $logDir = Join-Path $OutDir "$Label-$stamp-logs"
         New-Item -ItemType Directory -Force $logDir | Out-Null
