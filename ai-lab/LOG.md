@@ -14,7 +14,12 @@ Change: lab v5 shows the city's tile and its ring to the attacker's team for a m
 spotter behaviour stays the AI's own. Mock run passes. No DLL change.
 Predicted: every battle has a zone for its city on its first turn; small_vs_weak and medium_vs_weak capture 3 of 3
 each; ranged_only_vs_weak still walks home 3 of 3 (no spotter).
-Result: pending (diag6).
+Result: diag6 (lab v5, `ab-00ae537`, 3 x 3): exactly as predicted. small_vs_weak captured 3 of 3 and
+medium_vs_weak 3 of 3, each on the battle's 2nd turn with no losses; ranged_only_vs_weak walked home 3 of 3 with 0
+damage, every capture attempt "ABORTED ... target visible 0". Every battle had its zone from its first turn.
+(The runner's first launch failed to get past the menus; it loosened the screen-match tolerance for the "menu" and
+"single" screens from 2.5 to 5 in Run-SiegeLab.ps1, commit 0aea460, and the second launch ran clean.)
+Decision: accepted. Lab v5 is the baseline lab. Next: the full set three times (M0 repeat check).
 
 ## 2026-11-15 M0 iteration 4: stage battles before the attacker's turn
 Class: lab problem: on the first turn of every battle the attacker's AI doesn't know the target city exists.
