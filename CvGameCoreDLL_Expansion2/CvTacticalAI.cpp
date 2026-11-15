@@ -975,7 +975,13 @@ void CvTacticalAI::ExecuteCaptureCityMoves()
 				}
 
 				//finally do the attack. be a bit more careful if we have few melee units
-				ExecuteAttackWithUnits(pPlot, iMeleeCount>2 ? AL_HIGH : AL_MEDIUM);
+				CvString strCityName = pCity->getNameNoSpace(); //the city may be gone after the attack
+				bool bAttackDone = ExecuteAttackWithUnits(pPlot, iMeleeCount>2 ? AL_HIGH : AL_MEDIUM);
+
+				if (GC.getLogging() && GC.getAILogging())
+					LogTacticalMessage(CvString::format("Zone %d, capture attempt on %s %s: %d units in reach, %d melee, target visible %d",
+						pZone ? pZone->GetZoneID() : -1, strCityName.c_str(), bAttackDone ? "executed" : "ABORTED",
+						(int)m_CurrentMoveUnits.size(), iMeleeCount, pPlot->isVisible(m_pPlayer->getTeam()) ? 1 : 0));
 
 				// Did it work?  If so, don't need a temporary dominance zone if had one here
 				if (pPlot->getOwner() == m_pPlayer->GetID())
@@ -2105,6 +2111,10 @@ void CvTacticalAI::ReviewUnassignedUnits()
 		CvUnit* pUnit = m_pPlayer->getUnit(*it);
 		if (pUnit && pUnit->canUseForTacticalAI())
 		{
+			if (GC.getLogging() && GC.getAILogging() && pUnit->IsCombatUnit())
+				LogTacticalMessage(CvString::format("unassigned after tactical moves, left to homeland: %s %d at %d:%d, army %d",
+					pUnit->getName().c_str(), pUnit->GetID(), pUnit->getX(), pUnit->getY(), pUnit->getArmyID()));
+
 			//don't overwrite army moves ... everything else is fair game
 			if (pUnit->getArmyID()==-1)
 				pUnit->setTacticalMove(AI_TACTICAL_UNASSIGNED);
@@ -3205,6 +3215,9 @@ bool CvTacticalAI::ExecuteSpotterMove(const vector<CvUnit*>& vUnits, CvPlot* pTa
 {
 	if (pTargetPlot->isVisible(m_pPlayer->getTeam()))
 		return true; //nothing to do
+
+	if (GC.getLogging() && GC.getAILogging())
+		LogTacticalMessage(CvString::format("target %d:%d not visible, looking for a spotter among %d units", pTargetPlot->getX(), pTargetPlot->getY(), (int)vUnits.size()));
 
 	//else find a suitable unit
 	vector<CvUnit*> vCandidates;

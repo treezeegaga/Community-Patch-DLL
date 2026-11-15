@@ -6,6 +6,29 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 (none yet)
 
+## 2026-11-15 M0 iteration 3: why the army walks home (logging only)
+Class: walked home: 4 of 4 in diag3 (`ab-e2b44ca`, small_vs_weak and medium_vs_weak, 2 each), 6 of 6 in diag2,
+2 of 4 in diag1. City damage 0 in all of them.
+What the logs show (diag3, verified): on a battle's first turn the tactical AI has no zone for the new city (the
+zone line names the previous, razed city). From the second turn it has one, posture `P_STEAMROLL`, and logs
+"attempting capture of <city>, expected max damage per turn 99/128", yet no attack happens. Meanwhile the homeland
+AI moves the Spearmen to "sentry point" and "garrison" at the home city 12 tiles west, and later the Composite
+Bowmen to "garrison" too. As the army leaves, expected damage falls (128, 64, 32), the AI logs "too early for
+attacking", and the posture turns to `P_WITHDRAW` for the rest of the battle.
+Inferred from code, not yet seen in a log: `ExecuteAttackWithUnits` starts with `ExecuteSpotterMove`, which returns
+false when the city tile isn't visible and no unit of AI type ATTACK, FAST_ATTACK, COUNTER, SKIRMISHER (or naval)
+is in the group. The army stands 3 to 5 tiles away with sight 2, and Spearmen and Composite Bowmen are DEFENSE and
+RANGED, so the attack is abandoned before any shot. Units the tactical AI doesn't use go to the homeland AI, which
+sends them to guard the empty home city. Open question: diag1's ranged_only_vs_weak (6 Composite Bowmen, same
+start) did shoot the city to its last hit points, so something else moved those bowmen into sight.
+Change: three log lines in `CvTacticalAI.cpp`, no behaviour change: the outcome of each capture attempt (executed
+or ABORTED, units in reach, melee count, target visible); "target not visible, looking for a spotter"; and every
+combat unit the tactical AI leaves to the homeland AI, with its position.
+Predicted: in small_vs_weak the capture attempt logs ABORTED with target visible 0 and the Spearmen and Bowmen
+appear in the "left to homeland" lines; ranged_only_vs_weak and ancient_rush_vs_open_city (Warriors are ATTACK
+units) show what differs when the army does engage.
+Result: pending (diag4).
+
 ## 2026-11-15 M0 iteration 2: a DLL that writes the AI logs
 Class: lab problem. diag2 (6 battles, stock DLL, `AILog = 1` before and after) wrote no AI log at all; the game's
 `Logs` folder has AI logs only from Nov 7, the earlier experiment's builds.
@@ -16,9 +39,11 @@ Change: `CvGame::init` reads `LoggingEnabled` and `AILog` from `config.ini` itse
 commit `03b00ce`). Logging only, not behind the AI switch, since it changes no decision. New `Set-LabDll.ps1`
 swaps only the pack's `CvGameCore_Expansion2.dll` for a release build and restores the saved stock copy (checked by
 SHA-256); `Run-SiegeLab.ps1 -Release ab-<commit>` uses it before the run and restores in its `finally`.
-Predicted: a run on `ab-03b00ce` writes `PlayerTacticalAILog.csv`, `MilitaryAILog.csv`, `OperationalAILog.csv` and
+Predicted: a run on the build writes `PlayerTacticalAILog.csv`, `MilitaryAILog.csv`, `OperationalAILog.csv` and
 the diplomacy logs. The battle results should match stock (no behaviour change).
-Result: pending.
+Result: diag3 on `ab-e2b44ca` (4 battles): 91 log files, 3.8 MB, including `PlayerTacticalAILog.csv` and
+`PlayerHomelandAILog.csv`. The stock DLL was restored and its hash checked by the script. Battle results as in diag2.
+Decision: accepted. Also: the downloaded SDKs are now cached for `ai/v2`, so builds take about 10 minutes.
 Also seen: Civ V did not close within 30 s of `CloseMainWindow` and was stopped by force, so the logs' last
 buffered lines may be lost. To be checked against the first logged run.
 
