@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 5
+local VERSION = 6
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -247,6 +247,19 @@ local function techSet(names)
 	return wanted
 end
 
+-- No research during a run: progress kept on a removed tech made it come back at once in a later battle, so a
+-- side climbed eras over a run (removing techs doesn't lower the era), and from three eras up the AI scraps its
+-- Spearmen and Warriors as "long obsolete" (CvEconomicAI::DisbandLongObsoleteUnits; seen in m0a-c, LOG.md M0
+-- iteration 6). Called at every battle and at the start of every turn.
+local function clearResearch(playerID)
+	local player = Players[playerID]
+	local teamTechs = Teams[player:GetTeam()]:GetTeamTechs()
+	for tech in GameInfo.Technologies() do
+		if teamTechs:GetResearchProgress(tech.ID) ~= 0 then teamTechs:SetResearchProgress(tech.ID, 0, playerID) end
+	end
+	player:SetOverflowResearch(0)
+end
+
 local function setTechs(playerID, names)
 	local team = Teams[Players[playerID]:GetTeam()]
 	local wanted = techSet(names)
@@ -256,6 +269,7 @@ local function setTechs(playerID, names)
 			team:SetHasTech(tech.ID, want, playerID, false, false, true)
 		end
 	end
+	clearResearch(playerID)
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -385,6 +399,7 @@ local function holdStill(playerID, roster)
 	player:SetGold(TREASURY)
 	player:SetJONSCulture(0)
 	player:SetFaith(0)
+	clearResearch(playerID)
 	for city in player:Cities() do
 		city:SetProduction(0)
 		city:SetOverflowProduction(0)
