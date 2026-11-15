@@ -232,7 +232,7 @@ $script:Screens = Read-Screens
 # The setup screens show the chosen leader, map and options, which change between games, so they match less closely
 # than the menus; the menus differ from each other only in their button text, so they need a close match. (The saved
 # pictures, from an 8-civ Pangaea setup, measured 16.7 against a Tiny Songhai setup; it must still be the nearest.)
-$script:Tolerance = @{ menu = 2.5; single = 2.5; setup = 25; advanced = 25 }
+$script:Tolerance = @{ menu = 5; single = 5; setup = 25; advanced = 25 }
 # The saved screen nearest to what is shown now
 function Get-ClosestScreen {
     $sig = Get-ScreenSignature
