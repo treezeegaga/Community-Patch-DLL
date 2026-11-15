@@ -302,7 +302,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 -- Checks
 local counts = { RUN = 0, START = 0, TURN = 0, RESULT = 0, WARN = 0, ERROR = 0, DONE = 0 }
-local captured, fields = 0, { RUN = 11, START = 9, TURN = 13, RESULT = 20 }
+local captured, fields = 0, { RUN = 11, START = 9, TURN = 14, RESULT = 22 }
 for _, line in ipairs(log) do
 	local body = line:match("^%[SiegeLab%] (.*)$")
 	assert(body, "a line without the tag: " .. line)

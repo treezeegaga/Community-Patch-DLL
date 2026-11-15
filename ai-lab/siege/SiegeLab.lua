@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 1
+local VERSION = 2
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -296,7 +296,7 @@ local function openPlots(x, y, minD, maxD, side)
 end
 
 -- Creates the units of a list of { type, count [, xp] } entries on the given plots, melee in the front
--- plots and ranged behind. Returns the roster: unit ID -> true.
+-- plots and ranged behind. Returns the roster: unit ID -> "melee" or "ranged".
 local function placeUnits(playerID, entries, plots, justDeployed)
 	local player = Players[playerID]
 	local melee, ranged = {}, {}
@@ -304,8 +304,13 @@ local function placeUnits(playerID, entries, plots, justDeployed)
 		local id = typeID(entry[1])
 		local info = GameInfo.Units[id]
 		for _ = 1, entry[2] do
-			local slot = { id = id, xp = entry[3] }
-			if info and (info.Range or 0) > 0 then ranged[#ranged + 1] = slot else melee[#melee + 1] = slot end
+			local slot = { id = id, xp = entry[3], kind = "melee" }
+			if info and (info.Range or 0) > 0 then
+				slot.kind = "ranged"
+				ranged[#ranged + 1] = slot
+			else
+				melee[#melee + 1] = slot
+			end
 		end
 	end
 	local order = {}
@@ -320,7 +325,7 @@ local function placeUnits(playerID, entries, plots, justDeployed)
 		if unit then
 			if slot.xp then unit:SetExperience(slot.xp) end
 			if justDeployed then unit:SetDeployFromOperationTurn(Game.GetGameTurn()) end
-			roster[unit:GetID()] = true
+			roster[unit:GetID()] = slot.kind
 			placed = placed + 1
 		end
 	end
@@ -338,6 +343,16 @@ local function rosterAlive(playerID, roster)
 		if isUsable(unit) then alive[#alive + 1] = unit end
 	end
 	return alive
+end
+
+-- How many of a roster's melee units (the only ones that can take a city) are still alive.
+local function meleeAlive(playerID, roster)
+	local player = Players[playerID]
+	local n = 0
+	for id, kind in pairs(roster) do
+		if kind == "melee" and isUsable(player:GetUnitByID(id)) then n = n + 1 end
+	end
+	return n
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -423,7 +438,7 @@ local function beginScenario()
 	cur.defRoster = {}
 	if sc.city.garrison then
 		local unit = defender:InitUnit(typeID(sc.city.garrison), lab.tx, lab.ty)
-		if unit then cur.defRoster[unit:GetID()] = true end
+		if unit then cur.defRoster[unit:GetID()] = "garrison" end
 	end
 	local fieldRoster = placeUnits(lab.defender, sc.defenders, openPlots(lab.tx, lab.ty, 1, 2, "east"), false)
 	for id in pairs(fieldRoster) do cur.defRoster[id] = true end
@@ -438,8 +453,11 @@ local function beginScenario()
 	end
 	cur.attRoster = placeUnits(lab.attacker, sc.army, plots, not sc.atHome)
 
-	cur.attStart, cur.defStart = 0, 0
-	for _ in pairs(cur.attRoster) do cur.attStart = cur.attStart + 1 end
+	cur.attStart, cur.defStart, cur.meleeStart = 0, 0, 0
+	for _, kind in pairs(cur.attRoster) do
+		cur.attStart = cur.attStart + 1
+		if kind == "melee" then cur.meleeStart = cur.meleeStart + 1 end
+	end
 	for _ in pairs(cur.defRoster) do cur.defStart = cur.defStart + 1 end
 
 	if not ensureWar() then
@@ -505,20 +523,22 @@ local function sampleTurn(late)
 	local engaged = fought > 0 or cur.captureTurn == cur.t or (damageAfter >= 0 and damageAfter > cur.damageBefore)
 	if engaged then cur.engagedTurns = cur.engagedTurns + 1 else cur.idleTurns = cur.idleTurns + 1 end
 
-	out(string.format("TURN,%s,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d", cur.sc.name, cur.rep, cur.t,
+	out(string.format("TURN,%s,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d", cur.sc.name, cur.rep, cur.t,
 		cur.damageBefore, damageAfter, #alive, within2, meanDist, fought,
-		#rosterAlive(lab.defender, cur.defRoster), cur.captured and 1 or 0, late and 1 or 0))
+		#rosterAlive(lab.defender, cur.defRoster), cur.captured and 1 or 0, late and 1 or 0,
+		meleeAlive(lab.attacker, cur.attRoster)))
 end
 
 local function finishScenario()
 	local city = targetCity()
 	local finalDamage = -1
 	if not cur.captured and city then finalDamage = city:GetDamage() end
-	out(string.format("RESULT,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%.1f,%d", cur.sc.name, cur.rep,
+	out(string.format("RESULT,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%.1f,%d,%d,%d", cur.sc.name, cur.rep,
 		cur.captured and 1 or 0, cur.captureTurn, cur.t, cur.cityMaxHP or -1, cur.maxDamage, finalDamage,
 		cur.attStart or 0, #rosterAlive(lab.attacker, cur.attRoster or {}), cur.killedByEnemy[lab.attacker],
 		cur.defStart or 0, #rosterAlive(lab.defender, cur.defRoster or {}), cur.killedByEnemy[lab.defender],
-		cur.engagedTurns, cur.idleTurns, cur.minMeanDist, cur.lastMeanDist, Game.GetGameTurn()))
+		cur.engagedTurns, cur.idleTurns, cur.minMeanDist, cur.lastMeanDist, Game.GetGameTurn(),
+		cur.meleeStart or 0, meleeAlive(lab.attacker, cur.attRoster or {})))
 	cur = nil
 	lab.index = lab.index + 1
 end

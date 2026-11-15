@@ -74,7 +74,8 @@ Options for the installer: `-Set march`, `-Only small_vs_weak,large_vs_medium`, 
 
 ## What is logged
 
-`Get-SiegeLabResults.ps1` writes two files into `results\`.
+`Get-SiegeLabResults.ps1` writes two files into `results\`, and copies the game's tactical AI logs and
+`Lua.log` into a folder next to them (the AI logs need `AILog = 1` in `config.ini`).
 
 `*.results.csv`, one row per battle:
 
@@ -84,6 +85,7 @@ Options for the installer: `-Set march`, `-Only small_vs_weak,large_vs_medium`, 
 | `CityMaxHP`, `MaxDamage`, `FinalDamage` | The city's hit points, the most damage it carried, and its damage at the end |
 | `CityStrength` | The city's combat strength at the start, times 100 |
 | `AttackersStart`, `AttackersAlive`, `AttackersKilledByEnemy` | Army size, survivors, and deaths the game attributed to the defender |
+| `MeleeStart`, `MeleeAlive` | How many of the army's units can take a city (non-ranged), at the start and at the end |
 | `DefendersStart`, `DefendersAlive`, `DefendersKilledByEnemy` | The same for the garrison and field units |
 | `EngagedTurns`, `IdleTurns` | Turns on which an attacking unit gained experience or the city ended more damaged, and turns on which neither happened |
 | `MinMeanDistance`, `FinalMeanDistance` | The army's average distance to the city at its closest, and at the end (rising = it walked away) |
@@ -91,7 +93,7 @@ Options for the installer: `-Set march`, `-Only small_vs_weak,large_vs_medium`, 
 
 `*.turns.csv`, one row per battle turn: the city's damage before the attacker moved and after (after the
 city's own heal), attackers alive, attackers within 2 tiles, average distance, attackers that gained
-experience that turn, defenders alive. `Late = 1` marks a turn that could only be scored a turn later, so
+experience that turn, defenders alive, attacking melee units alive. `Late = 1` marks a turn that could only be scored a turn later, so
 its numbers also include the defender's moves.
 
 ## First run: proving the lab

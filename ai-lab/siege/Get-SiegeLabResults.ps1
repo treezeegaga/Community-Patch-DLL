@@ -20,9 +20,10 @@ if ($Label -notmatch '^[A-Za-z0-9_.-]+$') { throw "-Label is letters, digits, do
 
 $resultColumns = "Scenario", "Rep", "Captured", "CaptureTurn", "TurnsRun", "CityMaxHP", "MaxDamage", "FinalDamage",
     "AttackersStart", "AttackersAlive", "AttackersKilledByEnemy", "DefendersStart", "DefendersAlive",
-    "DefendersKilledByEnemy", "EngagedTurns", "IdleTurns", "MinMeanDistance", "FinalMeanDistance", "GameTurn"
+    "DefendersKilledByEnemy", "EngagedTurns", "IdleTurns", "MinMeanDistance", "FinalMeanDistance", "GameTurn",
+    "MeleeStart", "MeleeAlive"
 $turnColumns = "Scenario", "Rep", "Turn", "DamageBefore", "DamageAfter", "AttackersAlive", "AttackersWithin2",
-    "MeanDistance", "AttackersFought", "DefendersAlive", "Captured", "Late"
+    "MeanDistance", "AttackersFought", "DefendersAlive", "Captured", "Late", "MeleeAlive"
 $startColumns = "Scenario", "Rep", "GameTurn", "CityStrength", "CityMaxHP", "Attackers", "Defenders", "AttackerGoldRate"
 
 function ConvertTo-Row([string[]]$columns, [string[]]$values) {
@@ -82,6 +83,16 @@ if (-not $NoSave) {
     $turns | Export-Csv $turnsPath -NoTypeInformation -Encoding ASCII
     Write-Output "Saved $resultsPath"
     Write-Output "Saved $turnsPath"
+    # The game's own tactical AI logs say why it did or didn't attack; keep them with the results.
+    $aiLogs = @(Get-ChildItem (Split-Path $Log) -Filter "*Tactical*" -File -ErrorAction SilentlyContinue)
+    if ($aiLogs.Count -gt 0) {
+        $logDir = Join-Path $OutDir "$Label-$stamp-logs"
+        New-Item -ItemType Directory -Force $logDir | Out-Null
+        $aiLogs | Copy-Item -Destination $logDir -Force
+        Copy-Item $Log $logDir -Force
+        Write-Output "Saved $($aiLogs.Count) tactical AI log(s) and Lua.log to $logDir"
+    }
+    else { Write-Output "No tactical AI logs found (they need AILog = 1 in config.ini)." }
 }
 
 Write-Output ""
@@ -100,6 +111,10 @@ $summary = foreach ($g in ($results | Group-Object Scenario)) {
     } | Measure-Object -Average).Average
     $idle = ($rows | ForEach-Object { [double]$_.IdleTurns } | Measure-Object -Average).Average
     $lost = ($rows | ForEach-Object { [double]$_.AttackersStart - [double]$_.AttackersAlive } | Measure-Object -Average).Average
+    $melee = ""
+    if ($rows[0].MeleeStart -ne "") {
+        $melee = "{0:N1} of {1}" -f (($rows | ForEach-Object { [double]$_.MeleeAlive } | Measure-Object -Average).Average), $rows[0].MeleeStart
+    }
     New-Object PSObject -Property ([ordered]@{
         Scenario = $g.Name
         Battles = $rows.Count
@@ -108,6 +123,7 @@ $summary = foreach ($g in ($results | Group-Object Scenario)) {
         "City damage %" = "{0:N0}" -f $damage
         "Idle turns" = "{0:N1}" -f $idle
         "Attackers lost" = "{0:N1}" -f $lost
+        "Melee left" = $melee
         "City strength" = $rows[0].CityStrength
     })
 }
