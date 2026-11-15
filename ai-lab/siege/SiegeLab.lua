@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 3
+local VERSION = 4
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -582,11 +582,25 @@ local function guarded(fn)
 	end
 end
 
+-- A battle is staged during the defender's turn, before the attacker's next turn starts. Staged during the
+-- attacker's own turn (lab v1-v3), the attacker's AI had already read the map for that turn, so on the battle's
+-- first turn it didn't know the new city existed: every unit went to the homeland AI, which started walking them
+-- home (seen in the tactical log of diag3/diag4, LOG.md M0 iteration 3).
 local function onAttackerTurn()
+	if not cur or cur.failed then return end
+	sampleTurn(true)   -- only if the defender's turn didn't already score the last turn
+	holdStill(lab.attacker, cur.attRoster)
+	beginTurn()
+end
+
+local function onDefenderTurn()
+	if cur and not cur.failed then
+		sampleTurn(lab.defender < lab.attacker)   -- right after the attacker's turn
+		holdStill(lab.defender, cur.defRoster)
+	end
 	if cur then
-		sampleTurn(true)   -- only if the defender's turn didn't already score it
 		local attackersLeft = #rosterAlive(lab.attacker, cur.attRoster or {})
-		if cur.failed or cur.captured or cur.t >= cur.sc.turns or attackersLeft == 0 then
+		if cur.failed or cur.captured or cur.t >= cur.sc.turns or (cur.t > 0 and attackersLeft == 0) then
 			finishScenario()
 		end
 	end
@@ -597,15 +611,6 @@ local function onAttackerTurn()
 		end
 		beginScenario()
 	end
-	if cur.failed then return end   -- scored and skipped at the next attacker turn
-	holdStill(lab.attacker, cur.attRoster)
-	beginTurn()
-end
-
-local function onDefenderTurn()
-	if not cur or cur.failed then return end
-	if lab.defender > lab.attacker then sampleTurn(false) end
-	holdStill(lab.defender, cur.defRoster)
 end
 
 local function onPlayerDoTurn(playerID)
@@ -745,7 +750,7 @@ local function startLab()
 	GameEvents.CityCaptureComplete.Add(guarded(onCityCaptureComplete))
 	GameEvents.UnitPrekill.Add(guarded(onUnitPrekill))
 
-	-- The first scenario is staged at the start of the attacker's next turn, like every later one.
+	-- The first scenario is staged in the defender's first turn, like every later one.
 	if lab.human then
 		out("WARN,human run: end the turn to stage the first battle; you play the attacker")
 	else

@@ -6,6 +6,19 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 (none yet)
 
+## 2026-11-15 M0 iteration 4: stage battles before the attacker's turn
+Class: lab problem: on the first turn of every battle the attacker's AI doesn't know the target city exists.
+Cause: `SiegeLab.lua` staged each battle in the attacker's own `PlayerDoTurn`, which the DLL fires after that
+player's AI has read the map for the turn (`CvPlayer::doTurnPostDiplomacy`, after `AI_doTurnPost`). The tactical
+log shows the zone appearing only on the battle's second turn.
+Change: lab v4 stages the battle during the defender's turn (after scoring the previous battle there), so the
+attacker's first battle turn starts with the city on its map. Side effect: the defender's field units now get one
+move before the attacker's first turn. Mock run passes (30 of 30). No DLL change.
+Predicted: no battle on the first turn has all units "left to homeland"; small_vs_weak and medium_vs_weak stop
+walking home and land in the same class in at least 5 of 6 battles each ("shot to last hit points, not taken",
+since the melee problem is untouched); ranged_only_vs_weak unchanged.
+Result: pending (diag5).
+
 ## 2026-11-15 M0 iteration 3: why the army walks home (logging only)
 Class: walked home: 4 of 4 in diag3 (`ab-e2b44ca`, small_vs_weak and medium_vs_weak, 2 each), 6 of 6 in diag2,
 2 of 4 in diag1. City damage 0 in all of them.
@@ -27,7 +40,19 @@ combat unit the tactical AI leaves to the homeland AI, with its position.
 Predicted: in small_vs_weak the capture attempt logs ABORTED with target visible 0 and the Spearmen and Bowmen
 appear in the "left to homeland" lines; ranged_only_vs_weak and ancient_rush_vs_open_city (Warriors are ATTACK
 units) show what differs when the army does engage.
-Result: pending (diag4).
+Result: diag4 on `ab-00ae537` (ancient_rush_vs_open_city, small_vs_weak, ranged_only_vs_weak, 2 each, a new map):
+all 6 shot the city to 179 of 200 damage (its last hit points), none captured, none walked home. So small_vs_weak
+walked home 6 of 6 times in diag2/3 and engaged 2 of 2 here: same build behaviour, different launch.
+Verified from the new lines:
+- On every battle's first turn, every staged unit is "left to homeland" (no zone for the city yet).
+- From turn 2, "capture attempt ... executed", target visible 1, with "0 melee" in reach on every turn of every
+  battle. No ABORTED and no "not visible" line at all, so the spotter idea was not tested by this run.
+- Every melee unit (Warriors, Spearmen) is left to the homeland AI on every turn, and the homeland AI moves them to
+  "garrison" and "sentry point" at the home city. That is why the city sits on its last hit points untaken.
+Decision: accepted (logging stays). What decides engage or walk home: on turn 1 the homeland AI moves the whole army
+(the lab's fault, iteration 4); whether the bowmen can still see the city on turn 2 depends on where they were sent,
+which depends on the map. The melee units leaving is a real stock-AI failure and becomes M1's first class.
+
 
 ## 2026-11-15 M0 iteration 2: a DLL that writes the AI logs
 Class: lab problem. diag2 (6 battles, stock DLL, `AILog = 1` before and after) wrote no AI log at all; the game's
