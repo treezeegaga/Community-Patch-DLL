@@ -187,6 +187,20 @@ CvGame::~CvGame()
 }
 
 //	--------------------------------------------------------------------------------
+/// AI lab: the game core in this pack is loaded as a DLC and never receives the [Debug] LoggingEnabled and AILog
+/// settings from config.ini, so it reads them itself. Logging only writes local files; with both settings at 0
+/// (the default) nothing changes.
+static void ApplyConfigLoggingSettings()
+{
+	CvString strPath = gDLL->GetCacheFolderPath();
+	strPath += "..\\config.ini";
+	if (GetPrivateProfileIntA("Debug", "LoggingEnabled", 0, strPath.c_str()) != 0)
+		GC.setLogging(true);
+	if (GetPrivateProfileIntA("Debug", "AILog", 0, strPath.c_str()) != 0)
+		GC.setAILogging(true);
+}
+
+//	--------------------------------------------------------------------------------
 void CvGame::init(HandicapTypes eHandicap)
 {
 	bool bValid = false;
@@ -197,6 +211,8 @@ void CvGame::init(HandicapTypes eHandicap)
 	//--------------------------------
 	// Init saved data
 	reset(eHandicap);
+
+	ApplyConfigLoggingSettings();
 
 	m_mapRand.init(CvPreGame::mapRandomSeed() % 73637381);
 	m_jonRand.init(CvPreGame::syncRandomSeed() % 52319761);
