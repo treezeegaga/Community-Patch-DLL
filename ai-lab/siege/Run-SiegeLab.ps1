@@ -116,7 +116,18 @@ function Get-Origin {
     return @($r.L, $r.T, ($r.R - $r.L), ($r.B - $r.T))
 }
 function Stop-Civ {
-    Get-Process CivilizationV, CivilizationV_DX11, CivilizationV_Tablet -ErrorAction SilentlyContinue | Stop-Process -Force
+    # Ask the window to close first: the game buffers its AI logs and only writes the rest when it exits normally.
+    # Anything still running after 30 seconds is stopped by force.
+    $procs = @(Get-Process CivilizationV, CivilizationV_DX11, CivilizationV_Tablet -ErrorAction SilentlyContinue)
+    foreach ($p in $procs) { if ($p.MainWindowHandle -ne 0) { $p.CloseMainWindow() | Out-Null } }
+    for ($i = 0; $i -lt 30 -and $procs.Count -gt 0; $i++) {
+        Start-Sleep 1
+        $procs = @(Get-Process CivilizationV, CivilizationV_DX11, CivilizationV_Tablet -ErrorAction SilentlyContinue)
+    }
+    if ($procs.Count -gt 0) {
+        if (Get-Command Write-Log -ErrorAction SilentlyContinue) { Write-Log "Civ V did not close within 30 s; stopping it by force" }
+        $procs | Stop-Process -Force
+    }
     Start-Sleep 3
 }
 function Set-CivFront {

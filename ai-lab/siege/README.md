@@ -74,8 +74,10 @@ Options for the installer: `-Set march`, `-Only small_vs_weak,large_vs_medium`, 
 
 ## What is logged
 
-`Get-SiegeLabResults.ps1` writes two files into `results\`, and copies the game's tactical AI logs and
-`Lua.log` into a folder next to them (the AI logs need `AILog = 1` in `config.ini`).
+`Get-SiegeLabResults.ps1` writes two files into `results\`, and copies every log the game wrote during
+that launch (`Lua.log` and the AI logs) into a `<label>-<time>-logs` folder next to them, with a listing of the
+game's `Logs` folder in `_logs-folder.txt`. `Install-SiegeLab.ps1 -EnableLogging` sets both `LoggingEnabled = 1` and
+`AILog = 1` in `config.ini`; the runner closes Civ V normally (force only after 30 s) so the AI logs are flushed.
 
 `*.results.csv`, one row per battle:
 

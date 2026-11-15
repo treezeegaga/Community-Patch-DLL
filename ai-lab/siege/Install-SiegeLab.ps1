@@ -17,7 +17,7 @@ param(
     [string[]]$Only = @(),         # run only these scenario names (comma-separated); default: the whole set
     [int]$Repeats = 2,             # how many times each scenario is played
     [switch]$Human,                # you play the attacker instead of the AI (the human reference)
-    [switch]$EnableLogging,        # set LoggingEnabled = 1 in config.ini, which the lab needs to write its results
+    [switch]$EnableLogging,        # set LoggingEnabled = 1 (the lab's results) and AILog = 1 (the game's AI logs) in config.ini
     [switch]$Remove
 )
 
@@ -91,6 +91,17 @@ if (Test-Path $configIni) {
             Write-Output "LoggingEnabled set to 1 in $configIni"
         }
         else { Write-Warning "No LoggingEnabled line in $configIni; set it by hand" }
+    }
+    # The game's own AI logs (tactical, military, operations, diplomacy) say why the AI did what it did.
+    if ($EnableLogging) {
+        $ini = [IO.File]::ReadAllText($configIni, $ansi)
+        if ($ini -match '(?m)^\s*AILog\s*=\s*1\s*$') { Write-Output "AILog is 1 in $configIni" }
+        elseif ($ini -match '(?m)^\s*AILog\s*=') {
+            $ini = [regex]::Replace($ini, '(?m)^(\s*AILog\s*=\s*)\d+', '${1}1')
+            [IO.File]::WriteAllText($configIni, $ini, $ansi)
+            Write-Output "AILog set to 1 in $configIni"
+        }
+        else { Write-Warning "No AILog line in $configIni; the game's AI logs won't be written. Add 'AILog = 1' by hand" }
     }
 }
 if (-not $loggingOn) {
