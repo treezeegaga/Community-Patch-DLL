@@ -19,6 +19,8 @@
 # Engine assertion dialogs ("Assertion Failed", OK/Cancel) are noticed: the script saves a screenshot and the text to
 # <results>\<Label>-<time>-run\assertions\, presses OK and carries on. Every one is listed at the end.
 #
+# -Release ab-<commit> runs on that build of the DLL (Set-LabDll.ps1 installs it and puts the stock DLL back at the end).
+#
 # Works in Windows PowerShell 5.1. See README.md next to this script.
 param(
     [string]$Label = "siege",
@@ -29,6 +31,7 @@ param(
     [int]$StallMinutes = 15,         # Lua.log not growing for this long = stuck
     [int]$MaxMinutes = 180,          # hard limit for the whole wait
     [switch]$Calibrate,              # save the current setup screens as pictures (first time on a PC)
+    [string]$Release = "",           # ab-<commit>: run on that build of the DLL; the stock DLL is put back afterwards
     [string]$CivDir = "C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V",
     [string]$MyGames = "$([Environment]::GetFolderPath('MyDocuments'))\My Games\Sid Meier's Civilization 5",
     [string]$OutDir = (Join-Path $PSScriptRoot "results")
@@ -86,6 +89,7 @@ $runLog = Join-Path $runDir "Run-SiegeLab.log"
 $luaLog = Join-Path $MyGames "Logs\Lua.log"
 $screensFile = Join-Path $PSScriptRoot "Run-SiegeLab.screens.json"
 $installer = Join-Path $PSScriptRoot "Install-SiegeLab.ps1"
+$dllSwitcher = Join-Path $PSScriptRoot "Set-LabDll.ps1"
 $reader = Join-Path $PSScriptRoot "Get-SiegeLabResults.ps1"
 $script:Assertions = @()
 
@@ -393,7 +397,8 @@ try {
     if (Get-Process -Name CivilizationV, CivilizationV_DX11, CivilizationV_Tablet -ErrorAction SilentlyContinue) {
         throw "Civ V is already running. Close it first (this script starts its own)."
     }
-    Write-Log "Run '$Label': set $Set, only [$($Only -join ',')], repeats $Repeats"
+    Write-Log "Run '$Label': set $Set, only [$($Only -join ',')], repeats $Repeats, DLL $(if ($Release) { $Release } else { 'stock (as installed)' })"
+    if ($Release) { & $dllSwitcher -Release $Release -CivDir $CivDir | ForEach-Object { Write-Log "  dll: $_" } }
     & $installer -Set $Set -Only $Only -Repeats $Repeats -EnableLogging | ForEach-Object { Write-Log "  installer: $_" }
 
     $launched = Get-Date
@@ -419,11 +424,15 @@ catch {
 finally {
     Stop-Civ
     try { & $installer -Remove | ForEach-Object { Write-Log "  installer: $_" } } catch { Write-Log "WARNING: could not remove the lab: $($_.Exception.Message). Run Install-SiegeLab.ps1 -Remove." }
+    if ($Release) {
+        try { & $dllSwitcher -Restore -CivDir $CivDir | ForEach-Object { Write-Log "  dll: $_" } }
+        catch { $exit = 1; Write-Log "WARNING: could not restore the stock DLL: $($_.Exception.Message). Run Set-LabDll.ps1 -Restore." }
+    }
     if ($script:Assertions.Count -gt 0) {
         Write-Log "ASSERTIONS ($($script:Assertions.Count)), screenshots in $runDir\assertions :"
         $script:Assertions | ForEach-Object { Write-Log "  - $_" }
     }
     else { Write-Log "No assertion dialogs." }
-    Write-Log $(if ($exit -eq 0) { "Run saved. Civ V closed, lab removed." } else { "Run FAILED. Civ V closed, lab removed. Log: $runLog" })
+    Write-Log $(if ($exit -eq 0) { "Run saved. Civ V closed, lab removed$(if ($Release) { ', stock DLL restored' })." } else { "Run FAILED. Civ V closed, lab removed. Log: $runLog" })
 }
 exit $exit
