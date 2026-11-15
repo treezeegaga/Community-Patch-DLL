@@ -35,6 +35,7 @@ local function newPlot(x, y)
 	function m:GetX() return p.x end
 	function m:GetY() return p.y end
 	function m:IsWater() return p.water end
+	function m:ChangeVisibilityCount(team, change, invis, b1, b2) assert(type(team) == "number" and (change == 1 or change == -1) and invis == -1 and b1 == false and b2 == false) end
 	function m:IsMountain() return p.mountain end
 	function m:IsCity() return p.city ~= nil end
 	function m:GetPlotCity() return p.city end
@@ -62,6 +63,7 @@ Map = strict({
 	GetGridSize = function() return W, H end,
 	GetPlot = function(x, y) if x < 0 or y < 0 or x >= W or y >= H then return nil end return plots[y * W + x] end,
 	PlotDistance = distance,
+	PlotDirection = function(x, y, dir) assert(dir >= 0 and dir <= 5) local dx = ({ 1, 1, 0, -1, -1, 0 })[dir + 1] local dy = ({ 0, 1, 1, 0, -1, -1 })[dir + 1] return Map.GetPlot(x + dx, y + dy) end,
 	RecalculateAreas = function() end,
 }, "Map")
 
