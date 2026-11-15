@@ -1,0 +1,16 @@
+2026-11-15 15:56:53  Run 'diag6': set siege, only [small_vs_weak,medium_vs_weak,ranged_only_vs_weak], repeats 3, DLL ab-00ae537
+2026-11-15 15:56:53    dll: Installed ab-00ae537 (13869056 bytes, SHA-256 A44DAB88CD07...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-15 15:56:53    installer: AILog is 1 in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-15 15:56:53    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-15 15:56:53    installer:   Runs small_vs_weak, medium_vs_weak, ranged_only_vs_weak from the 'siege' set, 3 time(s) each; the AI plays the attacker.
+2026-11-15 15:56:53    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-15 15:56:53    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-15 15:57:17  Civ V window at 963,63 size 1914x2034
+2026-11-15 15:58:27    waiting for 'single', the closest saved screen was 'single' at distance 3.2
+2026-11-15 15:58:27  FAILED: Single Player menu never showed
+2026-11-15 15:58:28  FAILED: Could not get a new game started (see the screenshots in C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\diag6-20261115-1556-run)
+2026-11-15 15:58:58  Civ V did not close within 30 s; stopping it by force
+2026-11-15 15:59:01    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-15 15:59:01    dll: Stock DLL restored and checked (1 copy).
+2026-11-15 15:59:01  No assertion dialogs.
+2026-11-15 15:59:01  Run FAILED. Civ V closed, lab removed. Log: C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\diag6-20261115-1556-run\Run-SiegeLab.log
