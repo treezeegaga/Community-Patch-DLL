@@ -133,6 +133,7 @@ local function newPlayer(id, isMinor)
 	function m:SetGold(v) assert(type(v) == "number") end
 	function m:SetJONSCulture(v) assert(v == 0) end
 	function m:SetFaith(v) assert(v == 0) end
+	function m:SetOverflowResearch(v) assert(v == 0) end
 	function m:ChangeExtraHappinessPerCity(v) assert(type(v) == "number") end
 	function m:ChangeNumResourceTotal(r, v, fromBuilding, fromEvent) assert(type(r) == "number" and type(v) == "number" and fromBuilding == false and fromEvent == true, "resources must be booked as from an event") end
 	function m:InitCity(x, y, ...)
@@ -186,6 +187,10 @@ local function newTeam(id)
 		teams[other]._war[id] = true
 	end
 	function m:IsHasTech(t) return m._techs[t] == true end
+	local progress = {}
+	local techs = { GetResearchProgress = function(_, t) return progress[t] or 0 end,
+		SetResearchProgress = function(_, t, v, pl) assert(type(t) == "number" and v == 0 and type(pl) == "number") progress[t] = v end }
+	function m:GetTeamTechs() return techs end
 	function m:SetHasTech(t, v, pl, first, announce, noBonus)
 		assert(type(t) == "number" and type(v) == "boolean" and type(pl) == "number" and first == false and announce == false and noBonus == true)
 		m._techs[t] = v or nil

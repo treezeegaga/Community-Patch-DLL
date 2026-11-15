@@ -6,6 +6,27 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 (none yet)
 
+## 2026-11-15 M0 iteration 6: no research during a run
+Class: lab problem. m0a/b/c (lab v5, `ab-00ae537`, full set x 2, three launches = 6 battles per scenario):
+12, 13 and 11 of 30 captured. Only 6 of 15 scenarios landed in one class in at least 5 of 6 battles. In every
+scenario with melee units, rep 2 (the run's second half) ended with 0 melee alive although none was killed by the
+defender.
+Cause (verified in `PlayerHomelandAILog.csv`): "Disbanding long obsolete unit. Spearman/Warrior" on the first turns
+of every rep-2 battle. `CvEconomicAI::DisbandLongObsoleteUnits` scraps a unit whose tech era is more than 2 eras
+below the player's current era. The lab removes techs at every battle but not the progress made on them, so a tech
+researched once came back at once later and the attacker climbed eras over the run; removing a tech doesn't lower
+the era.
+Rep 1 alone (before the climb) agrees well: 13 of 15 scenarios in one class 3 of 3; captures on turn 2 for the
+weak cities, 3-6 for medium, 5-7 for siege_train and ref_cb4; small_vs_strong and medium_vs_strong barely engage;
+melee_only_vs_medium never attacks; ranged_only_vs_weak walks home; medium_vs_medium_rough never attacks.
+Also: one assertion per launch, `m_iOverflowResearch >= 0` (CvPlayer.cpp 30402). Not yet understood; the dialog only
+shows once per session, so it may fire more often. Expected to be tied to the same research handling.
+Change: lab v6 sets every tech's research progress and the overflow to 0 at each battle and at the start of each
+side's turn (`clearResearch`). Mock run passes. No DLL change.
+Predicted: no "long obsolete" lines; rep 2 matches rep 1; at least 12 of 15 scenarios in one class in 5 of 6 battles;
+captures around 20 of 30 per launch. The assertion may disappear.
+Result: pending (m0d/e/f).
+
 ## 2026-11-15 M0 iteration 5: the attacker knows where its target is
 Class: lab problem: in a run's first battles the attacker's AI has never seen the target tile (new map each launch).
 Cause: see iteration 4's result.
