@@ -6,7 +6,8 @@ permissions:
 
 on:
   push:
-    branches: [ master ]
+    # AI A/B tests (fork only): the integration branch and the topic sessions' branches build on every push
+    branches: [ master, 'claude/ab-c1', 'ai/**' ]
     tags:
       - 'Release-*'  # Triggers on official releases (always builds)
   pull_request:
@@ -22,7 +23,7 @@ jobs:
   get-version:
     name: Extract Version
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -30,6 +31,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Need full history for git describe
+          filter: blob:none  # commits and tags only: git describe needs no file contents, and the full clone
+                             # had grown past the 5-minute limit with every ab-* release tag
 
       - name: Get Version
         id: version
@@ -693,4 +696,50 @@ jobs:
           name: VP_MSVC_Release_${{ needs.get-version.outputs.version }}
           path: 'BuildOutput/Release'
 
+  # AI A/B tests (fork only): publish the MSVC release DLL as a public GitHub release, so the test script in
+  # treezeegaga/Civ5-CP-AnimatedLeaders (tools/ab/Run-ABTest.ps1) can download it without a GitHub login.
+  publish-ab-test-dll:
+    name: Publish A/B test DLL
+    needs: [get-version, build-msvc]
+    # every claude/ and ai/ branch publishes ab-<commit>; the A/B branches also move a "latest" release:
+    # claude/sleepy-hopper-x77moh -> ab-latest (stage 1), claude/ab-c1 -> ab-c-latest (the integration branch),
+    # ai/<topic> -> ab-ai-<topic>-latest
+    if: always() && needs.build-msvc.result == 'success' && (startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/ai/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download MSVC release DLL
+        uses: actions/download-artifact@v4
+        with:
+          name: VP_MSVC_Release_${{ needs.get-version.outputs.version }}
+          path: dll
 
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ls -la dll
+          test -f dll/CvGameCore_Expansion2.dll
+          SHA="${GITHUB_SHA:0:7}"
+          NOTES="AI A/B test DLL built from ${GITHUB_SHA} on ${GITHUB_REF_NAME}. Not for normal play: see ai-lab/PLAN.md on ai/v2."
+          # one release per commit
+          gh release delete "ab-${SHA}" --yes --cleanup-tag || true
+          gh release create "ab-${SHA}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "AI A/B test DLL ${SHA} (${GITHUB_REF_NAME})" --notes "${NOTES}"
+          # and the branch's "latest" release pointing at its newest build
+          case "${GITHUB_REF_NAME}" in
+            claude/sleepy-hopper-x77moh) LATEST=ab-latest ;;
+            claude/ab-c1) LATEST=ab-c-latest ;;
+            ai/*) LATEST="ab-ai-$(echo "${GITHUB_REF_NAME#ai/}" | tr '/' '-')-latest" ;;
+            *) LATEST="" ;;
+          esac
+          if [ -n "${LATEST}" ]; then
+            gh release delete "${LATEST}" --yes --cleanup-tag || true
+            gh release create "${LATEST}" dll/CvGameCore_Expansion2.dll --target "${GITHUB_SHA}" --prerelease --latest=false \
+              --title "AI A/B test DLL, newest on ${GITHUB_REF_NAME} (${SHA})" --notes "${NOTES}"
+          fi

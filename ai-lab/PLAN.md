@@ -1,0 +1,308 @@
+# Plan: a competent Civ V AI, built by short test loops
+
+This is the working plan for the session that implements the AI upgrade. It replaces the earlier
+experiment (Nov 2–7, 2026), which was stopped without converging. Read it top to bottom once, then work
+from "The loop" and "Milestones". Update it when a milestone closes; don't rewrite goals in the middle of one.
+
+## 1. Goal
+
+The user plays Civilization V multiplayer with a friend, on the Community Patch (not Vox Populi), using
+their own mod pack. They want AI opponents that are **competent**:
+
+- a real challenge for two non-expert players, without any advantage a human doesn't have (the pack already
+  evens out the King difficulty; keep it that way);
+- able to play **different styles depending on the civ**: correct build orders, tech and policy choices,
+  diplomacy, and military tactics for that style;
+- in particular, an aggressive civ must be able to **take cities** and move toward conquest. This is where
+  the earlier experiment failed.
+
+It does not need to beat an expert. "Done" is: every milestone below has met its bar, and the user and
+their friend play full games against it and find it a challenge with no obvious blunders.
+
+Two earlier targets are **dropped as goals**: "60% strength share against the stock AI" and "one of our
+three styles wins 90% of games". Strength share survives only as a regression check in milestone 7.
+
+## 2. Why the last attempt failed (so this one doesn't repeat it)
+
+1. **Everything was judged through whole 150-turn games.** A city capture happened in 1–4 of 10 games, a
+   game took 10–17 minutes, a verdict took half a day, and 1 in 10 versus 3 in 10 is not a difference you
+   can see. Tactical fixes were never tested on a battle.
+2. **The new logic was a layer of plans and vetoes on top of the stock AI** (about 13,000 lines, 109
+   switches). The stock tactical AI still fought every battle and kept undoing the plan; each case was
+   answered with another special case citing one game.
+3. **Many things changed at once**, goals moved almost daily, and five sessions shared the same files.
+4. **The headline number was never measured.**
+
+The rules in section 6 exist because of these four points.
+
+## 3. What exists today
+
+| Thing | Where | State |
+|---|---|---|
+| The pack's DLL source | repo `treezeegaga/Community-Patch-DLL`, branch `mp-leaderheads` | Community Patch 5.4.8 plus the leader-screen patch. **This is the stock baseline.** `master` is 20 commits newer than 5.4.8 and does not match the pack's database |
+| Siege lab | same repo, branch `claude/bold-feynman-cgnhjs`, folder `ai-lab/siege/` | Works in the game. Read its `README.md` |
+| First stock results | `ai-lab/siege/results/stock548-*` and `diag1-*` | 30 battles, 1 capture; a 4-battle rerun disagrees with it (section 5) |
+| One-command runner | `ai-lab/siege/Run-SiegeLab.ps1` | Written and tested on a short run by the PC runner session |
+| PC runner | a Claude session on the user's PC "box", titled "Civ V siege lab: PC runner (box)" | Runs commands on request; kept on a cheap model |
+| Earlier experiment's code | branches `ai/war`, `ai/economy`, `ai/diplomacy`, `ai/personality`, `claude/ab-c1` | **Reference only.** Do not merge or build on them |
+| Earlier notebook and tools | repo `treezeegaga/Civ5-CP-AnimatedLeaders`, branch `claude/sleepy-hopper-x77moh`, folder `tools/ab/` | `RESULTS.md` (root causes found), `AGENTS.md` (the user's rulings), `HUMAN_GAME.md` (how the user took a capital by turn 54), `STRIKE_PLANS_RESEARCH.md` (per-civ rush plans from human guides), `REVIEW_CHECKLIST.md`, `Run-ABTest.ps1` (installs a DLL build into the pack and restores it), `Run-Games.ps1` (full-game runner) |
+
+Facts worth knowing before touching code:
+
+- The DLL builds with Visual C++ 2008: **no C++11**. Ship the MSVC build; the clang build fails to load.
+- The fork's `ai/war` branch has a build workflow that runs on pushes to `ai/**` branches and publishes
+  each build as a GitHub release named `ab-<commit>`. Take that workflow file for the new branch.
+- This DLL shows engine assertions as a blocking dialog. The runner screenshots and dismisses them; treat
+  every new assertion text as a bug to understand.
+- The game is 32-bit and crashes near 1.8 GB; long games sit close to that.
+- The game's own AI logs (tactical, military, operational, diplomacy) are written when `config.ini` has
+  `LoggingEnabled = 1` and `AILog = 1`. They say in words why the AI did or didn't do something. Use them.
+
+## 4. Who does what
+
+- **You (the implementing session):** one session, one branch, one change at a time. You read results and
+  logs, change the DLL, and decide accept or revert by the rules here.
+- **The PC runner:** runs what you ask and pushes results. No analysis. Ask it by message; a run request
+  is: pull, install the named DLL build, run the named command, push the results folder, reply with the
+  commit hash and any assertion texts.
+- **The user:** plays the human reference battles, rules on questions of how the AI *should* play, and
+  signs off each milestone. Ask only at those points. Record every ruling in `ai-lab/LOG.md` with the date.
+
+Keep cost down: prefer reading the game's tactical log for the one battle you care about over rerunning
+things, and don't spawn helper sessions for work you can do in a few file reads.
+
+## 5. Where things stand: the first results
+
+Stock AI, 15 scenarios played twice, 12 turns each (`ai-lab/siege/results/stock548-20261115-1021.*`):
+
+- **1 capture in 30 battles** (the catapult army, the only one that kept 3 melee units to the end).
+- **In 18 of the 28 battles that had melee units, the city was shot down to its last hit point and never
+  taken.** In `small_vs_weak` and `medium_vs_weak` (first try) the whole army was alive, Spearmen included,
+  and the city sat on its last hit point for 9 turns while one ranged unit a turn knocked it back down.
+- **Melee-only never attacked:** six Swordsmen stood within 2 tiles of a walled city for 10 turns.
+- **When there were many melee units they were spent early:** in `ref_cb4_melee6_vs_walls` 6 of 10 units
+  died while the city was still healthy, and it then sat on its last hit point with no one to take it.
+- **Small army against a strong city barely engaged.** That may be the right decision; the human
+  reference decides.
+
+Where to look in the code (5.4.8, `CvGameCoreDLL_Expansion2/CvTacticalAI.cpp`), as leads, not conclusions:
+
+- `CvTacticalAI::ExecuteCaptureCityMoves`: skips a city whose zone is "enemy dominated"; skips when
+  expected damage over 13 turns can't beat the city's healing ("too early"); and attacks at high
+  aggression only when **more than 2** melee units are in reach, otherwise at medium ("be a bit more careful").
+- `ScoreAttackDamage`: a melee attack on a city is ruled impossible unless the city would fall before the
+  attacker does, with a narrow "good first attack" exception; the `hpLimit` table sets how much health a
+  unit must keep at each aggression level.
+- `CvTacticalAnalysisMap::CalculateMilitaryStrengths`: counts the city's own strength as enemy ranged
+  strength when judging who dominates the zone.
+
+Three caveats, which make M0 unfinished:
+
+- **Income drifted during that run** (unit upkeep rises with the turn count; the attacker went from 0 to
+  -62 gold a turn). The lab now levels income at +10 a turn (commit `f05cbd2`), and a later short run
+  (`diag1`) confirms it: `AttackerGoldRate` reads 10 in every battle.
+- **The same scenario does not behave the same way twice.** In `diag1` (4 battles, stock AI) the
+  `small_vs_weak` and `medium_vs_weak` armies turned round on turn 1 and walked home without firing a
+  shot (average distance to the city rose from 4 to 12 tiles), where in the first run the same armies
+  shot the city down to its last hit point. One battle of the first run (`medium_vs_weak`, second try)
+  showed the same walk-away. Until it is known what decides between "engage" and "walk home", no result
+  from the lab can be trusted as a baseline. It may be something the lab leaves behind between battles or
+  fails to set up (what the AI thinks its war goal, target or army is), or a real property of the stock AI.
+- **No AI logs have been saved yet.** The results reader looks for files with "Tactical" in the name in the
+  game's `Logs` folder and found none in `diag1`, although the runner was asked to switch `AILog` on.
+  Find out what the game actually writes there (file names, and whether `AILog = 1` took effect) and fix
+  the reader. Without the tactical log, step 3 of the loop is guesswork.
+
+## 6. Rules
+
+1. **Test at the lowest rung that exercises the change.** A change to how units fight is judged in the
+   siege lab, never in full games. Move up a rung only when the rung below meets its bar.
+2. **One change per iteration.** One idea, one build, one run, one decision.
+3. **Every failure becomes a scenario before it becomes a fix.** If a battle or a game shows a new way to
+   fail, add a scenario (or a lab) that reproduces it, see it fail, then fix it. No fix may cite a single
+   game as its reason.
+4. **Fix causes inside the stock functions.** No parallel planners and no veto layers that override stock
+   decisions from outside. If two places estimate the same thing (for example "can this army take this
+   city"), make them one function.
+5. **One switch, not many.** All new behaviour sits behind a single per-player test "uses the new AI"
+   (milestone 1 adds it), so stock and new can be compared in the same build and mixed in one game. No
+   per-idea flags. An accepted change stays behind the switch; a rejected change is deleted, not disabled.
+6. **Bars are set before the run, from human play and the stock baseline,** and are frozen for the
+   milestone. The user's rulings on how the AI should play are applied at milestone boundaries.
+7. **No cheating and multiplayer-safe.** Only information a human could see; no state that differs between
+   machines; no randomness outside the game's seeded generator; every new saved field is serialized with a
+   version. Go through `REVIEW_CHECKLIST.md` from the earlier experiment before a build goes to the PC.
+8. **The PC is the user's gaming machine.** Restore the stock pack DLL and remove the lab after every run.
+   Never leave Civ V running. Don't touch graphics settings or saved games.
+9. **Stop and write to the user** when: three iterations in a row on the same failure move nothing; a bar
+   looks wrong or unreachable; a ruling is needed; or a change would break rule 4 or 7 to work.
+
+## 7. The loop
+
+Each iteration is one entry in `ai-lab/LOG.md` (template in section 10) and follows these steps.
+
+1. **Observe.** Take the latest lab results for the current build. Sort battles into failure classes by
+   what the turn data shows (for the siege lab: never approached; approached but never attacked; attacked
+   but too little damage; city on its last hit point and not taken, with melee alive; same, with no melee
+   left; captured). Count them.
+2. **Pick the largest class** that isn't a correct decision by the human reference.
+3. **Find the cause.** Open the game's tactical log for one battle of that class and find the line where
+   the AI decided not to act; then the code that wrote it. If the log doesn't say, add a log line (logging
+   only, no behaviour change), rebuild, rerun that one scenario.
+4. **Predict.** Write down the change, which scenarios it should move and by how much, and which must not
+   get worse. If you can't predict, you don't understand the cause yet: go back to step 3.
+5. **Change** the stock function, behind the one switch. Keep the diff small enough to review in one read.
+6. **Review and build.** Checklist, push, wait for the build, note the release name.
+7. **Run** the affected scenarios first (a few minutes), then the whole set. Ask the runner; don't wait
+   idle, read code for the next class meanwhile.
+8. **Decide** by the rule below. Accept: record the new table as the baseline. Reject: revert the commit,
+   and write one line on what the result taught you.
+
+**Decision rule for lab runs.** Play each scenario at least 6 times per build (three launches of the set
+at 2 repeats). A change is accepted when the scenarios it targeted move from "mostly fails" to "mostly
+succeeds" (for captures: from at most 1 in 6 to at least 4 in 6), and no other scenario's capture count
+drops by more than 1 in 6 or its losses rise by more than a third. An effect too small to see in 6 battles
+is not what this stage is after; don't chase it with more repeats. When repeats of the *same build*
+disagree wildly, the lab has a leak: fix the lab first.
+
+## 8. Milestones
+
+Each milestone has a question, what to build, how it is measured, and the bar. Bars marked "set at M0" or
+"proposed" are fixed with the user before work on that milestone starts.
+
+### M0. Trust the lab
+
+- Get the game's AI logs saved with every run (third caveat in section 5).
+- Explain the "engage or walk home" split (second caveat in section 5) from those logs, and fix its cause
+  if it is the lab's. Then show that repeats of the same build agree: the full set three times over, with
+  each scenario landing in the same failure class in at least 5 of its 6 battles.
+- **Human reference:** the user plays `ref_cb4_melee6_vs_walls`, `medium_vs_medium`, `small_vs_medium`,
+  `large_vs_strong` and `melee_only_vs_medium` once each (`Install-SiegeLab.ps1 -Human -Only ... -Repeats 1`).
+  Their results mark each scenario "takeable" or "not takeable", and how many turns and losses it took.
+- Add scenarios the reference suggests are missing (for example a capital with a Palace, which the lab
+  currently never stages).
+- Write `ai-lab/BASELINE.md`: one row per scenario with the stock result and the human result.
+
+Bar: the lab runs clean, repeats agree, and the user has agreed the "takeable" list.
+
+### M1. The assault: an army at the walls takes the city
+
+- Base branch: create `ai/v2` from `mp-leaderheads`; bring over `ai-lab/` and the build workflow.
+- Plumbing first, as its own iteration with no behaviour change: the per-player "uses the new AI" switch,
+  saved with the game, settable from Lua, and a lab option to choose it for the attacker and the defender
+  separately. Check that the stock results are unchanged with it off.
+- Then run the loop on the failure classes in section 5, largest first.
+- Make the "can this army take this city" estimate one function, checked against the lab's own results:
+  it should say yes for scenarios the lab shows are won and no for those that are lost.
+
+Bar (proposed): in scenarios marked takeable, capture in at least 5 of 6 battles, within 1.5 times the
+human's turns; in scenarios marked not takeable, the army ends with at least two thirds of its units
+(it declines or withdraws rather than dying at the walls). New AI as defender must not make stock
+attackers *more* successful than the stock defender does.
+
+### M2. The march: an army at home arrives ready to fight
+
+- Use the `march` scenario set (army starts at its home city, 12 tiles away). Extend it with a longer
+  distance and with rough terrain.
+- The stock operation delivers the army to within 3 tiles and then dissolves it; units then drift home to
+  heal or get recruited elsewhere. The earlier notebook lists these hand-over failures. Fix them where
+  they occur.
+
+Bar (proposed): at least 5 of 6 battles reach the M1 starting state (80% of the army within 3 tiles of the
+city, within 2 turns of each other, siege and melee included) and then capture at the M1 rate.
+
+### M3. The army: an honest economy fields that army on time
+
+- Build an **opening lab**: a normal game start, one civ's plan, cut at turn 60–80 (Quick pace). It
+  measures by which turn the civ has the army that M1 showed is sufficient, with the upgrade gold, and
+  what its economy looks like at that turn. Minutes per game, no fighting needed.
+- Put plans in **data**: one database table with a row per civ (style, opening builds, tech path, policy
+  order, strike unit and timing, target victory) and one executor in the DLL that follows a row. Civs
+  without their own row get the default row for their style. No per-civ C++.
+- Seed the rows from `STRIKE_PLANS_RESEARCH.md` and the user's own Aztec opening in `HUMAN_GAME.md`.
+
+Bar (set with the user at the start of M3): for the early-rush row, the reference is the user's game:
+war declared around turn 41–50 and a capital taken by turn 54 on Quick, with about 6 melee and 4
+Composite Bowmen. The economy must not collapse to get there (no bankruptcy, at least 2 cities).
+
+### M4. The decision: who to attack, when, and when to stop
+
+- A **decision lab** from saved mid-game positions (saves must load across builds: version every new
+  saved field). It asks: does the civ pick the target M1's estimate says it can take, declare when the
+  army is ready and in place, stay on that target, and make peace when the war is no longer winnable.
+- Then the first end-to-end check, in full games cut at turn 100: an aggressive civ against ordinary
+  neighbours.
+
+Bar (proposed): in end-to-end games, the aggressive civ takes at least one city by turn 80 in at least
+half the games, and holds what it takes.
+
+### M5. The other styles
+
+- Rows and benchmarks for the user's styles: greedy wide (expand, then grow and trade), greedy tall (3–4
+  cities, tech and policy), balanced, aggressive early, aggressive late.
+- Measured in the opening lab and in games cut at turn 100–150 against the stock AI in the same seat:
+  cities, population, techs and gold at fixed turns, and for defenders, whether they hold against an M1–M4
+  aggressor in proportion to what they invested in defence.
+
+Bar (set with the user): each style beats the stock AI in its own seat on that style's own measures, and
+none is helpless against the others.
+
+### M6. A lively world: diplomacy toward humans
+
+This was the user's original complaint: in multiplayer the AI rarely proposes trades or declares war.
+
+- Measure events per civ per 10 turns toward human players and toward other AIs: trade proposals,
+  declarations, denouncements, peace offers. Start by measuring stock; the earlier notebook found deal
+  counts toward AIs were already reasonable and that the stock "victory rivalry" logic only starts late.
+- Fix what is specific to human players and to multiplayer first.
+
+Bar (set with the user after the stock measurement).
+
+### M7. Whole games
+
+- Port the minimum of the earlier full-game harness to `ai/v2`: seeded maps, seat assignment, the results
+  file, paired games with the groups swapped. Use full games for **regression and integration only**:
+  nothing from M1–M6 got worse, turn times are acceptable (at most 1.25 times stock), no crashes or
+  assertions, strength share against stock is not below 50%.
+- Then the real test: the user and their friend play. Keep a blunder log; each blunder becomes a scenario
+  in the right lab (rule 3) and goes back through the loop.
+
+## 9. First session checklist
+
+1. Read `ai-lab/siege/README.md`, then this plan's sections 5–7.
+2. Look at `ai-lab/siege/results/diag1-*` next to `stock548-*`: the same scenarios, opposite behaviour.
+   Get the AI logs saved (ask the runner what is in the game's `Logs` folder after a run), rerun
+   `small_vs_weak` alone a few times, and find what decides between engaging and walking home.
+3. Finish M0: repeats agree, the user plays the human reference battles, write `BASELINE.md`. Only then
+   is "why don't the Spearmen take a city on its last hit point" worth chasing.
+4. Create `ai/v2` from `mp-leaderheads`, carry over `ai-lab/` and the workflow, confirm a build of the
+   untouched branch installs on the PC and reproduces the stock baseline.
+5. Start M1 with the plumbing iteration.
+
+## 10. Records
+
+`ai-lab/LOG.md`, newest first, one entry per iteration:
+
+```
+## <date> M<n> iteration <k>: <short name>
+Class: <failure class and its count, e.g. "last hit not taken, melee alive: 11 of 30">
+Cause: <the log line and the function that refused, in one or two sentences>
+Change: <what, where; commit>
+Predicted: <scenarios that should move, and to what; scenarios that must not move>
+Result: <build, runs, the counts>
+Decision: accepted | reverted, and one line on what was learned
+```
+
+`ai-lab/BASELINE.md`: the current table per scenario (stock, human, current build).
+User rulings: dated lines at the top of `LOG.md`.
+
+## 11. Known risks
+
+- A fixed assault may still need a bigger army than an honest economy fields by the user's timings. M1's
+  results table is what tells M3 how big the army must be; if the two can't meet, raise it with the user
+  rather than adding advantages.
+- The lab stages battles on flat open ground with a small empire behind each side. Results that depend on
+  terrain, supply or a real economy need their own scenarios or the higher rungs.
+- Click-through automation on the PC is fragile (fixed window size and positions). If it breaks, the
+  runner fixes the script; don't work around it by changing the user's settings.
+- The second PC ("TREEDESKTOP") is not set up for the lab. One PC is enough for lab runs.

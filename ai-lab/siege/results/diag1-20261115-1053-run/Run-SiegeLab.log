@@ -1,0 +1,29 @@
+2026-11-15 10:53:40  Run 'diag1': set siege, only [small_vs_weak,medium_vs_weak,melee_only_vs_medium,ranged_only_vs_weak], repeats 1
+2026-11-15 10:53:40    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-15 10:53:40    installer:   Runs small_vs_weak, medium_vs_weak, melee_only_vs_medium, ranged_only_vs_weak from the 'siege' set, 1 time(s) each; the AI plays the attacker.
+2026-11-15 10:53:40    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-15 10:53:40    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-15 10:54:03  Civ V window at 963,63 size 1914x2034
+2026-11-15 10:54:33    screen 'single' (distance 0.4)
+2026-11-15 10:54:36    screen 'setup' (distance 16.7)
+2026-11-15 10:54:39    screen 'advanced' (distance 4.5)
+2026-11-15 10:54:54  Game started; waiting for the lab
+2026-11-15 10:54:59  Lab started: [386545.296] SiegeLab: [SiegeLab] RUN,3,Songhai,Greece,56,36,HANDICAP_KING,GAMESPEED_QUICK,0,4,1
+2026-11-15 10:54:59    1 battle(s) finished
+2026-11-15 10:55:04    2 battle(s) finished
+2026-11-15 10:55:09    3 battle(s) finished
+2026-11-15 10:55:14  Lab finished ([SiegeLab] DONE)
+2026-11-15 10:55:21    results: Run: lab v3, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker
+2026-11-15 10:55:21    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\diag1-20261115-1055.results.csv
+2026-11-15 10:55:21    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\diag1-20261115-1055.turns.csv
+2026-11-15 10:55:21    results: No tactical AI logs found (they need AILog = 1 in config.ini).
+2026-11-15 10:55:21    results: Scenario             Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength
+2026-11-15 10:55:21    results: --------             ------- -------- ------------ ------------- ---------- -------------- ---------- -------------
+2026-11-15 10:55:21    results: small_vs_weak              1        0              0             12.0       0.0            2.0 of 2   924          
+2026-11-15 10:55:21    results: medium_vs_weak             1        0              0             12.0       1.0            2.0 of 2   924          
+2026-11-15 10:55:21    results: melee_only_vs_medium       1        0              0             12.0       0.0            6.0 of 6   1644         
+2026-11-15 10:55:21    results: ranged_only_vs_weak        1        0              90            0.0        0.0            0.0 of 0   924          
+2026-11-15 10:55:21    results: 0 of 4 battles ended in a capture.
+2026-11-15 10:55:24    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-15 10:55:24  No assertion dialogs.
+2026-11-15 10:55:24  Run saved. Civ V closed, lab removed.
