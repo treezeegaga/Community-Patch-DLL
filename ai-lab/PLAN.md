@@ -41,7 +41,7 @@ The rules in section 6 exist because of these four points.
 |---|---|---|
 | The pack's DLL source | repo `treezeegaga/Community-Patch-DLL`, branch `mp-leaderheads` | Community Patch 5.4.8 plus the leader-screen patch. **This is the stock baseline.** `master` is 20 commits newer than 5.4.8 and does not match the pack's database |
 | Siege lab | same repo, branch `claude/bold-feynman-cgnhjs`, folder `ai-lab/siege/` | Works in the game. Read its `README.md` |
-| First stock baseline | `ai-lab/siege/results/stock548-*` | 30 battles, 1 capture (section 5) |
+| First stock results | `ai-lab/siege/results/stock548-*` and `diag1-*` | 30 battles, 1 capture; a 4-battle rerun disagrees with it (section 5) |
 | One-command runner | `ai-lab/siege/Run-SiegeLab.ps1` | Written and tested on a short run by the PC runner session |
 | PC runner | a Claude session on the user's PC "box", titled "Civ V siege lab: PC runner (box)" | Runs commands on request; kept on a cheap model |
 | Earlier experiment's code | branches `ai/war`, `ai/economy`, `ai/diplomacy`, `ai/personality`, `claude/ab-c1` | **Reference only.** Do not merge or build on them |
@@ -71,7 +71,7 @@ Facts worth knowing before touching code:
 Keep cost down: prefer reading the game's tactical log for the one battle you care about over rerunning
 things, and don't spawn helper sessions for work you can do in a few file reads.
 
-## 5. Where things stand: the first baseline
+## 5. Where things stand: the first results
 
 Stock AI, 15 scenarios played twice, 12 turns each (`ai-lab/siege/results/stock548-20261115-1021.*`):
 
@@ -96,13 +96,22 @@ Where to look in the code (5.4.8, `CvGameCoreDLL_Expansion2/CvTacticalAI.cpp`), 
 - `CvTacticalAnalysisMap::CalculateMilitaryStrengths`: counts the city's own strength as enemy ranged
   strength when judging who dominates the zone.
 
-Two caveats about the baseline itself:
+Three caveats, which make M0 unfinished:
 
 - **Income drifted during that run** (unit upkeep rises with the turn count; the attacker went from 0 to
-  −62 gold a turn), and several second-try battles look distorted by it. The lab now levels income at +10
-  a turn (commit `f05cbd2`), **not yet confirmed in the game**. Confirming it is the first task.
-- No AI logs were saved for that run. A short diagnostic run with `AILog = 1` has been requested from the
-  runner under the label `diag1`; look for `ai-lab/siege/results/diag1-*`.
+  -62 gold a turn). The lab now levels income at +10 a turn (commit `f05cbd2`), and a later short run
+  (`diag1`) confirms it: `AttackerGoldRate` reads 10 in every battle.
+- **The same scenario does not behave the same way twice.** In `diag1` (4 battles, stock AI) the
+  `small_vs_weak` and `medium_vs_weak` armies turned round on turn 1 and walked home without firing a
+  shot (average distance to the city rose from 4 to 12 tiles), where in the first run the same armies
+  shot the city down to its last hit point. One battle of the first run (`medium_vs_weak`, second try)
+  showed the same walk-away. Until it is known what decides between "engage" and "walk home", no result
+  from the lab can be trusted as a baseline. It may be something the lab leaves behind between battles or
+  fails to set up (what the AI thinks its war goal, target or army is), or a real property of the stock AI.
+- **No AI logs have been saved yet.** The results reader looks for files with "Tactical" in the name in the
+  game's `Logs` folder and found none in `diag1`, although the runner was asked to switch `AILog` on.
+  Find out what the game actually writes there (file names, and whether `AILog = 1` took effect) and fix
+  the reader. Without the tactical log, step 3 of the loop is guesswork.
 
 ## 6. Rules
 
@@ -161,11 +170,12 @@ disagree wildly, the lab has a leak: fix the lab first.
 Each milestone has a question, what to build, how it is measured, and the bar. Bars marked "set at M0" or
 "proposed" are fixed with the user before work on that milestone starts.
 
-### M0. Trust the lab (mostly done)
+### M0. Trust the lab
 
-- Confirm income levelling works: every `AttackerGoldRate` in a new run reads 10.
-- Confirm repeats of the same build roughly agree now that income is level.
-- Get the tactical AI log saved with every run.
+- Get the game's AI logs saved with every run (third caveat in section 5).
+- Explain the "engage or walk home" split (second caveat in section 5) from those logs, and fix its cause
+  if it is the lab's. Then show that repeats of the same build agree: the full set three times over, with
+  each scenario landing in the same failure class in at least 5 of its 6 battles.
 - **Human reference:** the user plays `ref_cb4_melee6_vs_walls`, `medium_vs_medium`, `small_vs_medium`,
   `large_vs_strong` and `melee_only_vs_medium` once each (`Install-SiegeLab.ps1 -Human -Only ... -Repeats 1`).
   Their results mark each scenario "takeable" or "not takeable", and how many turns and losses it took.
@@ -260,10 +270,11 @@ Bar (set with the user after the stock measurement).
 ## 9. First session checklist
 
 1. Read `ai-lab/siege/README.md`, then this plan's sections 5–7.
-2. Check `ai-lab/siege/results/` for `diag1-*`. If it is there, confirm `AttackerGoldRate` is 10
-   throughout and read the tactical log for `small_vs_weak`: find why the Spearmen don't take the city
-   once it is on its last hit point.
-3. Finish M0: ask the user for the human reference battles, write `BASELINE.md`.
+2. Look at `ai-lab/siege/results/diag1-*` next to `stock548-*`: the same scenarios, opposite behaviour.
+   Get the AI logs saved (ask the runner what is in the game's `Logs` folder after a run), rerun
+   `small_vs_weak` alone a few times, and find what decides between engaging and walking home.
+3. Finish M0: repeats agree, the user plays the human reference battles, write `BASELINE.md`. Only then
+   is "why don't the Spearmen take a city on its last hit point" worth chasing.
 4. Create `ai/v2` from `mp-leaderheads`, carry over `ai-lab/` and the workflow, confirm a build of the
    untouched branch installs on the PC and reproduces the stock baseline.
 5. Start M1 with the plumbing iteration.
