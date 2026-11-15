@@ -6,6 +6,16 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 (none yet)
 
+## 2026-11-15 M0 iteration 5: the attacker knows where its target is
+Class: lab problem: in a run's first battles the attacker's AI has never seen the target tile (new map each launch).
+Cause: see iteration 4's result.
+Change: lab v5 shows the city's tile and its ring to the attacker's team for a moment when staging
+(`ChangeVisibilityCount` +1 then -1), as if its army had seen it on the march. Live sight is not given, so the
+spotter behaviour stays the AI's own. Mock run passes. No DLL change.
+Predicted: every battle has a zone for its city on its first turn; small_vs_weak and medium_vs_weak capture 3 of 3
+each; ranged_only_vs_weak still walks home 3 of 3 (no spotter).
+Result: pending (diag6).
+
 ## 2026-11-15 M0 iteration 4: stage battles before the attacker's turn
 Class: lab problem: on the first turn of every battle the attacker's AI doesn't know the target city exists.
 Cause: `SiegeLab.lua` staged each battle in the attacker's own `PlayerDoTurn`, which the DLL fires after that
@@ -17,7 +27,17 @@ move before the attacker's first turn. Mock run passes (30 of 30). No DLL change
 Predicted: no battle on the first turn has all units "left to homeland"; small_vs_weak and medium_vs_weak stop
 walking home and land in the same class in at least 5 of 6 battles each ("shot to last hit points, not taken",
 since the melee problem is untouched); ranged_only_vs_weak unchanged.
-Result: pending (diag5).
+Result: diag5 (lab v4, `ab-00ae537`, 3 scenarios x 3): small_vs_weak and medium_vs_weak captured in reps 2 and 3
+(4 of 4, within 2-3 turns, no losses) but walked home in rep 1; ranged_only_vs_weak walked home 3 of 3 with 0 damage.
+From battle 3 on, the zone appears on the battle's first turn, as predicted. But the run's first two battles had no
+zone on their first turn (battle 1 never had one), and their capture attempts logged "target not visible ...
+ABORTED". On a new map the attacker has never seen the target's tile, so the city isn't on its map until a unit sees it.
+ranged_only_vs_weak: every capture attempt "target not visible, looking for a spotter among 6 units ... ABORTED,
+target visible 0", then all units left to the homeland AI. Verified: with no ATTACK-type unit in the group,
+`ExecuteSpotterMove` finds no spotter and the attack is dropped before a shot. With Spearmen in the group (reps 2-3)
+the spotter search succeeded and the attack ran with "2 melee" in reach. Real stock-AI failure; kept as a scenario.
+Decision: accepted, with iteration 5 for the first-battles problem.
+
 
 ## 2026-11-15 M0 iteration 3: why the army walks home (logging only)
 Class: walked home: 4 of 4 in diag3 (`ab-e2b44ca`, small_vs_weak and medium_vs_weak, 2 each), 6 of 6 in diag2,

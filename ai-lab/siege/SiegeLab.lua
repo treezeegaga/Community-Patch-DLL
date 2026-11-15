@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 4
+local VERSION = 5
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -478,6 +478,20 @@ local function beginScenario()
 		if kind == "melee" then cur.meleeStart = cur.meleeStart + 1 end
 	end
 	for _ in pairs(cur.defRoster) do cur.defStart = cur.defStart + 1 end
+
+	-- The attacker knows where its target is, as after a real march: the city's tile and its ring are shown to the
+	-- attacker's team for a moment, which records the new city on its map. Without this, on a new map the AI's
+	-- tactical layer had no zone for the city in the first battles (diag5). Live sight of the city is not given:
+	-- getting a unit within sight of it is the AI's job.
+	local attackerTeamID = attacker:GetTeam()
+	local reveal = { Map.GetPlot(lab.tx, lab.ty) }
+	for dir = 0, 5 do reveal[#reveal + 1] = Map.PlotDirection(lab.tx, lab.ty, dir) end
+	for _, plot in ipairs(reveal) do
+		if plot then
+			plot:ChangeVisibilityCount(attackerTeamID, 1, -1, false, false)
+			plot:ChangeVisibilityCount(attackerTeamID, -1, -1, false, false)
+		end
+	end
 
 	if not ensureWar() then
 		out("ERROR," .. sc.name .. ": the two civs could not be put at war")
