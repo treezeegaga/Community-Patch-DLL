@@ -4,7 +4,20 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
-(none yet)
+- 2026-11-15: the M0 repeat bar counts close cases. A scenario repeats if at least 5 of its 6 battles land in the
+  same class or in two neighbouring classes (for example captured and shot to its last hit points, or never attacked
+  and too little damage). Asked because four scenarios sat on a threshold (BASELINE.md).
+
+## 2026-11-15 M0 iteration 7: the same rough terrain on every map
+Class: lab problem: medium_vs_medium_rough never attacked in m0d and m0e (4 battles) and shot the city down in m0f
+(2 battles); within a launch both battles agreed.
+Cause: lab v6 laid hills and forest at every other tile of rings 2-3 west of the city in map-scan order, filtered by
+map x. Hex rows are offset, so the layout depended on where the arena landed, which changes with each map.
+Change: lab v7 walks rings 2 and 3 with hex directions from the city and alternates along that walk, on the west
+half of each ring. Same layout on every map. Mock run passes. No DLL change.
+Predicted: medium_vs_medium_rough lands in one class (or two neighbouring classes) in at least 5 of 6 battles
+across two launches. Which class can't be predicted: the new layout differs from all of the old ones.
+Result: pending (rough1, rough2).
 
 ## 2026-11-15 M0 iteration 6: no research during a run
 Class: lab problem. m0a/b/c (lab v5, `ab-00ae537`, full set x 2, three launches = 6 battles per scenario):
@@ -31,7 +44,8 @@ the 12 predicted. The other five: small_vs_strong splits between two classes tha
 engages); large_vs_strong, siege_train_vs_strong and small_vs_medium vary within a launch at a threshold (melee in
 before turn 12 or not); medium_vs_medium_rough varies by launch, because its hill and forest pattern follows the
 arena's coordinates and so changes with the map. Table in BASELINE.md.
-Decision: accepted as the stock baseline, pending the user's view on the bar (written to the user).
+Decision: accepted as the stock baseline. With the user's ruling on the bar (close cases count), 14 of 15
+scenarios repeat; medium_vs_medium_rough is iteration 7.
 
 ## 2026-11-15 M0 iteration 5: the attacker knows where its target is
 Class: lab problem: in a run's first battles the attacker's AI has never seen the target tile (new map each launch).

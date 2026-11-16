@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 6
+local VERSION = 7
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -202,20 +202,34 @@ local function applyScenarioTerrain(sc)
 		lab.changedPlots[#lab.changedPlots + 1] = lab.targetPlot
 	end
 	if sc.terrain == "rough" then
+		-- Hills and forest alternate along rings 2 and 3 on the attacker's (west) side. The rings are walked with
+		-- hex directions from the city, so the layout is the same wherever the arena lands on the map (lab v6
+		-- went by map coordinates, and each launch got a different layout; LOG.md M0 iteration 7).
 		local forest = typeID("FEATURE_FOREST")
-		local i = 0
-		forEachArenaPlot(function(plot)
-			local d = Map.PlotDistance(plot:GetX(), plot:GetY(), tx, ty)
-			if d >= 2 and d <= 3 and plot:GetX() <= tx then
-				i = i + 1
-				if i % 2 == 0 then
-					setLand(plot, PLOT_HILLS, "TERRAIN_GRASS")
-				elseif forest then
-					plot:SetFeatureType(forest)
-				end
-				lab.changedPlots[#lab.changedPlots + 1] = plot
+		for k = 2, 3 do
+			local x, y = tx, ty
+			for _ = 1, k do
+				local p = Map.PlotDirection(x, y, 4)   -- start k tiles due west
+				x, y = p:GetX(), p:GetY()
 			end
-		end)
+			local i = 0
+			for side = 0, 5 do                          -- NE, E, SE, SW, W, NW: back round to the start
+				for j = 1, k do
+					local p = Map.PlotDirection(x, y, side)
+					x, y = p:GetX(), p:GetY()
+					i = i + 1
+					local west = side == 0 or side == 5 or (side == 1 and j <= k / 2) or (side == 4 and j > k / 2)
+					if west then
+						if i % 2 == 0 then
+							setLand(p, PLOT_HILLS, "TERRAIN_GRASS")
+						elseif forest then
+							p:SetFeatureType(forest)
+						end
+						lab.changedPlots[#lab.changedPlots + 1] = p
+					end
+				end
+			end
+		end
 	end
 	Map.RecalculateAreas()
 end
