@@ -25,7 +25,13 @@ Change: lab v6 sets every tech's research progress and the overflow to 0 at each
 side's turn (`clearResearch`). Mock run passes. No DLL change.
 Predicted: no "long obsolete" lines; rep 2 matches rep 1; at least 12 of 15 scenarios in one class in 5 of 6 battles;
 captures around 20 of 30 per launch. The assertion may disappear.
-Result: pending (m0d/e/f).
+Result: m0d/e/f (lab v6, `ab-00ae537`): 17, 17 and 16 of 30 captured. No "long obsolete" lines, no assertions (the
+overflow assertion went with the research reset). 10 of 15 scenarios in one class in at least 5 of 6 battles, below
+the 12 predicted. The other five: small_vs_strong splits between two classes that mean the same thing (barely
+engages); large_vs_strong, siege_train_vs_strong and small_vs_medium vary within a launch at a threshold (melee in
+before turn 12 or not); medium_vs_medium_rough varies by launch, because its hill and forest pattern follows the
+arena's coordinates and so changes with the map. Table in BASELINE.md.
+Decision: accepted as the stock baseline, pending the user's view on the bar (written to the user).
 
 ## 2026-11-15 M0 iteration 5: the attacker knows where its target is
 Class: lab problem: in a run's first battles the attacker's AI has never seen the target tile (new map each launch).
