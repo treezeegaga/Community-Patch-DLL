@@ -1,0 +1,768 @@
+[418449.875] DBG: Civilization 5: App Version: 403694 FINAL_RELEASE, GameCore: {BF9BF7F0-E078-4D4E-8A3E-84712F85AA2B}, version 1.0.0
+[418456.828] DBG: Civilization 5: App Version: 403694 FINAL_RELEASE, GameCore: {BF9BF7F0-E078-4D4E-8A3E-84712F85AA2B}, version 1.0.0
+[418479.156] DBG: Evaluating Map Path: (Success)
+Original Path: Assets\Maps\Pangaea.lua
+New Path: Assets\Maps\Pangaea.lua
+[418483.000] DBG: setTimeoutCheck(true)
+[418486.265] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418486.265] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(2) OldTurnActive(0) NewTurnActive(0)
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(3) OldTurnActive(0) NewTurnActive(0)
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(22) OldTurnActive(0) NewTurnActive(0)
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(23) OldTurnActive(0) NewTurnActive(0)
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(24) OldTurnActive(0) NewTurnActive(0)
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(25) OldTurnActive(0) NewTurnActive(0)
+[418486.265] DBG: SetTurnActive() called without changing the end turn status. Player(26) OldTurnActive(0) NewTurnActive(0)
+[418486.281] DBG: SetTurnActive() called without changing the end turn status. Player(27) OldTurnActive(0) NewTurnActive(0)
+[418486.281] DBG: SetTurnActive() called without changing the end turn status. Player(28) OldTurnActive(0) NewTurnActive(0)
+[418486.281] DBG: SetTurnActive() called without changing the end turn status. Player(29) OldTurnActive(0) NewTurnActive(0)
+[418486.281] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418486.640] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418486.640] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418486.640] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1022
+[418486.640] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418486.750] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418486.750] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418486.750] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418486.859] DBG: Game Turn 1
+[418486.890] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418486.890] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1023
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1024
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418486.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418486.890] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418486.968] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418486.968] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418486.968] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1022
+[418486.968] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418487.078] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418487.078] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418487.078] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418487.187] DBG: Game Turn 2
+[418487.234] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418487.234] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1024
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418487.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418487.234] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418487.296] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418487.296] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418487.296] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1022
+[418487.296] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418487.406] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418487.406] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418487.406] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418487.515] DBG: Game Turn 3
+[418487.562] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418487.562] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1023
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1024
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418487.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418487.562] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418487.625] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418487.625] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418487.625] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418487.734] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418487.734] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418487.734] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418487.843] DBG: Game Turn 4
+[418487.906] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418487.906] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1023
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418487.906] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418487.906] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418487.953] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418487.953] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418487.953] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418488.062] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418488.062] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418488.062] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418488.171] DBG: Game Turn 5
+[418488.218] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418488.218] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1023
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418488.218] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1027
+[418488.218] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418488.281] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418488.281] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418488.281] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418488.390] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418488.390] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418488.390] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418488.500] DBG: Game Turn 6
+[418488.546] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418488.546] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418488.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418488.546] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418488.609] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418488.609] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418488.609] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418488.718] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418488.718] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418488.718] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418488.828] DBG: Game Turn 7
+[418488.875] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418488.875] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418488.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418488.875] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418488.937] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418488.937] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418488.937] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418489.046] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418489.046] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418489.046] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418489.156] DBG: Game Turn 8
+[418489.203] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418489.203] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418489.203] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418489.203] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418489.265] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418489.265] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418489.265] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418489.375] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418489.375] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418489.375] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418489.484] DBG: Game Turn 9
+[418489.531] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418489.531] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418489.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418489.531] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418489.593] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418489.593] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418489.593] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418489.703] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418489.703] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418489.703] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418489.812] DBG: Game Turn 10
+[418489.859] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418489.859] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418489.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418489.859] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418490.140] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418490.140] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418490.140] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418490.250] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418490.250] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418490.250] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418490.359] DBG: Game Turn 11
+[418490.375] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418490.375] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1027
+[418490.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418490.375] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418490.468] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418490.468] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418490.468] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418490.578] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418490.578] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418490.578] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418490.687] DBG: Game Turn 12
+[418490.718] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418490.718] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1023
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1024
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1025
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1026
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1028
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1027
+[418490.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1029
+[418490.718] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418490.921] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418490.921] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418490.921] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1055
+[418490.921] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418491.031] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418491.031] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418491.031] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418491.140] DBG: Game Turn 13
+[418491.171] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418491.171] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1056
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1057
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1060
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418491.171] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418491.171] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418491.250] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418491.250] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418491.250] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1055
+[418491.250] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418491.359] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418491.359] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418491.359] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418491.468] DBG: Game Turn 14
+[418491.500] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418491.500] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1056
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1057
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418491.500] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1060
+[418491.500] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418491.578] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418491.578] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418491.578] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1055
+[418491.578] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418491.687] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418491.687] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418491.687] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418491.796] DBG: Game Turn 15
+[418491.812] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418491.812] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1056
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1057
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1060
+[418491.812] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Trung Vuong (Great General) id=1068
+[418491.812] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418491.906] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418491.906] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418491.906] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418492.015] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418492.015] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418492.015] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418492.125] DBG: Game Turn 16
+[418492.156] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418492.156] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1056
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418492.156] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1060
+[418492.156] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418492.234] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418492.234] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418492.234] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418492.343] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418492.343] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418492.343] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418492.453] DBG: Game Turn 17
+[418492.484] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418492.484] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1056
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418492.484] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1060
+[418492.484] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418492.562] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418492.562] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418492.562] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418492.671] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418492.671] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418492.671] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418492.781] DBG: Game Turn 18
+[418492.828] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418492.828] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418492.828] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418492.828] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418492.890] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418492.890] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418492.890] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418493.000] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418493.000] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418493.000] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418493.109] DBG: Game Turn 19
+[418493.125] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418493.125] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418493.125] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418493.125] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418493.218] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418493.218] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418493.218] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418493.328] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418493.328] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418493.328] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418493.437] DBG: Game Turn 20
+[418493.468] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418493.468] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418493.468] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418493.468] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418493.765] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418493.765] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418493.765] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418493.875] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418493.875] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418493.875] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418493.984] DBG: Game Turn 21
+[418494.000] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418494.000] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418494.000] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418494.000] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418494.093] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418494.093] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418494.093] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418494.203] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418494.203] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418494.203] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418494.312] DBG: Game Turn 22
+[418494.359] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418494.359] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1058
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418494.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418494.359] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418494.421] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418494.421] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418494.421] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418494.531] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418494.531] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418494.531] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418494.640] DBG: Game Turn 23
+[418494.671] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418494.671] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418494.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418494.671] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418494.750] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418494.750] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418494.750] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418494.859] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418494.859] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418494.859] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418494.968] DBG: Game Turn 24
+[418495.015] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418495.015] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1056
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1057
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1059
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1058
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1062
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1061
+[418495.015] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1060
+[418495.015] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418495.296] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418495.296] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418495.296] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1089
+[418495.296] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418495.406] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418495.406] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418495.406] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418495.515] DBG: Game Turn 25
+[418495.546] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418495.546] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1090
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418495.546] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418495.546] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418495.625] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418495.625] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418495.625] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1089
+[418495.625] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418495.734] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418495.734] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418495.734] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418495.843] DBG: Game Turn 26
+[418495.875] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418495.875] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1090
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418495.875] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418495.875] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418495.953] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418495.953] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418495.953] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1089
+[418495.953] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418496.062] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418496.062] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418496.062] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418496.171] DBG: Game Turn 27
+[418496.187] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418496.187] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1090
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418496.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418496.187] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418496.281] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418496.281] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418496.281] DBG: UpdateMoves() : player 1 Alexander running AutoMission (NO_MISSIONAI) on Archer id=1089
+[418496.281] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418496.390] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418496.390] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418496.390] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418496.500] DBG: Game Turn 28
+[418496.531] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418496.531] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1090
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418496.531] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418496.531] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418496.609] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418496.609] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418496.609] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418496.718] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418496.718] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418496.718] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418496.828] DBG: Game Turn 29
+[418496.859] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418496.859] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1090
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418496.859] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418496.859] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418496.937] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418496.937] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418496.937] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418497.046] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418497.046] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418497.046] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418497.156] DBG: Game Turn 30
+[418497.187] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418497.187] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1096
+[418497.187] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1094
+[418497.187] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418497.484] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418497.484] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418497.484] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418497.593] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418497.593] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418497.593] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418497.703] DBG: Game Turn 31
+[418497.734] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418497.734] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418497.734] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418497.734] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418497.812] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418497.812] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418497.812] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418497.921] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418497.921] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418497.921] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418498.031] DBG: Game Turn 32
+[418498.062] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418498.062] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418498.062] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418498.062] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418498.140] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418498.140] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418498.140] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418498.250] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418498.250] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418498.250] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418498.359] DBG: Game Turn 33
+[418498.375] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418498.375] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1095
+[418498.375] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418498.375] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418498.468] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418498.468] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418498.468] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418498.578] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418498.578] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418498.578] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418498.687] DBG: Game Turn 34
+[418498.718] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418498.718] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1095
+[418498.718] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1096
+[418498.718] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418498.796] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418498.796] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418498.796] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418498.906] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418498.906] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418498.906] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418499.015] DBG: Game Turn 35
+[418499.046] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418499.046] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1095
+[418499.046] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418499.046] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418499.125] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418499.125] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418499.125] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418499.234] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418499.234] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418499.234] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418499.343] DBG: Game Turn 36
+[418499.359] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418499.359] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418499.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1096
+[418499.359] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418499.453] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418499.453] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418499.453] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418499.562] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418499.562] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418499.562] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418499.671] DBG: Game Turn 37
+[418499.687] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418499.687] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_EXPLORE) on Spearman id=1091
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418499.687] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418499.687] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418499.781] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418499.781] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418499.781] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418499.890] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418499.890] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418499.890] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418500.000] DBG: Game Turn 38
+[418500.031] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418500.031] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418500.031] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1096
+[418500.031] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418500.109] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418500.109] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418500.109] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418500.218] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418500.218] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418500.218] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418500.328] DBG: Game Turn 39
+[418500.359] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418500.359] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418500.359] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418500.359] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418500.437] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418500.437] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418500.437] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418500.546] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418500.546] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418500.546] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418500.656] DBG: Game Turn 40
+[418500.671] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418500.671] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418500.671] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418500.671] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418500.984] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418500.984] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418500.984] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418501.093] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418501.093] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418501.093] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418501.203] DBG: Game Turn 41
+[418501.234] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418501.234] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418501.234] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418501.234] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418501.312] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418501.312] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418501.312] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418501.421] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418501.421] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418501.421] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418501.531] DBG: Game Turn 42
+[418501.562] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418501.562] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1092
+[418501.562] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418501.562] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418501.640] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418501.640] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418501.640] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418501.750] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418501.750] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418501.750] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418501.859] DBG: Game Turn 43
+[418501.890] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 0 Askia
+[418501.890] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 0 Askia
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Spearman id=1090
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_HOMEMOVE) on Spearman id=1091
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1093
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (AI_TACTMOVE) on Composite Bowman id=1092
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1094
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1095
+[418501.890] DBG: UpdateMoves() : player 0 Askia running AutoMission (NO_MISSIONAI) on Composite Bowman id=1096
+[418501.890] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Askia
+[418501.968] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 1 Alexander
+[418501.968] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 1 Alexander
+[418501.968] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Alexander
+[418502.078] DBG: UpdateMoves() : player.AI_unitUpdate() called for player 63 Crom
+[418502.078] DBG: UpdateMoves() : player.setAutoMoves(true) called for player 63 Crom
+[418502.078] DBG: CheckPlayerTurnDeactivate() : auto-moves complete for Crom
+[418502.187] DBG: Game Turn 44
