@@ -1,0 +1,33 @@
+2026-11-18 14:18:35  Run 'ref2': set siege, only [small_vs_weak,medium_vs_medium,ref_cb4_melee6_vs_walls,melee_only_vs_medium,siege_train_vs_strong], repeats 1, DLL ab-00ae537
+2026-11-18 14:18:35    dll: Installed ab-00ae537 (13869056 bytes, SHA-256 A44DAB88CD07...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-18 14:18:36    installer: AILog is 1 in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-18 14:18:36    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-18 14:18:36    installer:   Runs small_vs_weak, medium_vs_medium, ref_cb4_melee6_vs_walls, melee_only_vs_medium, siege_train_vs_strong from the 'siege' set, 1 time(s) each; the scripted attacker plays the attacker.
+2026-11-18 14:18:36    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-18 14:18:36    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-18 14:18:59  Civ V window at 963,63 size 1914x2034
+2026-11-18 14:19:29    screen 'single' (distance 0.4)
+2026-11-18 14:19:32    screen 'setup' (distance 16.7)
+2026-11-18 14:19:35    screen 'advanced' (distance 4.5)
+2026-11-18 14:19:50  Game started; waiting for the lab
+2026-11-18 14:19:55  Lab started: [658040.750] SiegeLab: [SiegeLab] RUN,8,Songhai,Greece,56,36,HANDICAP_KING,GAMESPEED_QUICK,2,5,1
+2026-11-18 14:19:55    3 battle(s) finished
+2026-11-18 14:20:00    4 battle(s) finished
+2026-11-18 14:20:05  Lab finished ([SiegeLab] DONE)
+2026-11-18 14:20:39  Civ V did not close within 30 s; stopping it by force
+2026-11-18 14:20:42    results: Run: lab v8, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the scripted attacker played the attacker
+2026-11-18 14:20:42    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\ref2-20261118-1420.results.csv
+2026-11-18 14:20:42    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\ref2-20261118-1420.turns.csv
+2026-11-18 14:20:42    results: Saved 153 log file(s) from this launch (7.3 MB) to C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\ref2-20261118-1420-logs; folder listing in _logs-folder.txt
+2026-11-18 14:20:42    results: Scenario                Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength
+2026-11-18 14:20:42    results: --------                ------- -------- ------------ ------------- ---------- -------------- ---------- -------------
+2026-11-18 14:20:42    results: small_vs_weak                 1        1 3.0          100           0.0        0.0            2.0 of 2   924          
+2026-11-18 14:20:42    results: medium_vs_medium              1        1 5.0          100           0.0        0.0            2.0 of 2   1644         
+2026-11-18 14:20:42    results: ref_cb4_melee6_vs_walls       1        1 7.0          100           0.0        1.0            5.0 of 6   1644         
+2026-11-18 14:20:42    results: melee_only_vs_medium          1        0              24            8.0        0.0            6.0 of 6   1644         
+2026-11-18 14:20:42    results: siege_train_vs_strong         1        0              12            3.0        1.0            3.0 of 3   2338         
+2026-11-18 14:20:42    results: 3 of 5 battles ended in a capture.
+2026-11-18 14:20:45    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-18 14:20:45    dll: Stock DLL restored and checked (1 copy).
+2026-11-18 14:20:45  No assertion dialogs.
+2026-11-18 14:20:45  Run saved. Civ V closed, lab removed, stock DLL restored.
