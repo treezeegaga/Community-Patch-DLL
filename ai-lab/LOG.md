@@ -27,7 +27,12 @@ units first, then the city); melee attack the city from half health down (or, wi
 are at half health or more) and otherwise stand 2 tiles out.
 Predicted: the script takes at least everything the stock AI takes, no slower, and takes some of the scenarios the
 stock AI doesn't (melee_only_vs_medium, siege_train_vs_strong, the strong cities), losing units to do it.
-Result: pending (ref3a/b/c, the full set three times).
+Result: ref3a/b/c (rules v3, `ab-00ae537`, full set x 2, three launches): 21, 24 and 22 of 30 captured (stock AI:
+17, 17, 16), no errors. The script took everything the stock AI takes, at the same turn or within one, and also
+melee_only_vs_medium 6/6 (AI 0/6), siege_train_vs_strong 6/6 (AI 2/6), large_vs_strong 5/6 (AI 2/6) and
+medium_vs_medium_rough 6/6 (AI 0/6). Neither takes small_vs_strong, medium_vs_strong or ranged_only_vs_weak; the
+script did worse than the AI only on small_vs_medium (2/6 vs 4/6). Prediction met except small_vs_medium.
+Decision: accepted as the reference. Takeable list and reference turns in BASELINE.md, for the user's sign-off.
 
 ## 2026-11-18 M0 iteration 9: better rules for the scripted attacker
 Class: the reference script played worse than the stock AI in ref1.
