@@ -728,6 +728,7 @@ CvPlayer::CvPlayer() :
 	, m_iFranchisePressure()
 	, m_bVassalLevy()
 	, m_iVassalGoldMaintenanceMod()
+	, m_bNewAI(false)
 	, m_paiNumCitiesFreeChosenBuilding()
 	, m_paiFreeChosenBuildingNewCity()
 	, m_paiAllCityFreeBuilding()
@@ -1625,6 +1626,7 @@ void CvPlayer::uninit()
 	m_lastGameTurnInitialAIProcessed = -1;
 	m_bVassalLevy = false;
 	m_iVassalGoldMaintenanceMod = 0;
+	m_bNewAI = false;
 	m_iNumMilitarySeaUnits = 0;
 	m_iNumMilitaryAirUnits = 0;
 	m_iNumMilitaryLandUnits = 0;
@@ -10111,6 +10113,8 @@ void CvPlayer::doTurn()
 	// Time building of these maps
 
 	PRECONDITION(isAlive(), "isAlive is expected to be true");
+
+	UpdateNewAI();
 
 	//cache reset
 	m_iNumUnitsSuppliedCached = -1;
@@ -45977,6 +45981,8 @@ void CvPlayer::Read(FDataStream& kStream)
 	CvStreamLoadVisitor serialVisitor(kStream);
 	Serialize(*this, serialVisitor);
 
+	UpdateNewAI();
+
 	if (MOD_WH_MILITARY_LOG && isHuman()) //Not serialized so shouldn't have any effect on savegames
 	{
 		m_pMilitaryLog = FNEW(CvEventLog, c_eCiv5GameplayDLL, 0);
@@ -46007,6 +46013,34 @@ void CvPlayer::Read(FDataStream& kStream)
 				pCity->UpdateClosestFriendlyNeighbors();
 		}
 	}
+}
+
+//	--------------------------------------------------------------------------------
+/// AI lab (ai/v2): refresh the cached "uses the new AI" switch from the game options (see IsNewAI()).
+void CvPlayer::UpdateNewAI()
+{
+	bool bNewAI = false;
+	if (GetID() != NO_PLAYER && GetID() < MAX_MAJOR_CIVS)
+	{
+		if (!isHuman() && GC.getGame().isOption("GAMEOPTION_AI_V2_ALL"))
+			bNewAI = true;
+		CvString strOption = CvString::format("GAMEOPTION_AI_V2_PLAYER_%d", (int)GetID());
+		if (GC.getGame().isOption(strOption.c_str()))
+			bNewAI = true;
+	}
+	m_bNewAI = bNewAI;
+}
+
+//	--------------------------------------------------------------------------------
+/// AI lab (ai/v2): turn the new AI on or off for this player (sets its game option, so it is saved with the game).
+/// Game options set during a game are local to this machine: in multiplayer, set them in the game setup instead.
+void CvPlayer::SetNewAI(bool bNewValue)
+{
+	if (GetID() == NO_PLAYER || GetID() >= MAX_MAJOR_CIVS)
+		return;
+	CvString strOption = CvString::format("GAMEOPTION_AI_V2_PLAYER_%d", (int)GetID());
+	GC.getGame().setOption(strOption.c_str(), bNewValue);
+	UpdateNewAI();
 }
 
 //

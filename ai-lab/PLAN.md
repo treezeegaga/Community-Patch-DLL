@@ -185,6 +185,8 @@ Each milestone has a question, what to build, how it is measured, and the bar. B
 
 Bar: the lab runs clean, repeats agree, and the user has agreed the "takeable" list.
 
+**Closed 2026-11-18** (signed off by the user; the reference is the scripted attacker, see LOG.md rulings).
+
 ### M1. The assault: an army at the walls takes the city
 
 - Base branch: create `ai/v2` from `mp-leaderheads`; bring over `ai-lab/` and the build workflow.

@@ -14,6 +14,22 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - 2026-11-18: "It's completely fine if armies lose their units as long as they are able to capture the city."
   Losses don't count against the AI; the capture does. The M1 bar's "army keeps two thirds of its units" for
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
+- 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
+
+## 2026-11-18 M1 iteration 1: the new-AI switch (plumbing, no behaviour change)
+Class: none (plumbing, PLAN.md M1).
+Change: `CvPlayer::IsNewAI()`, the one switch every new behaviour will sit behind (rule 5). It reads custom game
+options, which the game already saves by name and shares in multiplayer: `GAMEOPTION_AI_V2_ALL` (every AI major
+civ) and `GAMEOPTION_AI_V2_PLAYER_<id>` (one player). So no new saved field and no change to the save format;
+older saves load as before. The value is cached in `m_bNewAI` (not saved), refreshed at the start of the player's
+turn and after loading. `CvPlayer::SetNewAI` sets the player's option. Lua: `Player:IsNewAI()`,
+`Player:SetNewAI(bool)`. Lab v9: `-NewAI none|attacker|defender|both` on Install-SiegeLab.ps1 and Run-SiegeLab.ps1;
+the RUN line gains the two sides' switch as read back from the DLL (1 on, 0 off, -1 the DLL lacks it). Nothing reads
+`IsNewAI()` yet. Note for later: options set from Lua mid-game are local to one machine; real multiplayer games
+must set the option in the game setup (M7).
+Predicted: on the new build the RUN line reads 0,0 with -NewAI none and 1,0 with -NewAI attacker, and both runs
+match the stock baseline's classes (same build behaviour, so within the noise of BASELINE.md).
+Result: pending (build, then sw0 and sw1).
 
 ## 2026-11-18 M0 iteration 10: an aggressive scripted attacker
 Class: the reference script still played worse than the stock AI.
