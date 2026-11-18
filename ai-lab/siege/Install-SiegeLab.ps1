@@ -18,6 +18,8 @@ param(
     [int]$Repeats = 2,             # how many times each scenario is played
     [switch]$Human,                # you play the attacker instead of the AI (the human reference)
     [switch]$Script,               # the lab's scripted attacker plays instead of the AI (the reference in place of a human)
+    [ValidateSet("none", "attacker", "defender", "both")]
+    [string]$NewAI = "none",       # which side uses the new AI (ai/v2 DLL builds; the switch in CvPlayer::IsNewAI)
     [switch]$EnableLogging,        # set LoggingEnabled = 1 (the lab's results) and AILog = 1 (the game's AI logs) in config.ini
     [switch]$Remove
 )
@@ -74,6 +76,7 @@ SiegeLabConfig = {
 	repeats = $Repeats,
 	human = $humanLua,
 	attacker = "$attackerLua",
+	newAI = "$NewAI",
 }
 "@
 [IO.File]::WriteAllText((Join-Path $labDir "SiegeLabConfig.lua"), $config.Replace("`r`n", "`n").Replace("`n", "`r`n"), $utf8)
@@ -119,6 +122,6 @@ $who = "the AI plays the attacker"
 if ($Human) { $who = "you play the attacker" }
 if ($Script) { $who = "the scripted attacker plays the attacker" }
 Write-Output "Siege lab installed in $pack"
-Write-Output "  Runs $what, $Repeats time(s) each; $who."
+Write-Output "  Runs $what, $Repeats time(s) each; $who; new AI: $NewAI."
 Write-Output "  Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin."
 Write-Output "  Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing."

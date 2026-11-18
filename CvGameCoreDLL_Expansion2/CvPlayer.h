@@ -1659,6 +1659,17 @@ public:
 		return m_bAlive;
 	}
 
+	// AI lab (ai/v2): whether this player uses the new AI. The single switch for all new behaviour (PLAN.md rule 5).
+	// It lives in the game options, which are saved with the game and shared in multiplayer, under
+	// "GAMEOPTION_AI_V2_ALL" (every AI major civ) and "GAMEOPTION_AI_V2_PLAYER_<id>" (one player, any kind).
+	// m_bNewAI is a cache of those options, refreshed at the start of the player's turn and on load; not saved.
+	bool IsNewAI() const
+	{
+		return m_bNewAI;
+	}
+	void SetNewAI(bool bNewValue);
+	void UpdateNewAI();
+
 	bool isEverAlive() const
 	{
 		return m_bEverAlive;
@@ -3619,6 +3630,7 @@ protected:
 
 	bool m_bVassalLevy;
 	int m_iVassalGoldMaintenanceMod;
+	bool m_bNewAI; // cache of the AI lab switch, see IsNewAI(); not saved
 
 	std::vector<int> m_paiNumCitiesFreeChosenBuilding;
 	std::vector<int> m_paiFreeChosenBuildingNewCity;

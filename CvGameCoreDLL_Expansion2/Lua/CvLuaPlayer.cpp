@@ -813,6 +813,8 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(GetCapitalNeedModifier);
 
 	Method(IsAlive);
+	Method(IsNewAI);
+	Method(SetNewAI);
 	Method(IsEverAlive);
 	Method(IsPotentiallyAlive);
 	Method(IsExtendedGame);
@@ -10188,6 +10190,20 @@ int CvLuaPlayer::lGetCapitalNeedModifier(lua_State* L)
 int CvLuaPlayer::lIsAlive(lua_State* L)
 {
 	return BasicLuaMethod(L, &CvPlayerAI::isAlive);
+}
+//------------------------------------------------------------------------------
+//bool IsNewAI(); AI lab (ai/v2): whether this player uses the new AI
+int CvLuaPlayer::lIsNewAI(lua_State* L)
+{
+	return BasicLuaMethod(L, &CvPlayerAI::IsNewAI);
+}
+//------------------------------------------------------------------------------
+//void SetNewAI(bool); AI lab (ai/v2)
+int CvLuaPlayer::lSetNewAI(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	pkPlayer->SetNewAI(lua_toboolean(L, 2) != 0);
+	return 0;
 }
 //------------------------------------------------------------------------------
 //bool isEverAlive();

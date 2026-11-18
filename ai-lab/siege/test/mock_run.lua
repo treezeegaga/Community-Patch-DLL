@@ -134,6 +134,9 @@ local function newPlayer(id, isMinor)
 	function m:SetJONSCulture(v) assert(v == 0) end
 	function m:SetFaith(v) assert(v == 0) end
 	function m:SetOverflowResearch(v) assert(v == 0) end
+	local newAI = false
+	function m:SetNewAI(v) assert(type(v) == "boolean") newAI = v end
+	function m:IsNewAI() return newAI end
 	function m:ChangeExtraHappinessPerCity(v) assert(type(v) == "number") end
 	function m:ChangeNumResourceTotal(r, v, fromBuilding, fromEvent) assert(type(r) == "number" and type(v) == "number" and fromBuilding == false and fromEvent == true, "resources must be booked as from an event") end
 	function m:InitCity(x, y, ...)
@@ -320,7 +323,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 -- Checks
 local counts = { RUN = 0, START = 0, TURN = 0, RESULT = 0, WARN = 0, ERROR = 0, DONE = 0 }
-local captured, fields = 0, { RUN = 11, START = 9, TURN = 14, RESULT = 22 }
+local captured, fields = 0, { RUN = 13, START = 9, TURN = 14, RESULT = 22 }
 for _, line in ipairs(log) do
 	local body = line:match("^%[SiegeLab%] (.*)$")
 	assert(body, "a line without the tag: " .. line)

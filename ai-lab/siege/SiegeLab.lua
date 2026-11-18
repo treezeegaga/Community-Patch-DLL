@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 8
+local VERSION = 9
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -882,10 +882,20 @@ local function startLab()
 	lab.tx, lab.ty = cx + TARGET_DX, cy
 	lab.hx, lab.hy = cx + HOME_DX, cy
 
-	out(string.format("RUN,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d", VERSION,
+	-- The new-AI switch (DLL ai/v2 builds only; -1 = this DLL doesn't have it).
+	local function setNewAI(player, on)
+		if not player.SetNewAI then return -1 end
+		player:SetNewAI(on)
+		return player:IsNewAI() and 1 or 0
+	end
+	local newAI = config.newAI or "none"
+	lab.attackerNewAI = setNewAI(attacker, newAI == "attacker" or newAI == "both")
+	lab.defenderNewAI = setNewAI(defender, newAI == "defender" or newAI == "both")
+
+	out(string.format("RUN,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%d", VERSION,
 		attacker:GetCivilizationShortDescription(), defender:GetCivilizationShortDescription(), w, h,
 		GameInfo.HandicapInfos[Game.GetHandicapType()].Type, GameInfo.GameSpeeds[Game.GetGameSpeedType()].Type,
-		lab.human and 1 or (lab.script and 2 or 0), scenarioCount, config.repeats or 1))
+		lab.human and 1 or (lab.script and 2 or 0), scenarioCount, config.repeats or 1, lab.attackerNewAI, lab.defenderNewAI))
 
 	-- The world: a flat arena, the reserve capital, no victories, no barbarians, enough turns.
 	forEachArenaPlot(function(plot) setLand(plot, PLOT_LAND, "TERRAIN_GRASS") end)

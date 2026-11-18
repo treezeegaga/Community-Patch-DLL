@@ -62,6 +62,10 @@ foreach ($line in [IO.File]::ReadAllLines($Log)) {
 if (-not $run) { throw "No siege lab run in $Log. Was the lab installed, and was the game a new single-player game?" }
 Write-Output ("Run: lab v{0}, {1} attacking {2}, map {3}x{4}, {5}, {6}, {7}" -f $run[0], $run[1], $run[2], $run[3], $run[4],
     $run[5], $run[6], $(if ($run[7] -eq "1") { "a human played the attacker" } elseif ($run[7] -eq "2") { "the scripted attacker played the attacker" } else { "the AI played the attacker" }))
+if ($run.Count -ge 12) {
+    $na = @{ "1" = "on"; "0" = "off"; "-1" = "not in this DLL" }
+    Write-Output ("New AI: attacker {0}, defender {1}" -f $na[$run[10]], $na[$run[11]])
+}
 if (-not $done) { Write-Warning "The run did not finish (no DONE line): $($results.Count) battles were scored." }
 foreach ($n in $notes) { Write-Warning $n }
 if ($results.Count -eq 0) { return }
