@@ -195,10 +195,10 @@ Bar: the lab runs clean, repeats agree, and the user has agreed the "takeable" l
 - Make the "can this army take this city" estimate one function, checked against the lab's own results:
   it should say yes for scenarios the lab shows are won and no for those that are lost.
 
-Bar (proposed): in scenarios marked takeable, capture in at least 5 of 6 battles, within 1.5 times the
-human's turns; in scenarios marked not takeable, the army ends with at least two thirds of its units
-(it declines or withdraws rather than dying at the walls). New AI as defender must not make stock
-attackers *more* successful than the stock defender does.
+Bar (proposed; amended 2026-11-18 by the user's rulings in LOG.md: the reference is the scripted attacker or
+the stock AI, whichever does better, and losses don't count): in scenarios marked takeable, capture in at least
+5 of 6 battles, within 1.5 times the reference's turns. Losing units is acceptable if the city falls. New AI as
+defender must not make stock attackers *more* successful than the stock defender does.
 
 ### M2. The march: an army at home arrives ready to fight
 
