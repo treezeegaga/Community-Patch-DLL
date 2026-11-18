@@ -11,6 +11,23 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   and its results take the place of the human column in BASELINE.md (offered as an option on 2026-11-15; the
   user chose it, then briefly said they would play, then confirmed they won't). Consequence: "takeable" now means
   "a simple fixed script takes it", which can be harder or easier than what the user would manage.
+- 2026-11-18: "It's completely fine if armies lose their units as long as they are able to capture the city."
+  Losses don't count against the AI; the capture does. The M1 bar's "army keeps two thirds of its units" for
+  scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
+
+## 2026-11-18 M0 iteration 10: an aggressive scripted attacker
+Class: the reference script still played worse than the stock AI.
+Iteration 9's result (ref2, rules v2, 5 scenarios x 1): same capture turns as ref1 (small_vs_weak 3, medium_vs_medium
+5, ref_cb4 7), fewer losses; melee_only_vs_medium and siege_train_vs_strong not taken. In small_vs_weak both
+Spearmen hit the city at 13% on turn 2 without taking it; in siege_train_vs_strong the Catapults were hurt early,
+rested most of the battle, and the city out-healed the remaining shots (most damage 29 of 250; the stock AI gets it
+to its last hit points every time). Caution was the problem.
+Change (rules v3, after the user's ruling on losses): nobody falls back; ranged units fire every turn (enemy field
+units first, then the city); melee attack the city from half health down (or, with no ranged units, whenever they
+are at half health or more) and otherwise stand 2 tiles out.
+Predicted: the script takes at least everything the stock AI takes, no slower, and takes some of the scenarios the
+stock AI doesn't (melee_only_vs_medium, siege_train_vs_strong, the strong cities), losing units to do it.
+Result: pending (ref3a/b/c, the full set three times).
 
 ## 2026-11-18 M0 iteration 9: better rules for the scripted attacker
 Class: the reference script played worse than the stock AI in ref1.
@@ -29,7 +46,8 @@ themselves; melee move up to 2 tiles from the city once it is at three quarters 
 quarter or less, and otherwise wait 3 tiles out, beyond the city's fire.
 Predicted: small_vs_weak taken on turn 2; medium_vs_medium by turn 4; siege_train_vs_strong taken with few losses;
 melee_only_vs_medium uncertain.
-Result: pending (ref2).
+Result: see iteration 10.
+Decision: superseded by iteration 10.
 
 ## 2026-11-18 M0 iteration 8: a scripted attacker as the reference
 Class: none (M0 needs a reference; see the user ruling of 2026-11-18).
