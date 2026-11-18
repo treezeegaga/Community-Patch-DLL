@@ -32,6 +32,7 @@ param(
     [int]$MaxMinutes = 180,          # hard limit for the whole wait
     [switch]$Calibrate,              # save the current setup screens as pictures (first time on a PC)
     [string]$Release = "",           # ab-<commit>: run on that build of the DLL; the stock DLL is put back afterwards
+    [switch]$Script,                 # the lab's scripted attacker plays the attacker (the reference), not the AI
     [string]$CivDir = "C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V",
     [string]$MyGames = "$([Environment]::GetFolderPath('MyDocuments'))\My Games\Sid Meier's Civilization 5",
     [string]$OutDir = (Join-Path $PSScriptRoot "results")
@@ -399,7 +400,7 @@ try {
     }
     Write-Log "Run '$Label': set $Set, only [$($Only -join ',')], repeats $Repeats, DLL $(if ($Release) { $Release } else { 'stock (as installed)' })"
     if ($Release) { & $dllSwitcher -Release $Release -CivDir $CivDir | ForEach-Object { Write-Log "  dll: $_" } }
-    & $installer -Set $Set -Only $Only -Repeats $Repeats -EnableLogging | ForEach-Object { Write-Log "  installer: $_" }
+    & $installer -Set $Set -Only $Only -Repeats $Repeats -Script:$Script -EnableLogging | ForEach-Object { Write-Log "  installer: $_" }
 
     $launched = Get-Date
     if (-not (Start-LabGame)) { throw "Could not get a new game started (see the screenshots in $runDir)" }

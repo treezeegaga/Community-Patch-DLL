@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 7
+local VERSION = 8
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -656,6 +656,154 @@ local function onDefenderTurn()
 	end
 end
 
+------------------------------------------------------------------------------------------------------------
+-- The scripted attacker (lab mode "script"): a fixed, simple way to play the attack, used as the reference in
+-- place of a human player (user ruling, LOG.md). It moves the attacker's staged units at the start of the
+-- attacker's unit update, before the AI does, and then ends their moves so the AI can't change them.
+-- What it does each turn, in this order:
+--   1. units at 35% health or less fall back to 4-6 tiles from the city and rest;
+--   2. ranged units shoot an enemy unit in range that is down to half health or less, else the city, moving
+--      first to a free tile 2 from the city if they can't shoot from where they stand;
+--   3. melee units attack the city when it is down to a quarter of its health or less (or always, at 80%
+--      health or more, if the army has no ranged units left), finish off weakened enemy units next to them,
+--      and otherwise wait on a free tile 2-3 from the city.
+------------------------------------------------------------------------------------------------------------
+
+local function healthFraction(unit)
+	local maxHP = unit:GetMaxHitPoints()
+	return (maxHP - unit:GetDamage()) / maxHP
+end
+
+local function scriptNote(text)
+	out("SCRIPT," .. cur.sc.name .. "," .. cur.rep .. "," .. cur.t .. "," .. text)
+end
+
+-- A free plot between minD and maxD from the city on the attacker's side, nearest to the unit, not already
+-- taken this turn.
+local function freePlotNear(unit, minD, maxD, taken)
+	local best, bestD = nil, nil
+	for _, spot in ipairs(openPlots(lab.tx, lab.ty, minD, maxD, "west")) do
+		local key = spot.plot:GetX() .. ":" .. spot.plot:GetY()
+		if not taken[key] then
+			local d = Map.PlotDistance(unit:GetX(), unit:GetY(), spot.plot:GetX(), spot.plot:GetY())
+			if not bestD or d < bestD then best, bestD = spot.plot, d end
+		end
+	end
+	if best then taken[best:GetX() .. ":" .. best:GetY()] = true end
+	return best
+end
+
+local function moveTo(unit, plot)
+	if plot and (unit:GetX() ~= plot:GetX() or unit:GetY() ~= plot:GetY()) then
+		unit:PushMission(MissionTypes.MISSION_MOVE_TO, plot:GetX(), plot:GetY())
+	end
+end
+
+local function cityHealthFraction(city)
+	local maxHP = city:GetMaxHitPoints()
+	return (maxHP - city:GetDamage()) / maxHP
+end
+
+-- Enemy field units (not the garrison inside the city) within range of a plot.
+local function enemyUnitsNear(x, y, range)
+	local found = {}
+	for id in pairs(cur.defRoster) do
+		local unit = Players[lab.defender]:GetUnitByID(id)
+		if isUsable(unit) and not unit:GetPlot():IsCity() and Map.PlotDistance(x, y, unit:GetX(), unit:GetY()) <= range then
+			found[#found + 1] = unit
+		end
+	end
+	table.sort(found, function(a, b) return a:GetDamage() > b:GetDamage() end)
+	return found
+end
+
+local function scriptAttackerTurn()
+	local city = targetCity()
+	if not city or city:GetOwner() ~= lab.defender then return end
+	local units = rosterAlive(lab.attacker, cur.attRoster)
+	local taken = {}
+	local hasRanged = false
+	for _, unit in ipairs(units) do
+		if cur.attRoster[unit:GetID()] == "ranged" then hasRanged = true end
+	end
+
+	-- 1. Fall back when badly hurt.
+	local active = {}
+	for _, unit in ipairs(units) do
+		if healthFraction(unit) <= 0.35 then
+			moveTo(unit, freePlotNear(unit, 4, 6, taken))
+			scriptNote("fall back " .. unit:GetID())
+		else
+			active[#active + 1] = unit
+		end
+	end
+
+	-- 2. Ranged units.
+	for _, unit in ipairs(active) do
+		if cur.attRoster[unit:GetID()] == "ranged" and isUsable(unit) then
+			local function shoot()
+				for _, enemy in ipairs(enemyUnitsNear(unit:GetX(), unit:GetY(), unit:Range())) do
+					if healthFraction(enemy) <= 0.5 and unit:CanRangeStrikeAt(enemy:GetX(), enemy:GetY()) then
+						unit:PushMission(MissionTypes.MISSION_RANGE_ATTACK, enemy:GetX(), enemy:GetY())
+						scriptNote("shoot unit " .. unit:GetID())
+						return true
+					end
+				end
+				local c = targetCity()
+				if c and c:GetOwner() == lab.defender and unit:CanRangeStrikeAt(lab.tx, lab.ty) then
+					unit:PushMission(MissionTypes.MISSION_RANGE_ATTACK, lab.tx, lab.ty)
+					scriptNote("shoot city " .. unit:GetID())
+					return true
+				end
+				return false
+			end
+			if not shoot() then
+				moveTo(unit, freePlotNear(unit, 2, 2, taken))
+				if isUsable(unit) and unit:MovesLeft() > 0 and not shoot() then scriptNote("no shot " .. unit:GetID()) end
+			end
+		end
+	end
+
+	-- 3. Melee units: the strongest go first.
+	local melee = {}
+	for _, unit in ipairs(active) do
+		if cur.attRoster[unit:GetID()] == "melee" and isUsable(unit) then melee[#melee + 1] = unit end
+	end
+	table.sort(melee, function(a, b) return a:GetDamage() < b:GetDamage() end)
+	for _, unit in ipairs(melee) do
+		local c = targetCity()
+		if not c or c:GetOwner() ~= lab.defender then break end
+		local cityLeft = cityHealthFraction(c)
+		if cityLeft <= 0.25 or (not hasRanged and healthFraction(unit) >= 0.8) then
+			unit:PushMission(MissionTypes.MISSION_MOVE_TO, lab.tx, lab.ty)
+			scriptNote(string.format("attack city %d (city at %d%%)", unit:GetID(), math.floor(cityLeft * 100)))
+		else
+			local victim = nil
+			if healthFraction(unit) >= 0.6 then
+				for _, enemy in ipairs(enemyUnitsNear(unit:GetX(), unit:GetY(), 1)) do
+					if healthFraction(enemy) <= 0.4 then victim = enemy break end
+				end
+			end
+			if victim then
+				unit:PushMission(MissionTypes.MISSION_MOVE_TO, victim:GetX(), victim:GetY())
+				scriptNote("attack unit " .. unit:GetID())
+			else
+				moveTo(unit, freePlotNear(unit, 2, 3, taken))
+			end
+		end
+	end
+
+	-- Whatever is left of the turn is spent, so the AI doesn't move these units.
+	for _, unit in ipairs(rosterAlive(lab.attacker, cur.attRoster)) do unit:FinishMoves() end
+end
+
+local function onPreAIUnitUpdate(playerID)
+	if not lab or lab.finished or not lab.script or playerID ~= lab.attacker then return end
+	if not cur or cur.failed or cur.t == 0 or cur.scriptedTurn == cur.t then return end
+	cur.scriptedTurn = cur.t   -- the update can run several times in one turn
+	scriptAttackerTurn()
+end
+
 local function onPlayerDoTurn(playerID)
 	if not lab or lab.finished then return end
 	if playerID == lab.attacker then
@@ -718,7 +866,7 @@ local function startLab()
 	end
 
 	lab = { attacker = attackerID, defender = defenderID, queue = queue, index = 1, changedPlots = {},
-	        human = config.human == true, cleaning = false, finished = false }
+	        human = config.human == true, script = config.attacker == "script", cleaning = false, finished = false }
 
 	local w, h = Map.GetGridSize()
 	local cx, cy = pickArenaCentre()
@@ -734,7 +882,7 @@ local function startLab()
 	out(string.format("RUN,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d", VERSION,
 		attacker:GetCivilizationShortDescription(), defender:GetCivilizationShortDescription(), w, h,
 		GameInfo.HandicapInfos[Game.GetHandicapType()].Type, GameInfo.GameSpeeds[Game.GetGameSpeedType()].Type,
-		lab.human and 1 or 0, scenarioCount, config.repeats or 1))
+		lab.human and 1 or (lab.script and 2 or 0), scenarioCount, config.repeats or 1))
 
 	-- The world: a flat arena, the reserve capital, no victories, no barbarians, enough turns.
 	forEachArenaPlot(function(plot) setLand(plot, PLOT_LAND, "TERRAIN_GRASS") end)
@@ -792,6 +940,7 @@ local function startLab()
 	GameEvents.PlayerDoTurn.Add(guarded(onPlayerDoTurn))
 	GameEvents.CityCaptureComplete.Add(guarded(onCityCaptureComplete))
 	GameEvents.UnitPrekill.Add(guarded(onUnitPrekill))
+	if lab.script then GameEvents.PlayerPreAIUnitUpdate.Add(guarded(onPreAIUnitUpdate)) end
 
 	-- The first scenario is staged in the defender's first turn, like every later one.
 	if lab.human then
