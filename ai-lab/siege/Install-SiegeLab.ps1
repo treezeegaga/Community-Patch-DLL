@@ -1,6 +1,6 @@
 # Installs the siege lab into the installed "CP with Animated Leaders" pack, or removes it again.
 #
-#   powershell -ExecutionPolicy Bypass -File ai-lab\siege\Install-SiegeLab.ps1 [-Set siege|march] [-Only a,b] [-Repeats 2] [-Human]
+#   powershell -ExecutionPolicy Bypass -File ai-lab\siege\Install-SiegeLab.ps1 [-Set siege|march] [-Only a,b] [-Repeats 2] [-Human | -Script]
 #   powershell -ExecutionPolicy Bypass -File ai-lab\siege\Install-SiegeLab.ps1 -Remove
 #
 # Installing copies SiegeLab.lua and SiegeLabScenarios.lua into the pack, writes SiegeLabConfig.lua (which
@@ -17,6 +17,7 @@ param(
     [string[]]$Only = @(),         # run only these scenario names (comma-separated); default: the whole set
     [int]$Repeats = 2,             # how many times each scenario is played
     [switch]$Human,                # you play the attacker instead of the AI (the human reference)
+    [switch]$Script,               # the lab's scripted attacker plays instead of the AI (the reference in place of a human)
     [switch]$EnableLogging,        # set LoggingEnabled = 1 (the lab's results) and AILog = 1 (the game's AI logs) in config.ini
     [switch]$Remove
 )
@@ -59,6 +60,9 @@ Copy-Item (Join-Path $PSScriptRoot "SiegeLab.lua") $labDir -Force
 Copy-Item (Join-Path $PSScriptRoot "SiegeLabScenarios.lua") $labDir -Force
 
 $onlyLua = ($names | ForEach-Object { '"' + $_ + '"' }) -join ", "
+if ($Human -and $Script) { throw "-Human and -Script can't be combined" }
+$attackerLua = "ai"
+if ($Script) { $attackerLua = "script" }
 $humanLua = "false"
 if ($Human) { $humanLua = "true" }
 $config = @"
@@ -69,6 +73,7 @@ SiegeLabConfig = {
 	only = { $onlyLua },
 	repeats = $Repeats,
 	human = $humanLua,
+	attacker = "$attackerLua",
 }
 "@
 [IO.File]::WriteAllText((Join-Path $labDir "SiegeLabConfig.lua"), $config.Replace("`r`n", "`n").Replace("`n", "`r`n"), $utf8)
@@ -112,6 +117,7 @@ $what = "the '$Set' set"
 if ($names.Count -gt 0) { $what = "$($names -join ', ') from the '$Set' set" }
 $who = "the AI plays the attacker"
 if ($Human) { $who = "you play the attacker" }
+if ($Script) { $who = "the scripted attacker plays the attacker" }
 Write-Output "Siege lab installed in $pack"
 Write-Output "  Runs $what, $Repeats time(s) each; $who."
 Write-Output "  Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin."

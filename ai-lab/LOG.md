@@ -7,6 +7,28 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - 2026-11-15: the M0 repeat bar counts close cases. A scenario repeats if at least 5 of its 6 battles land in the
   same class or in two neighbouring classes (for example captured and shot to its last hit points, or never attacked
   and too little damage). Asked because four scenarios sat on a threshold (BASELINE.md).
+- 2026-11-18: the user won't play the human reference battles. A scripted attacker in the lab plays them instead,
+  and its results take the place of the human column in BASELINE.md (offered as an option on 2026-11-15; the
+  user chose it, then briefly said they would play, then confirmed they won't). Consequence: "takeable" now means
+  "a simple fixed script takes it", which can be harder or easier than what the user would manage.
+
+## 2026-11-18 M0 iteration 8: a scripted attacker as the reference
+Class: none (M0 needs a reference; see the user ruling of 2026-11-18).
+Before it, iteration 7's result: rough1 and rough2 (lab v7, 2 launches x 3): medium_vs_medium_rough shot the city
+to its last hit points and didn't take it in 6 of 6 battles. With the ruling on close cases, all 15 scenarios now
+repeat. (rough2's first launch didn't start a game; its retry was clean.)
+Change: lab v8 adds a scripted attacker (`-Script` on Install-SiegeLab.ps1 and Run-SiegeLab.ps1). It moves the
+attacker's staged units from the `PlayerPreAIUnitUpdate` hook, which the DLL fires at the start of the AI's unit
+update, after moves are restored and before the tactical AI runs, then ends their moves. Rules, fixed for all
+scenarios: units at 35% health or less fall back 4-6 tiles; ranged units shoot an enemy unit at half health or less
+within range, else the city, moving to a free tile 2 from it first if needed; melee attack the city at a quarter
+health or less (or, with no ranged units in the army, whenever they are at 80% health or more), kill adjacent enemy
+units at 40% or less, and otherwise wait 2-3 tiles out. Each action is logged as a SCRIPT line in Lua.log. RUN's
+attacker field is 2 for this mode. Not verified in the game yet: that `PushMission` from that hook executes at once
+for an AI-controlled player. No DLL change; AI mode is unchanged (mock run passes).
+Predicted: SCRIPT lines for every battle turn; the AI's tactical log shows no moves for the attacker's staged
+units; the script takes every weak and medium city within 2-5 turns and at least sometimes the strong ones.
+Result: pending (ref1).
 
 ## 2026-11-15 M0 iteration 7: the same rough terrain on every map
 Class: lab problem: medium_vs_medium_rough never attacked in m0d and m0e (4 battles) and shot the city down in m0f
@@ -17,7 +39,8 @@ Change: lab v7 walks rings 2 and 3 with hex directions from the city and alterna
 half of each ring. Same layout on every map. Mock run passes. No DLL change.
 Predicted: medium_vs_medium_rough lands in one class (or two neighbouring classes) in at least 5 of 6 battles
 across two launches. Which class can't be predicted: the new layout differs from all of the old ones.
-Result: pending (rough1, rough2).
+Result: see iteration 8 (all 6 battles: shot to its last hit points, not taken).
+Decision: accepted.
 
 ## 2026-11-15 M0 iteration 6: no research during a run
 Class: lab problem. m0a/b/c (lab v5, `ab-00ae537`, full set x 2, three launches = 6 battles per scenario):

@@ -54,13 +54,14 @@ foreach ($line in [IO.File]::ReadAllLines($Log)) {
         "TURN" { $turns += ConvertTo-Row $turnColumns $values }
         "RESULT" { $results += ConvertTo-Row $resultColumns $values }
         "DONE" { $done = $true }
+        "SCRIPT" { }   # the scripted attacker's moves; they stay in Lua.log
         default { $notes += "${kind}: $rest" }
     }
 }
 
 if (-not $run) { throw "No siege lab run in $Log. Was the lab installed, and was the game a new single-player game?" }
 Write-Output ("Run: lab v{0}, {1} attacking {2}, map {3}x{4}, {5}, {6}, {7}" -f $run[0], $run[1], $run[2], $run[3], $run[4],
-    $run[5], $run[6], $(if ($run[7] -eq "1") { "a human played the attacker" } else { "the AI played the attacker" }))
+    $run[5], $run[6], $(if ($run[7] -eq "1") { "a human played the attacker" } elseif ($run[7] -eq "2") { "the scripted attacker played the attacker" } else { "the AI played the attacker" }))
 if (-not $done) { Write-Warning "The run did not finish (no DONE line): $($results.Count) battles were scored." }
 foreach ($n in $notes) { Write-Warning $n }
 if ($results.Count -eq 0) { return }
