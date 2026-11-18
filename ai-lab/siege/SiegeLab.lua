@@ -660,13 +660,14 @@ end
 -- The scripted attacker (lab mode "script"): a fixed, simple way to play the attack, used as the reference in
 -- place of a human player (user ruling, LOG.md). It moves the attacker's staged units at the start of the
 -- attacker's unit update, before the AI does, and then ends their moves so the AI can't change them.
--- What it does each turn, in this order:
---   1. units at 35% health or less fall back to 4-6 tiles from the city and rest;
---   2. ranged units shoot an enemy unit in range that is down to half health or less, else the city, moving
+-- What it does each turn, in this order (v2 of the rules, after ref1; LOG.md M0 iteration 9):
+--   1. units at 35% health or less fall back to 4-6 tiles from the city and rest there until back at 75%;
+--   2. ranged units shoot the most damaged enemy unit outside the city within range, else the city, moving
 --      first to a free tile 2 from the city if they can't shoot from where they stand;
---   3. melee units attack the city when it is down to a quarter of its health or less (or always, at 80%
---      health or more, if the army has no ranged units left), finish off weakened enemy units next to them,
---      and otherwise wait on a free tile 2-3 from the city.
+--   3. melee units attack an adjacent enemy unit outside the city if it is no healthier than they are; attack
+--      the city when it is down to a quarter of its health or less (or, if the army has no ranged units, when
+--      they are at 80% health or more); move up to a free tile 2 from the city once it is at three quarters health or
+--      less; and otherwise wait 3 tiles out, beyond the city's own fire.
 ------------------------------------------------------------------------------------------------------------
 
 local function healthFraction(unit)
@@ -727,12 +728,18 @@ local function scriptAttackerTurn()
 		if cur.attRoster[unit:GetID()] == "ranged" then hasRanged = true end
 	end
 
-	-- 1. Fall back when badly hurt.
+	-- 1. Fall back when badly hurt, and stay back until healed.
+	cur.resting = cur.resting or {}
 	local active = {}
 	for _, unit in ipairs(units) do
-		if healthFraction(unit) <= 0.35 then
-			moveTo(unit, freePlotNear(unit, 4, 6, taken))
-			scriptNote("fall back " .. unit:GetID())
+		local id = unit:GetID()
+		local h = healthFraction(unit)
+		if h <= 0.35 then cur.resting[id] = true elseif h >= 0.75 then cur.resting[id] = nil end
+		if cur.resting[id] then
+			if Map.PlotDistance(unit:GetX(), unit:GetY(), lab.tx, lab.ty) < 4 then
+				moveTo(unit, freePlotNear(unit, 4, 6, taken))
+				scriptNote("fall back " .. id)
+			end
 		else
 			active[#active + 1] = unit
 		end
@@ -743,7 +750,7 @@ local function scriptAttackerTurn()
 		if cur.attRoster[unit:GetID()] == "ranged" and isUsable(unit) then
 			local function shoot()
 				for _, enemy in ipairs(enemyUnitsNear(unit:GetX(), unit:GetY(), unit:Range())) do
-					if healthFraction(enemy) <= 0.5 and unit:CanRangeStrikeAt(enemy:GetX(), enemy:GetY()) then
+					if unit:CanRangeStrikeAt(enemy:GetX(), enemy:GetY()) then
 						unit:PushMission(MissionTypes.MISSION_RANGE_ATTACK, enemy:GetX(), enemy:GetY())
 						scriptNote("shoot unit " .. unit:GetID())
 						return true
@@ -774,22 +781,20 @@ local function scriptAttackerTurn()
 		local c = targetCity()
 		if not c or c:GetOwner() ~= lab.defender then break end
 		local cityLeft = cityHealthFraction(c)
-		if cityLeft <= 0.25 or (not hasRanged and healthFraction(unit) >= 0.8) then
+		local victim = nil
+		for _, enemy in ipairs(enemyUnitsNear(unit:GetX(), unit:GetY(), 1)) do
+			if healthFraction(enemy) <= healthFraction(unit) then victim = enemy break end
+		end
+		if victim then
+			unit:PushMission(MissionTypes.MISSION_MOVE_TO, victim:GetX(), victim:GetY())
+			scriptNote("attack unit " .. unit:GetID())
+		elseif cityLeft <= 0.25 or (not hasRanged and healthFraction(unit) >= 0.8) then
 			unit:PushMission(MissionTypes.MISSION_MOVE_TO, lab.tx, lab.ty)
 			scriptNote(string.format("attack city %d (city at %d%%)", unit:GetID(), math.floor(cityLeft * 100)))
+		elseif cityLeft <= 0.75 then
+			moveTo(unit, freePlotNear(unit, 2, 2, taken) or freePlotNear(unit, 3, 3, taken))
 		else
-			local victim = nil
-			if healthFraction(unit) >= 0.6 then
-				for _, enemy in ipairs(enemyUnitsNear(unit:GetX(), unit:GetY(), 1)) do
-					if healthFraction(enemy) <= 0.4 then victim = enemy break end
-				end
-			end
-			if victim then
-				unit:PushMission(MissionTypes.MISSION_MOVE_TO, victim:GetX(), victim:GetY())
-				scriptNote("attack unit " .. unit:GetID())
-			else
-				moveTo(unit, freePlotNear(unit, 2, 3, taken))
-			end
+			moveTo(unit, freePlotNear(unit, 3, 3, taken))
 		end
 	end
 

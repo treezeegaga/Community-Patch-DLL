@@ -12,6 +12,25 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   user chose it, then briefly said they would play, then confirmed they won't). Consequence: "takeable" now means
   "a simple fixed script takes it", which can be harder or easier than what the user would manage.
 
+## 2026-11-18 M0 iteration 9: better rules for the scripted attacker
+Class: the reference script played worse than the stock AI in ref1.
+Iteration 8's result (ref1, lab v8, `ab-00ae537`, 5 scenarios x 1): the hook works: 165 SCRIPT lines, no errors, the
+units moved as the script said. Captures: small_vs_weak turn 3 (stock AI: turn 2), medium_vs_medium turn 5 (AI 3-4),
+ref_cb4_melee6_vs_walls turn 7 (AI 5-6); melee_only_vs_medium not taken (66 damage, the AI never attacks);
+siege_train_vs_strong not taken, 4 of 8 units lost (the AI took it 2 of 6 and lost none).
+Causes (from the SCRIPT lines and turns.csv): melee waited 2-3 tiles out, so at "attack city (city at 4%)" a unit
+3 tiles away could only walk up, and the capture came a turn late; wounded units went back into the city's fire as
+soon as they were above 35%, so they never healed (melee_only: from turn 5 the same Swordsmen fell back every turn);
+enemy Spearmen outside the city were only shot when already half dead and melee only hit units at 40% or less, so the
+siege train's Catapults were worn down.
+Change (rules v2, lab v8 still): wounded units rest 4-6 tiles out until back at 75%; ranged units shoot the most
+damaged enemy field unit in range before the city; melee attack an adjacent enemy field unit no healthier than
+themselves; melee move up to 2 tiles from the city once it is at three quarters health or less, attack it at a
+quarter or less, and otherwise wait 3 tiles out, beyond the city's fire.
+Predicted: small_vs_weak taken on turn 2; medium_vs_medium by turn 4; siege_train_vs_strong taken with few losses;
+melee_only_vs_medium uncertain.
+Result: pending (ref2).
+
 ## 2026-11-18 M0 iteration 8: a scripted attacker as the reference
 Class: none (M0 needs a reference; see the user ruling of 2026-11-18).
 Before it, iteration 7's result: rough1 and rough2 (lab v7, 2 launches x 3): medium_vs_medium_rough shot the city
@@ -28,7 +47,8 @@ attacker field is 2 for this mode. Not verified in the game yet: that `PushMissi
 for an AI-controlled player. No DLL change; AI mode is unchanged (mock run passes).
 Predicted: SCRIPT lines for every battle turn; the AI's tactical log shows no moves for the attacker's staged
 units; the script takes every weak and medium city within 2-5 turns and at least sometimes the strong ones.
-Result: pending (ref1).
+Result: see iteration 9.
+Decision: accepted (the mechanism); the rules are revised in iteration 9.
 
 ## 2026-11-15 M0 iteration 7: the same rough terrain on every map
 Class: lab problem: medium_vs_medium_rough never attacked in m0d and m0e (4 battles) and shot the city down in m0f
