@@ -360,6 +360,14 @@ branch.
 3. Tell the user its name in one short message, and stop: no further work, no further runs, no messages to the
    successor.
 
+**The successor, at its start** (user's rule, 2026-11-19): once it has read the current state and told the user
+what it will do first, it archives its predecessor session (`archive_session`), provided the predecessor has
+stopped (its last turn has ended), has pushed everything (its handover commit is on `origin/ai/v2` and nothing
+newer is pending from it), and has no scheduled tasks bound to it (`list_triggers`: none with its session id as
+`persistent_session_id`, and none it set for itself still pending). Archive only, never delete. If any condition
+fails, leave it and tell the user why. If archiving is refused, tell the user the session's name so they can
+archive it themselves.
+
 The successor's prompt, word for word:
 
 > You are the implementing session for the Civ V AI project in the repository treezeegaga/Community-Patch-DLL.
