@@ -1,0 +1,78 @@
+{
+  "id": "2026-11-19-15-m2d2",
+  "why": "M2 iteration 1 recheck on lab v13 (leftover operations ended between battles): march at 8 and 10 tiles, new AI and stock x6",
+  "launches": [
+    {
+      "label": "m2n2a",
+      "release": "ab-1ca9bea",
+      "set": "march",
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10"
+      ],
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s2a",
+      "release": "ab-1ca9bea",
+      "set": "march",
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10"
+      ],
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2n2b",
+      "release": "ab-1ca9bea",
+      "set": "march",
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10"
+      ],
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s2b",
+      "release": "ab-1ca9bea",
+      "set": "march",
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10"
+      ],
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2n2c",
+      "release": "ab-1ca9bea",
+      "set": "march",
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10"
+      ],
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s2c",
+      "release": "ab-1ca9bea",
+      "set": "march",
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10"
+      ],
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}
