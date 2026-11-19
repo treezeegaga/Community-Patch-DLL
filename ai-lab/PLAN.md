@@ -221,6 +221,10 @@ city, within 2 turns of each other, siege and melee included) and then capture a
 
 ### M3. The army: an honest economy fields that army on time
 
+- First (moved here from M4 by the user, 2026-11-19): make "can this army take this city" one function. Today
+  `ExecuteCaptureCityMoves` (`ComputeTotalExpectedDamage`: at most 3 melee counted, wounded dropped, 13-turn rule) and
+  `ScoreAttackDamage` (per unit "too early") disagree; see LOG.md M1 iteration 8. Check it against the lab's results
+  (yes for scenarios won, no for those lost). M3 uses it to say how big an army must be; M4 uses it for target choice.
 - Build an **opening lab**: a normal game start, one civ's plan, cut at turn 60–80 (Quick pace). It
   measures by which turn the civ has the army that M1 showed is sufficient, with the upgrade gold, and
   what its economy looks like at that turn. Minutes per game, no fighting needed.
@@ -235,10 +239,7 @@ Composite Bowmen. The economy must not collapse to get there (no bankruptcy, at 
 
 ### M4. The decision: who to attack, when, and when to stop
 
-- Carried from M1: make "can this army take this city" one function. Today `ExecuteCaptureCityMoves`
-  (`ComputeTotalExpectedDamage`: at most 3 melee counted, wounded dropped, 13-turn rule) and `ScoreAttackDamage` (per
-  unit "too early") disagree; see LOG.md M1 iteration 8. Check it against the lab's results (yes for scenarios won,
-  no for those lost) and use it for target choice here.
+- Use M3's single "can this army take this city" estimate for target choice.
 - A **decision lab** from saved mid-game positions (saves must load across builds: version every new
   saved field). It asks: does the civ pick the target M1's estimate says it can take, declare when the
   army is ready and in place, stay on that target, and make peace when the war is no longer winnable.
@@ -278,6 +279,23 @@ Bar (set with the user after the stock measurement).
   assertions, strength share against stock is not below 50%.
 - Then the real test: the user and their friend play. Keep a blunder log; each blunder becomes a scenario
   in the right lab (rule 3) and goes back through the loop.
+
+## 8a. Additions of 2026-11-19 (user), in this order, with M2 carried on between them one thing at a time
+
+1. **Second lab PC** (TREEDESKTOP): run queue claims, setup steps, the two-PC check (`ai-lab/runs/README.md`).
+   Finish it first.
+2. **Regression scenario set** in the siege lab: a capital (with its Palace), a coastal city, a medieval siege and an
+   artillery-era siege. Baseline them on the stock AI and on the current build (6 battles each), and keep them in
+   BASELINE.md. "Units lost" stays a reported column in every results table (losses don't count against the bars,
+   per the 2026-11-18 ruling, but they are shown).
+3. **The new-AI switch at game setup**: settable when a game is set up (not only from the lab's Lua), so the user can
+   turn it on for chosen AI players in their own games, multiplayer included; and a 30-turn LAN multiplayer smoke test
+   on two PCs, written up for the user to run (desyncs, assertions, crashes, turn times).
+4. **Transfer check at each milestone close** (informs, does not gate): port the minimum of the earlier full-game
+   harness (seeded maps, seat assignment, results file) to `ai/v2`; at each milestone close run 6 seeded games to turn
+   100 with the new AI on for one aggressive civ, split across both lab PCs; record captures, assertions, and whether
+   each lab fix shows up in the game's logs (e.g. M1 iteration 7's "melee closing in on" lines). Done first for M1
+   (closed) once built, then at every later close.
 
 ## 9. First session checklist
 

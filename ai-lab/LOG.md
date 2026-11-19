@@ -28,6 +28,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19: four additions to the plan (PLAN.md section 8a), in this order after the second-runner work: the
+  regression scenario set (capital, coastal, medieval, artillery era; stock and current build; units lost kept as a
+  reported column), then the new-AI switch at game setup plus a 30-turn LAN multiplayer smoke test for the user, then
+  the transfer check at each milestone close (6 seeded games to turn 100, one aggressive new-AI civ, both PCs;
+  informs, doesn't gate). M2 continues between them, one thing at a time. The single "can this army take this city"
+  estimate moves from M4 to the start of M3 (PLAN.md updated).
+
 - 2026-11-19: the user asked for their second PC, TREEDESKTOP, as a second lab runner: per-launch claims in the run
   queue so two watchers never run the same launch, the host recorded with every launch, setup steps for them, and a
   same-set stock check on both PCs before TREEDESKTOP's results are trusted. Done as run queue watcher version 2
