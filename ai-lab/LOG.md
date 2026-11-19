@@ -59,6 +59,17 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 Process: two-PC check, first try (BOX ran both halves)
+The request `2026-11-19-13-pc2check` ran on BOX between 2:00 and 2:21 PM ET under watcher v1, which predates the
+`host` field, so BOX also ran the three launches pinned to TREEDESKTOP (`ab-9109672` was not out yet, so v1 skipped
+m2d1 and took this one). Not wasted: it measures BOX against itself, the noise the two-PC bar must allow.
+Captures of 6 per scenario, launches 1-3 ("box") vs launches 4-6 ("tree"), all on BOX, stock DLL `ab-78d5e8a`:
+13 of 15 scenarios differ by 0 or 1; small_vs_medium (6 vs 4) and siege_train_vs_strong (2 vs 4) differ by 2.
+Totals 55 vs 57 of 90 (m1s9 on the same build: 57). So the bar in runs/README.md (at most 1 apart in 13 of 15, at
+most 2 in all) is the same-PC noise exactly; kept as is.
+Next: a TREEDESKTOP-only request (3 launches) once the user has set that PC up and BOX runs watcher v2, compared
+against these 6 BOX launches.
+
 ## 2026-11-19 M2 iteration 0: the march baseline (measurement only)
 Class: none yet. M2's question: does an army that starts at home (12 tiles away) arrive ready and then take the city?
 Change: lab v10 (Lua only, no build): each TURN line adds AttackersWithin3, MeleeWithin3, RangedWithin3; each RESULT
