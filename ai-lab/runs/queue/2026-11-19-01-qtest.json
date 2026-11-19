@@ -1,0 +1,7 @@
+{
+  "id": "2026-11-19-01-qtest",
+  "why": "First queued run: check the watcher end to end on one short battle (stock DLL build ab-30a92af, small_vs_weak x 1)",
+  "launches": [
+    { "label": "qtest", "release": "ab-30a92af", "only": ["small_vs_weak"], "repeats": 1 }
+  ]
+}
