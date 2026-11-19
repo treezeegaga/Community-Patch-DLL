@@ -44,6 +44,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19: handover rule addition (PLAN.md section 12): after a successor has read the current state and told the
+  user what it will do first, it archives its predecessor session, provided the predecessor has stopped, has pushed
+  everything and has no scheduled tasks bound to it. Archive only, never delete; if archiving is refused, tell the
+  user the session name.
+
 - 2026-11-19: four additions to the plan (PLAN.md section 8a), in this order after the second-runner work: the
   regression scenario set (capital, coastal, medieval, artillery era; stock and current build; units lost kept as a
   reported column), then the new-AI switch at game setup plus a 30-turn LAN multiplayer smoke test for the user, then
