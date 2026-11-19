@@ -116,7 +116,7 @@ function Push-Results([string]$message) {
     for ($i = 1; $i -le 4; $i++) {
         try { Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null; Invoke-Git @("push", "-q", "origin", "HEAD:$Branch") | Out-Null; return $true }
         catch {
-            & git -C $Repo rebase --abort 2>$null | Out-Null
+            try { & git -C $Repo rebase --abort 2>$null | Out-Null } catch {}
             Write-Log "  push attempt $i failed: $($_.Exception.Message)"; Start-Sleep (15 * $i)
         }
     }
@@ -140,7 +140,12 @@ function Push-Contested([string]$path, [string]$message) {
 function Sync-Repo {
     Invoke-Git @("fetch", "-q", "origin", $Branch) | Out-Null
     try { Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null }
-    catch { & git -C $Repo rebase --abort 2>$null | Out-Null; throw "pull failed, nothing run: $($_.Exception.Message)" }
+    catch {
+        $pullError = $_.Exception.Message
+        # "no rebase in progress" is an error of its own and must not hide why the pull failed.
+        try { & git -C $Repo rebase --abort 2>$null | Out-Null } catch {}
+        throw "pull failed, nothing run: $pullError"
+    }
 }
 
 # ---------- Requests ----------
