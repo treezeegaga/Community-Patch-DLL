@@ -63,6 +63,8 @@ Predicted (newAI attacker, full set x 3): melee_only_vs_medium from 0/6 to at le
 user's ruling: losses don't count). ref_cb4_melee6_vs_walls and the medium/large scenarios captured as before or
 sooner. No scenario's captures drop by more than 1 in 6. small_vs_strong and medium_vs_strong may engage more and lose
 more units without capturing; that is acceptable only if it doesn't cost captures elsewhere.
+Build: `ab-e6beb62`. Run: queue request 2026-11-19-05-m1f4 (m1f4a/b/c).
+Result: pending.
 
 ## 2026-11-19 M1 iteration 3: no exploring with units at the enemy's walls
 Class: "shot to its last hit points, not taken, melee alive" in takeable scenarios (BASELINE.md): large_vs_strong
