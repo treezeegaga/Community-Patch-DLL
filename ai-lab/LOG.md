@@ -33,6 +33,9 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19: melee_only_vs_medium (melee-only army, no ranged units) is set aside as an accepted gap for M1, after
+  three iterations without a capture (rule 9 stop after M1 iteration 8). The other takeable scenarios carry the bar.
+
 - 2026-11-15: the M0 repeat bar counts close cases. A scenario repeats if at least 5 of its 6 battles land in the
   same class or in two neighbouring classes (for example captured and shot to its last hit points, or never attacked
   and too little damage). Asked because four scenarios sat on a threshold (BASELINE.md).
@@ -44,6 +47,16 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   Losses don't count against the AI; the capture does. The M1 bar's "army keeps two thirds of its units" for
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
+
+## 2026-11-19 M1 iteration 9: the new AI as defender (measurement only)
+Class: none (the M1 bar's defender part: new AI as defender must not make stock attackers more successful than the
+stock defender does).
+Change: none. Build `ab-78d5e8a` (iterations 3 and 7). The new code only changes what a player does near an enemy
+city it is at war with, so as defender it should change little.
+Predicted: stock attacker vs new-AI defender (m1v9a/b/c) captures no more than stock vs stock on the same build and
+lab (m1s9a/b/c), within 1 in 6 per scenario.
+Run: queue request 2026-11-19-10-m1v9.
+Result: pending.
 
 ## 2026-11-19 M1 iteration 8: a melee army that can wear the city down attacks it (third try on melee_only)
 Class: "never attacks" in a takeable scenario: melee_only_vs_medium NOATTACK 6/6 (m1f7; script 6/6 by turn 5, 0.7 lost).
