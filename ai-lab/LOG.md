@@ -45,6 +45,26 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M1 iteration 8: a melee army that can wear the city down attacks it (third try on melee_only)
+Class: "never attacks" in a takeable scenario: melee_only_vs_medium NOATTACK 6/6 (m1f7; script 6/6 by turn 5, 0.7 lost).
+The last failing takeable scenario.
+Cause (m1d7, `PlayerTacticalAILog.csv`, and iteration 6's log): two blocks in `ScoreAttackDamage`. (1) Every melee
+attack on the city is "refused (too early)": one Swordsman alone deals 15 and takes 32, so it would be worn down
+(2.4 turns) before the city (6.8). (2) When iteration 6 allowed it, the attack still scored below doing nothing: the
+score is damage dealt minus damage taken (15 - 32), so the tactsim chose positions with no attack. Iteration 6's third
+block (a wounded Swordsman leaving to heal) is gone since iteration 7: it now holds 2 tiles out ("melee closing in ...
+holds" at 71 HP in m1d7).
+Change: with `IsNewAI()`, iteration 6's army test returns (`MeleeArmyCanWearDownCity`: own melee within 2 tiles,
+their hit points less 10 each, the city's strike shared, healing counted); when it is what allows the attack, the
+attack's score counts the damage it deals and not the damage it takes ("allowed (army)" in the log). Other checks
+unchanged (hit point limit, damage worth it, suicide).
+Predicted (newAI attacker): melee_only_vs_medium from 0/6 to at least 4/6 (decision rule), by turn 7, losses
+allowed. ref_cb4_melee6_vs_walls (6 melee) and the other scenarios: no capture count drops by more than 1 in 6; some
+may capture a turn earlier. small_vs_strong/medium_vs_strong may lose more units. If melee_only doesn't move, this is
+the third iteration on it that moved nothing: stop and write to the user (rule 9).
+Build: `ab-481fb7c`. Run: queue request 2026-11-19-09-m1f8 (m1d8: melee_only and ref_cb4 x 2; then m1f8a/b/c).
+Result: pending.
+
 ## 2026-11-19 M1 iteration 7: melee units close in on the city instead of going home
 Class: "shot to its last hit points, not taken, melee alive" in a takeable scenario: medium_vs_medium_rough LASTHP 5/6,
 CAP 1/6 (m1f3; the script takes it 6/6, turns 7-12).
