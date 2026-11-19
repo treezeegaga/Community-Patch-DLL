@@ -2,34 +2,34 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-19, 7:20 AM ET), written by implementer 1 at handover
+## Current state (2026-11-19, 11:20 AM ET), written by implementer 2 at handover
 
-- **Milestone:** M0 closed 2026-11-18 (signed off; the reference is the lab's scripted attacker, see rulings).
-  M1 in progress: iteration 1 (the switch) accepted; iteration 2 (logging only) built, its run in flight.
-- **Branch:** `ai/v2`. Newest DLL build `ab-30a92af` = stock 5.4.8 game code + config.ini logging + the logging
-  lines of M0 iteration 3 and M1 iteration 2 + the switch `CvPlayer::IsNewAI()` (nothing reads it yet). So there is
-  still **no AI behaviour change** on the branch. `ab-00ae537` is the build the baseline was measured on.
-- **Lab:** `ai-lab/siege`, lab v9 (scripted attacker rules v3, `-Script`; `-NewAI`). Baseline: BASELINE.md
-  (stock m0d-f, reference ref3a-c, takeable list). M1 bar: PLAN.md M1 (as amended: losses don't count).
-- **In flight:** run `m1d2` was requested by message to the old PC runner session at 7:15 AM ET (before the queue
-  existed): `ab-30a92af`, large_vs_strong, siege_train_vs_strong, medium_vs_medium_rough, small_vs_medium, 2 each.
-  Its results will appear as `ai-lab/siege/results/m1d2-*` (no done marker). Read them for M1 iteration 2: the new
-  "heal (first|second pass)" and "melee near <city>" lines in `PlayerTacticalAILog.csv`.
-- **Run queue:** built 2026-11-19 (`ai-lab/runs/`), not yet set up on the PC and never run (it couldn't be
-  syntax-checked here: no PowerShell). The user has the setup steps in `ai-lab/runs/README.md`. Until the done
-  marker of a first queued request comes back, check `ai-lab/runs/done/` and ask the user whether setup is done.
-  Make the first queued request small, so a script bug costs little.
-- **Open questions for the user:** none.
-- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (data files are uploaded by hand: the baseline
-  battles, milestones and steps; it doesn't yet show the reference column or M1). Update it when a milestone moves.
+- **Milestone:** M1, in progress. Iterations 3 (no exploring near an enemy city, accepted) and 5 (logging, accepted)
+  are on the branch; 4 and 6 (melee attacks on a city) were reverted. Context passed the handover mark.
+- **Branch:** `ai/v2`. Game code = stock 5.4.8 + logging (M0 it. 3, M1 it. 2 and 5) + `IsNewAI()` switch + iteration 3
+  (`CvEconomicAI::DoReconState` / `IsNearEnemyCityAtWar`). The build `ab-c57e923` has exactly that code; the head
+  commit (revert of iteration 6) builds the same code. Use `ab-c57e923` for runs until new code lands.
+- **Baseline:** BASELINE.md: stock (m0d-f), scripted reference (ref3a-c), and "Current build" (m1f3, `ab-401f952`,
+  iteration 3 without the it. 5 logging: 62/90). Every takeable scenario meets
+  the M1 bar except melee_only_vs_medium (0/6, never or barely attacks) and medium_vs_medium_rough (0-1/6, LASTHP).
+  The M1 defender part of the bar (new AI as defender) has not been measured yet.
+- **Run queue:** works (`ai-lab/runs/README.md`; set up by the user 2026-11-19, first request 7:35 AM ET). A full set x 3
+  takes about 10 minutes plus the build (~15 min). The build workflow now ignores pushes that only change `ai-lab/`
+  (they used to cancel pending code builds). Push code and its queue file in separate pushes; reference the code
+  commit's `ab-<sha7>`. Nothing queued or unread.
+- **Open questions for the user:** none. Rule 9 applies to the next attempt at melee_only_vs_medium (third iteration
+  on that failure: if it moves nothing, write to the user).
+- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj, not yet updated for M1.
 - **Next:**
-  1. Read m1d2 (when it lands). Confirm or correct the cause in M1 iteration 2: Spearmen pulled out by the heal
-     rules (`CvUnit::shouldHeal`, second pass sends any unit missing over 20 HP away) or held by the homeland AI
-     (garrisoning the empty home city), and never counted "in reach" by `ExecuteCaptureCityMoves`.
-  2. M1 iteration 3: the first behaviour change, behind `IsNewAI()`, inside the stock function that refuses (rule 4).
-     Write the prediction first; queue it as two launches of the four failing last-hit-point scenarios with
-     `newAI` attacker vs none, then the full set three times by the decision rule.
-  3. The other failing takeable class: melee_only_vs_medium (never attacks; the scripted attacker takes it 6/6).
+  1. medium_vs_medium_rough (LASTHP, melee left behind): the Spearmen 3 tiles out are never "in reach" (rough ground,
+     can't get adjacent in one turn), `PlotReinforcementMoves` returns early in a friendly-dominated zone that has any
+     melee strength, and they are "left to homeland", which walks them home to sentry points / garrison the empty home
+     city (m1d2 and m1d3 logs, LOG.md iterations 3 and 6). A fix inside `PlotReinforcementMoves` or the capture move to
+     bring melee up when the city is low.
+  2. melee_only_vs_medium: see iteration 6's result for the two remaining blocks (tactsim prefers no attack; heal at 68
+     HP mid-siege). Start from the "melee on city" log lines; consider making the "can this army take this city"
+     estimate one function used by `ExecuteCaptureCityMoves` and `ScoreAttackDamage` (PLAN.md M1).
+  3. Then measure the defender side of the M1 bar (`newAI: defender` vs stock), and update the dashboard.
 
 ## User rulings
 
@@ -101,6 +101,18 @@ are unchanged. melee_only_vs_medium: 540 / 35.7 x 15 x 1.58 = 358 against 250 + 
 Predicted (newAI attacker, full set x 3): melee_only_vs_medium from 0/6 to at least 5/6 by turn 7, with losses. Other
 scenarios: no capture count drops by more than 1 in 6; scenarios with ranged units mostly unaffected (the stock test
 passes once the city has taken damage). small_vs_strong and medium_vs_strong may lose more units.
+Result: m1f6a/b/c (`ab-3fd2741`, newAI attacker, full set x 3, clean): 60 of 90 (m1f3: 62). melee_only_vs_medium 0/6
+(LOWDMG 5, NOATTACK 1). Others within 1 in 6 of m1f3 (small_vs_medium 5/6, medium_vs_medium_rough 0/6), losses
+about equal. Prediction missed.
+What the log shows (m1f6a melee_only rep 1, game turns 63-74): battle turn 2, five Swordsmen "allowed" (city hp 250,
+damage 15, received 32), yet the tactsim ("6 units and 2 enemies ... 561 completed") picked positions with no attack
+and the city took 0 damage. Battle turn 3 on: the wounded Swordsman went to heal ("heal (second pass): Swordsman 1289,
+hp 68"), five were left within 2 tiles, the army test came out just short (about 302 against 333) and every attack
+was "refused (too early)" again; the second tactsim "used 807 positions, 0 completed" and the capture ABORTED.
+Decision: reverted (code only). Taught: two more blocks behind the first: (1) an allowed attack still loses to a
+no-attack position in the simulation's scoring (the "2 enemies": city and garrison, or a unit outside; look at how
+the tactsim scores a melee city attack against ending the turn adjacent, and why 0 positions complete); (2) units
+leave to heal at 68 HP mid-siege, which shrinks the army. Rule 9: the next iteration on this failure is the third.
 
 ## 2026-11-19 M1 iteration 3: no exploring with units at the enemy's walls
 Class: "shot to its last hit points, not taken, melee alive" in takeable scenarios (BASELINE.md): large_vs_strong
