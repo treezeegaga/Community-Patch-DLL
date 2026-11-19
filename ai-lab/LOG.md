@@ -2,29 +2,45 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-19, 1:20 PM ET), written by implementer 3 at handover (M1 sign-off)
+## Current state (2026-11-19, 3:30 PM ET), written by implementer 4 at handover (context past 300k)
 
-- **Milestone:** M1 closed 2026-11-19 (user sign-off). M2 (the march) starts; nothing done on it yet.
-- **Branch:** `ai/v2`. Game code = stock 5.4.8 + logging (M0 it. 2-3, M1 it. 2 and 5) + `IsNewAI()` switch + M1
-  iteration 3 (`CvEconomicAI::DoReconState`: no exploring with units within 5 tiles of an enemy city at war) + M1
-  iteration 7 (`CvTacticalAI::PlotReinforcementMoves`: own melee within 6 tiles of an enemy city at war hold 2 tiles
-  out, and step next to it once it is at half health; log "melee closing in on"). Build `ab-78d5e8a` has exactly that
-  code; later commits are ai-lab only (iteration 8 was reverted). Use `ab-78d5e8a` until new code lands.
-- **Baseline:** BASELINE.md "Current build": m1f7a/b/c (newAI attacker, 68 of 90; recounted, was written 65); defender check m1v9 vs m1s9
-  (55 vs 57 of 90). Same-build stock vs stock: m1s9a/b/c (57 of 90).
-- **Run queue:** nothing queued or unread. A full set x 3 takes about 10 minutes; a code build about 12.
-- **Open questions for the user:** none. Bars for M2 are "proposed" in PLAN.md: fix them with the user before work
-  starts (rule 6).
-- **Known side effect to watch:** iteration 7 moves melee up to strong cities the army can't take (small_vs_strong
-  losses 0.7 -> 1.7). The M4 "one estimate" item should gate it.
-- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj, updated for M1 on 2026-11-19 by implementer 4
-  (stock and new-AI battles side by side; milestones and steps current).
+- **Milestone:** M2 (the march), iteration 1 in hand (logging only, results not in). M2's bar is not fixed yet.
+- **Branch / builds:** `ai/v2`. Behaviour code is still M1's (`ab-78d5e8a`: stock 5.4.8 + logging + `IsNewAI()` +
+  M1 iterations 3 and 7). `ab-9109672` adds M2 logging (why a city is not an attack target). `0b401eb` (build
+  `ab-0b401eb`, started 3:25 PM, check it built) adds the new-AI switch read at game start and `AILab_NewAI.csv`.
+  Lab scripts are at v12 (capital and coastal targets).
+- **Baseline:** BASELINE.md "Current build" (M1). M2 baseline: LOG "M2 iteration 0" (0 of 36 AI battles left home;
+  the script took 18 of 18).
+- **Queued, not done (BOX):** `2026-11-19-12-m2d1` (M2 iteration 1: march at 8/10/12/16 tiles on `ab-9109672`, newAI
+  and stock, plus the script on 8/10/16) and then `2026-11-19-14-reg0` (regression set baseline). BOX was still on
+  watcher v1 at 2:00 PM: v1 ignores `host` and never claims; m2d1's done marker will show which version ran it.
+- **Read when in:** m2d1: per distance, did the army leave home; `MilitaryAILog.csv` lines "no army path to" and
+  "land target rejected", and `OperationalAILog.csv`. The prediction (LOG M2 iteration 1): 12 and 16 tiles log
+  "no army path" and stay home; 8 (likely 10) get a target and an operation. Fill in iteration 1's Result/Decision.
+  reg0: fill in the "Regression set" entry and add the set to BASELINE.md with the "Attackers lost" column; check
+  Lua.log for WARN lines (a skipped scenario name, "did not become the capital", "palace was put back").
+- **Two-PC check:** the first try ran on BOX only (LOG "Process: two-PC check, first try"); it measured BOX against
+  itself and fits the bar. Still needed: TREEDESKTOP set up by the user (runs/README.md, "TREEDESKTOP: one-time
+  setup"; the user said they'll do it tonight with a Claude session on that PC), then a request with three
+  TREEDESKTOP-only launches (same as pc2tree1-3: `ab-78d5e8a`, newAI none, repeats 2, siege set) compared with the
+  six pc2check launches. Queue it only once BOX runs watcher v2 (else BOX takes it). Until it passes, pin counted
+  runs to `"host": "BOX"`.
+- **Open questions for the user:** the M2 bar (propose it with m2d1's numbers; PLAN's proposal: 5 of 6 battles reach
+  80% within 3 tiles within 2 turns of the script, then capture at the M1 rate). Ask them for a quick single-player
+  check of the setup switch once `ab-0b401eb` is built (Install-NewAI.ps1, box shows in Advanced Setup, start a game,
+  `AILab_NewAI.csv` lists the AI civs, `-Remove`); the pack's .Civ5Pkg layout is unknown here. After that, the MP
+  smoke test (`ai-lab/newai/MP-SMOKE-TEST.md`).
+- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (M1 final). Its steps row for the march
+  baseline still says "Waiting": update it with M2 iteration 0 and 1.
 - **Next:**
-  1. Update the dashboard with M1's final table (BASELINE.md).
-  2. M2: read the `march` scenario set in `ai-lab/siege/SiegeLabScenarios.lua` and the old notebook's hand-over
-     failures (PLAN.md section 3), run the march set on `ab-78d5e8a` (newAI attacker and stock, 6 battles each) as M2's
-     baseline, propose the M2 bar to the user with those numbers, then extend the set (longer distance, rough terrain).
-  3. Then the loop on M2's largest failure class.
+  1. Read m2d1 when its done marker lands; record M2 iteration 1; report to the user and propose the M2 bar.
+  2. Read reg0; record the regression baseline in BASELINE.md.
+  3. M2 loop on the largest failure class (likely: the target range limit, behind `IsNewAI()`, using only what a
+     human could see).
+  4. Setup switch: the user's single-player check, then the MP smoke test.
+  5. Two-PC check with TREEDESKTOP (above).
+  6. Then the transfer check (PLAN 8a item 4), first for M1.
+  7. Update the dashboard as results land.
 
 ## User rulings
 
