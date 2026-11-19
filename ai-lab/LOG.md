@@ -45,6 +45,27 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M1 iteration 7: melee units close in on the city instead of going home
+Class: "shot to its last hit points, not taken, melee alive" in a takeable scenario: medium_vs_medium_rough LASTHP 5/6,
+CAP 1/6 (m1f3; the script takes it 6/6, turns 7-12).
+Cause (m1d3a rep 1, `PlayerTacticalAILog.csv`, game turns 19-30): on battle turn 1 both Spearmen stand 3 tiles out,
+"available 1, in reach 0" (rough ground: they can't get adjacent and still attack this turn), so the capture attempt
+runs with "0 melee" every turn. `PlotReinforcementMoves` doesn't move them either (it returns early when the zone is
+friendly-dominated and has any melee strength; otherwise its tactsim may leave units within 4 tiles unmoved), so
+they are "left to homeland" and walk off (distance 5 on turn 2, home city by turn 6). The city sits at 21 HP from
+battle turn 6 to 12 with both Spearmen alive and far away.
+Change: in `PlotReinforcementMoves` (CvTacticalAI.cpp), with `IsNewAI()`, for a land zone whose city belongs to a
+player we are at war with: every own land melee unit still usable this turn, not in an army, within 6 tiles and above
+a third of its hit points, moves to 2 tiles from the city (or holds there) while the city is above half health, and
+next to it (or holds there) once it is at half health or less. Logged as "melee closing in on <city> (ring n)". Runs
+in the reinforcement pass, after the turn's attacks, so units that attacked are not affected.
+Predicted (newAI attacker): medium_vs_medium_rough from 1/6 to at least 5/6, capture around battle turn 6-8 (the city
+passes half health on turn 5; Spearmen step adjacent then and attack the next turn); no "left to homeland" lines for
+its Spearmen. melee_only_vs_medium stays 0/6 (Swordsmen wait 2 tiles out instead of standing adjacent; the city is
+never damaged). Full set: no takeable scenario's captures drop by more than 1 in 6, capture turns within the bar.
+Build: `ab-78d5e8a`. Run: queue request 2026-11-19-08-m1f7 (m1d7: the two scenarios x 2; then m1f7a/b/c: full set x 3).
+Result: pending.
+
 ## 2026-11-19 M1 iteration 4: melee units count each other when attacking a city
 Class: "never attacks" in a takeable scenario: melee_only_vs_medium NOATTACK 6/6 (m1f3; the script takes it 6/6 by
 turn 5). Tied in size with medium_vs_medium_rough (LASTHP 5/6, melee left behind: iteration 5).
