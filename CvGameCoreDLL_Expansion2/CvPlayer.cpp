@@ -2286,6 +2286,9 @@ void CvPlayer::gameStartInit()
 	if (!isAlive())
 		return;
 
+	// AI lab (ai/v2): pick up the new-AI switch from the game setup before the first turn's moves.
+	UpdateNewAI();
+
 	if (!GC.GetEngineUserInterface()->IsLoadedGame())
 		UpdatePlots();
 
@@ -46027,6 +46030,15 @@ void CvPlayer::UpdateNewAI()
 		CvString strOption = CvString::format("GAMEOPTION_AI_V2_PLAYER_%d", (int)GetID());
 		if (GC.getGame().isOption(strOption.c_str()))
 			bNewAI = true;
+	}
+	if (bNewAI != m_bNewAI && GC.getLogging() && GC.getAILogging())
+	{
+		// One line whenever the switch changes for a player, so a game's logs show who ran the new AI.
+		FILogFile* pLog = LOGFILEMGR.GetLog("AILab_NewAI.csv", FILogFile::kDontTimeStamp);
+		CvString strOut;
+		strOut.Format("%03d, %d, %s, %s, new AI %s", GC.getGame().getElapsedGameTurns(), (int)GetID(),
+			getCivilizationShortDescription(), isHuman() ? "human" : "AI", bNewAI ? "on" : "off");
+		pLog->Msg(strOut);
 	}
 	m_bNewAI = bNewAI;
 }

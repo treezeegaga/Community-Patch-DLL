@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI lab (ai/v2): the "New AI" checkbox in game setup (single player and multiplayer). The DLL reads it in
+     CvPlayer::UpdateNewAI; with a stock DLL the option does nothing. Installed by Install-NewAI.ps1. -->
+<GameData>
+	<GameOptions>
+		<Row>
+			<Type>GAMEOPTION_AI_V2_ALL</Type>
+			<Description>TXT_KEY_GAMEOPTION_AI_V2_ALL</Description>
+			<Help>TXT_KEY_GAMEOPTION_AI_V2_ALL_HELP</Help>
+		</Row>
+	</GameOptions>
+</GameData>
