@@ -815,6 +815,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsAlive);
 	Method(IsNewAI);
 	Method(SetNewAI);
+	Method(LabEndOperations);
 	Method(IsEverAlive);
 	Method(IsPotentiallyAlive);
 	Method(IsExtendedGame);
@@ -10204,6 +10205,28 @@ int CvLuaPlayer::lSetNewAI(lua_State* L)
 	CvPlayerAI* pkPlayer = GetInstance(L);
 	pkPlayer->SetNewAI(lua_toboolean(L, 2) != 0);
 	return 0;
+}
+//------------------------------------------------------------------------------
+//int LabEndOperations(); AI lab (ai/v2) only: ends all of this player's AI operations at once (logged as killed) and
+//returns how many. The siege lab calls it between battles, so an operation aimed at the last battle's city does not
+//recruit the next battle's army. Not called by the game itself.
+int CvLuaPlayer::lLabEndOperations(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	std::vector<int> vIDs;
+	for (size_t i = 0; i < pkPlayer->getNumAIOperations(); i++)
+		vIDs.push_back(pkPlayer->getAIOperationByIndex(i)->GetID());
+	for (size_t i = 0; i < vIDs.size(); i++)
+	{
+		CvAIOperation* pOp = pkPlayer->getAIOperation(vIDs[i]);
+		if (pOp)
+		{
+			pOp->SetToAbort(AI_ABORT_KILLED);
+			pOp->Kill();
+		}
+	}
+	lua_pushinteger(L, (int)vIDs.size());
+	return 1;
 }
 //------------------------------------------------------------------------------
 //bool isEverAlive();
