@@ -16,6 +16,27 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M1 iteration 2: why melee units don't finish the city (logging only)
+Class: "shot to its last hit points, not taken" in takeable scenarios: large_vs_strong 3 of 6, siege_train_vs_strong
+4 of 6, medium_vs_medium_rough 6 of 6 (rough1/2), small_vs_medium 1 of 6 (BASELINE.md). The largest failing class.
+Iteration 1's result: sw0 (-NewAI none) and sw1 (-NewAI attacker) on `ab-d2b4f0c`: the RUN line read the switch
+back as 0,0 and 1,0. Captures 16 and 20 of 30; every difference from the baseline was in a scenario that already
+varied there (small_vs_medium, large_vs_strong, siege_train_vs_strong, medium_vs_strong), and nothing reads the
+switch yet, so it is noise from 2 battles per scenario. Decision: accepted.
+What the log shows (sw0, large_vs_strong rep 1, verified): the city reached 21 HP on battle turn 6 and stayed there
+to the end. Every turn "capture attempt ... executed: 7 units in reach, 0 melee". The three Spearmen: one was "left
+to homeland" every turn and walked to the empty home city to garrison it ("Moving Spearman 1207 to garrison"); the
+other two were in "Spearman healing at 36:16" in the homeland log for the rest of the battle.
+Inferred from code, to check: `CvUnit::shouldHeal` second pass (after attacks) sends any unit missing more than 20
+HP and not next to an enemy away to heal, with no regard for a city about to fall; and the capture attempt only
+counts melee that can get adjacent this turn, so a Spearman 3 tiles out is never part of it, and nothing moves it in.
+Change: two log lines in `CvTacticalAI.cpp`, no behaviour change: every combat unit the tactical AI sends to heal
+(pass, position, HP); and at each capture attempt, every own land melee unit within 5 tiles of the city (distance,
+HP, moves, whether it is available to the tactical AI this turn, whether it counts as in reach, its tactical move).
+Predicted: the lines show the Spearmen sent to heal in the second pass while 2-4 tiles from a city at 21 HP, or
+unavailable to the tactical AI because the homeland AI holds them.
+Result: pending (diag M1-2: large_vs_strong, siege_train_vs_strong, medium_vs_medium_rough, small_vs_medium x 2).
+
 ## 2026-11-18 M1 iteration 1: the new-AI switch (plumbing, no behaviour change)
 Class: none (plumbing, PLAN.md M1).
 Change: `CvPlayer::IsNewAI()`, the one switch every new behaviour will sit behind (rule 5). It reads custom game
@@ -29,7 +50,8 @@ the RUN line gains the two sides' switch as read back from the DLL (1 on, 0 off,
 must set the option in the game setup (M7).
 Predicted: on the new build the RUN line reads 0,0 with -NewAI none and 1,0 with -NewAI attacker, and both runs
 match the stock baseline's classes (same build behaviour, so within the noise of BASELINE.md).
-Result: pending (build, then sw0 and sw1).
+Result: see M1 iteration 2.
+Decision: accepted.
 
 ## 2026-11-18 M0 iteration 10: an aggressive scripted attacker
 Class: the reference script still played worse than the stock AI.

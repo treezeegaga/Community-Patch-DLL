@@ -976,6 +976,28 @@ void CvTacticalAI::ExecuteCaptureCityMoves()
 
 				//finally do the attack. be a bit more careful if we have few melee units
 				CvString strCityName = pCity->getNameNoSpace(); //the city may be gone after the attack
+
+				//AI lab logging: every own melee unit near the city, and whether this turn's attack can use it
+				if (GC.getLogging() && GC.getAILogging())
+				{
+					int iLoopUnit = 0;
+					for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoopUnit); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoopUnit))
+					{
+						if (!pLoopUnit->IsCombatUnit() || pLoopUnit->IsCanAttackRanged() || pLoopUnit->getDomainType() != DOMAIN_LAND)
+							continue;
+						int iDist = plotDistance(*pLoopUnit->plot(), *pPlot);
+						if (iDist > 5)
+							continue;
+						bool bInReach = false;
+						for (unsigned int iI = 0; iI < m_CurrentMoveUnits.size(); iI++)
+							if (m_CurrentMoveUnits[iI].GetID() == pLoopUnit->GetID())
+								bInReach = true;
+						bool bAvailable = std::find(m_CurrentTurnUnits.begin(), m_CurrentTurnUnits.end(), pLoopUnit->GetID()) != m_CurrentTurnUnits.end();
+						LogTacticalMessage(CvString::format("Zone %d, melee near %s: %s %d at distance %d, hp %d, moves %d, available %d, in reach %d, tactical move %d",
+							pZone ? pZone->GetZoneID() : -1, strCityName.c_str(), pLoopUnit->getName().c_str(), pLoopUnit->GetID(), iDist,
+							pLoopUnit->GetCurrHitPoints(), pLoopUnit->getMoves(), bAvailable ? 1 : 0, bInReach ? 1 : 0, (int)pLoopUnit->getTacticalMove()));
+					}
+				}
 				bool bAttackDone = ExecuteAttackWithUnits(pPlot, iMeleeCount>2 ? AL_HIGH : AL_MEDIUM);
 
 				if (GC.getLogging() && GC.getAILogging())
@@ -1400,7 +1422,13 @@ void CvTacticalAI::PlotHealMoves(bool bFirstPass)
 			continue;
 
 		if (pUnit->shouldHeal(bFirstPass))
+		{
 			m_CurrentMoveUnits.push_back(CvTacticalUnit(pUnit->GetID()));
+			if (GC.getLogging() && GC.getAILogging() && pUnit->IsCombatUnit())
+				LogTacticalMessage(CvString::format("heal (%s pass): %s %d at %d:%d, hp %d of %d",
+					bFirstPass ? "first" : "second", pUnit->getName().c_str(), pUnit->GetID(),
+					pUnit->getX(), pUnit->getY(), pUnit->GetCurrHitPoints(), pUnit->GetMaxHitPoints()));
+		}
 	}
 
 	if(m_CurrentMoveUnits.size() > 0)
