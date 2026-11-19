@@ -8,6 +8,8 @@ on:
   push:
     # AI A/B tests (fork only): the integration branch and the topic sessions' branches build on every push
     branches: [ master, 'claude/ab-c1', 'ai/**' ]
+    # lab requests and results (ai-lab/) don't need a build, and a run they start would cancel a pending code build
+    paths-ignore: [ 'ai-lab/**' ]
     tags:
       - 'Release-*'  # Triggers on official releases (always builds)
   pull_request:
