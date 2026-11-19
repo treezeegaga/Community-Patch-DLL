@@ -45,6 +45,32 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M1 iteration 3: no exploring with units at the enemy's walls
+Class: "shot to its last hit points, not taken, melee alive" in takeable scenarios (BASELINE.md): large_vs_strong
+3/6, siege_train_vs_strong 4/6, medium_vs_medium_rough 6/6, small_vs_medium 1/6. Still the largest failing class.
+Iteration 2's result: m1d2 (`ab-30a92af`, the four scenarios x 2, stock AI): small_vs_medium 2/2 and large_vs_strong
+2/2 captured, siege_train_vs_strong 1/2, medium_vs_medium_rough 0/2 (LASTHP both). **The heal cause is wrong:** not
+one attacking melee unit was sent to heal by the tactical AI (0 "heal (" lines for Songhai melee).
+Cause (verified, `PlayerEconomyAILog.csv` with the "melee near" lines): `CvEconomicAI::DoReconState` turns melee
+units into explorers ("Creating new land explorer (Swordsman 1222). Have 0, want 2.73"). It takes candidates
+farthest from the player's own cities first, i.e. the army at the enemy's walls, and units become candidates when
+more than 3 turns old, which is battle turn 4 in the lab. siege_train_vs_strong rep 2: Swordsmen 1222 (94 HP) and
+1221 converted on battle turns 7 and 8, "available 0" to the tactical AI from then on, city at 21 HP for 4 turns.
+The same in every run since m0d: in every LASTHP battle of siege_train_vs_strong (6), large_vs_strong (6) and
+small_vs_medium (1) in m0d-f, sw0, sw1 and m1d2, 2 or 3 of the 2-3 melee units were converted, most on battle turns
+4-8; in captured battles usually 0-2, later. medium_vs_medium_rough: one Spearman converted on turn 4; the other
+"left to homeland" and walked to garrison the empty home city (a second cause, for later). The earlier "Spearman
+healing" lines in the homeland log were explorers healing. The lab inflates how often this fires (no scouts, a
+mostly unknown map: want 2.5 explorers), but the decision itself is a blunder a human wouldn't make.
+Change: in `DoReconState`, with `IsNewAI()`, a combat unit that isn't a native explorer is not a candidate while it
+is within 5 tiles of a revealed city of a player we are at war with (`CvEconomicAI::IsNearEnemyCityAtWar`); logged
+as "Not exploring with ...". Revealed cities only, no saved state, deterministic.
+Predicted (newAI attacker, 6 battles each): no attacking melee unit converted within 5 tiles of the city.
+siege_train_vs_strong and large_vs_strong to at least 4/6 captured (from 2/6), small_vs_medium at least 5/6 (from
+4/6); medium_vs_medium_rough may stay failing (the second Spearman still goes home): at most 3/6. Then the full set:
+no other scenario's captures drop by more than 1 in 6; melee_only_vs_medium stays at 0/6 (a different cause).
+Result: pending.
+
 ## 2026-11-19 Process: run queue and handover rule (user request)
 The user asked for two things, now in PLAN.md: a handover rule (section 12: at milestone sign-off or above
 300,000 tokens of context, write the current state, start a successor Opus 5.5 session with a fixed prompt, tell
