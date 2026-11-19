@@ -1,0 +1,35 @@
+{
+    "id":  "2026-11-19-01-qtest",
+    "status":  "done",
+    "message":  "",
+    "watcherVersion":  1,
+    "host":  "BOX",
+    "started":  "2026-11-19T07:35:35",
+    "finished":  "2026-11-19T07:37:36",
+    "requestCommit":  "c5cd91ba7",
+    "stockDll":  "ok",
+    "launches":  [
+                     {
+                         "label":  "qtest",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/qtest-20261119-0735-run",
+                         "summary":  [
+                                         "  dll: Saved the stock DLL ( copies) to C:\\Users\\itstr\\AppData\\Local\\cp-ai-lab\\stock-dll",
+                                         "  results: Run: lab v9, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker off, defender off",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\qtest-20261119-0737.results.csv",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\qtest-20261119-0737.turns.csv",
+                                         "  results: Saved 73 log file(s) from this launch (2 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\qtest-20261119-0737-logs; folder listing in _logs-folder.txt",
+                                         "  results: Scenario      Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength",
+                                         "  results: --------      ------- -------- ------------ ------------- ---------- -------------- ---------- -------------",
+                                         "  results: small_vs_weak       1        1 2.0          100           0.0        0.0            2.0 of 2   924          ",
+                                         "  results: 1 of 1 battles ended in a capture.",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0
+                     }
+                 ]
+}
