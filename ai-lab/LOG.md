@@ -59,6 +59,17 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 Regression set: baseline (measurement only; user addition, PLAN.md 8a)
+Lab v12 (scripts only): a scenario's city can be the defender's capital (`capital`: the palace moves from the reserve
+city for the battle; the game hands it back when the target falls or is wiped, and the lab checks that) or on the
+coast (`coast`: sea on its north side out to 4 tiles). New set `regress` in SiegeLabScenarios.lua:
+regress_capital and regress_coastal (both medium_vs_medium with that one change), regress_medieval (2 trebuchets,
+4 crossbows, 3 longswords vs pop 8, walls and castle, crossbow inside, 2 pikes outside; 15 turns) and
+regress_artillery (3 artillery, 4 riflemen vs pop 12, walls, castle and arsenal, rifleman inside, 2 outside;
+15 turns). Units lost is the summary's "Attackers lost" column and goes into BASELINE.md for this set.
+Queued: `2026-11-19-14-reg0`, `ab-78d5e8a`, newAI attacker and stock, 3 launches x 2 repeats each, on BOX.
+Result: (pending)
+
 ## 2026-11-19 Process: two-PC check, first try (BOX ran both halves)
 The request `2026-11-19-13-pc2check` ran on BOX between 2:00 and 2:21 PM ET under watcher v1, which predates the
 `host` field, so BOX also ran the three launches pinned to TREEDESKTOP (`ab-9109672` was not out yet, so v1 skipped
