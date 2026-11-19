@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-19-08-m1f7",
+  "why": "M1 iteration 7: melee close in on the enemy city instead of going home; targeted pair first, then full set x3",
+  "launches": [
+    { "label": "m1d7", "release": "ab-78d5e8a", "only": ["medium_vs_medium_rough", "melee_only_vs_medium"], "repeats": 2, "newAI": "attacker" },
+    { "label": "m1f7a", "release": "ab-78d5e8a", "repeats": 2, "newAI": "attacker" },
+    { "label": "m1f7b", "release": "ab-78d5e8a", "repeats": 2, "newAI": "attacker" },
+    { "label": "m1f7c", "release": "ab-78d5e8a", "repeats": 2, "newAI": "attacker" }
+  ]
+}
