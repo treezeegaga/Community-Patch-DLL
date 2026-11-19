@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 12
+local VERSION = 13
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -479,6 +479,19 @@ local function beginScenario()
 	local old = targetCity()
 	if old then Players[old:GetOwner()]:Disband(old) end
 	lab.cleaning = false
+
+	-- Lab v13: end both sides' AI operations. Otherwise an attack operation aimed at the last battle's city lives on
+	-- and recruits the next battle's army for a city that is no longer there (m2n1a: the 10-tile march battle's army
+	-- went to the 8-tile battle's operation and sat at home). Needs a DLL with Player:LabEndOperations (ab-<commit>
+	-- from 2026-11-19 on); with an older DLL the lab warns once per battle.
+	for _, p in ipairs({ attacker, defender }) do
+		if p.LabEndOperations then
+			local n = p:LabEndOperations()
+			if n > 0 then out("NOTE," .. sc.name .. ": ended " .. n .. " leftover AI operation(s) of player " .. p:GetID()) end
+		else
+			out("WARN," .. sc.name .. ": this DLL can't end leftover AI operations (no Player:LabEndOperations)")
+		end
+	end
 
 	-- The reserve city must be the defender's capital again after a capital battle (lab v12).
 	local reserve = lab.reservePlot and lab.reservePlot:GetPlotCity()
