@@ -107,7 +107,9 @@ function Get-PackDllHash {
 
 # Pushes results (paths no other PC writes). Rebase keeps other PCs' new commits.
 function Push-Results([string]$message) {
-    Invoke-Git @("add", "-f", "ai-lab/siege/results", "ai-lab/runs/launches") | Out-Null
+    foreach ($dir in @("ai-lab/siege/results", "ai-lab/runs/launches")) {
+        if (Test-Path (Join-Path $Repo $dir)) { Invoke-Git @("add", "-f", $dir) | Out-Null }
+    }
     $staged = & git -C $Repo diff --cached --name-only
     if ($staged) { Invoke-Git @("commit", "-q", "-m", $message) | Out-Null }
     for ($i = 1; $i -le 4; $i++) {
