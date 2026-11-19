@@ -1,0 +1,8 @@
+{
+  "id": "2026-11-19-02-m1d3",
+  "why": "M1 iteration 3: no exploring with units near an enemy city at war; the four last-hit-point scenarios, new AI attacker, 6 battles each",
+  "launches": [
+    { "label": "m1d3a", "release": "ab-22902fd", "newAI": "attacker", "only": ["small_vs_medium", "large_vs_strong", "siege_train_vs_strong", "medium_vs_medium_rough"], "repeats": 3 },
+    { "label": "m1d3b", "release": "ab-22902fd", "newAI": "attacker", "only": ["small_vs_medium", "large_vs_strong", "siege_train_vs_strong", "medium_vs_medium_rough"], "repeats": 3 }
+  ]
+}
