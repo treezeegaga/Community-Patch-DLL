@@ -1,0 +1,7 @@
+{
+  "id": "2026-11-19-06-m1d5",
+  "why": "M1 iteration 5 (logging only): why melee units next to a city don't attack it; melee_only_vs_medium and medium_vs_medium_rough x 2",
+  "launches": [
+    { "label": "m1d5", "release": "ab-c57e923", "newAI": "attacker", "only": ["melee_only_vs_medium", "medium_vs_medium_rough"], "repeats": 2 }
+  ]
+}
