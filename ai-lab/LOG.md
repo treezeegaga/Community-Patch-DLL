@@ -76,8 +76,14 @@ turn 9; stock 2/6), medium_vs_medium_rough 0/6 (LASTHP 6, as predicted). All mel
 104 "Not exploring with" lines. Conversions still seen (large_vs_strong 6, rough 6) were all of Spearmen that the
 tactical AI had "left to homeland" and that had walked more than 5 tiles off (to sentry points or to garrison the
 home city) before being converted: the second cause, not a gap in this change. Targeted prediction met.
-Next: the full set three times (queue 2026-11-19-04-m1f3) for the "no other scenario worse" part of the rule.
-Decision: pending the full set.
+Full set: m1f3a/b/c (`ab-401f952`, newAI attacker, 3 launches x 2 = 6 per scenario, no assertions, no lab errors):
+62 of 90 captured (stock baseline m0d-f: 50). small_vs_medium 6/6 (turns 6-7), large_vs_strong 6/6 (6-7),
+siege_train_vs_strong 6/6 (6-9). No scenario's captures dropped; no losses rose (mean losses equal or lower
+everywhere). Untargeted moves: medium_vs_strong 1/6 (turn 12; stock 0/6), medium_vs_medium_rough 1/6 (turn 5).
+melee_only_vs_medium 0/6 (NOATTACK 6), ranged_only_vs_weak WALK 6, small_vs_strong 0/6: unchanged.
+Decision: accepted. Three of the five failing takeable scenarios now meet the M1 bar (5 of 6 within the reference
+turns). Left: medium_vs_medium_rough and melee_only_vs_medium. Taught: the AI's own logs beat inference from code;
+iteration 2's heal theory was plausible and wrong.
 
 ## 2026-11-19 Process: run queue and handover rule (user request)
 The user asked for two things, now in PLAN.md: a handover rule (section 12: at milestone sign-off or above
