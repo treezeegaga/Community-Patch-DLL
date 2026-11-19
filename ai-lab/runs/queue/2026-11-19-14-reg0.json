@@ -1,0 +1,54 @@
+{
+  "id": "2026-11-19-14-reg0",
+  "why": "Regression set baseline (lab v12): capital, coastal, medieval, artillery era; current build (newAI attacker) and stock x6 each on ab-78d5e8a",
+  "launches": [
+    {
+      "label": "rgn0a",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgs0a",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgn0b",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgs0b",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgn0c",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgs0c",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}

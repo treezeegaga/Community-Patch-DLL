@@ -18,10 +18,10 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 11
+local VERSION = 12
 local TAG = "[SiegeLab] "
 
-local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
+local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
 local NO_PLAYER = -1
 local NO_FLOWDIRECTION = 7   -- FlowDirectionTypes in CvEnums.h: the six directions, a count, then this (not -1)
 
@@ -230,6 +230,20 @@ local function applyScenarioTerrain(sc)
 				end
 			end
 		end
+	end
+	if sc.city.coast then
+		-- Lab v12: sea on the city's north side, out to 4 tiles, so the city is on the coast (a body of water
+		-- this size counts as sea, not a lake). The attacker's row and the defenders' east side stay land.
+		local coast = typeID("TERRAIN_COAST")
+		forEachArenaPlot(function(p)
+			local d = Map.PlotDistance(p:GetX(), p:GetY(), tx, ty)
+			if d >= 1 and d <= 4 and p:GetY() > ty then
+				clearPlot(p)
+				p:SetPlotType(PLOT_OCEAN, false, true, false)
+				p:SetTerrainType(coast, false, true)
+				lab.changedPlots[#lab.changedPlots + 1] = p
+			end
+		end)
 	end
 	Map.RecalculateAreas()
 end
@@ -466,6 +480,13 @@ local function beginScenario()
 	if old then Players[old:GetOwner()]:Disband(old) end
 	lab.cleaning = false
 
+	-- The reserve city must be the defender's capital again after a capital battle (lab v12).
+	local reserve = lab.reservePlot and lab.reservePlot:GetPlotCity()
+	if reserve and not reserve:IsCapital() then
+		reserve:SetNumRealBuilding(typeID("BUILDING_PALACE"), 1)
+		out("WARN," .. sc.name .. ": the palace was put back in the reserve city by the lab")
+	end
+
 	-- Where the target city stands: 12 tiles east of the attacker's home (the arena's fixed spot), or for a march
 	-- scenario homeDistance tiles (lab v11). Moving it leaves the old spot's ruins to clear.
 	local wantTx = lab.hx + ((sc.atHome and sc.homeDistance) or (TARGET_DX - HOME_DX))
@@ -489,6 +510,16 @@ local function beginScenario()
 	city:SetPopulation(sc.city.population or 1, true)
 	for _, name in ipairs(sc.city.buildings or {}) do
 		city:SetNumRealBuilding(typeID(name), 1)
+	end
+	if sc.city.capital then
+		-- Lab v12: the target is the defender's capital for this battle. The palace moves here from the reserve
+		-- city; when the target falls or is wiped, the game hands it back to the reserve (CvCity::kill ->
+		-- findNewCapital), and the next battle checks that it did.
+		local palace = typeID("BUILDING_PALACE")
+		local reserve = lab.reservePlot:GetPlotCity()
+		if reserve then reserve:SetNumRealBuilding(palace, 0) end
+		city:SetNumRealBuilding(palace, 1)
+		if not city:IsCapital() then out("WARN," .. sc.name .. ": the target city did not become the capital") end
 	end
 	city:SetDamage(0, true)
 
@@ -951,6 +982,7 @@ local function startLab()
 		return
 	end
 	lab.incomePlot = { [attackerID] = Map.GetPlot(lab.hx, lab.hy), [defenderID] = reservePlot }
+	lab.reservePlot = reservePlot
 	lab.extraGold = {}
 	lab.cleaning = true
 	for id = 0, maxPlayers() - 1 do

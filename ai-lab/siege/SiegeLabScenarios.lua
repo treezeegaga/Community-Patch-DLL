@@ -14,7 +14,9 @@
 --   attackerTechs / defenderTechs
 --                   techs each side has; their prerequisites are added automatically. Everything else is removed.
 --   army            { { unit type, count [, xp] }, ... } for the attacker
---   city            population, buildings, hill (city on a hill), garrison (unit type inside the city)
+--   city            population, buildings, hill (city on a hill), garrison (unit type inside the city),
+--                   capital (lab v12: the defender's palace moves to it for the battle),
+--                   coast (lab v12: sea on its north side out to 4 tiles)
 --   defenders       { { unit type, count }, ... } placed next to the city
 --   terrain         "open" (default) or "rough" (forest and hills on the approach)
 --
@@ -27,6 +29,12 @@ local WARRIOR = "UNIT_WARRIOR"
 local ARCHER = "UNIT_ARCHER"
 local SWORD = "UNIT_SWORDSMAN"
 local CATAPULT = "UNIT_CATAPULT"
+local TREBUCHET = "UNIT_TREBUCHET"
+local CROSSBOW = "UNIT_CROSSBOWMAN"
+local LONGSWORD = "UNIT_LONGSWORDSMAN"
+local PIKE = "UNIT_PIKEMAN"
+local ARTILLERY = "UNIT_ARTILLERY"
+local RIFLE = "UNIT_RIFLEMAN"
 
 -- What a Composite Bowman timing attack has researched, and what its victim has.
 local A_CLASSICAL = { "TECH_CONSTRUCTION", "TECH_BRONZE_WORKING" }
@@ -108,4 +116,31 @@ SiegeLabScenarios.march = {
 	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
 	{ name = "march_medium_vs_medium_d16", turns = 25, atHome = true, homeDistance = 16, attackerTechs = A_CLASSICAL,
 	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
+}
+
+-- The regression set (user request 2026-11-19, PLAN.md section 8a): cases the main sets don't cover, run on stock
+-- and on each new build so a fix for one milestone can't quietly break them. Units lost is reported per scenario.
+-- regress_capital and regress_coastal are medium_vs_medium with one thing changed, so they read against it.
+local A_MEDIEVAL = { "TECH_PHYSICS", "TECH_MACHINERY", "TECH_STEEL" }
+local D_MEDIEVAL = { "TECH_CHIVALRY", "TECH_CIVIL_SERVICE", "TECH_MACHINERY", "TECH_MASONRY" }
+local A_ARTILLERY = { "TECH_DYNAMITE", "TECH_RIFLING" }
+local D_INDUSTRIAL = { "TECH_RIFLING", "TECH_RAILROAD", "TECH_CHIVALRY", "TECH_MASONRY" }
+
+SiegeLabScenarios.regress = {
+	{ name = "regress_capital", turns = 12, startDistance = 3, attackerTechs = A_CLASSICAL, defenderTechs = D_ANCIENT,
+	  army = ARMY_MEDIUM,
+	  city = { population = 6, buildings = { "BUILDING_WALLS" }, garrison = ARCHER, capital = true } },
+	{ name = "regress_coastal", turns = 12, startDistance = 3, attackerTechs = A_CLASSICAL, defenderTechs = D_ANCIENT,
+	  army = ARMY_MEDIUM,
+	  city = { population = 6, buildings = { "BUILDING_WALLS" }, garrison = ARCHER, coast = true } },
+	-- Trebuchets, crossbows and longswords against a walled and castled city with pikes outside.
+	{ name = "regress_medieval", turns = 15, startDistance = 3, attackerTechs = A_MEDIEVAL, defenderTechs = D_MEDIEVAL,
+	  army = { { TREBUCHET, 2 }, { CROSSBOW, 4 }, { LONGSWORD, 3 } },
+	  city = { population = 8, buildings = { "BUILDING_WALLS", "BUILDING_CASTLE" }, garrison = CROSSBOW },
+	  defenders = { { PIKE, 2 } } },
+	-- Artillery (range 3) and riflemen against walls, castle and arsenal.
+	{ name = "regress_artillery", turns = 15, startDistance = 3, attackerTechs = A_ARTILLERY, defenderTechs = D_INDUSTRIAL,
+	  army = { { ARTILLERY, 3 }, { RIFLE, 4 } },
+	  city = { population = 12, buildings = { "BUILDING_WALLS", "BUILDING_CASTLE", "BUILDING_ARSENAL" }, garrison = RIFLE },
+	  defenders = { { RIFLE, 2 } } },
 }
