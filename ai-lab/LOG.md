@@ -45,6 +45,17 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M2 iteration 0: the march baseline (measurement only)
+Class: none yet. M2's question: does an army that starts at home (12 tiles away) arrive ready and then take the city?
+Change: lab v10 (Lua only, no build): each TURN line adds AttackersWithin3, MeleeWithin3, RangedWithin3; each RESULT
+adds FirstArrivalTurn (first turn any unit is within 3 tiles of the city) and ReadyTurn (first turn at least 80% of
+the starting army is within 3 tiles with melee and ranged among them, or the capture turn). The bar's "within 2 turns
+of each other" is read as ReadyTurn - FirstArrivalTurn <= 2.
+Run: queue request 2026-11-19-11-m2base: the march set (march_medium_vs_weak, march_medium_vs_medium,
+march_large_vs_medium; 25 turns) on `ab-78d5e8a`, newAI attacker (m2n0a/b/c), stock (m2s0a/b/c) and the scripted
+attacker (m2r0a/b/c), 6 battles each.
+Result: (pending)
+
 ## 2026-11-19 M1 iteration 9: the new AI as defender (measurement only)
 Class: none (the M1 bar's defender part: new AI as defender must not make stock attackers more successful than the
 stock defender does).

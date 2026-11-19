@@ -1,0 +1,72 @@
+{
+  "id": "2026-11-19-11-m2base",
+  "why": "M2 baseline: the march set (lab v10, arrival measures) with new-AI, stock and scripted attackers, 6 battles each",
+  "launches": [
+    {
+      "label": "m2n0a",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s0a",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2r0a",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2n0b",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s0b",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2r0b",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2n0c",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s0c",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2r0c",
+      "release": "ab-78d5e8a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2
+    }
+  ]
+}

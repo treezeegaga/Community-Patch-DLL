@@ -21,9 +21,10 @@ if ($Label -notmatch '^[A-Za-z0-9_.-]+$') { throw "-Label is letters, digits, do
 $resultColumns = "Scenario", "Rep", "Captured", "CaptureTurn", "TurnsRun", "CityMaxHP", "MaxDamage", "FinalDamage",
     "AttackersStart", "AttackersAlive", "AttackersKilledByEnemy", "DefendersStart", "DefendersAlive",
     "DefendersKilledByEnemy", "EngagedTurns", "IdleTurns", "MinMeanDistance", "FinalMeanDistance", "GameTurn",
-    "MeleeStart", "MeleeAlive"
+    "MeleeStart", "MeleeAlive", "FirstArrivalTurn", "ReadyTurn"
 $turnColumns = "Scenario", "Rep", "Turn", "DamageBefore", "DamageAfter", "AttackersAlive", "AttackersWithin2",
-    "MeanDistance", "AttackersFought", "DefendersAlive", "Captured", "Late", "MeleeAlive"
+    "MeanDistance", "AttackersFought", "DefendersAlive", "Captured", "Late", "MeleeAlive",
+    "AttackersWithin3", "MeleeWithin3", "RangedWithin3"
 $startColumns = "Scenario", "Rep", "GameTurn", "CityStrength", "CityMaxHP", "Attackers", "Defenders", "AttackerGoldRate"
 
 function ConvertTo-Row([string[]]$columns, [string[]]$values) {
@@ -129,6 +130,13 @@ $summary = foreach ($g in ($results | Group-Object Scenario)) {
     if ($rows[0].MeleeStart -ne "") {
         $melee = "{0:N1} of {1}" -f (($rows | ForEach-Object { [double]$_.MeleeAlive } | Measure-Object -Average).Average), $rows[0].MeleeStart
     }
+    # The march (lab v10+): turn the army was ready at the city (80% within 3 tiles), and how many battles got there.
+    $ready = @($rows | Where-Object { $_.ReadyTurn -ne "" -and $_.ReadyTurn -ne $null -and [int]$_.ReadyTurn -gt 0 })
+    $readyText = ""
+    if ($rows[0].ReadyTurn -ne "" -and $rows[0].ReadyTurn -ne $null) {
+        $readyText = "{0} of {1}" -f $ready.Count, $rows.Count
+        if ($ready.Count -gt 0) { $readyText += (", turn {0:N1}" -f (($ready | ForEach-Object { [double]$_.ReadyTurn } | Measure-Object -Average).Average)) }
+    }
     New-Object PSObject -Property ([ordered]@{
         Scenario = $g.Name
         Battles = $rows.Count
@@ -139,6 +147,7 @@ $summary = foreach ($g in ($results | Group-Object Scenario)) {
         "Attackers lost" = "{0:N1}" -f $lost
         "Melee left" = $melee
         "City strength" = $rows[0].CityStrength
+        "Ready" = $readyText
     })
 }
 $summary | Format-Table -AutoSize

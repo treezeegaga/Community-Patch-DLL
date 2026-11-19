@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 9
+local VERSION = 10
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -455,6 +455,7 @@ local function beginScenario()
 	local attacker, defender = Players[lab.attacker], Players[lab.defender]
 	cur = { sc = sc, rep = entry.rep, t = 0, startTurn = Game.GetGameTurn(), captured = false, captureTurn = -1,
 	        maxDamage = 0, idleTurns = 0, engagedTurns = 0, minMeanDist = -1, lastMeanDist = -1,
+	        firstArrival = -1, readyTurn = -1,
 	        killedByEnemy = { [lab.attacker] = 0, [lab.defender] = 0 }, counted = {}, sampled = true }
 
 	-- Wipe what the last scenario left.
@@ -572,37 +573,54 @@ local function sampleTurn(late)
 
 	local alive = rosterAlive(lab.attacker, cur.attRoster)
 	local fought, within2, distSum = 0, 0, 0
+	local within3, meleeWithin3, rangedWithin3 = 0, 0, 0
 	for _, unit in ipairs(alive) do
 		local d = Map.PlotDistance(unit:GetX(), unit:GetY(), lab.tx, lab.ty)
 		distSum = distSum + d
 		if d <= 2 then within2 = within2 + 1 end
+		if d <= 3 then
+			within3 = within3 + 1
+			if cur.attRoster[unit:GetID()] == "melee" then meleeWithin3 = meleeWithin3 + 1
+			else rangedWithin3 = rangedWithin3 + 1 end
+		end
 		local before = cur.xp[unit:GetID()]
 		if before and unit:GetExperience() > before then fought = fought + 1 end
 	end
 	local meanDist = (#alive > 0) and (distSum / #alive) or -1
 	cur.lastMeanDist = meanDist
+	-- The march (M2): the first turn any unit is within 3 tiles of the city, and the first turn the army is
+	-- "ready": at least 80% of the units it started with within 3 tiles, melee and ranged among them (if it
+	-- started with both). A capture before that counts as ready on the capture turn.
+	if within3 > 0 and cur.firstArrival < 0 then cur.firstArrival = cur.t end
+	if cur.readyTurn < 0 then
+		local hasMelee, hasRanged = cur.meleeStart > 0, cur.attStart > cur.meleeStart
+		if (within3 >= math.ceil(0.8 * cur.attStart) and (not hasMelee or meleeWithin3 > 0)
+		    and (not hasRanged or rangedWithin3 > 0)) or cur.captureTurn == cur.t then
+			cur.readyTurn = cur.t
+		end
+	end
 	if meanDist >= 0 and (cur.minMeanDist < 0 or meanDist < cur.minMeanDist) then cur.minMeanDist = meanDist end
 
 	-- A turn counts as engaged if a unit gained experience, the city ended it more damaged, or it fell.
 	local engaged = fought > 0 or cur.captureTurn == cur.t or (damageAfter >= 0 and damageAfter > cur.damageBefore)
 	if engaged then cur.engagedTurns = cur.engagedTurns + 1 else cur.idleTurns = cur.idleTurns + 1 end
 
-	out(string.format("TURN,%s,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d", cur.sc.name, cur.rep, cur.t,
+	out(string.format("TURN,%s,%d,%d,%d,%d,%d,%d,%.1f,%d,%d,%d,%d,%d,%d,%d,%d", cur.sc.name, cur.rep, cur.t,
 		cur.damageBefore, damageAfter, #alive, within2, meanDist, fought,
 		#rosterAlive(lab.defender, cur.defRoster), cur.captured and 1 or 0, late and 1 or 0,
-		meleeAlive(lab.attacker, cur.attRoster)))
+		meleeAlive(lab.attacker, cur.attRoster), within3, meleeWithin3, rangedWithin3))
 end
 
 local function finishScenario()
 	local city = targetCity()
 	local finalDamage = -1
 	if not cur.captured and city then finalDamage = city:GetDamage() end
-	out(string.format("RESULT,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%.1f,%d,%d,%d", cur.sc.name, cur.rep,
+	out(string.format("RESULT,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%.1f,%.1f,%d,%d,%d,%d,%d", cur.sc.name, cur.rep,
 		cur.captured and 1 or 0, cur.captureTurn, cur.t, cur.cityMaxHP or -1, cur.maxDamage, finalDamage,
 		cur.attStart or 0, #rosterAlive(lab.attacker, cur.attRoster or {}), cur.killedByEnemy[lab.attacker],
 		cur.defStart or 0, #rosterAlive(lab.defender, cur.defRoster or {}), cur.killedByEnemy[lab.defender],
 		cur.engagedTurns, cur.idleTurns, cur.minMeanDist, cur.lastMeanDist, Game.GetGameTurn(),
-		cur.meleeStart or 0, meleeAlive(lab.attacker, cur.attRoster or {})))
+		cur.meleeStart or 0, meleeAlive(lab.attacker, cur.attRoster or {}), cur.firstArrival, cur.readyTurn))
 	cur = nil
 	lab.index = lab.index + 1
 end
