@@ -60,10 +60,16 @@ Notes on the scenarios that don't agree 5 of 6:
 | large_vs_medium | 6/6 | 3 | 0.0 | 6 | yes |
 | large_vs_strong | 6/6 | 6-8 | 0.5 | 12 | yes (stock 2/6) |
 | ref_cb4_melee6_vs_walls | 6/6 | 5 | 0.0 | 9 | yes |
-| melee_only_vs_medium | 0/6 | | 0.0 | 7 | **no** (never attacks) |
+| melee_only_vs_medium | 0/6 | | 0.0 | 7 | **no**, set aside by the user (2026-11-19) |
 | ranged_only_vs_weak | 0/6 | | 0.0 | not takeable | |
 | siege_train_vs_strong | 6/6 | 6-8 | 0.0 | 9 | yes (stock 2/6) |
 | medium_vs_medium_rough | 6/6 | 5 | 0.0 | 12 | yes (stock 0/6) |
+
+## New AI as defender (M1 bar, defender part)
+
+`ab-78d5e8a`, 2026-11-19, stock attacker, 6 battles per scenario: against the new-AI defender (m1v9a/b/c) 55 of 90
+captured; against the stock defender on the same build and lab (m1s9a/b/c) 57 of 90. No scenario more than 1 in 6
+worse for the defender (large_vs_strong 3/6 vs 2/6). Met.
 
 ## Takeable list (proposed for the user's sign-off)
 

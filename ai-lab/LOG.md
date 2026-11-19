@@ -56,7 +56,14 @@ city it is at war with, so as defender it should change little.
 Predicted: stock attacker vs new-AI defender (m1v9a/b/c) captures no more than stock vs stock on the same build and
 lab (m1s9a/b/c), within 1 in 6 per scenario.
 Run: queue request 2026-11-19-10-m1v9.
-Result: pending.
+Result: m1v9a/b/c (stock attacker vs new-AI defender) and m1s9a/b/c (stock vs stock), `ab-78d5e8a`, 6 battles per
+scenario each, interleaved launches, all clean. Captures: 55 of 90 against the new-AI defender, 57 of 90 against the
+stock defender (m0d-f on lab v6: 50). Per scenario, stock attackers did better against the new AI only in
+large_vs_strong (3/6 vs 2/6, within 1 in 6); worse in siege_train_vs_strong (4/6 vs 6/6) and small_vs_medium (5/6 vs
+6/6); the rest equal. Same-build stock-vs-stock also confirms the stock baseline's shape (large_vs_strong 2/6,
+medium_vs_medium_rough 0/6, melee_only 0/6).
+Decision: the defender part of the M1 bar is met.
+
 
 ## 2026-11-19 M1 iteration 8: a melee army that can wear the city down attacks it (third try on melee_only)
 Class: "never attacks" in a takeable scenario: melee_only_vs_medium NOATTACK 6/6 (m1f7; script 6/6 by turn 5, 0.7 lost).
