@@ -45,6 +45,25 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M1 iteration 4: melee units count each other when attacking a city
+Class: "never attacks" in a takeable scenario: melee_only_vs_medium NOATTACK 6/6 (m1f3; the script takes it 6/6 by
+turn 5). Tied in size with medium_vs_medium_rough (LASTHP 5/6, melee left behind: iteration 5).
+Cause (m1f3a rep 1, `PlayerTacticalAILog.csv`): from battle turn 2 four to six full-health Swordsmen stand next to the
+city, "capture attempt ... executed: 6 units in reach, 6 melee", and the city takes 0 damage in 12 turns. So the
+capture move runs and the combat simulation assigns no attack. In `ScoreAttackDamage` (CvTacticalAI.cpp) a melee attack
+on a city is impossible when the attacker would be worn down before the city ("fRemainingTurnsOnAttacker <
+fRemainingTurnsOnCity"), unless it is a "good first attack" (damage received under 23). Turns on the city are counted
+from this one unit's damage or the city's damage taken last turn; with no ranged units the city never took damage, so
+each Swordsman alone faces 250 HP and the city's full strike, and none starts. The stock comment says it: "ideally
+ranged units start attacking and melee joins in later".
+Change: with `IsNewAI()`, the turns-on-the-city estimate multiplies the unit's damage by the number of friendly combat
+units next to the city in the simulated position, and the city's counterattack is divided among them (a city strikes
+one unit a turn). No other change to the scoring; the later damage-versus-danger check still applies.
+Predicted (newAI attacker, full set x 3): melee_only_vs_medium from 0/6 to at least 5/6, by turn 7, with losses (the
+user's ruling: losses don't count). ref_cb4_melee6_vs_walls and the medium/large scenarios captured as before or
+sooner. No scenario's captures drop by more than 1 in 6. small_vs_strong and medium_vs_strong may engage more and lose
+more units without capturing; that is acceptable only if it doesn't cost captures elsewhere.
+
 ## 2026-11-19 M1 iteration 3: no exploring with units at the enemy's walls
 Class: "shot to its last hit points, not taken, melee alive" in takeable scenarios (BASELINE.md): large_vs_strong
 3/6, siege_train_vs_strong 4/6, medium_vs_medium_rough 6/6, small_vs_medium 1/6. Still the largest failing class.
