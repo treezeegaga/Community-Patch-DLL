@@ -59,6 +59,18 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 The new-AI switch at game setup (user addition, PLAN.md 8a item 3)
+The DLL already reads the game option `GAMEOPTION_AI_V2_ALL` (every AI major civ on the new AI); nothing in setup
+showed it. Change: `ai-lab/newai/` adds a GameOptions row and its text ("New AI (test build)") to the pack through
+two lines in its .Civ5Pkg (`Install-NewAI.ps1 -Release ab-<commit>`; `-Remove` undoes it, puts the stock DLL back
+and clears Civ V's database cache). Game options are set in setup and shared in multiplayer, so the switch is the
+same on every PC. DLL: `CvPlayer::gameStartInit` reads the switch, so it holds from turn 0 (before, from the
+player's first turn), and `AILab_NewAI.csv` logs each change of a player's switch. Commit `0b401eb`.
+Also: `MP-SMOKE-TEST.md`, the 30-turn LAN test for the user (desyncs, assertion dialogs, crashes, turn times).
+Not yet tried on a PC: the .Civ5Pkg layout of the user's pack is not in this repo; the script stops without
+changing it if it has no `</Gameplay>` section. Check first in single player (the box shows; the CSV lists the AIs).
+Result: (pending: build, then the user's single-player check)
+
 ## 2026-11-19 Regression set: baseline (measurement only; user addition, PLAN.md 8a)
 Lab v12 (scripts only): a scenario's city can be the defender's capital (`capital`: the palace moves from the reserve
 city for the battle; the game hands it back when the target falls or is wiped, and the lab checks that) or on the
