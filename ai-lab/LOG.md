@@ -69,6 +69,7 @@ Predicted (newAI attacker, 6 battles each): no attacking melee unit converted wi
 siege_train_vs_strong and large_vs_strong to at least 4/6 captured (from 2/6), small_vs_medium at least 5/6 (from
 4/6); medium_vs_medium_rough may stay failing (the second Spearman still goes home): at most 3/6. Then the full set:
 no other scenario's captures drop by more than 1 in 6; melee_only_vs_medium stays at 0/6 (a different cause).
+Build: `ab-401f952` (code of 22902fd plus a workflow change; 22902fd's own build was cancelled). Run: queue request 2026-11-19-03-m1d3 (m1d3a, m1d3b).
 Result: pending.
 
 ## 2026-11-19 Process: run queue and handover rule (user request)
