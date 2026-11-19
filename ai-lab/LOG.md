@@ -70,7 +70,14 @@ siege_train_vs_strong and large_vs_strong to at least 4/6 captured (from 2/6), s
 4/6); medium_vs_medium_rough may stay failing (the second Spearman still goes home): at most 3/6. Then the full set:
 no other scenario's captures drop by more than 1 in 6; melee_only_vs_medium stays at 0/6 (a different cause).
 Build: `ab-401f952` (code of 22902fd plus a workflow change; 22902fd's own build was cancelled). Run: queue request 2026-11-19-03-m1d3 (m1d3a, m1d3b).
-Result: pending.
+Result: m1d3a/b (`ab-401f952`, newAI attacker, 6 battles each, no assertions, no lab errors): small_vs_medium 6/6
+(turn 6; stock 4/6), large_vs_strong 6/6 (turns 6-7; stock 2/6), siege_train_vs_strong 6/6 (turns 6-10, five by
+turn 9; stock 2/6), medium_vs_medium_rough 0/6 (LASTHP 6, as predicted). All melee alive at the end of every battle.
+104 "Not exploring with" lines. Conversions still seen (large_vs_strong 6, rough 6) were all of Spearmen that the
+tactical AI had "left to homeland" and that had walked more than 5 tiles off (to sentry points or to garrison the
+home city) before being converted: the second cause, not a gap in this change. Targeted prediction met.
+Next: the full set three times (queue 2026-11-19-04-m1f3) for the "no other scenario worse" part of the rule.
+Decision: pending the full set.
 
 ## 2026-11-19 Process: run queue and handover rule (user request)
 The user asked for two things, now in PLAN.md: a handover rule (section 12: at milestone sign-off or above
