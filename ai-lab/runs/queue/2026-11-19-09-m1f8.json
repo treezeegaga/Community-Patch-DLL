@@ -1,0 +1,10 @@
+{
+  "id": "2026-11-19-09-m1f8",
+  "why": "M1 iteration 8: melee army attacks a city it can wear down; targeted first, then full set x3",
+  "launches": [
+    { "label": "m1d8", "release": "ab-481fb7c", "only": ["melee_only_vs_medium", "ref_cb4_melee6_vs_walls"], "repeats": 2, "newAI": "attacker" },
+    { "label": "m1f8a", "release": "ab-481fb7c", "repeats": 2, "newAI": "attacker" },
+    { "label": "m1f8b", "release": "ab-481fb7c", "repeats": 2, "newAI": "attacker" },
+    { "label": "m1f8c", "release": "ab-481fb7c", "repeats": 2, "newAI": "attacker" }
+  ]
+}
