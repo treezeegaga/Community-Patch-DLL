@@ -64,7 +64,15 @@ passes half health on turn 5; Spearmen step adjacent then and attack the next tu
 its Spearmen. melee_only_vs_medium stays 0/6 (Swordsmen wait 2 tiles out instead of standing adjacent; the city is
 never damaged). Full set: no takeable scenario's captures drop by more than 1 in 6, capture turns within the bar.
 Build: `ab-78d5e8a`. Run: queue request 2026-11-19-08-m1f7 (m1d7: the two scenarios x 2; then m1f7a/b/c: full set x 3).
-Result: pending.
+Result: m1d7 + m1f7a/b/c (`ab-78d5e8a`, newAI attacker, clean: no assertions, no lab errors). medium_vs_medium_rough
+2/2 and 6/6 captured, all on battle turn 5 (m1f3: 1/6; script 7-12). Log: Spearmen at distance 3 "move" to ring 2 on
+turn 1 and "hold" there, then step in. Full set 65 of 90 (m1f3: 62). melee_only_vs_medium 0/6 (0 damage), as
+predicted. No capture count dropped: medium_vs_strong 2/6 (from 1/6), large_vs_medium turn 3 in all 6 (from 3-4);
+large_vs_strong turns 6-8 (from 6-7, bar 12, 0.5 units lost), siege_train_vs_strong 6-8 (from 6-9). Losses rose only
+in small_vs_strong (1.7 from 0.7, not takeable, 0-7 damage): the melee now wait 2 tiles out of a strong city instead
+of going home; by the user's ruling of 2026-11-18 losses don't count, but it's a sign the "close in" doesn't ask
+whether the city can be taken (M1's "one estimate" item).
+Decision: accepted. 13 of 14 takeable scenarios now meet the M1 bar; only melee_only_vs_medium is left.
 
 ## 2026-11-19 M1 iteration 4: melee units count each other when attacking a city
 Class: "never attacks" in a takeable scenario: melee_only_vs_medium NOATTACK 6/6 (m1f3; the script takes it 6/6 by
