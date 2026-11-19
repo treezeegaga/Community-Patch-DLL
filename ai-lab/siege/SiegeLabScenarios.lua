@@ -10,6 +10,7 @@
 --                   army over to the tactical AI). Ignored when atHome is set.
 --   atHome          true = the army starts around the attacker's home city, 12 tiles from the target, with no
 --                   "just delivered by an operation" mark (the march lab)
+--   homeDistance    with atHome: tiles from the attacker's home city to the target (default 12; 4 to 19)
 --   attackerTechs / defenderTechs
 --                   techs each side has; their prerequisites are added automatically. Everything else is removed.
 --   army            { { unit type, count [, xp] }, ... } for the attacker
@@ -99,4 +100,12 @@ SiegeLabScenarios.march = {
 	  army = ARMY_MEDIUM, city = mediumCity() },
 	{ name = "march_large_vs_medium", turns = 25, atHome = true, attackerTechs = A_CLASSICAL, defenderTechs = D_ANCIENT,
 	  army = ARMY_LARGE, city = mediumCity() },
+	-- The same middle case at other distances (lab v11): the stock AI only takes as attack targets cities it can
+	-- reach within the land trade route range (10 on every map size in the Community Patch).
+	{ name = "march_medium_vs_medium_d8", turns = 25, atHome = true, homeDistance = 8, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
+	{ name = "march_medium_vs_medium_d10", turns = 25, atHome = true, homeDistance = 10, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
+	{ name = "march_medium_vs_medium_d16", turns = 25, atHome = true, homeDistance = 16, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
 }

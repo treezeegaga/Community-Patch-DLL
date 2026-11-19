@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 10
+local VERSION = 11
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND = 0, 1, 2   -- PlotTypes in CvEnums.h
@@ -465,6 +465,15 @@ local function beginScenario()
 	local old = targetCity()
 	if old then Players[old:GetOwner()]:Disband(old) end
 	lab.cleaning = false
+
+	-- Where the target city stands: 12 tiles east of the attacker's home (the arena's fixed spot), or for a march
+	-- scenario homeDistance tiles (lab v11). Moving it leaves the old spot's ruins to clear.
+	local wantTx = lab.hx + ((sc.atHome and sc.homeDistance) or (TARGET_DX - HOME_DX))
+	if wantTx ~= lab.tx then
+		clearPlot(lab.targetPlot)
+		lab.tx = wantTx
+		lab.targetPlot = Map.GetPlot(lab.tx, lab.ty)
+	end
 
 	applyScenarioTerrain(sc)
 	setTechs(lab.attacker, sc.attackerTechs)
