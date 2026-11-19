@@ -10,14 +10,15 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   iteration 7 (`CvTacticalAI::PlotReinforcementMoves`: own melee within 6 tiles of an enemy city at war hold 2 tiles
   out, and step next to it once it is at half health; log "melee closing in on"). Build `ab-78d5e8a` has exactly that
   code; later commits are ai-lab only (iteration 8 was reverted). Use `ab-78d5e8a` until new code lands.
-- **Baseline:** BASELINE.md "Current build": m1f7a/b/c (newAI attacker, 65 of 90); defender check m1v9 vs m1s9
+- **Baseline:** BASELINE.md "Current build": m1f7a/b/c (newAI attacker, 68 of 90; recounted, was written 65); defender check m1v9 vs m1s9
   (55 vs 57 of 90). Same-build stock vs stock: m1s9a/b/c (57 of 90).
 - **Run queue:** nothing queued or unread. A full set x 3 takes about 10 minutes; a code build about 12.
 - **Open questions for the user:** none. Bars for M2 are "proposed" in PLAN.md: fix them with the user before work
   starts (rule 6).
 - **Known side effect to watch:** iteration 7 moves melee up to strong cities the army can't take (small_vs_strong
   losses 0.7 -> 1.7). The M4 "one estimate" item should gate it.
-- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj, not yet updated for M1.
+- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj, updated for M1 on 2026-11-19 by implementer 4
+  (stock and new-AI battles side by side; milestones and steps current).
 - **Next:**
   1. Update the dashboard with M1's final table (BASELINE.md).
   2. M2: read the `march` scenario set in `ai-lab/siege/SiegeLabScenarios.lua` and the old notebook's hand-over
@@ -94,7 +95,7 @@ Build: `ab-481fb7c`. Run: queue request 2026-11-19-09-m1f8 (m1d8: melee_only and
 Result: m1d8 + m1f8a/b/c (`ab-481fb7c`, newAI attacker, clean). melee_only_vs_medium 0/2 and 0/6, but it now
 attacks: LOWDMG 6 (37-191 damage; m1d8 121 and 128) instead of NOATTACK 6 (0 damage), 0.2 units lost. The log has
 "allowed (army)" lines and attacks by 3-4 Swordsmen, but only on some turns (m1f8a rep 1: battle turns 2, 4-6, 8,
-10); on the others the city heals 20 back. Full set 64 of 90 (m1f7: 65): medium_vs_strong 1/6 (from 2/6),
+10); on the others the city heals 20 back. Full set 64 of 90 [recount: 67] (m1f7: 65 [recount: 68]): medium_vs_strong 1/6 (from 2/6),
 large_vs_strong one capture on turn 11 (bar 12), ref_cb4_melee6_vs_walls turns 4-5 (from 5). Prediction missed.
 The fourth block (m1f8a rep 1, game turns 55-66): on the turns without attacks `ExecuteCaptureCityMoves` never starts
 the attack: "too early for attacking Miletos, required damage 208, expected max damage per turn 16" (also 29, and 0
@@ -126,7 +127,7 @@ never damaged). Full set: no takeable scenario's captures drop by more than 1 in
 Build: `ab-78d5e8a`. Run: queue request 2026-11-19-08-m1f7 (m1d7: the two scenarios x 2; then m1f7a/b/c: full set x 3).
 Result: m1d7 + m1f7a/b/c (`ab-78d5e8a`, newAI attacker, clean: no assertions, no lab errors). medium_vs_medium_rough
 2/2 and 6/6 captured, all on battle turn 5 (m1f3: 1/6; script 7-12). Log: Spearmen at distance 3 "move" to ring 2 on
-turn 1 and "hold" there, then step in. Full set 65 of 90 (m1f3: 62). melee_only_vs_medium 0/6 (0 damage), as
+turn 1 and "hold" there, then step in. Full set 65 of 90 [recount: 68] (m1f3: 62). melee_only_vs_medium 0/6 (0 damage), as
 predicted. No capture count dropped: medium_vs_strong 2/6 (from 1/6), large_vs_medium turn 3 in all 6 (from 3-4);
 large_vs_strong turns 6-8 (from 6-7, bar 12, 0.5 units lost), siege_train_vs_strong 6-8 (from 6-9). Losses rose only
 in small_vs_strong (1.7 from 0.7, not takeable, 0-7 damage): the melee now wait 2 tiles out of a strong city instead
