@@ -2,36 +2,33 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-19, 11:20 AM ET), written by implementer 2 at handover
+## Current state (2026-11-19, 1:20 PM ET), written by implementer 3 at handover (M1 sign-off)
 
-- **Milestone:** M1, in progress. Iterations 3 (no exploring near an enemy city, accepted) and 5 (logging, accepted)
-  are on the branch; 4 and 6 (melee attacks on a city) were reverted. Context passed the handover mark.
-- **Branch:** `ai/v2`. Game code = stock 5.4.8 + logging (M0 it. 3, M1 it. 2 and 5) + `IsNewAI()` switch + iteration 3
-  (`CvEconomicAI::DoReconState` / `IsNearEnemyCityAtWar`). The build `ab-c57e923` has exactly that code; the head
-  commit (revert of iteration 6) builds the same code. Use `ab-c57e923` for runs until new code lands.
-- **Baseline:** BASELINE.md: stock (m0d-f), scripted reference (ref3a-c), and "Current build" (m1f3, `ab-401f952`,
-  iteration 3 without the it. 5 logging: 62/90). Every takeable scenario meets
-  the M1 bar except melee_only_vs_medium (0/6, never or barely attacks) and medium_vs_medium_rough (0-1/6, LASTHP).
-  The M1 defender part of the bar (new AI as defender) has not been measured yet.
-- **Run queue:** works (`ai-lab/runs/README.md`; set up by the user 2026-11-19, first request 7:35 AM ET). A full set x 3
-  takes about 10 minutes plus the build (~15 min). The build workflow now ignores pushes that only change `ai-lab/`
-  (they used to cancel pending code builds). Push code and its queue file in separate pushes; reference the code
-  commit's `ab-<sha7>`. Nothing queued or unread.
-- **Open questions for the user:** none. Rule 9 applies to the next attempt at melee_only_vs_medium (third iteration
-  on that failure: if it moves nothing, write to the user).
+- **Milestone:** M1 closed 2026-11-19 (user sign-off). M2 (the march) starts; nothing done on it yet.
+- **Branch:** `ai/v2`. Game code = stock 5.4.8 + logging (M0 it. 2-3, M1 it. 2 and 5) + `IsNewAI()` switch + M1
+  iteration 3 (`CvEconomicAI::DoReconState`: no exploring with units within 5 tiles of an enemy city at war) + M1
+  iteration 7 (`CvTacticalAI::PlotReinforcementMoves`: own melee within 6 tiles of an enemy city at war hold 2 tiles
+  out, and step next to it once it is at half health; log "melee closing in on"). Build `ab-78d5e8a` has exactly that
+  code; later commits are ai-lab only (iteration 8 was reverted). Use `ab-78d5e8a` until new code lands.
+- **Baseline:** BASELINE.md "Current build": m1f7a/b/c (newAI attacker, 65 of 90); defender check m1v9 vs m1s9
+  (55 vs 57 of 90). Same-build stock vs stock: m1s9a/b/c (57 of 90).
+- **Run queue:** nothing queued or unread. A full set x 3 takes about 10 minutes; a code build about 12.
+- **Open questions for the user:** none. Bars for M2 are "proposed" in PLAN.md: fix them with the user before work
+  starts (rule 6).
+- **Known side effect to watch:** iteration 7 moves melee up to strong cities the army can't take (small_vs_strong
+  losses 0.7 -> 1.7). The M4 "one estimate" item should gate it.
 - **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj, not yet updated for M1.
 - **Next:**
-  1. medium_vs_medium_rough (LASTHP, melee left behind): the Spearmen 3 tiles out are never "in reach" (rough ground,
-     can't get adjacent in one turn), `PlotReinforcementMoves` returns early in a friendly-dominated zone that has any
-     melee strength, and they are "left to homeland", which walks them home to sentry points / garrison the empty home
-     city (m1d2 and m1d3 logs, LOG.md iterations 3 and 6). A fix inside `PlotReinforcementMoves` or the capture move to
-     bring melee up when the city is low.
-  2. melee_only_vs_medium: see iteration 6's result for the two remaining blocks (tactsim prefers no attack; heal at 68
-     HP mid-siege). Start from the "melee on city" log lines; consider making the "can this army take this city"
-     estimate one function used by `ExecuteCaptureCityMoves` and `ScoreAttackDamage` (PLAN.md M1).
-  3. Then measure the defender side of the M1 bar (`newAI: defender` vs stock), and update the dashboard.
+  1. Update the dashboard with M1's final table (BASELINE.md).
+  2. M2: read the `march` scenario set in `ai-lab/siege/SiegeLabScenarios.lua` and the old notebook's hand-over
+     failures (PLAN.md section 3), run the march set on `ab-78d5e8a` (newAI attacker and stock, 6 battles each) as M2's
+     baseline, propose the M2 bar to the user with those numbers, then extend the set (longer distance, rough terrain).
+  3. Then the loop on M2's largest failure class.
 
 ## User rulings
+
+- 2026-11-19: M1 signed off by the user (13 of 14 takeable scenarios meet the bar, melee_only set aside, defender part
+  met). The single "can this army take this city" estimate moves to M4.
 
 - 2026-11-19: melee_only_vs_medium (melee-only army, no ranged units) is set aside as an accepted gap for M1, after
   three iterations without a capture (rule 9 stop after M1 iteration 8). The other takeable scenarios carry the bar.
