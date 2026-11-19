@@ -2,6 +2,35 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
+## Current state (2026-11-19, 7:20 AM ET), written by implementer 1 at handover
+
+- **Milestone:** M0 closed 2026-11-18 (signed off; the reference is the lab's scripted attacker, see rulings).
+  M1 in progress: iteration 1 (the switch) accepted; iteration 2 (logging only) built, its run in flight.
+- **Branch:** `ai/v2`. Newest DLL build `ab-30a92af` = stock 5.4.8 game code + config.ini logging + the logging
+  lines of M0 iteration 3 and M1 iteration 2 + the switch `CvPlayer::IsNewAI()` (nothing reads it yet). So there is
+  still **no AI behaviour change** on the branch. `ab-00ae537` is the build the baseline was measured on.
+- **Lab:** `ai-lab/siege`, lab v9 (scripted attacker rules v3, `-Script`; `-NewAI`). Baseline: BASELINE.md
+  (stock m0d-f, reference ref3a-c, takeable list). M1 bar: PLAN.md M1 (as amended: losses don't count).
+- **In flight:** run `m1d2` was requested by message to the old PC runner session at 7:15 AM ET (before the queue
+  existed): `ab-30a92af`, large_vs_strong, siege_train_vs_strong, medium_vs_medium_rough, small_vs_medium, 2 each.
+  Its results will appear as `ai-lab/siege/results/m1d2-*` (no done marker). Read them for M1 iteration 2: the new
+  "heal (first|second pass)" and "melee near <city>" lines in `PlayerTacticalAILog.csv`.
+- **Run queue:** built 2026-11-19 (`ai-lab/runs/`), not yet set up on the PC and never run (it couldn't be
+  syntax-checked here: no PowerShell). The user has the setup steps in `ai-lab/runs/README.md`. Until the done
+  marker of a first queued request comes back, check `ai-lab/runs/done/` and ask the user whether setup is done.
+  Make the first queued request small, so a script bug costs little.
+- **Open questions for the user:** none.
+- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (data files are uploaded by hand: the baseline
+  battles, milestones and steps; it doesn't yet show the reference column or M1). Update it when a milestone moves.
+- **Next:**
+  1. Read m1d2 (when it lands). Confirm or correct the cause in M1 iteration 2: Spearmen pulled out by the heal
+     rules (`CvUnit::shouldHeal`, second pass sends any unit missing over 20 HP away) or held by the homeland AI
+     (garrisoning the empty home city), and never counted "in reach" by `ExecuteCaptureCityMoves`.
+  2. M1 iteration 3: the first behaviour change, behind `IsNewAI()`, inside the stock function that refuses (rule 4).
+     Write the prediction first; queue it as two launches of the four failing last-hit-point scenarios with
+     `newAI` attacker vs none, then the full set three times by the decision rule.
+  3. The other failing takeable class: melee_only_vs_medium (never attacks; the scripted attacker takes it 6/6).
+
 ## User rulings
 
 - 2026-11-15: the M0 repeat bar counts close cases. A scenario repeats if at least 5 of its 6 battles land in the
@@ -15,6 +44,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   Losses don't count against the AI; the capture does. The M1 bar's "army keeps two thirds of its units" for
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
+
+## 2026-11-19 Process: run queue and handover rule (user request)
+The user asked for two things, now in PLAN.md: a handover rule (section 12: at milestone sign-off or above
+300,000 tokens of context, write the current state, start a successor Opus 5.5 session with a fixed prompt, tell
+the user its name and stop), and a run queue in the repo instead of run requests by message (section 4;
+`ai-lab/runs/README.md`, `Watch-LabQueue.ps1`, `Register-LabWatcher.ps1`). Implementer 1 was at about 546,000
+tokens when the rule was written, so it handed over at once.
 
 ## 2026-11-19 M1 iteration 2: why melee units don't finish the city (logging only)
 Class: "shot to its last hit points, not taken" in takeable scenarios: large_vs_strong 3 of 6, siege_train_vs_strong
