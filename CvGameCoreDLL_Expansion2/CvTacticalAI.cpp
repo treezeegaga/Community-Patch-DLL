@@ -2011,7 +2011,44 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 	CvCity* pZoneCity = pTargetZone->GetZoneCity();
 	if (!pZoneCity)
 		return;
-	
+
+	// AI lab (ai/v2): melee units near an enemy city we are at war with that this turn's attack could not use (too far
+	// to strike this turn, e.g. on rough ground) close in on it instead of being left to the homeland AI, which walks
+	// them home. They wait two tiles out while the city is healthy and step next to it once it is at half health or
+	// less, so they are in reach to take it next turn.
+	if (m_pPlayer->IsNewAI() && !pTargetZone->IsWater() && pZoneCity->getOwner() != m_pPlayer->GetID() &&
+		GET_TEAM(m_pPlayer->getTeam()).isAtWar(pZoneCity->getTeam()))
+	{
+		CvPlot* pCityPlot = pZoneCity->plot();
+		bool bCloseIn = pZoneCity->getDamage() * 2 >= pZoneCity->GetMaxHitPoints();
+		int iRing = bCloseIn ? 1 : 2;
+		int iLoopUnit = 0;
+		for (CvUnit* pUnit = m_pPlayer->firstUnit(&iLoopUnit); pUnit != NULL; pUnit = m_pPlayer->nextUnit(&iLoopUnit))
+		{
+			if (!pUnit->canUseForTacticalAI() || !pUnit->IsCombatUnit() || !pUnit->IsCanAttack() || pUnit->IsCanAttackRanged() ||
+				pUnit->getDomainType() != DOMAIN_LAND || pUnit->isEmbarked() || pUnit->getArmyID() != -1)
+				continue;
+			int iDist = plotDistance(*pUnit->plot(), *pCityPlot);
+			if (iDist > 6 || pUnit->GetCurrHitPoints() * 3 <= pUnit->GetMaxHitPoints())
+				continue;
+
+			int iTurns = 0;
+			if (iDist <= iRing)
+			{
+				pUnit->PushMission(CvTypes::getMISSION_SKIP());
+				UnitProcessed(pUnit->GetID());
+			}
+			else
+				iTurns = ExecuteMoveToPlot(pUnit, pCityPlot, true, CvUnit::MOVEFLAG_NO_EMBARK |
+					(bCloseIn ? CvUnit::MOVEFLAG_APPROX_TARGET_RING1 : CvUnit::MOVEFLAG_APPROX_TARGET_RING2));
+
+			if (GC.getLogging() && GC.getAILogging())
+				LogTacticalMessage(CvString::format("Zone %d, melee closing in on %s (ring %d): %s %d at distance %d, hp %d, %s",
+					pTargetZone->GetZoneID(), pZoneCity->getNameNoSpace().c_str(), iRing, pUnit->getName().c_str(), pUnit->GetID(),
+					iDist, pUnit->GetCurrHitPoints(), iDist <= iRing ? "holds" : iTurns == INT_MAX ? "no path" : "moves"));
+		}
+	}
+
 	//don't try to reinforce neutral zones if there are no enemies
 	if (pZoneCity->getTeam() != m_pPlayer->getTeam() && pTargetZone->GetTotalEnemyUnitCount()==0)
 		return;
