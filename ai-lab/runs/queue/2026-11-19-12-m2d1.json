@@ -1,0 +1,61 @@
+{
+  "id": "2026-11-19-12-m2d1",
+  "why": "M2 iteration 1 (logging only): why the march army never leaves home; march set at 8, 10, 12, 16 tiles, new-AI and stock x6, script on the new distances x2",
+  "launches": [
+    {
+      "label": "m2n1a",
+      "release": "ab-9109672",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s1a",
+      "release": "ab-9109672",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2n1b",
+      "release": "ab-9109672",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s1b",
+      "release": "ab-9109672",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2n1c",
+      "release": "ab-9109672",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s1c",
+      "release": "ab-9109672",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2r1",
+      "release": "ab-9109672",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2,
+      "only": [
+        "march_medium_vs_medium_d8",
+        "march_medium_vs_medium_d10",
+        "march_medium_vs_medium_d16"
+      ]
+    }
+  ]
+}

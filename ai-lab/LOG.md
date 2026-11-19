@@ -55,6 +55,35 @@ of each other" is read as ReadyTurn - FirstArrivalTurn <= 2.
 Run: queue request 2026-11-19-11-m2base: the march set (march_medium_vs_weak, march_medium_vs_medium,
 march_large_vs_medium; 25 turns) on `ab-78d5e8a`, newAI attacker (m2n0a/b/c), stock (m2s0a/b/c) and the scripted
 attacker (m2r0a/b/c), 6 battles each.
+Result: m2n0a/b/c, m2s0a/b/c, m2r0a/b/c (`ab-78d5e8a`, lab v10, clean: no assertions, no lab errors).
+- New AI and stock AI: **0 of 18 battles each** reached the city; no unit ever came within 3 tiles; no damage. The
+  army stayed at home (mean distance 11-13 all 25 turns).
+- Scripted attacker: **18 of 18 captured**, first unit within 3 tiles on turn 4, ready on turn 6-7, capture on turn
+  7-11. (march_medium_vs_weak rep 1 was slower in all three launches: arrival turn 9, ready 15, capture 17, with
+  the same pattern each time; not read yet.)
+- The attacker's logs: no `OperationalAILog.csv` was written at all and `MilitaryAILog.csv` has no "attack target"
+  line, so no attack operation was ever started. `PlayerHomelandAILog.csv`: the units are moved to "garrison" and
+  "sentry point" at home every turn. (The same is true in the siege lab: there the tactical AI fights because the
+  army starts next to the city, without any operation.)
+Decision: baseline recorded. One failure class: "never leaves home", 36 of 36 for both AIs. Iteration 1 looks for the
+cause.
+
+## 2026-11-19 M2 iteration 1: why the army never leaves home (logging only)
+Class: never leaves home: 18 of 18 (new AI) and 18 of 18 (stock), march set, m2n0/m2s0.
+Cause (suspected, not yet in a log): `CvMilitaryAI::UpdateAttackTargets` only keeps enemy cities that
+`GetArmyPathsFromCity` reaches within `iMaxNormalizedDistance` = the land trade route range, which is 10 on every map
+size in the Community Patch (`TRADE_ROUTE_BASE_LAND_DISTANCE` 10, no `TradeRouteDistanceMod` without Vox Populi) and
+the attacker has no range bonus. The march target is 12 tiles away, so it is never an attack target, and
+`DoCityAttacks` has nothing to request.
+Change: logging only (commit 9109672): `GetArmyPathsFromCity` logs "no army path to: <city>, from muster ..., plot
+distance, max normalized distance" for each enemy city at war it can't reach; `UpdateAttackTargets` logs "land target
+rejected: ..., approach score, path length" when a reachable city fails the approach or path check. Lab v11: march
+scenarios get `homeDistance`; added march_medium_vs_medium_d8, _d10 and _d16 (the target city moves; home stays).
+Predicted: d12 and d16 log "no army path" every turn and stay at home, as before. d8 (and probably d10: 10 flat steps
+is at the limit) log "attack target" and an operation starts (OperationalAILog.csv appears); whether it then arrives
+and takes the city is what the M2 bar measures. If d8 also never gets an attack target, the range is not the cause.
+Build: `ab-9109672`. Run: queue request 2026-11-19-12-m2d1 (m2n1a/b/c new AI, m2s1a/b/c stock, all six march
+scenarios x 2 each; m2r1 the script on the three new distances x 2).
 Result: (pending)
 
 ## 2026-11-19 M1 iteration 9: the new AI as defender (measurement only)
