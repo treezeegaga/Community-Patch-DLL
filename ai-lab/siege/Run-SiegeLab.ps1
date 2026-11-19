@@ -8,11 +8,12 @@
 # (done, failed, an error), and Civ V is never left running. Exit code 0 = the run finished and was saved.
 # (Killing this script's process by force skips the clean-up: then run Install-SiegeLab.ps1 -Remove yourself.)
 #
-# The setup clicks are positions inside Civ V's window, taken from the window's own corner. They fit this PC: a
-# 3840x2160 screen at 150%, GraphicsSettingsDX9.ini FullScreen = 0, WindowResX = 1914, WindowResY = 2034 (the window
-# opens at 963,63). Screens are recognised by colour against pictures saved in Run-SiegeLab.screens.json next to this
-# script (copied from the earlier runner, tools\ab\CivScreens.json). On another PC or window size, edit the positions
-# at the top of the script and run once with -Calibrate (it saves the pictures; look at the calibrate-*.png files).
+# The setup clicks are positions inside Civ V's window, taken from the window's own corner. The built-in ones fit the
+# first lab PC (BOX): a 3840x2160 screen at 150%, GraphicsSettingsDX9.ini FullScreen = 0, WindowResX = 1914,
+# WindowResY = 2034 (the window opens at 963,63), with screen pictures in Run-SiegeLab.screens.json next to this
+# script. Any other PC has its own file hosts\<COMPUTERNAME>.json (click positions, window, Civ V folder), written by
+# Measure-SiegeLabClicks.ps1, and its own pictures in hosts\<COMPUTERNAME>.screens.json, written by one run with
+# -Calibrate (look at the calibrate-*.png files it saves). The setup steps are in ai-lab\runs\README.md.
 # Civ remembers most setup choices from the last game (civs, map, King, Quick pace); the two Quick boxes are ticked
 # every time by this script. For the first run on a PC, set those by hand once and start one game.
 #
@@ -35,7 +36,7 @@ param(
     [switch]$Script,                 # the lab's scripted attacker plays the attacker (the reference), not the AI
     [ValidateSet("none", "attacker", "defender", "both")]
     [string]$NewAI = "none",         # which side uses the new AI (ai/v2 DLL builds)
-    [string]$CivDir = "C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V",
+    [string]$CivDir = "",            # default: the host file's civDir, else the usual Steam folder
     [string]$MyGames = "$([Environment]::GetFolderPath('MyDocuments'))\My Games\Sid Meier's Civilization 5",
     [string]$OutDir = (Join-Path $PSScriptRoot "results")
 )
@@ -85,12 +86,23 @@ public class SlInput {
 "@
 [SlInput]::SetProcessDPIAware() | Out-Null
 
+# This PC's own calibration, if it has one (hosts\<COMPUTERNAME>.json); otherwise the built-in values below (BOX).
+$hostName = $env:COMPUTERNAME
+$hostFile = Join-Path $PSScriptRoot "hosts\$hostName.json"
+$hostCfg = $null
+if (Test-Path $hostFile) { $hostCfg = Get-Content $hostFile -Raw | ConvertFrom-Json }
+if (-not $CivDir) {
+    if ($hostCfg -and $hostCfg.civDir) { $CivDir = $hostCfg.civDir }
+    else { $CivDir = "C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V" }
+}
+
 $stamp = Get-Date -Format "yyyyMMdd-HHmm"
 $runDir = Join-Path $OutDir "$Label-$stamp-run"
 New-Item -ItemType Directory -Force $runDir | Out-Null
 $runLog = Join-Path $runDir "Run-SiegeLab.log"
 $luaLog = Join-Path $MyGames "Logs\Lua.log"
 $screensFile = Join-Path $PSScriptRoot "Run-SiegeLab.screens.json"
+if ($hostCfg) { $screensFile = Join-Path $PSScriptRoot "hosts\$hostName.screens.json" }
 $installer = Join-Path $PSScriptRoot "Install-SiegeLab.ps1"
 $dllSwitcher = Join-Path $PSScriptRoot "Set-LabDll.ps1"
 $reader = Join-Path $PSScriptRoot "Get-SiegeLabResults.ps1"
@@ -113,6 +125,19 @@ $P = @{
 $MenuPanel = @(777, 782, 1147, 1309)     # menu buttons area, window-relative, for telling the main and Single Player menus apart
 $BeginButton = @(832, 1378, 1052, 1398)  # "Begin Your Journey" button, window-relative
 $AreaRel = @{ X = 0; Y = 43; W = 1914; H = 1990 }   # the picture used to recognise a screen: the window below its title bar
+$WindowAt = @(963, 63, 1914, 2034)       # where and how big the window opens (x, y, width, height)
+if ($hostCfg) {
+    foreach ($k in @($P.Keys)) {
+        $v = $hostCfg.clicks.$k
+        if (-not $v -or @($v).Count -ne 2) { throw "$hostFile has no click position for '$k'. Run Measure-SiegeLabClicks.ps1 again." }
+        $P[$k] = @([int]$v[0], [int]$v[1])
+    }
+    $MenuPanel = @($hostCfg.menuPanel | ForEach-Object { [int]$_ })
+    $BeginButton = @($hostCfg.beginButton | ForEach-Object { [int]$_ })
+    $AreaRel = @{ X = [int]$hostCfg.area.X; Y = [int]$hostCfg.area.Y; W = [int]$hostCfg.area.W; H = [int]$hostCfg.area.H }
+    $WindowAt = @($hostCfg.window | ForEach-Object { [int]$_ })
+    if ($MenuPanel.Count -ne 4 -or $BeginButton.Count -ne 4 -or $WindowAt.Count -ne 4) { throw "$hostFile is incomplete. Run Measure-SiegeLabClicks.ps1 again." }
+}
 
 function Get-CivProcess { Get-Process CivilizationV -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1 }
 function Get-Origin {
@@ -303,7 +328,9 @@ function Start-LabGame {
     if (-not (Get-CivProcess)) { Write-Log "FAILED: no Civ V window"; return $false }
     $o = Get-Origin
     Write-Log ("Civ V window at {0},{1} size {2}x{3}" -f $o[0], $o[1], $o[2], $o[3])
-    if ($o[0] -ne 963 -or $o[1] -ne 63 -or $o[2] -ne 1914 -or $o[3] -ne 2034) { Write-Log "  warning: the click positions and screen pictures were made for a 1914x2034 window at 963,63" }
+    if ($o[0] -ne $WindowAt[0] -or $o[1] -ne $WindowAt[1] -or $o[2] -ne $WindowAt[2] -or $o[3] -ne $WindowAt[3]) {
+        Write-Log ("  warning: the click positions and screen pictures were made for a {2}x{3} window at {0},{1}" -f $WindowAt[0], $WindowAt[1], $WindowAt[2], $WindowAt[3])
+    }
 
     # Intro movie, loading, then the legal screen. Click its Continue button until the main menu shows; never click
     # there once the menu is up, because the menu's EXIT button is at nearly the same spot.
@@ -400,9 +427,10 @@ try {
     if (Get-Process -Name CivilizationV, CivilizationV_DX11, CivilizationV_Tablet -ErrorAction SilentlyContinue) {
         throw "Civ V is already running. Close it first (this script starts its own)."
     }
+    Write-Log "Host $hostName$(if ($hostCfg) { " (calibration $hostFile)" } else { ' (built-in calibration)' }), Civ V in $CivDir"
     Write-Log "Run '$Label': set $Set, only [$($Only -join ',')], repeats $Repeats, DLL $(if ($Release) { $Release } else { 'stock (as installed)' })"
     if ($Release) { & $dllSwitcher -Release $Release -CivDir $CivDir | ForEach-Object { Write-Log "  dll: $_" } }
-    & $installer -Set $Set -Only $Only -Repeats $Repeats -Script:$Script -NewAI $NewAI -EnableLogging | ForEach-Object { Write-Log "  installer: $_" }
+    & $installer -Set $Set -Only $Only -Repeats $Repeats -Script:$Script -NewAI $NewAI -EnableLogging -CivDir $CivDir -MyGames $MyGames | ForEach-Object { Write-Log "  installer: $_" }
 
     $launched = Get-Date
     if (-not (Start-LabGame)) { throw "Could not get a new game started (see the screenshots in $runDir)" }
@@ -426,7 +454,7 @@ catch {
 }
 finally {
     Stop-Civ
-    try { & $installer -Remove | ForEach-Object { Write-Log "  installer: $_" } } catch { Write-Log "WARNING: could not remove the lab: $($_.Exception.Message). Run Install-SiegeLab.ps1 -Remove." }
+    try { & $installer -Remove -CivDir $CivDir -MyGames $MyGames | ForEach-Object { Write-Log "  installer: $_" } } catch { Write-Log "WARNING: could not remove the lab: $($_.Exception.Message). Run Install-SiegeLab.ps1 -Remove." }
     if ($Release) {
         try { & $dllSwitcher -Restore -CivDir $CivDir | ForEach-Object { Write-Log "  dll: $_" } }
         catch { $exit = 1; Write-Log "WARNING: could not restore the stock DLL: $($_.Exception.Message). Run Set-LabDll.ps1 -Restore." }

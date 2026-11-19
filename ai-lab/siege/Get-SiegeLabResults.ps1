@@ -78,6 +78,7 @@ foreach ($r in $results) {
     if ($s) { $strength = $s.CityStrength; $goldRate = $s.AttackerGoldRate }
     $r | Add-Member -NotePropertyName CityStrength -NotePropertyValue $strength
     $r | Add-Member -NotePropertyName AttackerGoldRate -NotePropertyValue $goldRate
+    $r | Add-Member -NotePropertyName Host -NotePropertyValue $env:COMPUTERNAME   # which lab PC played it
 }
 
 if (-not $NoSave) {

@@ -1,0 +1,48 @@
+{
+  "id": "2026-11-19-13-pc2check",
+  "why": "Two-PC check: the full siege set, stock AI on ab-78d5e8a, 3 launches x 2 repeats on BOX and on TREEDESKTOP; they must agree (ai-lab/runs/README.md)",
+  "launches": [
+    {
+      "label": "pc2box1",
+      "release": "ab-78d5e8a",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "pc2tree1",
+      "release": "ab-78d5e8a",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "pc2box2",
+      "release": "ab-78d5e8a",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "pc2tree2",
+      "release": "ab-78d5e8a",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "pc2box3",
+      "release": "ab-78d5e8a",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "pc2tree3",
+      "release": "ab-78d5e8a",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    }
+  ]
+}

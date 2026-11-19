@@ -317,7 +317,8 @@ User rulings: dated lines at the top of `LOG.md`.
   terrain, supply or a real economy need their own scenarios or the higher rungs.
 - Click-through automation on the PC is fragile (fixed window size and positions). If it breaks, the
   runner fixes the script; don't work around it by changing the user's settings.
-- The second PC ("TREEDESKTOP") is not set up for the lab. One PC is enough for lab runs.
+- The second PC ("TREEDESKTOP") is being set up as a second lab runner (user's request, 2026-11-19; LOG.md rulings).
+  Its results count only after the two-PC check in `ai-lab/runs/README.md` passes.
 
 ## 12. Handover between implementing sessions
 

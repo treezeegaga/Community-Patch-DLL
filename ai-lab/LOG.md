@@ -28,6 +28,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19: the user asked for their second PC, TREEDESKTOP, as a second lab runner: per-launch claims in the run
+  queue so two watchers never run the same launch, the host recorded with every launch, setup steps for them, and a
+  same-set stock check on both PCs before TREEDESKTOP's results are trusted. Done as run queue watcher version 2
+  (ai-lab/runs/README.md); check queued as 2026-11-19-13-pc2check. Until it passes, requests that count name
+  "host": "BOX".
+
 - 2026-11-19: M1 signed off by the user (13 of 14 takeable scenarios meet the bar, melee_only set aside, defender part
   met). The single "can this army take this city" estimate moves to M4.
 
