@@ -205,6 +205,9 @@ the stock AI, whichever does better, and losses don't count): in scenarios marke
 5 of 6 battles, within 1.5 times the reference's turns. Losing units is acceptable if the city falls. New AI as
 defender must not make stock attackers *more* successful than the stock defender does.
 
+**Closed 2026-11-19** (signed off by the user): 13 of 14 takeable scenarios meet the bar on `ab-78d5e8a`;
+melee_only_vs_medium set aside by the user; defender part met. The "one estimate" item is moved to M4.
+
 ### M2. The march: an army at home arrives ready to fight
 
 - Use the `march` scenario set (army starts at its home city, 12 tiles away). Extend it with a longer
@@ -232,6 +235,10 @@ Composite Bowmen. The economy must not collapse to get there (no bankruptcy, at 
 
 ### M4. The decision: who to attack, when, and when to stop
 
+- Carried from M1: make "can this army take this city" one function. Today `ExecuteCaptureCityMoves`
+  (`ComputeTotalExpectedDamage`: at most 3 melee counted, wounded dropped, 13-turn rule) and `ScoreAttackDamage` (per
+  unit "too early") disagree; see LOG.md M1 iteration 8. Check it against the lab's results (yes for scenarios won,
+  no for those lost) and use it for target choice here.
 - A **decision lab** from saved mid-game positions (saves must load across builds: version every new
   saved field). It asks: does the civ pick the target M1's estimate says it can take, declare when the
   army is ready and in place, stay on that target, and make peace when the war is no longer winnable.
