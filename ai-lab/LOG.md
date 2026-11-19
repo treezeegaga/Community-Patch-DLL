@@ -63,7 +63,19 @@ allowed. ref_cb4_melee6_vs_walls (6 melee) and the other scenarios: no capture c
 may capture a turn earlier. small_vs_strong/medium_vs_strong may lose more units. If melee_only doesn't move, this is
 the third iteration on it that moved nothing: stop and write to the user (rule 9).
 Build: `ab-481fb7c`. Run: queue request 2026-11-19-09-m1f8 (m1d8: melee_only and ref_cb4 x 2; then m1f8a/b/c).
-Result: pending.
+Result: m1d8 + m1f8a/b/c (`ab-481fb7c`, newAI attacker, clean). melee_only_vs_medium 0/2 and 0/6, but it now
+attacks: LOWDMG 6 (37-191 damage; m1d8 121 and 128) instead of NOATTACK 6 (0 damage), 0.2 units lost. The log has
+"allowed (army)" lines and attacks by 3-4 Swordsmen, but only on some turns (m1f8a rep 1: battle turns 2, 4-6, 8,
+10); on the others the city heals 20 back. Full set 64 of 90 (m1f7: 65): medium_vs_strong 1/6 (from 2/6),
+large_vs_strong one capture on turn 11 (bar 12), ref_cb4_melee6_vs_walls turns 4-5 (from 5). Prediction missed.
+The fourth block (m1f8a rep 1, game turns 55-66): on the turns without attacks `ExecuteCaptureCityMoves` never starts
+the attack: "too early for attacking Miletos, required damage 208, expected max damage per turn 16" (also 29, and 0
+on the last two turns with five Swordsmen adjacent). Its estimate (`ComputeTotalExpectedDamage`) counts at most 3
+melee units, drops wounded ones, and needs (damage - heal) x 13 turns to cover the city. So two functions judge "can
+this army take this city" differently, and the stricter one wins every other turn.
+Decision: reverted (code only; this entry stays). Rule 9: third iteration on melee_only_vs_medium without a capture,
+so stop and write to the user. Proposed next step: the plan's "one function" item, one army estimate used by both
+`ExecuteCaptureCityMoves` and `ScoreAttackDamage`.
 
 ## 2026-11-19 M1 iteration 7: melee units close in on the city instead of going home
 Class: "shot to its last hit points, not taken, melee alive" in a takeable scenario: medium_vs_medium_rough LASTHP 5/6,
