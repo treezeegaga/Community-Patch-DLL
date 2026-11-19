@@ -42,6 +42,29 @@ Notes on the scenarios that don't agree 5 of 6:
   The rough terrain pattern (hills and forest every other tile at distance 2-3) follows the arena's coordinates,
   which change with the map, so each launch gets a different layout. A lab issue to fix before this scenario counts.
 
+## Current build (new AI as attacker)
+
+`ab-401f952` (M1 iteration 3 accepted), runs m1f3a/b/c (2026-11-19, newAI attacker, lab v9, 6 battles per scenario):
+62 of 90 captured.
+
+| Scenario | Captured | Capture turns | Bar (5/6 by turn) | Meets M1 bar |
+|---|---|---|---|---|
+| ancient_rush_vs_open_city | 6/6 | 2 | 3 | yes |
+| small_vs_weak | 6/6 | 2 | 3 | yes |
+| small_vs_medium | 6/6 | 6-7 | 10 | yes (stock 4/6) |
+| small_vs_strong | 0/6 | | not takeable | |
+| medium_vs_weak | 6/6 | 2 | 3 | yes |
+| medium_vs_medium | 6/6 | 3-4 | 6 | yes |
+| medium_vs_strong | 1/6 | 12 | not takeable | |
+| large_vs_weak | 6/6 | 2 | 3 | yes |
+| large_vs_medium | 6/6 | 3-4 | 6 | yes |
+| large_vs_strong | 6/6 | 6-7 | 12 | yes (stock 2/6) |
+| ref_cb4_melee6_vs_walls | 6/6 | 5 | 9 | yes |
+| melee_only_vs_medium | 0/6 | | 7 | **no** (never attacks) |
+| ranged_only_vs_weak | 0/6 | | not takeable | |
+| siege_train_vs_strong | 6/6 | 6-9 | 9 | yes (stock 2/6) |
+| medium_vs_medium_rough | 1/6 | 5 | 12 | **no** (melee left behind, last hit points 5/6) |
+
 ## Takeable list (proposed for the user's sign-off)
 
 | Scenario | Takeable | Reference turns | Bar (5 of 6 by turn) | Stock AI today |
