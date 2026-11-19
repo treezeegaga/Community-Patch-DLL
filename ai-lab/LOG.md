@@ -64,7 +64,22 @@ user's ruling: losses don't count). ref_cb4_melee6_vs_walls and the medium/large
 sooner. No scenario's captures drop by more than 1 in 6. small_vs_strong and medium_vs_strong may engage more and lose
 more units without capturing; that is acceptable only if it doesn't cost captures elsewhere.
 Build: `ab-e6beb62`. Run: queue request 2026-11-19-05-m1f4 (m1f4a/b/c).
-Result: pending.
+Result: m1f4a/b/c (newAI attacker, full set x 3, no assertions, no lab errors): 62 of 90 captured (m1f3: 62).
+melee_only_vs_medium 0/6, now LOWDMG 6 (48-91 damage, the first hits only on battle turns 10-12) instead of NOATTACK 6.
+Everything else within 1 in 6 of m1f3 (medium_vs_strong 2/6 from 1/6, medium_vs_medium_rough 0/6 from 1/6), losses
+not higher. Prediction missed.
+Decision: reverted (the code; this entry stays). Taught: the "too early" check was not the only thing stopping the
+attack, or the adjacent-unit count in the simulated position is not what I assumed. The log can't say which.
+
+## 2026-11-19 M1 iteration 5: why melee units next to a city don't attack it (logging only)
+Class: as iteration 4: melee_only_vs_medium never or barely attacks (0/6).
+Change: one log line in `ScoreAttackDamage` (CvTacticalAI.cpp) each time the combat simulation scores a melee attack
+on a city, once per unit, plot and outcome per turn: "melee on city <city>: <unit> from x:y hp, <outcome>: <values>",
+outcome "refused (too early)" (with the turns-on-city/attacker figures and the adjacent count), "refused (damage not
+worth it)" or "refused (suicide)" (with danger and scaled damage), or "allowed". No behaviour change; iteration 4's
+code is reverted in the same commit.
+Predicted: in melee_only_vs_medium the Swordsmen next to the city show "refused (too early)" on the early turns, or
+"allowed" with no attack following (then the simulation's choice of position is the cause, not the scoring).
 
 ## 2026-11-19 M1 iteration 3: no exploring with units at the enemy's walls
 Class: "shot to its last hit points, not taken, melee alive" in takeable scenarios (BASELINE.md): large_vs_strong
