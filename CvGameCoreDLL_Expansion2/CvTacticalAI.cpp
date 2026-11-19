@@ -7283,43 +7283,6 @@ static SUnitStats GetNextUnit(const SUnitStats& previousUnit, const STacticalAss
 }
 
 //note that the score returned from this function is not multiplied by 10 yet
-//AI lab (ai/v2): can the melee units around this city, together, bring it down before they are worn out?
-//Each of them is assumed to deal and take what this unit deals and takes per attack; the city's own strike hits one of
-//them a turn, and the city heals each turn until it falls. Counts own land melee units within 2 tiles (the real map).
-static bool MeleeArmyCanWearDownCity(const CvUnit* pUnit, const CvCity* pCity, int iCityHitPoints, int iDamagePerAttack,
-	int iDamageReceived, int iCityStrike, float fAggBias, bool bBlockaded)
-{
-	if (iDamagePerAttack <= 0)
-		return false;
-
-	int iMelee = 0;
-	int iHitPointBudget = 0;
-	const int iReserve = 10; //don't count on the last hit points
-	for (int i = 0; i < RING2_PLOTS; i++)
-	{
-		CvPlot* pLoopPlot = iterateRingPlots(pCity->plot(), i);
-		if (!pLoopPlot)
-			continue;
-		for (int iU = 0; iU < pLoopPlot->getNumUnits(); iU++)
-		{
-			CvUnit* pLoopUnit = pLoopPlot->getUnitByIndex(iU);
-			if (!pLoopUnit || pLoopUnit->getOwner() != pUnit->getOwner() || !pLoopUnit->IsCombatUnit() ||
-				pLoopUnit->IsCanAttackRanged() || pLoopUnit->getDomainType() != DOMAIN_LAND || pLoopUnit->isDelayedDeath())
-				continue;
-			iMelee++;
-			iHitPointBudget += max(0, pLoopUnit->GetCurrHitPoints() - iReserve);
-		}
-	}
-	if (iMelee == 0)
-		return false;
-
-	float fCostPerAttack = iDamageReceived + iCityStrike / (float)iMelee + 1;
-	float fTotalDamage = iHitPointBudget / fCostPerAttack * iDamagePerAttack * fAggBias;
-	int iHeal = bBlockaded ? 0 : GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN);
-	float fTurns = iCityHitPoints / max(1.f, iMelee * iDamagePerAttack - (float)iHeal);
-	return fTotalDamage >= iCityHitPoints + iHeal * fTurns;
-}
-
 //AI lab (ai/v2): log a melee unit's attack on a city as the combat simulation scores it, once per unit, plot and
 //outcome per turn (the simulation scores the same attack many times). Logging only.
 static void LogMeleeCityAttack(const CvUnit* pUnit, const CvPlot* pFromPlot, const CvCity* pCity, const char* szOutcome, const CvString& strValues)
@@ -7441,10 +7404,6 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 
 				//no attack if it's too early yet
 				bool bGoodFirstAttack = pUnit->getDamage() < 13 && iCityDamageDealt + iGarrisonDamage > iDamageReceived && iDamageReceived < 23;
-				//AI lab (ai/v2): judge the melee units around the city together, not this unit alone
-				if (fRemainingTurnsOnAttacker < fRemainingTurnsOnCity && GET_PLAYER(pUnit->getOwner()).IsNewAI() &&
-					MeleeArmyCanWearDownCity(pUnit, pEnemyCity, iPrevCityHitPoints, iCityDamageDealt, iDamageReceived, iCounterattackDamage, fAggBias, bBlockaded))
-					bGoodFirstAttack = true;
 				if (fRemainingTurnsOnAttacker < fRemainingTurnsOnCity && !bGoodFirstAttack)
 				{
 					LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, "refused (too early)", CvString::format(
