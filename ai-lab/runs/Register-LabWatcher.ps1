@@ -6,7 +6,7 @@
 # The task runs as you, only while you are logged on (Civ V needs your desktop), every -EveryMinutes minutes,
 # hidden, one copy at a time. See README.md next to this script. Works in Windows PowerShell 5.1.
 param(
-    [string]$Repo = "C:\Users\itstr\cp-ai-lab",
+    [string]$Repo = (Join-Path $env:USERPROFILE "cp-ai-lab"),
     [int]$EveryMinutes = 5,
     [string]$TaskName = "Civ V AI lab watcher",
     [switch]$Remove
