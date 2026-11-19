@@ -152,7 +152,20 @@ is at the limit) log "attack target" and an operation starts (OperationalAILog.c
 and takes the city is what the M2 bar measures. If d8 also never gets an attack target, the range is not the cause.
 Build: `ab-9109672`. Run: queue request 2026-11-19-12-m2d1 (m2n1a/b/c new AI, m2s1a/b/c stock, all six march
 scenarios x 2 each; m2r1 the script on the three new distances x 2).
-Result: (pending)
+Result so far (m2n1a, BOX 5:05-5:09 PM ET, new AI, 12 battles; the other six launches still running):
+- 12 and 16 tiles: "no army path to: <city>, plot distance 12 (16), max normalized distance 10" every turn; no attack
+  target, no operation; the army stays home (0 damage). As predicted.
+- 8 tiles: "preferred attack target" from the first turn, OP_CITY_ATTACK_LAND recruits the army, it marches (mean
+  distance 12 -> 5.4) and shoots the city to 92% in both battles, no capture in 25 turns.
+- 10 tiles: a target and an operation too, but the army barely moves (mean distance 9.6). **Lab leak:** the 8-tile
+  battle's operation (target plot 17:14) was never ended; in the 10-tile battle (city at 19:14) it recruited the new
+  army for a city that was no longer there, until it timed out on its 43rd turn. The 10-tile result is void.
+  Fix: lab v13 (commit `1ca9bea`): `Player:LabEndOperations()` (lab-only Lua method, ends all of a player's AI
+  operations) called for both sides at each battle's setup. The remaining m2d1 launches run with v13's Lua on the
+  old DLL (no such method: a WARN per battle, behaviour as v12), so their 10-tile battles are void too.
+  Recheck: `2026-11-19-15-m2d2` (8 and 10 tiles, new AI and stock, 6 each, `ab-1ca9bea`, BOX).
+- Earlier results: in the siege set each battle starts next to the city, so leftover operations could also have
+  recruited units there; M1's results are not reread for this, but M2 and later results use v13.
 
 ## 2026-11-19 M1 iteration 9: the new AI as defender (measurement only)
 Class: none (the M1 bar's defender part: new AI as defender must not make stock attackers more successful than the
