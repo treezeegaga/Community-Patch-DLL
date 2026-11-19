@@ -80,6 +80,27 @@ worth it)" or "refused (suicide)" (with danger and scaled damage), or "allowed".
 code is reverted in the same commit.
 Predicted: in melee_only_vs_medium the Swordsmen next to the city show "refused (too early)" on the early turns, or
 "allowed" with no attack following (then the simulation's choice of position is the cause, not the scoring).
+Result: m1d5 (`ab-c57e923`, newAI attacker, melee_only_vs_medium and medium_vs_medium_rough x 2, clean): 107 "melee on
+city" lines for the attacker, all "refused (too early)", none "allowed". Typical (battle turn 2, 4 adjacent): "city hp
+250, damage 15, received 32, city strike 16, last turn 0, turns on city 6.8, on attacker 2.4, agg 3 bias 1.73". So the
+first guess was right about the check and wrong about the numbers: each Swordsman takes twice what it deals, so
+counting neighbours (iteration 4) only just tipped full-health units over and refused every wounded one.
+Decision: accepted (logging stays).
+
+## 2026-11-19 M1 iteration 6: judge the melee army around a city together
+Class: melee_only_vs_medium never attacks, 0/6 (script: 6/6 by turn 5, 0.7 units lost).
+Cause: iteration 5's log: `ScoreAttackDamage` refuses every melee attack on the city as "too early" because one unit
+alone would be worn down (2.4 turns) long before the city (6.8). Six Swordsmen together deal about 90 a turn against a
+heal of 20, and have 540 hit points to spend at about 35 per attack: enough to take it, as the script shows.
+Change: with `IsNewAI()`, when the stock per-unit test says "too early", a second test may allow the attack:
+`MeleeArmyCanWearDownCity` counts own land melee units within 2 tiles of the city and their hit points (less 10 each),
+assumes each deals and takes what this unit does per attack, shares the city's strike among them, and allows the
+attack if the total damage they can deal before being worn down (times the stock aggression bias) covers the city's
+hit points plus its healing over the turns it would take. The other checks (hit point limit, damage worth it, suicide)
+are unchanged. melee_only_vs_medium: 540 / 35.7 x 15 x 1.58 = 358 against 250 + 72: allowed.
+Predicted (newAI attacker, full set x 3): melee_only_vs_medium from 0/6 to at least 5/6 by turn 7, with losses. Other
+scenarios: no capture count drops by more than 1 in 6; scenarios with ranged units mostly unaffected (the stock test
+passes once the city has taken damage). small_vs_strong and medium_vs_strong may lose more units.
 
 ## 2026-11-19 M1 iteration 3: no exploring with units at the enemy's walls
 Class: "shot to its last hit points, not taken, melee alive" in takeable scenarios (BASELINE.md): large_vs_strong
