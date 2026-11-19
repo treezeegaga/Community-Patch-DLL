@@ -44,26 +44,26 @@ Notes on the scenarios that don't agree 5 of 6:
 
 ## Current build (new AI as attacker)
 
-`ab-401f952` (M1 iteration 3 accepted), runs m1f3a/b/c (2026-11-19, newAI attacker, lab v9, 6 battles per scenario):
-62 of 90 captured.
+`ab-78d5e8a` (M1 iterations 3 and 7 accepted, plus logging), runs m1f7a/b/c (2026-11-19, newAI attacker, lab v9,
+6 battles per scenario): 65 of 90 captured. Previous: m1f3 (`ab-401f952`, iteration 3 only), 62 of 90.
 
-| Scenario | Captured | Capture turns | Bar (5/6 by turn) | Meets M1 bar |
-|---|---|---|---|---|
-| ancient_rush_vs_open_city | 6/6 | 2 | 3 | yes |
-| small_vs_weak | 6/6 | 2 | 3 | yes |
-| small_vs_medium | 6/6 | 6-7 | 10 | yes (stock 4/6) |
-| small_vs_strong | 0/6 | | not takeable | |
-| medium_vs_weak | 6/6 | 2 | 3 | yes |
-| medium_vs_medium | 6/6 | 3-4 | 6 | yes |
-| medium_vs_strong | 1/6 | 12 | not takeable | |
-| large_vs_weak | 6/6 | 2 | 3 | yes |
-| large_vs_medium | 6/6 | 3-4 | 6 | yes |
-| large_vs_strong | 6/6 | 6-7 | 12 | yes (stock 2/6) |
-| ref_cb4_melee6_vs_walls | 6/6 | 5 | 9 | yes |
-| melee_only_vs_medium | 0/6 | | 7 | **no** (never attacks) |
-| ranged_only_vs_weak | 0/6 | | not takeable | |
-| siege_train_vs_strong | 6/6 | 6-9 | 9 | yes (stock 2/6) |
-| medium_vs_medium_rough | 1/6 | 5 | 12 | **no** (melee left behind, last hit points 5/6) |
+| Scenario | Captured | Capture turns | Units lost (mean) | Bar (5/6 by turn) | Meets M1 bar |
+|---|---|---|---|---|---|
+| ancient_rush_vs_open_city | 6/6 | 2 | 0.0 | 3 | yes |
+| small_vs_weak | 6/6 | 2 | 0.0 | 3 | yes |
+| small_vs_medium | 6/6 | 6 | 0.0 | 10 | yes (stock 4/6) |
+| small_vs_strong | 0/6 | | 1.7 | not takeable | |
+| medium_vs_weak | 6/6 | 2 | 0.0 | 3 | yes |
+| medium_vs_medium | 6/6 | 3-4 | 0.0 | 6 | yes |
+| medium_vs_strong | 2/6 | 6, 9 | 0.0 | not takeable | |
+| large_vs_weak | 6/6 | 2 | 0.0 | 3 | yes |
+| large_vs_medium | 6/6 | 3 | 0.0 | 6 | yes |
+| large_vs_strong | 6/6 | 6-8 | 0.5 | 12 | yes (stock 2/6) |
+| ref_cb4_melee6_vs_walls | 6/6 | 5 | 0.0 | 9 | yes |
+| melee_only_vs_medium | 0/6 | | 0.0 | 7 | **no** (never attacks) |
+| ranged_only_vs_weak | 0/6 | | 0.0 | not takeable | |
+| siege_train_vs_strong | 6/6 | 6-8 | 0.0 | 9 | yes (stock 2/6) |
+| medium_vs_medium_rough | 6/6 | 5 | 0.0 | 12 | yes (stock 0/6) |
 
 ## Takeable list (proposed for the user's sign-off)
 
