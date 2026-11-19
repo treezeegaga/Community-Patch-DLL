@@ -836,6 +836,18 @@ size_t CvMilitaryAI::UpdateAttackTargets()
 			//keep it if it seems we can move an army there
 			if (target.m_iApproachScore > 0 && MilitaryAIHelpers::ArmyPathIsGood(it->second, m_pPlayer->GetID(), eOtherPlayer, 3))
 				vAttackOptions.push_back(OptionWithScore<CvAttackTarget>(target, ScoreAttackTarget(target)));
+			else if (GC.getLogging() && GC.getAILogging() && m_pPlayer->IsAtWarWith(eOtherPlayer))
+			{
+				//ai-lab logging (no behaviour change): why a reachable enemy city is not an attack target
+				CvString msg = CvString::format("%03d, %s, land target rejected: %s, from muster: %s, approach score %d, path length %d",
+					GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription(),
+					it->second.get(-1)->getPlotCity() ? it->second.get(-1)->getPlotCity()->getNameNoSpace().c_str() : "?",
+					pMusterCity->getNameNoSpace().c_str(), target.m_iApproachScore, it->second.length());
+				CvString playerName = GetPlayer()->getCivilizationShortDescription();
+				FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(playerName), FILogFile::kDontTimeStamp);
+				if (pLog)
+					pLog->Msg(msg.c_str());
+			}
 
 			//and now the other way around - this is not 100% accurate because we used the wrong terrain ownership to generate the path!
 			it->second.invert();
@@ -988,7 +1000,27 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 	data.iFlags |= CvUnit::MOVEFLAG_IGNORE_ENEMIES;
 
 	//get all paths, ie map<index of dest's city plot, path to that city>
-	return GC.GetStepFinder().GetMultiplePaths(pMusterCity->plot(), vPotentialTargets, data);
+	map<int, SPath> paths = GC.GetStepFinder().GetMultiplePaths(pMusterCity->plot(), vPotentialTargets, data);
+
+	//ai-lab logging (no behaviour change): enemy cities we know of but can't reach within the range limit never become attack targets
+	if (!bWater && GC.getLogging() && GC.getAILogging())
+	{
+		CvString playerName = GetPlayer()->getCivilizationShortDescription();
+		FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(playerName), FILogFile::kDontTimeStamp);
+		for (size_t i = 0; pLog && i < vPotentialTargets.size(); i++)
+		{
+			CvPlot* pTargetPlot = vPotentialTargets[i];
+			if (paths.find(pTargetPlot->GetPlotIndex()) != paths.end() || !m_pPlayer->IsAtWarWith(pTargetPlot->getOwner()))
+				continue;
+			CvString msg = CvString::format("%03d, %s, no army path to: %s, from muster: %s, plot distance %d, max normalized distance %d",
+				GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription(),
+				pTargetPlot->getPlotCity() ? pTargetPlot->getPlotCity()->getNameNoSpace().c_str() : "?", pMusterCity->getNameNoSpace().c_str(),
+				plotDistance(*pMusterCity->plot(), *pTargetPlot), iMaxNormDist);
+			pLog->Msg(msg.c_str());
+		}
+	}
+
+	return paths;
 }
 
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
