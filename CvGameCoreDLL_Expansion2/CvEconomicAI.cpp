@@ -3484,6 +3484,29 @@ void CvEconomicAI::DoPlotPurchases()
 bool g_bNoNewExplorers = false;
 
 /// Determine how our recon efforts are going
+/// AI lab (ai/v2): is there a city we know of, of a player we are at war with, within iRange plots of pPlot?
+bool CvEconomicAI::IsNearEnemyCityAtWar(const CvPlot* pPlot, int iRange) const
+{
+	if (!pPlot)
+		return false;
+
+	TeamTypes eOurTeam = m_pPlayer->getTeam();
+	for (int iPlayer = 0; iPlayer < MAX_CIV_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kOther = GET_PLAYER((PlayerTypes)iPlayer);
+		if (!kOther.isAlive() || kOther.getTeam() == eOurTeam || !GET_TEAM(eOurTeam).isAtWar(kOther.getTeam()))
+			continue;
+
+		int iLoop = 0;
+		for (const CvCity* pCity = kOther.firstCity(&iLoop); pCity != NULL; pCity = kOther.nextCity(&iLoop))
+		{
+			if (pCity->plot()->isRevealed(eOurTeam) && plotDistance(*pCity->plot(), *pPlot) <= iRange)
+				return true;
+		}
+	}
+	return false;
+}
+
 void CvEconomicAI::DoReconState()
 {
 	//debug flag so combat units aren't randomly turned into explorers
@@ -3592,6 +3615,17 @@ void CvEconomicAI::DoReconState()
 
 			if (!pLoopUnit->canUseForAIOperation())
 				continue;
+
+			// AI lab (ai/v2): don't pull fighting units off a siege to explore. Candidates are taken farthest from home
+			// first, which is the army at the enemy's walls.
+			if (m_pPlayer->IsNewAI() && pLoopUnit->IsCombatUnit() && !pLoopUnit->IsGainsXPFromScouting() &&
+				pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE && IsNearEnemyCityAtWar(pLoopUnit->plot(), 5))
+			{
+				if (GC.getLogging() && GC.getAILogging())
+					LogEconomyMessage(CvString::format("Not exploring with %s %d: near an enemy city at war",
+						pLoopUnit->getName().GetCString(), pLoopUnit->GetID()));
+				continue;
+			}
 
 			int iDistance = m_pPlayer->GetCityDistanceInPlots(pLoopUnit->plot());
 

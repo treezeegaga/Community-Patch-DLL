@@ -285,6 +285,7 @@ private:
 	void DoHurry();
 	void DoPlotPurchases();
 	void DoReconState();
+	bool IsNearEnemyCityAtWar(const CvPlot* pPlot, int iRange) const; // AI lab (ai/v2)
 	void DoAntiquitySites();
 	void DisbandExtraWorkers();
 	void DisbandExtraWorkboats();
