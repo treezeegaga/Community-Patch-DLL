@@ -1,0 +1,38 @@
+2026-11-19 13:42:18  Run 'm2r0c': set march, only [], repeats 2, DLL ab-78d5e8a
+2026-11-19 13:42:19    dll: Installed ab-78d5e8a (13878272 bytes, SHA-256 DCBB12253ED8...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-19 13:42:19    installer: AILog is 1 in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-19 13:42:19    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-19 13:42:19    installer:   Runs the 'march' set, 2 time(s) each; the scripted attacker plays the attacker; new AI: none.
+2026-11-19 13:42:19    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-19 13:42:19    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-19 13:42:40  Civ V window at 963,63 size 1914x2034
+2026-11-19 13:43:10    screen 'single' (distance 0.4)
+2026-11-19 13:43:13    screen 'setup' (distance 16.7)
+2026-11-19 13:43:16    screen 'advanced' (distance 4.5)
+2026-11-19 13:43:31  Game started; waiting for the lab
+2026-11-19 13:43:37  Lab started: [742262.140] SiegeLab: [SiegeLab] RUN,10,Songhai,Greece,56,36,HANDICAP_KING,GAMESPEED_QUICK,2,3,2,0,0
+2026-11-19 13:43:37    1 battle(s) finished
+2026-11-19 13:43:42    2 battle(s) finished
+2026-11-19 13:43:47    4 battle(s) finished
+2026-11-19 13:43:52    5 battle(s) finished
+2026-11-19 13:43:57  Lab finished ([SiegeLab] DONE)
+2026-11-19 13:44:30  Civ V did not close within 30 s; stopping it by force
+2026-11-19 13:44:33    results: Run: lab v10, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the scripted attacker played the attacker
+2026-11-19 13:44:33    results: New AI: attacker off, defender off
+2026-11-19 13:44:33    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\m2r0c-20261119-1344.results.csv
+2026-11-19 13:44:33    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\m2r0c-20261119-1344.turns.csv
+2026-11-19 13:44:34    results: Saved 279 log file(s) from this launch (16.3 MB) to C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\m2r0c-20261119-1344-logs; folder listing in _logs-folder.txt
+2026-11-19 13:44:34    results: Scenario               Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength R
+2026-11-19 13:44:34    results:                                                                                                                       e
+2026-11-19 13:44:34    results:                                                                                                                       a
+2026-11-19 13:44:34    results:                                                                                                                       d
+2026-11-19 13:44:34    results:                                                                                                                       y
+2026-11-19 13:44:34    results: --------               ------- -------- ------------ ------------- ---------- -------------- ---------- ------------- -
+2026-11-19 13:44:34    results: march_medium_vs_weak         2        2 12.0         100           9.0        0.0            2.0 of 2   924           2
+2026-11-19 13:44:34    results: march_medium_vs_medium       2        2 9.0          100           4.0        0.0            2.0 of 2   1644          2
+2026-11-19 13:44:34    results: march_large_vs_medium        2        2 9.0          100           4.0        0.0            3.0 of 3   1644          2
+2026-11-19 13:44:34    results: 6 of 6 battles ended in a capture.
+2026-11-19 13:44:37    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-19 13:44:37    dll: Stock DLL restored and checked (1 copy).
+2026-11-19 13:44:37  No assertion dialogs.
+2026-11-19 13:44:37  Run saved. Civ V closed, lab removed, stock DLL restored.
