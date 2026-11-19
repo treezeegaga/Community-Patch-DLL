@@ -62,11 +62,14 @@ Facts worth knowing before touching code:
 
 - **You (the implementing session):** one session, one branch, one change at a time. You read results and
   logs, change the DLL, and decide accept or revert by the rules here.
-- **The PC runner:** runs what you ask and pushes results. No analysis. Ask it by message; a run request
-  is: pull, install the named DLL build, run the named command, push the results folder, reply with the
-  commit hash and any assertion texts.
-- **The user:** plays the human reference battles, rules on questions of how the AI *should* play, and
-  signs off each milestone. Ask only at those points. Record every ruling in `ai-lab/LOG.md` with the date.
+- **The run queue (from 2026-11-19, replaces the PC runner session):** you request a lab run by committing a
+  file to `ai-lab/runs/queue/` on `ai/v2`; a watcher on the user's PC (`ai-lab/runs/Watch-LabQueue.ps1`, run by
+  Task Scheduler) runs it and pushes the results and a done marker to `ai-lab/runs/done/`. Format and setup in
+  `ai-lab/runs/README.md`. Don't send run requests by message any more. The PC runner session ("Civ V siege lab:
+  PC runner (box)") may still exist; use it only if the user asks.
+- **The user:** rules on questions of how the AI *should* play, and signs off each milestone. Ask only at those
+  points. Record every ruling in `ai-lab/LOG.md` with the date. (The user doesn't play reference battles; see the
+  rulings in LOG.md.) Give times in US Eastern.
 
 Keep cost down: prefer reading the game's tactical log for the one battle you care about over rerunning
 things, and don't spawn helper sessions for work you can do in a few file reads.
@@ -308,3 +311,35 @@ User rulings: dated lines at the top of `LOG.md`.
 - Click-through automation on the PC is fragile (fixed window size and positions). If it breaks, the
   runner fixes the script; don't work around it by changing the user's settings.
 - The second PC ("TREEDESKTOP") is not set up for the lab. One PC is enough for lab runs.
+
+## 12. Handover between implementing sessions
+
+A session's context fills up over a long project; a fresh session that starts from the written record is cheaper
+and loses less than one that runs on a compacted memory. So:
+
+**When:** at each milestone sign-off by the user, and as soon as your context passes 300,000 tokens (check with
+`get_session` on your own session: `external_metadata.context_usage.used_tokens`; check at least at the end of
+every iteration). Finish or revert the iteration in hand first; never hand over with an unexplained change on the
+branch.
+
+**What:**
+1. Write a `## Current state (<date, time ET>)` entry at the top of `ai-lab/LOG.md`, above the rulings, replacing
+   the previous one: milestone and iteration in hand; the newest DLL build and what it contains; the baseline in
+   use; queued runs not yet done and results not yet read; open questions for the user; anything the user must do;
+   and a numbered "Next" list. Everything the successor needs that isn't already in PLAN.md, BASELINE.md or the
+   log entries. Commit and push it.
+2. Create the successor with `create_session`: model `claude-opus-5-5`, title `Civ V AI upgrade: implementer <n>`
+   (n one more than yours; you are 1 if your title has no number), tag `civ5-ai-lab`, source this repository at
+   `ai/v2`, `outcome_branch` `ai/v2`, and exactly the prompt below.
+3. Tell the user its name in one short message, and stop: no further work, no further runs, no messages to the
+   successor.
+
+The successor's prompt, word for word:
+
+> You are the implementing session for the Civ V AI project in the repository treezeegaga/Community-Patch-DLL.
+> Work only on the branch ai/v2: check it out from origin, commit there, push only there. Read ai-lab/PLAN.md
+> in full first, then the "Current state" entry at the top of ai-lab/LOG.md and the log entries it points to,
+> then ai-lab/BASELINE.md and ai-lab/runs/README.md. Carry on from the current state's "Next" list, following
+> the plan's rules, loop and handover rule (sections 6, 7 and 12). The user follows this session and is the
+> person you report to and ask for rulings; give times in US Eastern. Start by telling the user in a few lines
+> what you will do first.
