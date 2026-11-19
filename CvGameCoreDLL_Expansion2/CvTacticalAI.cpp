@@ -7283,6 +7283,29 @@ static SUnitStats GetNextUnit(const SUnitStats& previousUnit, const STacticalAss
 }
 
 //note that the score returned from this function is not multiplied by 10 yet
+//AI lab (ai/v2): log a melee unit's attack on a city as the combat simulation scores it, once per unit, plot and
+//outcome per turn (the simulation scores the same attack many times). Logging only.
+static void LogMeleeCityAttack(const CvUnit* pUnit, const CvPlot* pFromPlot, const CvCity* pCity, const char* szOutcome, const CvString& strValues)
+{
+	if (!(GC.getLogging() && GC.getAILogging()) || !pUnit || !pFromPlot || !pCity)
+		return;
+
+	static int s_iTurn = -1;
+	static std::set<std::string> s_seen;
+	if (GC.getGame().getGameTurn() != s_iTurn)
+	{
+		s_iTurn = GC.getGame().getGameTurn();
+		s_seen.clear();
+	}
+	CvString strKey = CvString::format("%d/%d/%d/%s", (int)pUnit->getOwner(), pUnit->GetID(), pFromPlot->GetPlotIndex(), szOutcome);
+	if (!s_seen.insert(std::string(strKey.c_str())).second)
+		return;
+
+	GET_PLAYER(pUnit->getOwner()).GetTacticalAI()->LogTacticalMessage(CvString::format("melee on city %s: %s %d from %d:%d hp %d, %s: %s",
+		pCity->getNameNoSpace().c_str(), pUnit->getName().c_str(), pUnit->GetID(), pFromPlot->getX(), pFromPlot->getY(),
+		pUnit->GetCurrHitPoints(), szOutcome, strValues.c_str()));
+}
+
 bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, const CvTacticalPlot* assumedPlot, const CvTacticalPosition& assumedPosition, CAttackCache& cache, STacticalAssignment* result, int iSelfDamage)
 {
 	eAggressionLevel eAggLvl = assumedPosition.getAggressionLevel();
@@ -7365,12 +7388,7 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 			{
 				//if we have multiple units encircling the city, try to take into account their attacks as well
 				//easiest way is to consider damage from last turn. so ideally ranged units start attacking and melee joins in later
-				//AI lab (ai/v2): every friendly unit next to the city can hit it this turn, and the city's own strike hits only one of them
-				int iAttackersAround = 1;
-				if (GET_PLAYER(pUnit->getOwner()).IsNewAI())
-					iAttackersAround = max(1, tactPlot->getNumAdjacentFriendlies(CvTacticalPlot::TD_BOTH, -1));
-
-				float fRemainingTurnsOnCity = iPrevCityHitPoints / (max(iCityDamageDealt * fAggBias * iAttackersAround, pEnemyCity->getDamageTakenLastTurn() * 1.0f) + 1);
+				float fRemainingTurnsOnCity = iPrevCityHitPoints / (max(iCityDamageDealt * fAggBias, pEnemyCity->getDamageTakenLastTurn() * 1.0f) + 1);
 				if (iPrevUnitHitPoints > 0)
 					// killing the garrisoned unit is also valuable
 					fRemainingTurnsOnCity = min(fRemainingTurnsOnCity, iPrevUnitHitPoints / (max(iGarrisonDamage + fAggBias, pEnemyUnit->GetDamageTakenLastTurn() * 1.0f) + 1));
@@ -7381,13 +7399,17 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 
 				//consider that we have other units around which can soak damage
 				int iCounterattackDamage = pEnemyCity->canRangeStrike() ? pEnemyCity->rangeCombatDamage(pUnit, false, pUnitPlot, true) : 0;
-				float fScaledCounterattackDamage = iCounterattackDamage / fAggBias / iAttackersAround;
+				float fScaledCounterattackDamage = iCounterattackDamage / fAggBias;
 				float fRemainingTurnsOnAttacker = pUnit->GetCurrHitPoints() / (iDamageReceived + fScaledCounterattackDamage + 1);
 
 				//no attack if it's too early yet
 				bool bGoodFirstAttack = pUnit->getDamage() < 13 && iCityDamageDealt + iGarrisonDamage > iDamageReceived && iDamageReceived < 23;
 				if (fRemainingTurnsOnAttacker < fRemainingTurnsOnCity && !bGoodFirstAttack)
 				{
+					LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, "refused (too early)", CvString::format(
+						"city hp %d, damage %d, received %d, city strike %d, last turn %d, turns on city %.1f, on attacker %.1f, agg %d bias %.2f, adjacent %d",
+						iPrevCityHitPoints, iCityDamageDealt, iDamageReceived, iCounterattackDamage, pEnemyCity->getDamageTakenLastTurn(),
+						fRemainingTurnsOnCity, fRemainingTurnsOnAttacker, (int)eAggLvl, fAggBias, tactPlot->getNumAdjacentFriendlies(CvTacticalPlot::TD_BOTH, -1)));
 					result->SetImpossible();
 					return false;
 				}
@@ -7671,10 +7693,18 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 		bool bSuicideCancel = (pUnit->GetCurrHitPoints() - iDamageReceived < 3) && eAggLvl != AL_BRAVEHEART; //in the real event there will be some randomness!
 		if (bVoluntaryCancel || bSuicideCancel)
 		{
+			if (pEnemyCity && !bRanged)
+				LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, bSuicideCancel ? "refused (suicide)" : "refused (damage not worth it)", CvString::format(
+					"city hp %d, damage %d, received %d, danger %d, scaled damage %d, agg %d",
+					iPrevCityHitPoints, iCityDamageDealt, iDamageReceived, iDanger, iScaledDamage, (int)eAggLvl));
 			result->SetImpossible();
 			return false;
 		}
 	}
+
+	if (pEnemyCity && !bRanged)
+		LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, "allowed", CvString::format("city hp %d, damage %d, received %d, agg %d",
+			iPrevCityHitPoints, iCityDamageDealt, iDamageReceived, (int)eAggLvl));
 
 	//finally the almighty score
 	//add previous damage again and again to make concentrated fire attractive
