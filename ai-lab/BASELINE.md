@@ -45,7 +45,8 @@ Notes on the scenarios that don't agree 5 of 6:
 ## Current build (new AI as attacker)
 
 `ab-78d5e8a` (M1 iterations 3 and 7 accepted, plus logging), runs m1f7a/b/c (2026-11-19, newAI attacker, lab v9,
-6 battles per scenario): 65 of 90 captured. Previous: m1f3 (`ab-401f952`, iteration 3 only), 62 of 90.
+6 battles per scenario): 68 of 90 captured (recounted 2026-11-19 by implementer 4 from the results files; earlier
+records said 65, an arithmetic slip; the per-scenario rows were right). Previous: m1f3 (`ab-401f952`, iteration 3 only), 62 of 90.
 
 | Scenario | Captured | Capture turns | Units lost (mean) | Bar (5/6 by turn) | Meets M1 bar |
 |---|---|---|---|---|---|
