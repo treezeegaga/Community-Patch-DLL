@@ -78,6 +78,7 @@ if (-not $CivDir) {
 $packDir = Join-Path $CivDir "Assets\DLC\MP_CPLeaderheads"
 
 $script:ReleaseCache = @{}
+$script:WaitLogged = @()
 function Test-Release([string]$tag) {
     if ($script:ReleaseCache.ContainsKey($tag)) { return $script:ReleaseCache[$tag] }
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -215,7 +216,15 @@ function Get-OpenRequests {
         $missing = @($r.Launches | Where-Object { $_.release } | ForEach-Object { $_.release } | Sort-Object -Unique | Where-Object { -not (Test-Release $_) })
         if ($missing.Count -gt 0) {
             $ageMin = if ($r.QueuedAt) { ((Get-UnixNow) - $r.QueuedAt) / 60 } else { 0 }
-            if ($ageMin -lt $ReleaseWaitMinutes -or $anyStarted) { Write-Log "$($r.Id) waits for build(s) $($missing -join ', ') (queued $([int]$ageMin) min ago)"; continue }
+            if ($ageMin -lt $ReleaseWaitMinutes -or $anyStarted) {
+                # Said once per request and build set, not on every look (a pass can look many times a minute).
+                $waitKey = "$($r.Id) $($missing -join ',')"
+                if ($script:WaitLogged -notcontains $waitKey) {
+                    $script:WaitLogged += $waitKey
+                    Write-Log "$($r.Id) waits for build(s) $($missing -join ', ') (queued $([int]$ageMin) min ago); further looks are not logged"
+                }
+                continue
+            }
             if (-not $DryRun) { Write-DoneMarker $r "failed" "build(s) $($missing -join ', ') not published after $ReleaseWaitMinutes minutes" $entries }
             continue
         }
@@ -327,7 +336,11 @@ try {
         $claim = [ordered]@{ id = $id; label = $label; host = $Me; claimedAt = (Get-Date).ToString("s"); claimedAtUnix = (Get-UnixNow)
             watcherVersion = $WatcherVersion; note = $next.Note }
         Write-Json $next.Paths.Claim $claim
-        if (-not (Push-Contested $next.Paths.Claim "Claim $id / $label on $Me")) { continue }   # someone else was first: look again
+        if (-not (Push-Contested $next.Paths.Claim "Claim $id / $label on $Me")) {   # someone else was first: look again
+            Write-Log "  claim of $id / $label not taken; looking again"
+            Start-Sleep 20
+            continue
+        }
 
         Write-Log "RUN $id / $label"
         $entry = $null
