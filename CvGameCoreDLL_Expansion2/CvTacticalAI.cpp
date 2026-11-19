@@ -7365,7 +7365,12 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 			{
 				//if we have multiple units encircling the city, try to take into account their attacks as well
 				//easiest way is to consider damage from last turn. so ideally ranged units start attacking and melee joins in later
-				float fRemainingTurnsOnCity = iPrevCityHitPoints / (max(iCityDamageDealt * fAggBias, pEnemyCity->getDamageTakenLastTurn() * 1.0f) + 1);
+				//AI lab (ai/v2): every friendly unit next to the city can hit it this turn, and the city's own strike hits only one of them
+				int iAttackersAround = 1;
+				if (GET_PLAYER(pUnit->getOwner()).IsNewAI())
+					iAttackersAround = max(1, tactPlot->getNumAdjacentFriendlies(CvTacticalPlot::TD_BOTH, -1));
+
+				float fRemainingTurnsOnCity = iPrevCityHitPoints / (max(iCityDamageDealt * fAggBias * iAttackersAround, pEnemyCity->getDamageTakenLastTurn() * 1.0f) + 1);
 				if (iPrevUnitHitPoints > 0)
 					// killing the garrisoned unit is also valuable
 					fRemainingTurnsOnCity = min(fRemainingTurnsOnCity, iPrevUnitHitPoints / (max(iGarrisonDamage + fAggBias, pEnemyUnit->GetDamageTakenLastTurn() * 1.0f) + 1));
@@ -7376,7 +7381,7 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 
 				//consider that we have other units around which can soak damage
 				int iCounterattackDamage = pEnemyCity->canRangeStrike() ? pEnemyCity->rangeCombatDamage(pUnit, false, pUnitPlot, true) : 0;
-				float fScaledCounterattackDamage = iCounterattackDamage / fAggBias;
+				float fScaledCounterattackDamage = iCounterattackDamage / fAggBias / iAttackersAround;
 				float fRemainingTurnsOnAttacker = pUnit->GetCurrHitPoints() / (iDamageReceived + fScaledCounterattackDamage + 1);
 
 				//no attack if it's too early yet
