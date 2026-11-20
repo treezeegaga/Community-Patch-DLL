@@ -16,6 +16,14 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
   `CvEconomicAI::DoReconState`, `CvMilitaryAI::GetArmyPathsFromCity`, `CvTacticalAI::PlotReinforcementMoves`,
   `OperationalAIHelpers::IsSpareRangedForOptionalSlot`, `CvMilitaryAI::RequestCityAttack` (M3 it. 5), and (M3 it. 2, accepted) the two "too early" gates in `ExecuteCaptureCityMoves` and `ScoreAttackDamage`, and (M3 it. 3b) the melee-on-city score at the end of `ScoreAttackDamage`. (`PlotArmyMovesCombat` holds an army in place while enemies are near it: "Contact with enemy!".)
 
+## Plans (M3)
+
+- `CvMilitaryAI::SAIPlan`, `s_aAIPlans` (CvMilitaryAI.cpp): the plan rows (data; a database table later). Row 1
+  AIPLAN_EARLY_RUSH: end turn 60 (Quick), 1 settler, 6 melee, 4 ranged (the user's game, LOG rulings 2026-11-20).
+- `GetActivePlan()`: new AI, major, leader's primary victory pursuit domination, before the end turn, not at war with a
+  major. No saved state. `GetPlanBuild(city)`: what the row wants built next (settler, best melee, best foot ranged) or
+  NO_UNIT. Hook: top of `CvCityStrategyAI::ChooseProduction` (M3 it. 7). Not yet in: research path, gold, the march.
+
 ## Military AI: choosing a target and starting an operation (M2, M4)
 
 | Function | What it decides | Gates and limits found | Log lines (file) |

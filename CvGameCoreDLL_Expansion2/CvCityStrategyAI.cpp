@@ -715,6 +715,23 @@ void CvCityStrategyAI::ChooseProduction(BuildingTypes eIgnoreBldg, UnitTypes eIg
 
 	CvCityBuildable buildable;
 
+	//new AI (ai/v2 M3 iteration 7): a player following a plan builds what the plan's row says (the early rush: one
+	//settler, then army units only, no buildings) until the plan's army is complete; then the usual choice below.
+	UnitTypes ePlanUnit = kPlayer.GetMilitaryAI()->GetPlanBuild(m_pCity);
+	if (ePlanUnit != NO_UNIT)
+	{
+		if (m_pCity->isProductionUnit() && m_pCity->getProductionUnit() == ePlanUnit)
+			return;
+
+		buildable.m_eBuildableType = CITY_BUILDABLE_UNIT;
+		buildable.m_iIndex = (int)ePlanUnit;
+		buildable.m_iTurnsToConstruct = GetCity()->getProductionTurnsLeft(ePlanUnit, 0);
+		buildable.m_iValue = 0;
+		LogCityProduction(buildable, false);
+		GetCity()->pushOrder(ORDER_TRAIN, ePlanUnit, GC.getUnitInfo(ePlanUnit)->GetDefaultUnitAIType(), false, true, false, false);
+		return;
+	}
+
 	// Reset vector holding items we can currently build
 	m_Buildables.clear();
 	m_BuildablesPrecheck.clear();

@@ -1033,6 +1033,128 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 	return paths;
 }
 
+//new AI (ai/v2 M3 iteration 7): plans. A plan is a data row; the code below only follows one. Until the rows live in a
+//database table (the pack has to carry it), they are this array. First row: the early rush, from the user's own game
+//(LOG.md rulings of 2026-11-20): one settler, no buildings, only army units, about 6 melee and 4 ranged by turn 50.
+static const CvMilitaryAI::SAIPlan s_aAIPlans[] =
+{
+	//type,				end turn (Quick),	settlers,	melee,	ranged
+	{ "AIPLAN_EARLY_RUSH",	60,					1,			6,		4 },
+};
+
+/// The plan this player follows right now, or NULL. No state of its own: it follows from the switch, the leader and the turn.
+const CvMilitaryAI::SAIPlan* CvMilitaryAI::GetActivePlan() const
+{
+	if (!m_pPlayer->IsNewAI() || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman())
+		return NULL;
+
+	//which row: leaders whose default victory pursuit is domination play the early rush; everyone else has no plan yet
+	if (m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit() != VICTORY_PURSUIT_DOMINATION)
+		return NULL;
+
+	const SAIPlan* pPlan = &s_aAIPlans[0];
+	int iEndTurn = pPlan->iEndTurnQuick * GC.getGame().getGameSpeedInfo().getTrainPercent() / 67;
+	if (GC.getGame().getElapsedGameTurns() >= iEndTurn)
+		return NULL;
+
+	//the build order is the preparation: once a war with a major civ is on, the city chooses as usual
+	if (GetNumberCivsAtWarWith(false) > 0)
+		return NULL;
+
+	return pPlan;
+}
+
+/// What the plan wants this city to build next: a unit type, or NO_UNIT when the plan has nothing to say (no plan, its
+/// army is complete, or the city can't build what is missing); the city then chooses as usual.
+UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
+{
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || !pCity)
+		return NO_UNIT;
+
+	//what we have, and what our other cities are building
+	int iMelee = 0, iRanged = 0, iSettlers = 0;
+	int iLoop = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->isFound())
+			iSettlers++;
+		else if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE)
+		{
+			if (pLoopUnit->getUnitInfo().GetRangedCombat() > 0)
+				iRanged++;
+			else
+				iMelee++;
+		}
+	}
+	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if (pLoopCity == pCity || !pLoopCity->isProductionUnit())
+			continue;
+		CvUnitEntry* pkInfo = GC.getUnitInfo(pLoopCity->getProductionUnit());
+		if (!pkInfo)
+			continue;
+		if (pkInfo->IsFound())
+			iSettlers++;
+		else if (pkInfo->GetDomainType() == DOMAIN_LAND && pkInfo->GetCombat() > 0 && pkInfo->GetDefaultUnitAIType() != UNITAI_EXPLORE)
+		{
+			if (pkInfo->GetRangedCombat() > 0)
+				iRanged++;
+			else
+				iMelee++;
+		}
+	}
+
+	//the best melee unit, ranged unit and settler this city can build (foot archers only: they upgrade along the bowman line)
+	UnitTypes eBestMelee = NO_UNIT, eBestRanged = NO_UNIT, eSettler = NO_UNIT;
+	int iBestMelee = 0, iBestRanged = 0;
+	for (int iUnitLoop = 0; iUnitLoop < GC.GetGameUnits()->GetNumUnits(); iUnitLoop++)
+	{
+		const UnitTypes eUnit = static_cast<UnitTypes>(iUnitLoop);
+		CvUnitEntry* pkInfo = GC.getUnitInfo(eUnit);
+		if (!pkInfo || pkInfo->GetDomainType() != DOMAIN_LAND)
+			continue;
+		bool bSettler = pkInfo->IsFound();
+		bool bArmy = pkInfo->GetCombat() > 0 && pkInfo->GetDefaultUnitAIType() != UNITAI_EXPLORE && pkInfo->GetDefaultUnitAIType() != UNITAI_CITY_BOMBARD;
+		if (!bSettler && !bArmy)
+			continue;
+		if (!pCity->canTrain(eUnit, pCity->isProductionUnit() && eUnit == pCity->getProductionUnit()))
+			continue;
+
+		if (bSettler)
+			eSettler = eUnit;
+		else if (pkInfo->GetRangedCombat() > 0)
+		{
+			if (pkInfo->GetMoves() <= 2 && pkInfo->GetRangedCombat() > iBestRanged)
+			{
+				iBestRanged = pkInfo->GetRangedCombat();
+				eBestRanged = eUnit;
+			}
+		}
+		else if (pkInfo->GetCombat() > iBestMelee)
+		{
+			iBestMelee = pkInfo->GetCombat();
+			eBestMelee = eUnit;
+		}
+	}
+
+	//the one settler, once two army units stand (the capital is not left empty); only the capital builds it
+	if (eSettler != NO_UNIT && pCity->isCapital() && iMelee + iRanged >= 2 && m_pPlayer->getNumCities() + iSettlers < 1 + pPlan->iSettlers)
+		return eSettler;
+
+	//then army units only: whichever kind is further behind its share
+	bool bWantMelee = iMelee < pPlan->iMelee && eBestMelee != NO_UNIT;
+	bool bWantRanged = iRanged < pPlan->iRanged && eBestRanged != NO_UNIT;
+	if (bWantMelee && bWantRanged)
+		return (iRanged * pPlan->iMelee < iMelee * pPlan->iRanged) ? eBestRanged : eBestMelee;
+	if (bWantMelee)
+		return eBestMelee;
+	if (bWantRanged)
+		return eBestRanged;
+
+	return NO_UNIT;
+}
+
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
 {
 	//note that a given target might be repeated with different muster points / army types
