@@ -47,6 +47,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19 (about 9:10 PM ET): an AI land attack in the classical era waits for 3 melee units
+  (`MUFORMATION_SMALL_CITY_ATTACK_FORCE`), and spare ranged units get no slot. Ruling: "both, in order". First
+  measure the march with armies that fill the formation (3 melee; a lab change only). Then, as its own iteration, the
+  new AI "goes with what it has": when none of its units can fill the missing melee slot, it marches with at least 2
+  melee plus its ranged units, and spare ranged units join the army.
+
 - 2026-11-19: standing permission for lab upkeep through the PC runner sessions (BOX's, and TREEDESKTOP's once it
   exists): diagnose and fix a stuck queue, read-only checks, install or remove the lab, without asking first; never
   graphics settings, saved games or the user's own play; tell the user afterwards (PLAN.md section 4). Not chosen:
@@ -112,6 +118,11 @@ operation was started willing to build the missing unit (`RequestCityAttack`'s i
 lab's attacker never builds units. So with iteration 2 the 2-Spearman armies (march_medium_vs_*, _rough, _d16) should
 get a target and an operation and then **stay in recruiting**, as at 8 tiles; only march_large_vs_medium (3 Spearmen)
 should fill the required slots and march. "Leaves home in 5 of 6" is predicted for march_large_vs_medium only.
+Lab v14 (scripts only, user ruling of 9:10 PM): four march3 scenarios added to the march set (3 Spearmen + 4
+Composite Bowmen, which fills the formation's required slots): march3_vs_medium_d8, march3_vs_medium (12 tiles),
+march3_vs_medium_d16, march3_vs_medium_rough. m2f2 runs the whole march set, so it plays them too, new AI and stock.
+Predicted for them: new AI leaves home in at least 5 of 6 at 8, 12 and 16 tiles and on the rough ground; stock only
+at 8 tiles. Script reference: `2026-11-19-21-m2r4`.
 Result: (pending)
 
 ## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)
