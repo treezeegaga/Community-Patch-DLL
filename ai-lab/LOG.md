@@ -215,7 +215,15 @@ gold (iteration 9) when it allows.
 Predicted (3 games): Bronze Working by about turn 45-50, before the march (plan army ready about turn 50-60); 2+
 Spearmen in the marching army (built or upgraded) in at least 2 of 3; where the army reaches a city, melee left at the
 last hit points, and a capture by turn 80 in at least 1 of 3. Regress 8 of 8. The war decision (op7c) is not touched.
-Build and run: below.
+Build: `ab-6071462`. Run: `2026-11-20-17-op8` (op8a/b/c new AI, op8x regress; all clean, by 5:53 PM ET).
+Result: Bronze Working turns 42/44/46, but 1/2/4 Spearmen only: the 6 Warriors already fill the row's melee count, and
+they are never upgraded: no "upgrade" line in op8a with 286-370 gold. `CvHomelandAI::PlotUpgradeMoves` runs after the
+tactical and operational moves and takes only units with moves left (`isReadyForUpgrade`) inside our borders; and the
+Warrior's upgrade is likely the Swordsman (Iron Working, iron), not the Spearman. Attack ops started turns 60-66 (the
+plan's limit; the army counted ready late), wars at turns 70-80 (op8a 80, op8b about 72, op8c none by 80); siege
+estimates NO, no capture. Bankruptcy gifting 0/0/6. Regress 8 of 8.
+Decision: **reverted** (the prediction failed: no Spearmen in the army; wars later). Learned: upgrades happen only for
+idle units at home; melee quality needs the upgrade path (or the plan building the better melee), not just the tech.
 
 ## 2026-11-20 M3 iteration 10: the early-rush plan, part 4: the attack waits for the plan's whole army (new AI)
 Class: wars begin with a fraction of the army (op6: 2+2 at the walls of 15).

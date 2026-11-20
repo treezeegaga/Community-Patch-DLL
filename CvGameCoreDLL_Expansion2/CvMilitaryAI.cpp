@@ -1038,8 +1038,8 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 //(LOG.md rulings of 2026-11-20): one settler, no buildings, only army units, about 6 melee and 4 ranged by turn 50.
 static const CvMilitaryAI::SAIPlan s_aAIPlans[] =
 {
-	//type,				end turn (Quick),	settlers,	melee,	ranged,	research toward,				then toward
-	{ "AIPLAN_EARLY_RUSH",	60,					1,			6,		4,		"UNITCLASS_COMPOSITE_BOWMAN",	"UNITCLASS_SPEARMAN" },
+	//type,				end turn (Quick),	settlers,	melee,	ranged,	research toward
+	{ "AIPLAN_EARLY_RUSH",	60,					1,			6,		4,		"UNITCLASS_COMPOSITE_BOWMAN" },
 };
 
 /// The plan this player follows right now, or NULL. No state of its own: it follows from the switch, the leader and the turn.
@@ -1218,53 +1218,44 @@ static bool IsTechOnPathTo(TechTypes eTech, TechTypes eTarget, vector<char>& vSe
 	return false;
 }
 
-/// What the plan wants researched next: the cheapest tech we can research now on the way to the row's first research
-/// target whose tech isn't known (strike unit, then melee unit), or NO_TECH; the tech AI then chooses as usual.
+/// What the plan wants researched next: the cheapest tech we can research now on the way to the plan's strike unit, or
+/// NO_TECH (no plan, or the unit's tech is known); the tech AI then chooses as usual.
 TechTypes CvMilitaryAI::GetPlanResearch() const
 {
 	const SAIPlan* pPlan = GetActivePlan();
-	if (!pPlan)
+	if (!pPlan || !pPlan->szResearchUnitClass)
 		return NO_TECH;
 
-	//the row's research targets in order: the first whose tech isn't known yet is researched toward
-	const char* aszTargets[2] = { pPlan->szResearchUnitClass, pPlan->szResearchUnitClass2 };
+	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
+	if (eClass == NO_UNITCLASS)
+		return NO_TECH;
+	UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eClass);
+	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (!pkUnit)
+		return NO_TECH;
+	TechTypes eTarget = (TechTypes)pkUnit->GetPrereqAndTech();
 	CvPlayerTechs* pTechs = m_pPlayer->GetPlayerTechs();
-	for (int iTarget = 0; iTarget < 2; iTarget++)
-	{
-		if (!aszTargets[iTarget])
-			continue;
-		UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(aszTargets[iTarget], true);
-		if (eClass == NO_UNITCLASS)
-			continue;
-		UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eClass);
-		CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
-		if (!pkUnit)
-			continue;
-		TechTypes eTarget = (TechTypes)pkUnit->GetPrereqAndTech();
-		if (eTarget == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTarget))
-			continue;
+	if (eTarget == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTarget))
+		return NO_TECH;
 
-		TechTypes eBest = NO_TECH;
-		int iBestCost = INT_MAX;
-		for (int iTech = 0; iTech < GC.getNumTechInfos(); iTech++)
+	TechTypes eBest = NO_TECH;
+	int iBestCost = INT_MAX;
+	for (int iTech = 0; iTech < GC.getNumTechInfos(); iTech++)
+	{
+		TechTypes eTech = (TechTypes)iTech;
+		if (!pTechs->CanResearch(eTech))
+			continue;
+		vector<char> vSeen(GC.getNumTechInfos(), 0);
+		if (!IsTechOnPathTo(eTech, eTarget, vSeen))
+			continue;
+		int iCost = pTechs->GetResearchCost(eTech);
+		if (iCost < iBestCost)
 		{
-			TechTypes eTech = (TechTypes)iTech;
-			if (!pTechs->CanResearch(eTech))
-				continue;
-			vector<char> vSeen(GC.getNumTechInfos(), 0);
-			if (!IsTechOnPathTo(eTech, eTarget, vSeen))
-				continue;
-			int iCost = pTechs->GetResearchCost(eTech);
-			if (iCost < iBestCost)
-			{
-				iBestCost = iCost;
-				eBest = eTech;
-			}
+			iBestCost = iCost;
+			eBest = eTech;
 		}
-		if (eBest != NO_TECH)
-			return eBest;
 	}
-	return NO_TECH;
+	return eBest;
 }
 
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
