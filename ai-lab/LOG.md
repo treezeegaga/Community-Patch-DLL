@@ -116,7 +116,12 @@ the log shows which later check refuses (expected: "damage not worth it"). small
 with no more units lost. Every other siege scenario within 1 in 6 of m3e1 (69 of 90), capture turns the same or
 earlier. March and march3 keep the M2 bar (5 of 6 within 1.5x the script); regress 8 of 8.
 Build: `ab-7aa945f`. Run: queue request `2026-11-20-05-m3f2` (m3f2a-c siege, m3g2a-c march, m3h2a-c march3, m3x2a regress).
-Result: (pending)
+Result (first launch, m3f2a, BOX, clean, 23 of 30): melee_only_vs_medium 0/2, 29% most damage (m3e1: 0). The log
+(rep 1, game turns 55-60): estimate TAKE (turn 3-4) every turn, "attempting capture ... executed: 6 units in reach, 6
+melee" every turn, and every Swordsman "allowed: city hp 250, damage 15-17, received 30-34" by `ScoreAttackDamage`, yet
+the city stays at 250. Both gates are open; the attack is allowed but never chosen: its score is damage dealt minus
+damage taken (`result->SetScore(0, bonus, dealt - taken)`, end of `ScoreAttackDamage`), -17, so the tactsim prefers
+moves without it. This is the second block of M1 it. 8. Not "damage not worth it", as predicted: a score, not a refusal.
 
 ## 2026-11-20 M3 iteration 1: one siege estimate, logging only
 Class: none yet (M3's first item, PLAN 8 M3): two functions judge "can this army take this city" and disagree (M1
