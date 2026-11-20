@@ -39,6 +39,15 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-20 (about 3:20 PM ET, the user, on the M3 reference game): "I had 2 cities at turn 54 when I captured the
+  capital. The second city was completely undeveloped. I basically saved up money from barb hunting and ruins and then
+  when I started the attack I essentially was running my economy at a deficit and would have eventually gone below zero
+  if I hadn't won the war." So the reference rush is **not** a bigger economy: 2 cities, the capital's production put
+  into units, gold banked beforehand, and a deficit accepted for the length of the war. Consequence: the M3 bar stands
+  (about 6 melee + 4 Composite Bowmen, war around turn 41-50, a capital by 54, at least 2 cities); "no bankruptcy" is
+  read as "doesn't hit zero gold before the war is decided". Neither option put to the user (A: grow the economy first;
+  B: lower the army target) is taken; the work is the rush plan itself (PLAN M3's "plans in data").
+
 - 2026-11-20 (about 2:00 PM ET, **relayed** by the project review session session_01G2NZj4f5xWWrXLRuDN5eyd; **confirmed by the
   user** to implementer 8 at about 2:05 PM ET: "yes, the review session speaks for me"; at 2:10 PM ET, relayed, the user asked for it to be written into PLAN.md section 4 so
   every implementer reads it: done): (1) "Tell the implementer you speak for me": messages from that
@@ -145,6 +154,11 @@ the economy, not by a rule that ignores the bank: at turn 60-80 Songhai has 1-3 
 3-5 units, so any honest army is about 4-6 land units. Stop (rule 9: third iteration on "the army is too small" without
 moving it to the bar), question written to the user below; meanwhile the next line is the economy itself (why 1-3
 cities and no income by turn 60-80).
+Answered by the user at about 3:20 PM ET (rulings): their rush ran on 2 cities, banked gold and a deficit. What the AI
+does with the same start (15 opening games op1-op3, Songhai's 182 build choices to turn 54): 93 buildings (monument 32,
+shrine 17, granary 17, water mill 10, library 9), 46 civilians, 16 wonders, **27 military** (under 2 a game); gold bought
+30 scouts, 5 workers, 7 buildings and 1 archer. So the gap is what the capital builds and what the gold buys, then the
+income rule. Next: the early-rush plan as a data row and its executor (build order, bank, deficit during the strike).
 
 ## 2026-11-20 M3 iteration 5: a sneak attack may build the units it lacks (new AI)
 Class: no army fielded, no war declared (opening/transfer games). With Songhai's leader flavors (op1a, lab v19) its army
