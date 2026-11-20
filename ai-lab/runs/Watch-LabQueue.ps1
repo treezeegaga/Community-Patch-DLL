@@ -32,7 +32,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$WatcherVersion = 2
+$WatcherVersion = 3
 $Me = $env:COMPUTERNAME
 $state = Join-Path $env:LOCALAPPDATA "cp-ai-lab"
 New-Item -ItemType Directory -Force $state | Out-Null
@@ -44,6 +44,8 @@ $doneDir = Join-Path $Repo "ai-lab\runs\done"
 $launchRoot = Join-Path $Repo "ai-lab\runs\launches"
 $resultsDir = Join-Path $Repo "ai-lab\siege\results"
 $utf8 = New-Object Text.UTF8Encoding($false)
+$statusFile = Join-Path $Repo "ai-lab\runs\status\$Me.json"
+$lastStatusFile = Join-Path $state "last-status.json"
 
 function Write-Log([string]$text) {
     $line = "{0:yyyy-MM-dd HH:mm:ss}  {1}" -f (Get-Date), $text
@@ -144,7 +146,39 @@ function Sync-Repo {
         $pullError = $_.Exception.Message
         # "no rebase in progress" is an error of its own and must not hide why the pull failed.
         try { & git -C $Repo rebase --abort 2>$null | Out-Null } catch {}
+        # Watcher v3: heal it when that loses nothing. With no local commits, everything this PC made is either pushed or
+        # an untracked result file (which a reset keeps), so the checkout is put back to the branch and pulled again.
+        if ((Get-Ahead) -eq 0) {
+            Write-Log "HEAL: pull failed ($pullError); resetting the lab checkout to origin/$Branch (no local commits to lose)"
+            try { Invoke-Git @("reset", "-q", "--hard", "origin/$Branch") | Out-Null; Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null; return }
+            catch { $pullError = "$pullError; after the reset: $($_.Exception.Message)" }
+        }
         throw "pull failed, nothing run: $pullError"
+    }
+}
+# Watcher v3: what this PC's watcher is doing, in ai-lab/runs/status/<COMPUTERNAME>.json, so a stall can be read from the
+# repository. Pushed when the state changes, and hourly while it is anything but idle. Only this PC writes the file.
+function Publish-Status([string]$st, [string]$detail) {
+    if ($DryRun) { return }
+    $now = Get-UnixNow
+    $prev = $null
+    if (Test-Path $lastStatusFile) { try { $prev = Read-Json $lastStatusFile } catch {} }
+    if ($prev -and $prev.state -eq $st -and $prev.detail -eq $detail -and ($st -eq "idle" -or ($now - [long]$prev.updatedUnix) -lt 3600)) { return }
+    $obj = [ordered]@{ host = $Me; watcherVersion = $WatcherVersion; state = $st; detail = $detail; updated = (Get-Date).ToString("s")
+        updatedUnix = $now; paused = (Test-Path $pauseFile); civRunning = (Test-CivRunning) }
+    try {
+        New-Item -ItemType Directory -Force (Split-Path $statusFile) | Out-Null
+        Write-Json $statusFile $obj
+        Invoke-Git @("add", "-f", (Get-RepoPath $statusFile)) | Out-Null
+        $staged = & git -C $Repo diff --cached --name-only
+        if ($staged) { Invoke-Git @("commit", "-q", "-m", "Lab PC $Me watcher: $st") | Out-Null }
+        Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null
+        Invoke-Git @("push", "-q", "origin", "HEAD:$Branch") | Out-Null
+        Write-Json $lastStatusFile $obj
+    }
+    catch {
+        try { & git -C $Repo rebase --abort 2>$null | Out-Null } catch {}
+        Write-Log "  status '$st' not pushed: $($_.Exception.Message)"
     }
 }
 
@@ -298,22 +332,22 @@ function Invoke-Launch($l) {
 }
 
 # ---------- One pass ----------
-if (Test-Path $pauseFile) { exit 0 }
+if (Test-Path $pauseFile) { Publish-Status "paused" "PAUSE file present"; exit 0 }
 if (Test-Path $lockFile) {
     $otherPid = (Get-Content $lockFile -ErrorAction SilentlyContinue | Select-Object -First 1) -as [int]
     if ($otherPid -and (Get-Process -Id $otherPid -ErrorAction SilentlyContinue)) { exit 0 }
 }
-if (Test-CivRunning) { exit 0 }   # you are playing; try again next pass
+if (Test-CivRunning) { Publish-Status "civ-open" "Civ V is running; launches wait"; exit 0 }   # you are playing; try again next pass
 Set-Content $lockFile $PID
 $selfHash = (Get-FileHash $PSCommandPath -Algorithm SHA256).Hash
 
 try {
     for ($round = 1; $round -le 100; $round++) {
-        try { Sync-Repo } catch { Write-Log "PULL FAILED: $($_.Exception.Message)"; exit 1 }
+        try { Sync-Repo } catch { Write-Log "PULL FAILED: $($_.Exception.Message)"; Publish-Status "pull-failed" $_.Exception.Message; exit 1 }
         if ((Get-FileHash $PSCommandPath -Algorithm SHA256).Hash -ne $selfHash) { Write-Log "The watcher script was updated; the next pass runs the new version."; break }
         if ((Get-Ahead) -gt 0) {
             if ($DryRun) { Write-Log "DRY RUN: $(Get-Ahead) local commit(s) not pushed yet" }
-            elseif (-not (Push-Results "Lab results (retrying an earlier push)")) { Write-Log "PUSH STILL FAILING"; exit 1 }
+            elseif (-not (Push-Results "Lab results (retrying an earlier push)")) { Write-Log "PUSH STILL FAILING"; Publish-Status "push-failed" "results committed here but not pushed"; exit 1 }
         }
         New-Item -ItemType Directory -Force $doneDir | Out-Null
 
@@ -333,7 +367,7 @@ try {
             break
         }
         $next = Find-NextLaunch $open
-        if (-not $next) { break }
+        if (-not $next) { Publish-Status "idle" ""; break }
         if (Test-CivRunning) { break }
 
         $id = $next.Request.Id; $label = $next.Launch.label
@@ -376,6 +410,6 @@ try {
         if (Test-CivRunning) { break }
     }
 }
-catch { Write-Log "WATCHER ERROR: $($_.Exception.Message)"; exit 1 }
+catch { Write-Log "WATCHER ERROR: $($_.Exception.Message)"; Publish-Status "error" $_.Exception.Message; exit 1 }
 finally { Remove-Item $lockFile -ErrorAction SilentlyContinue }
 exit 0
