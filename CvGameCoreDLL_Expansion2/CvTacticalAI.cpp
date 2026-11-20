@@ -268,7 +268,7 @@ void CvTacticalAI::Update()
 	UpdateVisibility();
 	DropOldFocusAreas();
 	FindTacticalTargets();
-	LogSiegeEstimates(); //AI lab (M3): logging only
+	UpdateSiegeEstimates(); //AI lab (M3): before any attack decision this turn
 
 	//do this after updating the target list!
 	RecruitUnits();
@@ -917,7 +917,23 @@ void CvTacticalAI::ExecuteCaptureCityMoves()
 				int iRequiredDamage = pCity->GetMaxHitPoints() - pCity->getDamage();
 				int iExpectedDamagePerTurn = ComputeTotalExpectedDamage(*pTarget);
 
-				if (iExpectedDamagePerTurn < iRequiredDamage)
+				if (iExpectedDamagePerTurn < iRequiredDamage && m_pPlayer->IsNewAI())
+				{
+					//AI lab (M3 it. 2): the new AI asks the one siege estimate whether the army near the city can take it
+					const CvSiegeEstimate* pEst = GetSiegeEstimate(pCity);
+					if (!pEst || pEst->iTurnTaken < 0)
+					{
+						if (GC.getLogging() && GC.getAILogging())
+						{
+							CvString strLogString;
+							strLogString.Format("Zone %d, too early for attacking %s (siege estimate NO), required damage %d, expected max damage per turn %d",
+								pZone ? pZone->GetZoneID() : -1, pCity->getNameNoSpace().c_str(), iRequiredDamage, iExpectedDamagePerTurn);
+							LogTacticalMessage(strLogString);
+						}
+						continue;
+					}
+				}
+				else if (iExpectedDamagePerTurn < iRequiredDamage)
 				{
 					//actual siege will typically be longer because not all units actually attack the city each turn
 					int iMaxSiegeTurns = 13; //do we even need a limit here or is this handled through the tactical posture?
@@ -5320,10 +5336,13 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 	return false;
 }
 
-/// AI lab (M3): logs the siege estimate once a turn for every enemy city at war with our land units within 4 tiles
-void CvTacticalAI::LogSiegeEstimates()
+/// AI lab (M3): the siege estimate, once a turn, for every enemy city at war with our land units within 4 tiles;
+/// kept for the turn (the new AI's attack decisions read it) and logged
+void CvTacticalAI::UpdateSiegeEstimates()
 {
-	if (!(GC.getLogging() && GC.getAILogging()))
+	m_siegeEstimates.clear();
+	bool bLog = GC.getLogging() && GC.getAILogging();
+	if (!m_pPlayer->IsNewAI() && !bLog)
 		return;
 
 	TeamTypes eOurTeam = m_pPlayer->getTeam();
@@ -5344,13 +5363,23 @@ void CvTacticalAI::LogSiegeEstimates()
 			if (kEst.iMelee + kEst.iRanged == 0)
 				continue;
 
-			LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d; garrison hp %d, dead on turn %d, then ranged %d, melee %d",
+			m_siegeEstimates[std::make_pair(iPlayer, pCity->GetID())] = kEst;
+			if (bLog)
+				LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d; garrison hp %d, dead on turn %d, then ranged %d, melee %d",
 				pCity->getNameNoSpace().c_str(), bTake ? "TAKE" : "NO", kEst.iTurnTaken, kEst.iMeleeLeft, kEst.iCityHPAtEnd,
 				kEst.iCityHP, kEst.iCityMaxHP, kEst.iCityHeal, kEst.iCityStrike, kEst.iMelee, kEst.iRanged,
 				kEst.iRangedDamagePerTurn, kEst.iMeleeDamagePerAttack, kEst.iMeleeReceivedPerAttack,
 				kEst.iGarrisonHP, kEst.iGarrisonDeadTurn, kEst.iRangedDamageBare, kEst.iMeleeDamageBare));
 		}
 	}
+}
+
+const CvSiegeEstimate* CvTacticalAI::GetSiegeEstimate(const CvCity* pCity) const
+{
+	if (!pCity)
+		return NULL;
+	std::map<std::pair<int,int>, CvSiegeEstimate>::const_iterator it = m_siegeEstimates.find(std::make_pair((int)pCity->getOwner(), pCity->GetID()));
+	return it != m_siegeEstimates.end() ? &it->second : NULL;
 }
 
 /// Estimates the bombard damage we can apply to a target
@@ -7693,9 +7722,18 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 
 				//no attack if it's too early yet
 				bool bGoodFirstAttack = pUnit->getDamage() < 13 && iCityDamageDealt + iGarrisonDamage > iDamageReceived && iDamageReceived < 23;
-				if (fRemainingTurnsOnAttacker < fRemainingTurnsOnCity && !bGoodFirstAttack)
+				bool bTooEarly = fRemainingTurnsOnAttacker < fRemainingTurnsOnCity && !bGoodFirstAttack;
+				//AI lab (M3 it. 2): the new AI judges the army, not the unit: too early only if the one siege estimate says the
+				//army near the city can't take it
+				CvPlayer& kOwner = GET_PLAYER(pUnit->getOwner());
+				if (kOwner.IsNewAI())
 				{
-					LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, "refused (too early)", CvString::format(
+					const CvSiegeEstimate* pEst = kOwner.GetTacticalAI()->GetSiegeEstimate(pEnemyCity);
+					bTooEarly = !pEst || pEst->iTurnTaken < 0;
+				}
+				if (bTooEarly)
+				{
+					LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, kOwner.IsNewAI() ? "refused (too early, siege estimate NO)" : "refused (too early)", CvString::format(
 						"city hp %d, damage %d, received %d, city strike %d, last turn %d, turns on city %.1f, on attacker %.1f, agg %d bias %.2f, adjacent %d",
 						iPrevCityHitPoints, iCityDamageDealt, iDamageReceived, iCounterattackDamage, pEnemyCity->getDamageTakenLastTurn(),
 						fRemainingTurnsOnCity, fRemainingTurnsOnAttacker, (int)eAggLvl, fAggBias, tactPlot->getNumAdjacentFriendlies(CvTacticalPlot::TD_BOTH, -1)));

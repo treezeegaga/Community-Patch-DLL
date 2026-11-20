@@ -327,6 +327,27 @@ FDataStream& operator>>(FDataStream&, CvFocusArea&);
 //!  - Handed units to control by the operational AI
 //!  - Handles moves for these units until dead or objective completed
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// AI lab (M3): "can this army take this city", the one estimate (TacticalAIHelpers::EstimateSiege)
+struct CvSiegeEstimate
+{
+	int iCityHP;                  // hit points the city has now
+	int iCityMaxHP;
+	int iCityHeal;                // per turn, 0 if blockaded
+	int iCityStrike;              // the city's strike on the weakest melee unit (0 if it can't strike)
+	int iMelee;                   // our land melee units counted
+	int iRanged;                  // our land ranged units counted
+	int iRangedDamagePerTurn;     // all ranged units together, at full use
+	int iMeleeDamagePerAttack;    // all melee units together, one attack each
+	int iMeleeReceivedPerAttack;  // all melee units together
+	int iTurnTaken;               // turn of the estimated capture (1 = this turn), -1 if not within the limit
+	int iMeleeLeft;               // melee units alive at the capture or at the limit
+	int iCityHPAtEnd;             // the city's hit points at the limit (0 if taken)
+	int iGarrisonHP;              // the garrison's hit points now (0 if none)
+	int iGarrisonDeadTurn;        // estimated turn the garrison dies, -1 if it doesn't (or none)
+	int iRangedDamageBare;        // iRangedDamagePerTurn once the garrison is dead
+	int iMeleeDamageBare;         // iMeleeDamagePerAttack once the garrison is dead
+};
+
 class CvTacticalAI
 {
 public:
@@ -362,8 +383,11 @@ public:
 	// Public logging
 	FILogFile* GetLogFile();
 	void LogTacticalMessage(const CvString& strMsg);
-	// AI lab (M3): one line per enemy city at war with our land units near it: the siege estimate (logging only)
-	void LogSiegeEstimates();
+	// AI lab (M3): the siege estimate for every enemy city at war with our land units within 4 tiles, computed once at
+	// the start of the turn (for the new AI, or when logging), kept for the turn and logged
+	void UpdateSiegeEstimates();
+	// NULL if none this turn (no units of ours within 4 tiles, or neither new AI nor logging)
+	const CvSiegeEstimate* GetSiegeEstimate(const CvCity* pCity) const;
 
 	// Other people want to know this too
 	const vector<CvTacticalTarget>& GetTacticalTargets() const { return m_AllTargets; }
@@ -507,6 +531,7 @@ private:
 
 	// Lists of targets for the turn
 	vector<CvTacticalTarget> m_AllTargets;
+	std::map<std::pair<int,int>, CvSiegeEstimate> m_siegeEstimates; // AI lab (M3): (owner, city id), this turn only, not saved
 	vector<CvTacticalTarget*> m_ZoneTargets; //pointers only!
 	vector<CvTacticalTarget> m_NavalBlockadePoints;
 
@@ -1579,27 +1604,6 @@ private:
 	const CvTactAssignmentStorage& operator=(const CvTactAssignmentStorage& rhs);
 };
 
-
-// AI lab (M3): "can this army take this city", the one estimate (TacticalAIHelpers::EstimateSiege)
-struct CvSiegeEstimate
-{
-	int iCityHP;                  // hit points the city has now
-	int iCityMaxHP;
-	int iCityHeal;                // per turn, 0 if blockaded
-	int iCityStrike;              // the city's strike on the weakest melee unit (0 if it can't strike)
-	int iMelee;                   // our land melee units counted
-	int iRanged;                  // our land ranged units counted
-	int iRangedDamagePerTurn;     // all ranged units together, at full use
-	int iMeleeDamagePerAttack;    // all melee units together, one attack each
-	int iMeleeReceivedPerAttack;  // all melee units together
-	int iTurnTaken;               // turn of the estimated capture (1 = this turn), -1 if not within the limit
-	int iMeleeLeft;               // melee units alive at the capture or at the limit
-	int iCityHPAtEnd;             // the city's hit points at the limit (0 if taken)
-	int iGarrisonHP;              // the garrison's hit points now (0 if none)
-	int iGarrisonDeadTurn;        // estimated turn the garrison dies, -1 if it doesn't (or none)
-	int iRangedDamageBare;        // iRangedDamagePerTurn once the garrison is dead
-	int iMeleeDamageBare;         // iMeleeDamagePerAttack once the garrison is dead
-};
 
 namespace TacticalAIHelpers
 {
