@@ -120,6 +120,24 @@ count check alone; the pack comparison follows as a check, not a gate (if other 
 set aside). Its first job: `2026-11-19-24-m2f3t`, the new-AI and stock half of m2f3 (iteration 2's real test), so it
 doesn't wait about 2 hours behind BOX's queue. m2f3 on BOX still runs later; its battles add to these.
 
+## 2026-11-19 M2 iteration 4: ranged units close in on the city too (rough-ground march)
+Class: the one scenario that misses the proposed M2 bar: march3_vs_medium_rough, captured 6 of 6 but on turns 17-18
+(limit 16.5; script median 11).
+Cause (m2n6b rep 1, `PlayerTacticalAILog.csv`, game turns 42-47, implementer 6, 11:50 PM ET): the army is within 3
+tiles on battle turn 7, but on the first turns at the city `ExecuteCaptureCityMoves` logs "too early for attacking
+Knossos, required damage 250, expected max damage per turn 26" (on rough ground few units can strike this turn), and
+the Composite Bowmen are "unassigned after tactical moves, left to homeland" 3-4 tiles out for several turns. Only 2 of
+4 bowmen fire; damage starts on battle turn 10 and climbs about 28 a turn. M1 iteration 7's close-in (in
+`PlotReinforcementMoves`) moves idle melee units up but skips ranged ones.
+Change: the same close-in for ranged land units (new AI only): idle, not in an army, within 6 tiles, above a third of
+their hit points, they move to (or hold at) their range of the city, at most 2 tiles. Melee unchanged. Log line
+"ranged closing in on <city> (ring n)". `CvTacticalAI::PlotReinforcementMoves`.
+Predicted (new AI, lab v17): march3_vs_medium_rough capture by turn 16 in at least 5 of 6 (from 17-18); damage starts
+within a turn or two of arrival; no "left to homeland" lines for bowmen within 6 tiles of the city. Other march
+scenarios: no capture count down by more than 1 in 6, turns the same or earlier. Siege set: no scenario down by more
+than 1 in 6 (70 of 90 now); small_vs_strong and medium_vs_strong may lose more units (ranged units now stand in the
+city's reach). Regress set: stays 24 of 24.
+
 ## 2026-11-19 M2 iteration 3: spare ranged units fill an army's optional slots (user ruling: "go with what it has")
 Class: never leaves home: every march battle of m2f2 (both AIs) and m2n4ta (march3, new AI): the operation starts and
 stays in "recruiting".
