@@ -133,4 +133,22 @@ least 5 of 6 within 1.5 times the script's median capture turn.
 | march3_vs_medium_d16 | 6/6, 12 | 6/6, 15-16 | 0.0 | 6 of 6 (by 18) | meets | 0/6 |
 | march3_vs_medium_rough | 6/6, 11 | 6/6, 17-18 | 0.0 | 0 of 6 (by 16.5) | **misses** | 0/6 |
 
+### Current build: `ab-9238090` (M2 iterations 2, 3, 4b), lab v17, m2nb/m2nc a-c, 6 battles each
+
+| Scenario | Script median turn | Bar (1.5x) | New AI: captured, turns | Within bar | Units lost |
+|---|---|---|---|---|---|
+| march_medium_vs_weak | 12.5 | 18.75 | 6/6, 9-9 | 6 of 6: meets | 0.0 |
+| march_medium_vs_medium | 9 | 13.5 | 6/6, 11-13 | 6 of 6: meets | 0.2 |
+| march_large_vs_medium | 10 | 15 | 6/6, 10-14 | 6 of 6: meets | 0.0 |
+| march_medium_vs_medium_d8 | 11 | 16.5 | 6/6, 10-11 | 6 of 6: meets | 0.0 |
+| march_medium_vs_medium_d10 | 8 | 12 | 6/6, 10-11 | 6 of 6: meets | 0.0 |
+| march_medium_vs_medium_d16 | 17 | 25.5 | 5/6, 15-16 | 5 of 6: meets | 0.3 |
+| march_medium_vs_medium_rough | 25 | 37.5 | 6/6, 11-12 | 6 of 6: meets | 0.0 |
+| march3_vs_medium_d8 | 7 | 10.5 | 6/6, 9-9 | 6 of 6: meets | 0.0 |
+| march3_vs_medium | 9.5 | 14.25 | 6/6, 11-11 | 6 of 6: meets | 0.0 |
+| march3_vs_medium_d16 | 12 | 18 | 6/6, 15-16 | 6 of 6: meets | 0.0 |
+| march3_vs_medium_rough | 11 | 16.5 | 6/6, 13-16 | 6 of 6: meets | 0.2 |
+
+Total 65 of 66. Same build: siege set 69 of 90 (m2gb), regress set 24 of 24 (m2xb). The table above is iteration 3.
+
 Stock never leaves home at 10+ tiles and barely engages at 8 (most damage 2-13%), with the corridor shown or not.
