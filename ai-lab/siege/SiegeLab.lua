@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 16
+local VERSION = 17
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -580,6 +580,15 @@ local function beginScenario()
 	local attackerTeamID = attacker:GetTeam()
 	local reveal = { Map.GetPlot(lab.tx, lab.ty) }
 	for dir = 0, 5 do reveal[#reveal + 1] = Map.PlotDirection(lab.tx, lab.ty, dir) end
+	-- Lab v17: in a march battle the ground between home and the target is shown too (a corridor 5 rows wide), as a
+	-- player who has scouted the way would know it. Army paths only cross tiles the player has seen, so on a fresh
+	-- map the first marches of a launch found no path at all (m2n5a: "no army path ... uncapped normalized distance
+	-- -1" in rep 1 at 12 and 16 tiles, a path in rep 2).
+	if sc.atHome then
+		for x = math.min(lab.hx, lab.tx), math.max(lab.hx, lab.tx) do
+			for y = lab.ty - 2, lab.ty + 2 do reveal[#reveal + 1] = Map.GetPlot(x, y) end
+		end
+	end
 	for _, plot in ipairs(reveal) do
 		if plot then
 			plot:ChangeVisibilityCount(attackerTeamID, 1, -1, false, false)
