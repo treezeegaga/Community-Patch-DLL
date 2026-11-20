@@ -114,20 +114,23 @@ New AI on `ab-455fe7a` (M2 iteration 2), lab v16, m2x3a/b/c, 6 battles each: cap
 
 ## March (M2)
 
-12 tiles from home unless named; 25 turns; King, Quick. Script = scripted attacker (the reference).
-New AI = `ab-8893a66` (M2 iterations 2 and 3), lab v17, m2n5b/c and m2n6b/c (4 battles each so far; m2f6 adds 2).
-Stock = no march capture on any build or lab so far (m2s0-m2s4: armies stay home or wait in recruiting).
+12 tiles from home unless named; 25 turns; King, Quick. Script = scripted attacker (the reference; m2r0, m2r1, m2r3,
+m2r5). New AI = `ab-8893a66` (M2 iterations 2 and 3), lab v17, m2n5b/c/d and m2n6b/c/d, 6 battles each. Stock =
+same build and lab, m2s7a/b/c and m2s8a/b/c, 6 battles each. Proposed bar (for the user's ruling): capture in at
+least 5 of 6 within 1.5 times the script's median capture turn.
 
-| Scenario | Script: captured, median turn | New AI: captured, turns | Stock |
-|---|---|---|---|
-| march_medium_vs_weak | 6/6, 7-17 | 4/4, 9 | 0/6 |
-| march_medium_vs_medium | 6/6, 9 | 3/4, 12-13 | 0/6 |
-| march_large_vs_medium | 6/6, 10 | 4/4, 11-13 | 0/6 |
-| march_medium_vs_medium_d8 | 2/2, 7 and 15 | 3/4, 11 | 0/6 |
-| march_medium_vs_medium_d10 | 2/2, 7 and 9 | 4/4, 10 | 0/6 |
-| march_medium_vs_medium_d16 | 2/2, 11 and 23 | 4/4, 16-23 | 0/6 |
-| march_medium_vs_medium_rough | 3/6, 13-25 | 4/4, 13-15 | 0/6 |
-| march3_vs_medium_d8 | 6/6, 7 | 4/4, 9 | 0/6 |
-| march3_vs_medium | 6/6, 9.5 | 4/4, 11 | 0/6 |
-| march3_vs_medium_d16 | 6/6, 12 | 4/4, 15-16 | 0/6 |
-| march3_vs_medium_rough | 6/6, 11 | 4/4, 17-18 | 0/6 |
+| Scenario | Script: captured, median turn | New AI: captured, turns | Units lost (new AI) | Within 1.5x | Proposed bar | Stock |
+|---|---|---|---|---|---|---|
+| march_medium_vs_weak | 6/6, 12.5 | 6/6, 9-9 | 0.0 | 6 of 6 (by 18.75) | meets | 0/6 |
+| march_medium_vs_medium | 6/6, 9 | 5/6, 12-13 | 0.2 | 5 of 6 (by 13.5) | meets | 0/6 |
+| march_large_vs_medium | 6/6, 10 | 6/6, 11-13 | 0.0 | 6 of 6 (by 15) | meets | 0/6 |
+| march_medium_vs_medium_d8 | 2/2, 11 | 5/6, 10-11 | 0.3 | 5 of 6 (by 16.5) | meets | 0/6 |
+| march_medium_vs_medium_d10 | 2/2, 8 | 6/6, 10-10 | 0.0 | 6 of 6 (by 12) | meets | 0/6 |
+| march_medium_vs_medium_d16 | 2/2, 17 | 6/6, 16-23 | 0.3 | 6 of 6 (by 25.5) | meets | 0/6 |
+| march_medium_vs_medium_rough | 3/6, 25 | 6/6, 12-15 | 0.0 | 6 of 6 (by 37.5) | meets | 0/6 |
+| march3_vs_medium_d8 | 6/6, 7 | 6/6, 9-11 | 0.3 | 5 of 6 (by 10.5) | meets | 0/6 |
+| march3_vs_medium | 6/6, 9.5 | 6/6, 11-11 | 0.0 | 6 of 6 (by 14.25) | meets | 0/6 |
+| march3_vs_medium_d16 | 6/6, 12 | 6/6, 15-16 | 0.0 | 6 of 6 (by 18) | meets | 0/6 |
+| march3_vs_medium_rough | 6/6, 11 | 6/6, 17-18 | 0.0 | 0 of 6 (by 16.5) | **misses** | 0/6 |
+
+Stock never leaves home at 10+ tiles and barely engages at 8 (most damage 2-13%), with the corridor shown or not.

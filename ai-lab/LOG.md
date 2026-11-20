@@ -12,8 +12,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 2. **Please rule on M2's bar.** Proposed: in each march scenario the script takes (all of them), capture in at least
    5 of 6 battles within 1.5 times the script's median turns (the M1 rule, with the march start). The plan's "80% of
    the army within 3 tiles within 2 turns of each other" turns out a weak measure (the script misses it too; LOG M2
-   it. 3). On today's numbers the new AI meets the proposed bar everywhere except rough ground (1.55x) and possibly
-   march_medium_vs_medium (3 of 4 so far); m2f6 brings every scenario to 6 battles.
+   it. 3). With 6 battles each (m2f6) the new AI meets the proposed bar in 10 of 11 march scenarios and takes 64 of
+   66 battles; the miss is march3_vs_medium_rough (6 of 6 taken, turns 17-18, limit 16.5). Stock: 0 of 66.
 3. **Confirm two overnight decisions:** iteration 2 (target range x2) accepted, first provisionally, then with
    iteration 3's results; TREEDESKTOP trusted on the two-PC count check (passed: 14 of 15 scenarios within 1 in 6).
 4. **The two PCs' packs differ** (`runs/pack/BOX.txt` vs `TREEDESKTOP.txt`): the game core DLL (BOX 13,867,520 bytes,
@@ -27,14 +27,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - Milestone M2. Iterations 2 (`dce08ed`) and 3 (`8893a66`) accepted. Newest build `ab-8893a66`. Lab v17 (march3 set
   with a Swordsman; battles grouped by era; empty runs end at once; march corridor shown; runner per-PC timing and
   Civ V topmost). Lab PCs BOX and TREEDESKTOP both trusted; watcher waits with `runs/wait-for-results.sh`.
-- Queued: `2026-11-19-26-m2f6` (new AI march/march3 one more launch each; stock on v17 x6). Read it into BASELINE.md
-  "March (M2)" (stock column, and the new AI to 6 battles).
+- Queue: empty after m2f6 (read; BASELINE.md "March (M2)" complete).
 - Known, not fixed: `FindBestFitReserveUnit` fills slots greedily (a Swordsman takes a slot a Spearman could hold);
   the new AI arrives in a stream (ranged first) and is slowest on rough ground; `test/mock_run.lua` is out of date.
 - Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 9:15 PM; not yet with iterations 2-3).
 
 **Next:**
-1. Read m2f6; complete BASELINE "March (M2)"; update the dashboard.
+1. Update the dashboard with the march results.
 2. With the user's bar: list the scenarios that miss it (rough ground first) and work the largest class, one change at
    a time (likely the slower, strung-out approach on rough ground: look at `PlotArmyMovesCombat` and the gather step).
 3. PLAN 8a: the setup-switch single-player check through a runner, then the MP smoke test for the user (blocked on
@@ -171,6 +170,10 @@ else dropped. Taught: the march was blocked by four things in a row (range, form
 and the lab's own wrong army), each hidden behind the last; the operational log showed each one.
 m2f6 queued: one more new-AI launch per set (to 6 battles on v17) and the stock AI on v17 (stock baseline with the
 corridor shown).
+m2f6 (11:30 PM ET, both PCs, clean): new AI m2n5d 14 of 14, m2n6d 8 of 8; stock m2s7a/b/c and m2s8a/b/c **0 of 66**.
+With 6 battles per scenario on v17 the new AI takes 64 of 66 (two misses: march_medium_vs_medium and the 8-tile
+march, one each). Against the proposed bar it meets 10 of 11 scenarios; march3_vs_medium_rough is taken 6 of 6 but
+on turns 17-18 against a limit of 16.5 (script median 11). Table in BASELINE.md "March (M2)".
 
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
