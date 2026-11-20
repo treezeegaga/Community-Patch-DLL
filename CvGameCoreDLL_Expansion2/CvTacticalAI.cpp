@@ -2025,27 +2025,34 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 		int iLoopUnit = 0;
 		for (CvUnit* pUnit = m_pPlayer->firstUnit(&iLoopUnit); pUnit != NULL; pUnit = m_pPlayer->nextUnit(&iLoopUnit))
 		{
-			if (!pUnit->canUseForTacticalAI() || !pUnit->IsCombatUnit() || !pUnit->IsCanAttack() || pUnit->IsCanAttackRanged() ||
+			if (!pUnit->canUseForTacticalAI() || !pUnit->IsCombatUnit() || !pUnit->IsCanAttack() ||
 				pUnit->getDomainType() != DOMAIN_LAND || pUnit->isEmbarked() || pUnit->getArmyID() != -1)
 				continue;
 			int iDist = plotDistance(*pUnit->plot(), *pCityPlot);
 			if (iDist > 6 || pUnit->GetCurrHitPoints() * 3 <= pUnit->GetMaxHitPoints())
 				continue;
 
+			// M2 iteration 4: ranged units do the same, holding where they can shoot the city (their range, at most
+			// 2 tiles), so next turn's attack can use them; on rough ground they were left to the homeland AI 3-4
+			// tiles out while the capture attempt said "too early" for want of their damage.
+			bool bRanged = pUnit->IsCanAttackRanged();
+			int iUnitRing = bRanged ? max(1, min(2, pUnit->GetRange())) : iRing;
+
 			int iTurns = 0;
-			if (iDist <= iRing)
+			if (iDist <= iUnitRing)
 			{
 				pUnit->PushMission(CvTypes::getMISSION_SKIP());
 				UnitProcessed(pUnit->GetID());
 			}
 			else
 				iTurns = ExecuteMoveToPlot(pUnit, pCityPlot, true, CvUnit::MOVEFLAG_NO_EMBARK |
-					(bCloseIn ? CvUnit::MOVEFLAG_APPROX_TARGET_RING1 : CvUnit::MOVEFLAG_APPROX_TARGET_RING2));
+					(iUnitRing == 1 ? CvUnit::MOVEFLAG_APPROX_TARGET_RING1 : CvUnit::MOVEFLAG_APPROX_TARGET_RING2));
 
 			if (GC.getLogging() && GC.getAILogging())
-				LogTacticalMessage(CvString::format("Zone %d, melee closing in on %s (ring %d): %s %d at distance %d, hp %d, %s",
-					pTargetZone->GetZoneID(), pZoneCity->getNameNoSpace().c_str(), iRing, pUnit->getName().c_str(), pUnit->GetID(),
-					iDist, pUnit->GetCurrHitPoints(), iDist <= iRing ? "holds" : iTurns == INT_MAX ? "no path" : "moves"));
+				LogTacticalMessage(CvString::format("Zone %d, %s closing in on %s (ring %d): %s %d at distance %d, hp %d, %s",
+					pTargetZone->GetZoneID(), bRanged ? "ranged" : "melee", pZoneCity->getNameNoSpace().c_str(), iUnitRing,
+					pUnit->getName().c_str(), pUnit->GetID(),
+					iDist, pUnit->GetCurrHitPoints(), iDist <= iUnitRing ? "holds" : iTurns == INT_MAX ? "no path" : "moves"));
 		}
 	}
 
