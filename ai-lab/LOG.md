@@ -130,7 +130,10 @@ city within the melee's reach before the limit, otherwise grind; taken when the 
 what is left. Run `2026-11-20-04-m3e2b` (m3e2b, m3s2b, m3n2b, m3c2b). m3e1b/c still run on v1: the no-change check.
 v1, march (m3n1a 14/14, m3c1a 8/8, TREEDESKTOP, clean): the first estimate comes with the first units near the city and
 says NO (as predicted); it turns TAKE as the army arrives, 0-4 battle turns before the capture, and the capture turn it
-then predicts is the real one or up to 3 turns early (22 of 22 battles). m3e1b (BOX, clean): 24 of 30.
+then predicts is the real one or up to 3 turns early (22 of 22 battles).
+No-change check met: m3e1a/b/c (BOX, clean) 69 of 90, as m2gb (69); every scenario within 1 in 6 except
+medium_vs_strong 4/6 (m2gb 2/6, earlier 1-2/6: up, not down). v1 over the 6 battles: agrees in 11 of 15 (the three
+above plus medium_vs_strong 4/6 captured, estimate NO): misses the bar of 13.
 
 ## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
 Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
