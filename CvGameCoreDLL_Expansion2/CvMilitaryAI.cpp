@@ -1017,10 +1017,15 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 			CvPlot* pTargetPlot = vPotentialTargets[i];
 			if (paths.find(pTargetPlot->GetPlotIndex()) != paths.end() || !m_pPlayer->IsAtWarWith(pTargetPlot->getOwner()))
 				continue;
-			CvString msg = CvString::format("%03d, %s, no army path to: %s, from muster: %s, plot distance %d, max normalized distance %d",
+			//M2 iteration 3 logging: the path's length without the cap (rough ground costs 1.57 a plot, a road 0.54)
+			SPathFinderUserData dataNoCap = data;
+			dataNoCap.iMaxNormalizedDistance = INT_MAX;
+			SPath uncapped = GC.GetStepFinder().GetPath(pMusterCity->plot(), pTargetPlot, dataNoCap);
+			CvString msg = CvString::format("%03d, %s, no army path to: %s, from muster: %s, plot distance %d, max normalized distance %d, uncapped normalized distance %d, plots %d",
 				GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription(),
 				pTargetPlot->getPlotCity() ? pTargetPlot->getPlotCity()->getNameNoSpace().c_str() : "?", pMusterCity->getNameNoSpace().c_str(),
-				plotDistance(*pMusterCity->plot(), *pTargetPlot), iMaxNormDist);
+				plotDistance(*pMusterCity->plot(), *pTargetPlot), iMaxNormDist,
+				!!uncapped ? uncapped.iNormalizedDistanceRaw / SPath::getNormalizedDistanceBase() : -1, !!uncapped ? uncapped.length() : -1);
 			pLog->Msg(msg.c_str());
 		}
 	}

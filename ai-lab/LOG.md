@@ -126,6 +126,29 @@ count check alone; the pack comparison follows as a check, not a gate (if other 
 set aside). Its first job: `2026-11-19-24-m2f3t`, the new-AI and stock half of m2f3 (iteration 2's real test), so it
 doesn't wait about 2 hours behind BOX's queue. m2f3 on BOX still runs later; its battles add to these.
 
+## 2026-11-19 M2 iteration 3: spare ranged units fill an army's optional slots (user ruling: "go with what it has")
+Class: never leaves home: every march battle of m2f2 (both AIs) and m2n4ta (march3, new AI): the operation starts and
+stays in "recruiting".
+Cause (m2n4ta, `OperationalAILog.csv`, implementer 6, 10:15 PM ET): two blocks in the recruiting stage.
+(1) `FindBestFitReserveUnit` fills slots in order with the best-scored unit that fits, so the Swordsman, the strongest,
+takes slot 0 (ATTACK/DEFENSE), and slot 2 (ATTACK/FAST_ATTACK) is left with only Spearmen, which can't take it
+(greedy, not a matching; a stock bug, noted in CODEMAP, not fixed here). (2) Spare ranged units match no slot (the
+classical formation's optional slots take melee only), so `HaveEnoughUnits` (free required <= optional present / 2)
+never passes. Also, at 12-16 tiles some battles still log "no army path" with the range at 20 (rep 1 of march3 at 12,
+16 and rough; rep 2 at 12 and rough found one): the cap is a cost budget, and rough plots cost 1.57, roads 0.54.
+Change: the draft from earlier tonight. `OperationalAIHelpers::IsSpareRangedForOptionalSlot`: for a new-AI player, a
+land ranged unit (RANGED or CITY_BOMBARD role) that fits no slot may take an optional slot whose primary role is a land
+combat role (ATTACK, DEFENSE, COUNTER, FAST_ATTACK, RANGED, CITY_BOMBARD); used by `IsUnitSuitableForRecruitment`
+(after normal matching fails) and `FindBestFitReserveUnit`. Required slots, civilian and naval slots unchanged; stock
+unchanged. Two spare bowmen in the two optional slots then stand in for the missing melee unit by the stock rule.
+Logging: the "no army path" line adds the path's uncapped normalized distance and plot count.
+Predicted (new AI): in every march battle with an operation, "Transition to gathering stage" and then "Transition to
+movement stage" within a few turns; at 8 and 10 tiles the army (melee included) gets within 3 tiles in at least 5 of 6
+battles of each scenario, march set and march3 set alike; at 12 and 16 tiles the same wherever a path is found (the new
+log line says how far over the cap the others are). Captures: not predicted (M2's bar measures them). Siege and regress
+sets: no capture count down by more than 1 in 6 (their armies start within the operation's recruiting exclusion).
+Stock: unchanged by construction (not rerun).
+
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
 normalized distance 10" every turn, no attack target, no operation.
@@ -181,6 +204,12 @@ a capture here. Its real test is m2f3 (march3 with a Swordsman, armies that fill
 build): accept if the new AI's army leaves home at 12 and 16 tiles in at least 5 of 6 and stock's doesn't; else revert.
 Iteration 3 (spare ranged units fill optional slots) waits for that decision. m2g2/m2x2 (siege and regress sets on
 this build) are the no-regression check.
+**Decision (10:15 PM ET, overnight, user asleep and "approve everything"): accepted provisionally on its logged
+effect.** m2n4ta showed that no army can leave recruiting until the slot problem is fixed, so m2f3 can't test it by
+captures either. What it claims is in the logs: new-AI "preferred attack target" at 12 and 16 tiles and an operation
+started, where stock logs "no army path" (m2f2). No regression: m2g2 70 of 90 (M1: 68). It stays on the branch under
+iteration 3 and is judged by captures with it; if iteration 3's runs show the range change does nothing useful or
+harms, both are reverted. For the user to confirm in the morning.
 m2g2 (siege set, `ab-455fe7a`, new AI, m2g3a/b/c, clean): **70 of 90** (m1f7 on the M1 build: 68). No scenario's
 captures dropped. medium_vs_strong 4/6 (from 2/6), the rest equal, capture turns the same. Losses equal or lower
 except small_vs_strong, 2.5 from 1.7: not takeable, and losses don't count (ruling 2026-11-18). The M1 bar holds.
