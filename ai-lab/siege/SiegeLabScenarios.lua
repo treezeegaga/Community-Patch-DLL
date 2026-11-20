@@ -172,3 +172,9 @@ SiegeLabScenarios.regress = {
 -- The opening lab (lab v18, M3): not a list of battles. A normal game start played by the AI to this turn; the lab
 -- logs every major civ's economy and army each turn (OPEN lines). Run with -Set opening.
 SiegeLabScenarios.opening = { turns = 80 }
+
+-- The transfer check (PLAN 8a item 4): the same opening mode to turn 100, with the new AI on for the player's own civ
+-- (Songhai: Askia, an aggressive leader) and the stock AI for the rest; the game's AI logs say whether the lab fixes
+-- fire in a real game. Run with -Set transfer -NewAI attacker. Maps are not seeded: each game is a fresh map of the
+-- PC's set-up (Tiny, 4 civs).
+SiegeLabScenarios.transfer = { turns = 100 }

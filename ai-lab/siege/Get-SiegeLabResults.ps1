@@ -60,6 +60,29 @@ foreach ($line in [IO.File]::ReadAllLines($Log)) {
     }
 }
 
+# The game's own AI logs say why it did or didn't attack; keep every log this launch wrote with the results.
+# Only logs from this launch count: Civ V leaves old files behind, so skip any file that is older than the
+# launch (APP.log is rewritten at launch; without it, 12 hours before Lua.log's last write).
+# Lab v18: also for runs with no battle results (the opening mode), so it is a function called before that return.
+function Save-LaunchLogs([string]$stamp) {
+    $logFolder = Split-Path $Log
+    $launch = (Get-Item $Log).LastWriteTime.AddHours(-12)
+    $appLog = Join-Path $logFolder "APP.log"
+    if (Test-Path $appLog) { $launch = (Get-Item $appLog).LastWriteTime.AddMinutes(-2) }
+    $all = @(Get-ChildItem $logFolder -File -ErrorAction SilentlyContinue)
+    $fresh = @($all | Where-Object { $_.LastWriteTime -ge $launch })
+    $logDir = Join-Path $OutDir "$Label-$stamp-logs"
+    New-Item -ItemType Directory -Force $logDir | Out-Null
+    $fresh | Copy-Item -Destination $logDir -Force
+    if (-not ($fresh | Where-Object { $_.FullName -eq (Get-Item $Log).FullName })) { Copy-Item $Log $logDir -Force }
+    # what the Logs folder held, so a missing log can be told apart from one that wasn't written this launch
+    $all | Sort-Object Name | ForEach-Object { "{0}`t{1}`t{2:yyyy-MM-dd HH:mm:ss}`t{3}" -f $_.Name, $_.Length, $_.LastWriteTime, $(if ($_.LastWriteTime -ge $launch) { "copied" } else { "old" }) } |
+        Set-Content (Join-Path $logDir "_logs-folder.txt")
+    $mb = [math]::Round((($fresh | Measure-Object Length -Sum).Sum) / 1MB, 1)
+    Write-Output "Saved $($fresh.Count) log file(s) from this launch ($mb MB) to $logDir; folder listing in _logs-folder.txt"
+    if (-not ($fresh | Where-Object { $_.Name -like "*Tactical*" })) { Write-Output "No tactical AI log from this launch (it needs AILog = 1 in config.ini)." }
+}
+
 if (-not $run) { throw "No siege lab run in $Log. Was the lab installed, and was the game a new single-player game?" }
 Write-Output ("Run: lab v{0}, {1} attacking {2}, map {3}x{4}, {5}, {6}, {7}" -f $run[0], $run[1], $run[2], $run[3], $run[4],
     $run[5], $run[6], $(if ($run[7] -eq "1") { "a human played the attacker" } elseif ($run[7] -eq "2") { "the scripted attacker played the attacker" } else { "the AI played the attacker" }))
@@ -69,7 +92,10 @@ if ($run.Count -ge 12) {
 }
 if (-not $done) { Write-Warning "The run did not finish (no DONE line): $($results.Count) battles were scored." }
 foreach ($n in $notes) { Write-Warning $n }
-if ($results.Count -eq 0) { return }
+if ($results.Count -eq 0) {
+    if (-not $NoSave) { New-Item -ItemType Directory -Force $OutDir | Out-Null; Save-LaunchLogs (Get-Date -Format "yyyyMMdd-HHmm") }
+    return
+}
 
 # Add what the START line knew about each battle to its result row.
 foreach ($r in $results) {
@@ -90,25 +116,7 @@ if (-not $NoSave) {
     $turns | Export-Csv $turnsPath -NoTypeInformation -Encoding ASCII
     Write-Output "Saved $resultsPath"
     Write-Output "Saved $turnsPath"
-    # The game's own AI logs say why it did or didn't attack; keep every log this launch wrote with the results.
-    # Only logs from this launch count: Civ V leaves old files behind, so skip any file that is older than the
-    # launch (APP.log is rewritten at launch; without it, 12 hours before Lua.log's last write).
-    $logFolder = Split-Path $Log
-    $launch = (Get-Item $Log).LastWriteTime.AddHours(-12)
-    $appLog = Join-Path $logFolder "APP.log"
-    if (Test-Path $appLog) { $launch = (Get-Item $appLog).LastWriteTime.AddMinutes(-2) }
-    $all = @(Get-ChildItem $logFolder -File -ErrorAction SilentlyContinue)
-    $fresh = @($all | Where-Object { $_.LastWriteTime -ge $launch })
-    $logDir = Join-Path $OutDir "$Label-$stamp-logs"
-    New-Item -ItemType Directory -Force $logDir | Out-Null
-    $fresh | Copy-Item -Destination $logDir -Force
-    if (-not ($fresh | Where-Object { $_.FullName -eq (Get-Item $Log).FullName })) { Copy-Item $Log $logDir -Force }
-    # what the Logs folder held, so a missing log can be told apart from one that wasn't written this launch
-    $all | Sort-Object Name | ForEach-Object { "{0}`t{1}`t{2:yyyy-MM-dd HH:mm:ss}`t{3}" -f $_.Name, $_.Length, $_.LastWriteTime, $(if ($_.LastWriteTime -ge $launch) { "copied" } else { "old" }) } |
-        Set-Content (Join-Path $logDir "_logs-folder.txt")
-    $mb = [math]::Round((($fresh | Measure-Object Length -Sum).Sum) / 1MB, 1)
-    Write-Output "Saved $($fresh.Count) log file(s) from this launch ($mb MB) to $logDir; folder listing in _logs-folder.txt"
-    if (-not ($fresh | Where-Object { $_.Name -like "*Tactical*" })) { Write-Output "No tactical AI log from this launch (it needs AILog = 1 in config.ini)." }
+    Save-LaunchLogs $stamp
 }
 
 Write-Output ""

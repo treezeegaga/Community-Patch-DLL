@@ -11,7 +11,7 @@
 --      is over it wipes both armies and the target city and stages the next one.
 --   3. Results go to Lua.log as lines starting with "[SiegeLab] " (RUN, START, TURN, RESULT, WARN, ERROR, DONE).
 --
--- Opening mode (lab v18, M3): with set = "opening" the lab leaves the game as it is (a normal start: every civ,
+-- Opening mode (lab v18, M3): with set = "opening" (or "transfer", 100 turns: PLAN 8a item 4) the lab leaves the game as it is (a normal start: every civ,
 -- city-state and barbarian), autoplays SiegeLabScenarios.opening.turns turns with every major civ played by the AI,
 -- and logs one OPEN line per major civ per turn (economy and army) plus CAPTURE and WAR lines, then DONE.
 --
@@ -1134,7 +1134,8 @@ end
 
 local function startOpening(config)
 	local active = Game.GetActivePlayer()
-	local turns = (SiegeLabScenarios.opening and SiegeLabScenarios.opening.turns) or 80
+	local spec = SiegeLabScenarios[config.set] or SiegeLabScenarios.opening
+	local turns = (spec and spec.turns) or 80
 	opening = { active = active, turns = turns, finished = false }
 	local newAI = config.newAI or "none"
 	local majors, flags = 0, ""
@@ -1173,7 +1174,7 @@ local function onLoadScreenClose()
 		out("WARN,not started: the siege lab only runs from the first turn of a new game")
 		return
 	end
-	if config.set == "opening" then
+	if config.set == "opening" or config.set == "transfer" then
 		startOpening(config)
 		return
 	end
