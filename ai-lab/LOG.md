@@ -32,7 +32,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   runs; the queue was empty and both PCs idle). Since then: dashboard updated, M2 iteration 4 (`153a72e`, ranged
   units close in) pushed and its runs queued (`2026-11-19-27-m2f9`, waiting for build `ab-153a72e`, started 7:09 AM).
 - Known, not fixed: `FindBestFitReserveUnit` fills slots greedily (a Swordsman takes a slot a Spearman could hold);
-  the new AI arrives in a stream (ranged first) and is slowest on rough ground; `test/mock_run.lua` is out of date.
+  the new AI arrives in a stream (ranged first) and is slowest on rough ground (iteration 4 in hand). `test/mock_run.lua` brought up to lab v17 (PLAN 7a item 2, 7:35 AM ET).
 - Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 7:08 AM ET on 2026-11-20 with the M2 results and steps).
 
 **Next:**

@@ -92,7 +92,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   (unattended run: install, start Civ V, click through menus by screen match, wait for DONE, close, save results,
   remove, restore the stock DLL; per-PC clicks in `hosts/<PC>.json`), `Set-LabDll.ps1` (swap in a release build,
   restore by SHA-256), `Get-SiegeLabResults.ps1` (Lua.log → `.results.csv` and `.turns.csv`, summary table),
-  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check, `lua5.1 test/mock_run.lua`; out of date as of v15: fails in `rosterAlive`).
+  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check of the lab's own logic: `lua5.1 test/mock_run.lua [siege|march|march3|regress]`, from `ai-lab/siege`; brought up to lab v17 on 2026-11-20: `LabEndOperations`, palaces, coast, medieval/artillery types; all four sets run clean. The fake doesn't hand the palace back when a capital falls, so regress_coastal WARNs that the lab put it back; harmless. `apt-get install lua5.1` if missing).
 - Classes (BASELINE.md): CAP, LASTHP (≥85% damage, not taken), LOWDMG, NOATTACK, WALK. March: FirstArrivalTurn,
   ReadyTurn (80% within 3 tiles with melee and ranged).
 
