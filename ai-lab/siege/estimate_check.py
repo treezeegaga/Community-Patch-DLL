@@ -5,6 +5,8 @@ on each battle's first attacker turn with what happened (Lua.log RESULT lines).
 Usage: python3 -I ai-lab/siege/estimate_check.py <logs dir or .zip> [...]
 Prints one row per battle and a per-scenario summary: battles, captured, first-turn estimate TAKE count, and whether
 the majority estimate agrees with the majority outcome. Attacker civ: Songhai.
+Also: the first battle turn the estimate says TAKE and the capture turn it then predicts (for the march sets, where
+the first estimate comes before the army has arrived).
 """
 import collections
 import io
@@ -51,7 +53,14 @@ def battles(src):
         mine = [e for e in ests if t0 < e[0] <= t1]
         first = mine[0] if mine else None
         cap, capturn = results.get((scen, rep), (None, None))
-        out.append((scen, rep, cap, capturn, first, len(mine)))
+        # first turn the estimate says TAKE: battle turn and the capture turn it predicts
+        take = [e for e in mine if e[1] == "TAKE"]
+        if take:
+            bt = take[0][0] - t0
+            first_take = (bt, bt + take[0][2] - 1)
+        else:
+            first_take = (-1, -1)
+        out.append((scen, rep, cap, capturn, first, len(mine), first_take))
     return out
 
 
@@ -60,12 +69,12 @@ def main(argv):
     for src in argv:
         for b in battles(src):
             rows.append((os.path.basename(src.rstrip("/")),) + b)
-    print("run,scenario,rep,captured,capture_turn,first_estimate,est_turn,melee,ranged,city_hp,estimate_lines")
-    for run, scen, rep, cap, ct, first, n in rows:
+    print("run,scenario,rep,captured,capture_turn,first_estimate,est_turn,melee,ranged,city_hp,estimate_lines,first_take_turn,predicted_capture_turn")
+    for run, scen, rep, cap, ct, first, n, ft in rows:
         f = first or (None, "none", -1, 0, 0, 0)
-        print(f"{run},{scen},{rep},{cap},{ct},{f[1]},{f[2]},{f[3]},{f[4]},{f[5]},{n}")
+        print(f"{run},{scen},{rep},{cap},{ct},{f[1]},{f[2]},{f[3]},{f[4]},{f[5]},{n},{ft[0]},{ft[1]}")
     agg = collections.OrderedDict()
-    for run, scen, rep, cap, ct, first, n in rows:
+    for run, scen, rep, cap, ct, first, n, ft in rows:
         a = agg.setdefault(scen, [0, 0, 0])
         a[0] += 1
         a[1] += cap == 1
