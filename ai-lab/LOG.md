@@ -147,6 +147,15 @@ within a turn or two of arrival; no "left to homeland" lines for bowmen within 6
 scenarios: no capture count down by more than 1 in 6, turns the same or earlier. Siege set: no scenario down by more
 than 1 in 6 (70 of 90 now); small_vs_strong and medium_vs_strong may lose more units (ranged units now stand in the
 city's reach). Regress set: stays 24 of 24.
+First results (`ab-153a72e`, 7:20-7:30 AM ET): m2n9a march3 8 of 8, **rough on turn 13** (from 17-18: the target
+moved); m2n8a march 14 of 14 but march_medium_vs_medium_d8 on turns 22 and 12 (iteration 3: 10-11); m2g9a siege 23
+of 30. Cause of the 8-tile slowdown (m2n8a rep 1, game turns 32-48): a spare bowman (not in the army) now "closes in"
+alone 4 tiles ahead, is shot to 40 HP, the defenders come out, and the marching army logs "Contact with enemy!" and
+"No progress to target" for 5 turns (`PlotArmyMovesCombat` holds an army in place while enemies are near it). 20
+"Contact" lines in m2n8a against 0-2 in each iteration-3 launch.
+**Revision 4b** (before deciding): ranged units close in only once one of our melee units is within 3 tiles of the
+city, so they follow the army instead of leading it. Same prediction as above. The rest of m2f9 (on 4) runs on and
+counts only as data; 4b gets its own runs.
 
 ## 2026-11-19 M2 iteration 3: spare ranged units fill an army's optional slots (user ruling: "go with what it has")
 Class: never leaves home: every march battle of m2f2 (both AIs) and m2n4ta (march3, new AI): the operation starts and
