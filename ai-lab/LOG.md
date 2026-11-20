@@ -39,6 +39,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-20 (about 3:30 PM ET, the user, more on the reference rush): "I used gold for nothing except upgrading units
+  right before I attacked. I built no buildings, just army units. I was building archers while I researched, and as
+  soon as the research finished I upgraded all of my archers and then immediately marched to war with about 60g in my
+  bank and losing about 5 gold a turn." So the early-rush row is: no buildings; army units only (archers while
+  Construction is researched, melee alongside); gold kept for one purpose, upgrading the archers to Composite Bowmen
+  the turn the tech lands; march at once; about 60 gold left and about -5 a turn at the declaration is acceptable.
+
 - 2026-11-20 (about 3:20 PM ET, the user, on the M3 reference game): "I had 2 cities at turn 54 when I captured the
   capital. The second city was completely undeveloped. I basically saved up money from barb hunting and ruins and then
   when I started the attack I essentially was running my economy at a deficit and would have eventually gone below zero
