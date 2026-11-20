@@ -1,0 +1,87 @@
+{
+  "id": "2026-11-20-01-m2fb",
+  "why": "M2 iteration 4b (ranged close in only once melee are at the city), new AI, lab v17: march and march3 x6, siege and regress x6. Either trusted PC.",
+  "launches": [
+    {
+      "label": "m2nba",
+      "release": "ab-9238090",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2nca",
+      "release": "ab-9238090",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2gba",
+      "release": "ab-9238090",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2xba",
+      "release": "ab-9238090",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2nbb",
+      "release": "ab-9238090",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2ncb",
+      "release": "ab-9238090",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2gbb",
+      "release": "ab-9238090",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2xbb",
+      "release": "ab-9238090",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2nbc",
+      "release": "ab-9238090",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2ncc",
+      "release": "ab-9238090",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2gbc",
+      "release": "ab-9238090",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2xbc",
+      "release": "ab-9238090",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
