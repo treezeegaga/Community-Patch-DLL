@@ -210,6 +210,11 @@ captures either. What it claims is in the logs: new-AI "preferred attack target"
 started, where stock logs "no army path" (m2f2). No regression: m2g2 70 of 90 (M1: 68). It stays on the branch under
 iteration 3 and is judged by captures with it; if iteration 3's runs show the range change does nothing useful or
 harms, both are reverted. For the user to confirm in the morning.
+m2f3t (TREEDESKTOP, `ab-455fe7a`, march3 set, m2n4ta/b/c new AI, m2s4ta/b/c stock, 6 each, clean, read 10:30 PM ET):
+0 captures; 0 "Transition" lines. 8 tiles: the bowmen outside the army reach the city (turns 7-17) and do little (new AI
+2-148, stock 0-92). 12, 16, rough: no unit within 3 tiles for either AI. As found in m2n4ta: slot 2 stays open (the
+Swordsman takes slot 0). m2f3 on BOX (same build, plus the script half) adds nothing new for the AIs; its script
+battles give the march3 reference.
 m2g2 (siege set, `ab-455fe7a`, new AI, m2g3a/b/c, clean): **70 of 90** (m1f7 on the M1 build: 68). No scenario's
 captures dropped. medium_vs_strong 4/6 (from 2/6), the rest equal, capture turns the same. Losses equal or lower
 except small_vs_strong, 2.5 from 1.7: not takeable, and losses don't count (ruling 2026-11-18). The M1 bar holds.
