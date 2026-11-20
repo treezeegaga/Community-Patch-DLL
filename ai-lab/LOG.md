@@ -128,6 +128,9 @@ script hold them until the city is low. Estimate v2 (`a0f7eff`, built as `ab-7dd
 hp and switches to the bare-city figures once it dies; melee hold and heal while the ranged units alone can bring the
 city within the melee's reach before the limit, otherwise grind; taken when the melee able to attack this turn cover
 what is left. Run `2026-11-20-04-m3e2b` (m3e2b, m3s2b, m3n2b, m3c2b). m3e1b/c still run on v1: the no-change check.
+v1, march (m3n1a 14/14, m3c1a 8/8, TREEDESKTOP, clean): the first estimate comes with the first units near the city and
+says NO (as predicted); it turns TAKE as the army arrives, 0-4 battle turns before the capture, and the capture turn it
+then predicts is the real one or up to 3 turns early (22 of 22 battles). m3e1b (BOX, clean): 24 of 30.
 
 ## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
 Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
