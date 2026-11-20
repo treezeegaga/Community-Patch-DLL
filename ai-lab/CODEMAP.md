@@ -53,7 +53,7 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
 | `PlotHealMoves` (≈1413), `ExecuteHeals` | sends units to heal | second pass sends units missing >20 HP not next to an enemy | "heal (first/second pass): <unit> at x:y, hp a of b" |
 | `ReviewUnassignedUnits` (≈2170) | units the tactical AI didn't use go to the homeland AI | the homeland AI then garrisons/sentries them at home | "unassigned after tactical moves, left to homeland: <unit> at x:y, army a" |
 | The two estimates disagree | `ComputeTotalExpectedDamage` vs `ScoreAttackDamage` | the single "can this army take this city" function is M3's first item (LOG M1 it. 8) | |
-| `TacticalAIHelpers::EstimateSiege` (near `ComputeTotalExpectedCityBombardDamage`) | M3's one "can this army take this city" estimate: plays the siege forward up to N turns with our land units within a range (ranged shoot to 1 HP, melee strongest first while they survive, idle melee heal, city strikes weakest melee and heals) | **logging only so far** (M3 it. 1), called by `CvTacticalAI::LogSiegeEstimates` once a turn from `Update`, both AIs | "siege estimate for <city>: TAKE/NO, turn, melee left, city hp at end; ..." |
+| `TacticalAIHelpers::EstimateSiege` (near `ComputeTotalExpectedCityBombardDamage`) | M3's one "can this army take this city" estimate: plays the siege forward up to N turns with our land units within a range (v2: ranged shoot to 1 HP and wear the garrison down, then hit harder; melee hold and heal while the ranged alone get the city within their reach in time, else attack while they survive; taken when the melee able to attack cover what is left; city strikes weakest melee and heals 20; city heal shows in the lab's turns.csv netted into DamageAfter) | **logging only so far** (M3 it. 1), called by `CvTacticalAI::LogSiegeEstimates` once a turn from `Update`, both AIs | "siege estimate for <city>: TAKE/NO, turn, melee left, city hp at end; ..." |
 
 Reverted attempts on these (don't repeat without new evidence): M1 it. 4 (count neighbours in "too early"), it. 6
 and 8 (`MeleeArmyCanWearDownCity` army test), M1 it. 2's heal theory (wrong cause).
@@ -105,5 +105,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   `done/<id>.json`, status `status/<PC>.json`; self-heals a failed pull; unpinned launches only on hosts in
   `trusted-hosts.txt`. Waits up to 90 min for a release to publish.
 - `wait-for-results.sh`: how the implementing session waits (PLAN section 7, step 7).
-- Builds: every push to `ai/**` runs `.github/workflows/build_vp.yml` (about 12 min) and publishes release
-  `ab-<short commit>`.
+- Builds: every push to `ai/**` that touches files outside `ai-lab/` runs `.github/workflows/build_vp.yml` (about
+  12 min) and publishes release `ab-<short commit>` **of the pushed tip only**. So fetch and merge `origin/ai/v2` before
+  committing code (the lab PCs push results all the time); if a push is refused and you merge, the release is named
+  after the merge commit, not your code commit (2026-11-20: `ab-a0f7eff` never existed, the build was `ab-7dd3e85`).
