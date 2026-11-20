@@ -622,6 +622,10 @@ void CvPlayerAI::AI_chooseResearch()
 			}
 		}
 
+		//new AI (ai/v2 M3 iteration 8): a player following a plan researches toward the plan's strike unit first
+		if (eBestTech == NO_TECH)
+			eBestTech = GetMilitaryAI()->GetPlanResearch();
+
 		if(eBestTech == NO_TECH)
 		{
 			eBestTech = GetPlayerTechs()->GetTechAI()->ChooseNextTech(this);

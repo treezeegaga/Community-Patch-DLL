@@ -190,9 +190,11 @@ public:
 		int iSettlers;		// settlers to build in all
 		int iMelee;			// land melee units wanted
 		int iRanged;		// land ranged units wanted
+		const char* szResearchUnitClass;	// research toward this unit first (the rush's strike unit)
 	};
 	const SAIPlan* GetActivePlan() const;
 	UnitTypes GetPlanBuild(CvCity* pCity) const;
+	TechTypes GetPlanResearch() const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);
 	bool RequestBullyingOperation(PlayerTypes eEnemy);

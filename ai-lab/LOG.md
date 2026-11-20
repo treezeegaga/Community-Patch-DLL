@@ -155,6 +155,30 @@ or wonders until the army is complete; land melee about 6 and ranged up to 4 (if
 tech path is not in yet) by turn 50-60, 2 cities; income goes negative as the army grows and gold may hit 0 (watch
 "b/c bankrupt" scrapping: if so, the gold part is next, not a revert). War: the attack op (it. 5) should now fill and
 start; a declaration by turn 80 in at least 2 of 3. Regress 8 of 8 (the lab's attacker is at war, so no plan builds).
+Build: `ab-d69a403`. Run: `2026-11-20-13-op4` (op4a/b/c new AI, op4x regress; all clean, 3:50-4:01 PM ET).
+Result: the plan ran in 2 of 3. op4a: builds to turn 50 warrior, settler (turn 6), warriors, archers, spearmen (one
+granary in a gap); 6 melee by turn 30, 7 melee + 3 ranged at turn 50, might 57 (op2/op3: 20-30); an attack op recruits
+(34, 42), gathers, moves and arrives by turn 50; war on Rome declared turn 51. op4b: 7 melee + 4 ranged at turn 50,
+might 83; op arrives turn 55, no declaration by 80; gold 0 from turn 40 and 3 Spearmen gifted "b/c bankrupt" (turns
+42, 50, 77). op4c: no plan: the leader's victory pursuit is randomized per game and came out DIPLOMACY there (the
+selection rule was wrong), stock-like builds. No captures: at Rome (op4a) and Kuala Lumpur (op4b) the siege estimate says
+NO every turn: 2 Archers deal 12-16 a turn to a 200 hp city that heals 20 (the reason the user upgraded to Composite
+Bowmen first). Regress 8 of 8.
+Decision: **accepted** (where the plan runs, the army reaches the bar's size by turn 50 and marches; nothing worse).
+Learned: select the plan by a fixed civ property; Archers can't take a full-health city: the research part is next; the
+deficit needs the gold part (op4b gifted units).
+
+## 2026-11-20 M3 iteration 8: the early-rush plan, part 2: research toward the strike unit; plan chosen by civ trait
+Class: plan armies arrive but can't take the city (op4a/b: estimate NO, Archers too weak); op4c ran no plan.
+Change (behind `IsNewAI()`): the row gets a research target, `UNITCLASS_COMPOSITE_BOWMAN`;
+`CvMilitaryAI::GetPlanResearch()` returns the cheapest tech we can research now on the way to that unit's tech (prereq
+tree walk), and `CvPlayerAI::AI_chooseResearch` takes it before the tech AI's own choice. Plan selection: civs whose
+unique ability is a warmonger's (`CvPlayerTraits::IsWarmonger`, fixed per civ; Songhai is) instead of the randomized
+victory pursuit (a fix to iteration 7, in the same build). Gold and the upgrade are part 3.
+Predicted (3 games, new AI on Songhai): the plan runs in 3 of 3; Construction known by about turn 40-50; the archers
+that exist then are upgraded by the stock AI's own upgrade logic only if gold allows (often not: part 3); Composite
+Bowmen built from then on; where 2+ Composite Bowmen reach the city, the estimate turns TAKE and a capture by turn 80
+in at least 1 of 3. Bankruptcy gifting may persist (part 3). Regress 8 of 8.
 Build and run: below.
 
 ## 2026-11-20 M3 iteration 6: preparing for war, the treasury pays for the army (new AI)

@@ -1038,8 +1038,8 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 //(LOG.md rulings of 2026-11-20): one settler, no buildings, only army units, about 6 melee and 4 ranged by turn 50.
 static const CvMilitaryAI::SAIPlan s_aAIPlans[] =
 {
-	//type,				end turn (Quick),	settlers,	melee,	ranged
-	{ "AIPLAN_EARLY_RUSH",	60,					1,			6,		4 },
+	//type,				end turn (Quick),	settlers,	melee,	ranged,	research toward
+	{ "AIPLAN_EARLY_RUSH",	60,					1,			6,		4,		"UNITCLASS_COMPOSITE_BOWMAN" },
 };
 
 /// The plan this player follows right now, or NULL. No state of its own: it follows from the switch, the leader and the turn.
@@ -1048,8 +1048,9 @@ const CvMilitaryAI::SAIPlan* CvMilitaryAI::GetActivePlan() const
 	if (!m_pPlayer->IsNewAI() || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman())
 		return NULL;
 
-	//which row: leaders whose default victory pursuit is domination play the early rush; everyone else has no plan yet
-	if (m_pPlayer->GetDiplomacyAI()->GetPrimaryVictoryPursuit() != VICTORY_PURSUIT_DOMINATION)
+	//which row: civs whose unique ability is a warmonger's (CvPlayerTraits::IsWarmonger, fixed per civ) play the early
+	//rush; everyone else has no plan yet. (Iteration 7 used the victory pursuit, which is randomized per game.)
+	if (!m_pPlayer->GetPlayerTraits()->IsWarmonger())
 		return NULL;
 
 	const SAIPlan* pPlan = &s_aAIPlans[0];
@@ -1153,6 +1154,71 @@ UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
 		return eBestRanged;
 
 	return NO_UNIT;
+}
+
+static bool IsTechOnPathTo(TechTypes eTech, TechTypes eTarget, vector<char>& vSeen)
+{
+	if (eTech == eTarget)
+		return true;
+	if (eTarget == NO_TECH || vSeen[eTarget])
+		return false;
+	vSeen[eTarget] = 1;
+	CvTechEntry* pkTarget = GC.getTechInfo(eTarget);
+	if (!pkTarget)
+		return false;
+	for (int i = 0; i < /*6*/ GD_INT_GET(NUM_AND_TECH_PREREQS); i++)
+	{
+		TechTypes ePrereq = (TechTypes)pkTarget->GetPrereqAndTechs(i);
+		if (ePrereq != NO_TECH && IsTechOnPathTo(eTech, ePrereq, vSeen))
+			return true;
+	}
+	for (int i = 0; i < /*3*/ GD_INT_GET(NUM_OR_TECH_PREREQS); i++)
+	{
+		TechTypes ePrereq = (TechTypes)pkTarget->GetPrereqOrTechs(i);
+		if (ePrereq != NO_TECH && IsTechOnPathTo(eTech, ePrereq, vSeen))
+			return true;
+	}
+	return false;
+}
+
+/// What the plan wants researched next: the cheapest tech we can research now on the way to the plan's strike unit, or
+/// NO_TECH (no plan, or the unit's tech is known); the tech AI then chooses as usual.
+TechTypes CvMilitaryAI::GetPlanResearch() const
+{
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || !pPlan->szResearchUnitClass)
+		return NO_TECH;
+
+	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
+	if (eClass == NO_UNITCLASS)
+		return NO_TECH;
+	UnitTypes eUnit = m_pPlayer->GetSpecificUnitType(eClass);
+	CvUnitEntry* pkUnit = (eUnit != NO_UNIT) ? GC.getUnitInfo(eUnit) : NULL;
+	if (!pkUnit)
+		return NO_TECH;
+	TechTypes eTarget = (TechTypes)pkUnit->GetPrereqAndTech();
+	CvPlayerTechs* pTechs = m_pPlayer->GetPlayerTechs();
+	if (eTarget == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech(eTarget))
+		return NO_TECH;
+
+	TechTypes eBest = NO_TECH;
+	int iBestCost = INT_MAX;
+	for (int iTech = 0; iTech < GC.getNumTechInfos(); iTech++)
+	{
+		TechTypes eTech = (TechTypes)iTech;
+		if (!pTechs->CanResearch(eTech))
+			continue;
+		vector<char> vSeen(GC.getNumTechInfos(), 0);
+		if (!IsTechOnPathTo(eTech, eTarget, vSeen))
+			continue;
+		int iCost = pTechs->GetResearchCost(eTech);
+		if (iCost < iBestCost)
+		{
+			iBestCost = iCost;
+			eBest = eTech;
+		}
+	}
+	return eBest;
 }
 
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
