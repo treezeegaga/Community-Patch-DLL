@@ -1,0 +1,41 @@
+{
+  "id": "2026-11-20-12-op3",
+  "why": "M3 iteration 6: new AI, the treasury pays for the army when preparing for war; army-size log line. Opening lab v19: 3 games new AI on Songhai (compare op2), 1 stock (the log line confirms the cause); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op3a",
+      "release": "ab-15cf7f8",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op3b",
+      "release": "ab-15cf7f8",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op3c",
+      "release": "ab-15cf7f8",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op3s",
+      "release": "ab-15cf7f8",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1
+    },
+    {
+      "label": "op3x",
+      "release": "ab-15cf7f8",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
