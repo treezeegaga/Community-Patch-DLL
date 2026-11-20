@@ -73,8 +73,8 @@ finishing before the next starts. A launch that fails before the game starts (me
   against the saved stock copy (restore it if it differs); write the launch result and push. Stops between launches
   if you open Civ V.
 - Writes `%LOCALAPPDATA%\cp-ai-lab\watcher.log`.
-- **Status (watcher v3):** writes `ai-lab/runs/status/<COMPUTERNAME>.json` (`state`: `idle`, `paused`, `civ-open`,
-  `pull-failed`, `push-failed` or `error`, with `detail`, `updated`, `watcherVersion`) and pushes it when the state
+- **Status (watcher v3; v4 adds `running`):** writes `ai-lab/runs/status/<COMPUTERNAME>.json` (`state`: `idle`, `running`
+  (detail: the request and label it is playing), `paused`, `civ-open`, `pull-failed`, `push-failed` or `error`, with `detail`, `updated`, `watcherVersion`) and pushes it when the state
   changes, and hourly while it is not idle. A stall can be read from the repository without going to the PC.
 - **Self-heal (watcher v3):** if `git pull` fails and this PC has no unpushed commits, it resets the lab checkout to
   `origin/ai/v2` and pulls again (untracked result files are kept). So: never keep uncommitted edits in a lab PC's

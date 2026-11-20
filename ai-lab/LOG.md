@@ -2,33 +2,33 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-20, 8:10 AM ET), written by implementer 6 at handover (M2 bar met; context near 600k)
+## Current state (2026-11-20, 11:45 AM ET), implementer 7 (updated after every accepted iteration)
 
-- **Milestone M2: its bar is met; it waits for the user's sign-off.** Provisional bar (rule 10): in each march
-  scenario, capture in at least 5 of 6 within 1.5 times the script's median turn. Met in 11 of 11 on `ab-9238090`
-  (iterations 2, 3 and 4b), lab v17: 65 of 66 march battles (stock 0 of 66). Siege set 69 of 90, regress 24 of 24.
-  BASELINE.md "March (M2)" has the table, current build included.
-- **Builds:** `ab-9238090` = M1 + M2 iterations 2 (target range x2), 3 (spare ranged fill optional slots), 4b (ranged
-  close in once melee are at the city). All behind `IsNewAI()`.
-- **Lab:** v17 (march3 set; era-grouped battles; march corridor shown; empty runs end; per-PC runner timing; Civ V
-  topmost). `siege/test/mock_run.lua` runs all four sets clean. PCs BOX and TREEDESKTOP both trusted; queue empty.
-- **Open for the user** (none blocks work, rule 10-11):
-  1. Sign off M2 (or change the provisional bar).
-  2. Confirm overnight calls: iteration 2 accepted; TREEDESKTOP trusted on the count check.
-  3. The two PCs' packs differ (`runs/pack/*.txt`): game core DLL (BOX 13,867,520 bytes, TREEDESKTOP 16,837,632),
-     `Override/CIV5Units.xml` (1 byte), two extra map files on TREEDESKTOP. Which is the pack they play with? Matters for
-     multiplayer, not (as far as seen) for the lab.
-  4. Archive "Civ V AI upgrade: implementer 5" (a cloud session can't).
-- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (has iteration 3's march results; not 4b yet).
-- **Next** (PLAN 7a when blocked on the user):
-  1. Put 4b's numbers on the dashboard (BASELINE.md has them).
-  2. If M2 is signed off: the M2 close (move M2 entries to LOG-archive.md with a summary, PLAN 12 handover is done).
-     Then the transfer check (PLAN 8a item 4) for M1 and M2: port the minimum of the earlier full-game harness.
-  3. M3's first item: the single "can this army take this city" estimate (logging first; CODEMAP "The two estimates
-     disagree"), then the opening lab.
-  4. Known, not fixed: greedy slot filling in `FindBestFitReserveUnit` (CODEMAP).
-  5. PLAN 8a item 3: the setup-switch single-player check through a runner, then the MP smoke test for the user (wants
-     question 3 answered first).
+- **M2: bar met, awaiting the user's sign-off** (provisional bar, rule 10). It still holds on the current build: all
+  11 march scenarios, 65 of 66 on 4b and 41 of 42 + 24 of 24 on `ab-b196ee4`.
+- **M3 in progress.** First item done: one "can this army take this city" function, `TacticalAIHelpers::EstimateSiege`
+  (M3 iterations 1-3b below). Accepted behind `IsNewAI()`: it. 2 (both "too early" gates ask it) and it. 3b (a melee
+  hit the estimate's plan makes now scores the damage it deals). Reverted: it. 3 (melee spent early).
+- **Newest build:** `ab-b196ee4` = M1 + M2 (its. 2, 3, 4b) + M3 (its. 2, 3b) + the estimate's logging. Siege 76 of 90
+  (all 14 takeable scenarios meet the M1 bar, melee_only_vs_medium included), march/march3 meet the M2 bar, regress 8
+  of 8. BASELINE.md "Current build: ab-b196ee4".
+- **Lab:** v18 (opening mode, `-Set opening`). Watcher v4 (publishes "running" per launch; status files were stuck on
+  "idle"). `siege/estimate_check.py` compares the estimate with outcomes.
+- **Queued / not yet read:** `2026-11-20-08-op0` (opening lab, first try: 2 stock and 2 new-AI games to turn 80).
+- **Relayed by the project review session (11:35 AM ET, as the user's "do it for me"; not yet confirmed by the user in
+  this session):** do the transfer check now, before more M3 work (M2 treated as signed off for that only); keep this
+  entry current after every accepted iteration; fix the stale watcher status files (done, watcher v4).
+- **Open for the user** (none blocks work): sign off M2 and its bar; confirm the overnight calls (M2 it. 2 accepted,
+  TREEDESKTOP trusted on the count check); which PC's pack they play with (`runs/pack/*.txt` differ); archive
+  implementers 5 and 6 (a cloud session's request to archive is refused: trusted device only).
+- **Next:**
+  1. The transfer check (PLAN 8a item 4): port the minimum of the earlier full-game harness (seeded maps, seat
+     assignment, results file); 6 seeded games to turn 100, one aggressive new-AI civ, split across both PCs; record
+     captures, assertions, and whether the lab fixes show in the game logs (e.g. "melee closing in on", "siege estimate").
+  2. Read op0: does the opening lab run on the PCs, how long a game takes, the stock opening against the M3 bar.
+  3. M3: the opening lab's measures against the user's reference (war turn 41-50, a capital by 54, ~6 melee + 4 CB),
+     then plans in data (one table row per civ) and its executor.
+  4. Known, not fixed: greedy slot filling in `FindBestFitReserveUnit` (CODEMAP); the dashboard has 4b, not M3.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12).
 
 ## User rulings
