@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-20-13-op4",
+  "why": "M3 iteration 7: the early-rush plan's build order (one settler, army units only). Opening lab v19, new AI on Songhai, 3 games (compare op2/op3); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op4a",
+      "release": "ab-d69a403",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op4b",
+      "release": "ab-d69a403",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op4c",
+      "release": "ab-d69a403",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op4x",
+      "release": "ab-d69a403",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
