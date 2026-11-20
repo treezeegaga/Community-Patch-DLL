@@ -1,0 +1,74 @@
+{
+    "id":  "2026-11-19-21-m2r4",
+    "status":  "failed",
+    "message":  "a launch ended with a non-zero exit code; see its run folder",
+    "watcherVersion":  3,
+    "host":  "BOX",
+    "hosts":  [
+                  "BOX"
+              ],
+    "markedBy":  "BOX",
+    "started":  "2026-11-19T22:16:37",
+    "finished":  "2026-11-19T22:22:57",
+    "requestCommit":  "a7843d985",
+    "stockDll":  "BOX: ok",
+    "launches":  [
+                     {
+                         "label":  "m2r4a",
+                         "host":  "BOX",
+                         "exitCode":  1,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/m2r4a-20261119-2216-run",
+                         "summary":  [
+                                         "FAILED: No siege lab run in C:\\Users\\itstr\\Documents\\My Games\\Sid Meier\u0027s Civilization 5\\Logs\\Lua.log. Was the lab installed, and was the game a new single-player game?",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run FAILED. Civ V closed, lab removed. Log: C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\m2r4a-20261119-2216-run\\Run-SiegeLab.log"
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  1,
+                         "started":  "2026-11-19T22:16:37",
+                         "finished":  "2026-11-19T22:18:35",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  3
+                     },
+                     {
+                         "label":  "m2r4b",
+                         "host":  "BOX",
+                         "exitCode":  1,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/m2r4b-20261119-2218-run",
+                         "summary":  [
+                                         "FAILED: No siege lab run in C:\\Users\\itstr\\Documents\\My Games\\Sid Meier\u0027s Civilization 5\\Logs\\Lua.log. Was the lab installed, and was the game a new single-player game?",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run FAILED. Civ V closed, lab removed. Log: C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\m2r4b-20261119-2218-run\\Run-SiegeLab.log"
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  1,
+                         "started":  "2026-11-19T22:18:43",
+                         "finished":  "2026-11-19T22:20:41",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  3
+                     },
+                     {
+                         "label":  "m2r4c",
+                         "host":  "BOX",
+                         "exitCode":  1,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/m2r4c-20261119-2220-run",
+                         "summary":  [
+                                         "FAILED: No siege lab run in C:\\Users\\itstr\\Documents\\My Games\\Sid Meier\u0027s Civilization 5\\Logs\\Lua.log. Was the lab installed, and was the game a new single-player game?",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run FAILED. Civ V closed, lab removed. Log: C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\m2r4c-20261119-2220-run\\Run-SiegeLab.log"
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  1,
+                         "started":  "2026-11-19T22:20:59",
+                         "finished":  "2026-11-19T22:22:57",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  3
+                     }
+                 ]
+}
