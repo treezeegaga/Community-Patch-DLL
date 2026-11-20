@@ -19,6 +19,8 @@
 --                   coast (lab v12: sea on its north side out to 4 tiles)
 --   defenders       { { unit type, count }, ... } placed next to the city
 --   terrain         "open" (default) or "rough" (forest and hills on the approach)
+--   era             lab v15: the attacker's era group (default 0). Battles run lowest era first, all repeats of
+--                   a group before the next, because an era once reached never goes back down.
 --
 -- The numbers below are a first grid, not tuned values. Pass bars are set after the stock AI's baseline and
 -- the human reference games (README.md, "First run").
@@ -150,12 +152,12 @@ SiegeLabScenarios.regress = {
 	  army = ARMY_MEDIUM,
 	  city = { population = 6, buildings = { "BUILDING_WALLS" }, garrison = ARCHER, coast = true } },
 	-- Trebuchets, crossbows and longswords against a walled and castled city with pikes outside.
-	{ name = "regress_medieval", turns = 15, startDistance = 3, attackerTechs = A_MEDIEVAL, defenderTechs = D_MEDIEVAL,
+	{ name = "regress_medieval", era = 2, turns = 15, startDistance = 3, attackerTechs = A_MEDIEVAL, defenderTechs = D_MEDIEVAL,
 	  army = { { TREBUCHET, 2 }, { CROSSBOW, 4 }, { LONGSWORD, 3 } },
 	  city = { population = 8, buildings = { "BUILDING_WALLS", "BUILDING_CASTLE" }, garrison = CROSSBOW },
 	  defenders = { { PIKE, 2 } } },
 	-- Artillery (range 3) and riflemen against walls, castle and arsenal.
-	{ name = "regress_artillery", turns = 15, startDistance = 3, attackerTechs = A_ARTILLERY, defenderTechs = D_INDUSTRIAL,
+	{ name = "regress_artillery", era = 4, turns = 15, startDistance = 3, attackerTechs = A_ARTILLERY, defenderTechs = D_INDUSTRIAL,
 	  army = { { ARTILLERY, 3 }, { RIFLE, 4 } },
 	  city = { population = 12, buildings = { "BUILDING_WALLS", "BUILDING_CASTLE", "BUILDING_ARSENAL" }, garrison = RIFLE },
 	  defenders = { { RIFLE, 2 } } },

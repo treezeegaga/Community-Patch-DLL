@@ -1,0 +1,78 @@
+{
+  "id": "2026-11-19-22-reg1",
+  "why": "Regression baseline, second try for regress_capital and regress_coastal: in reg0 every rep-2 battle came after rep 1's artillery battle and the attacker's units were scrapped as long obsolete (lab v15 groups battles by era; here the two run alone anyway). ab-78d5e8a, new AI and stock, 6 each",
+  "launches": [
+    {
+      "label": "rgn1a",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "only": [
+        "regress_capital",
+        "regress_coastal"
+      ],
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgs1a",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "only": [
+        "regress_capital",
+        "regress_coastal"
+      ],
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgn1b",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "only": [
+        "regress_capital",
+        "regress_coastal"
+      ],
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgs1b",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "only": [
+        "regress_capital",
+        "regress_coastal"
+      ],
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgn1c",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "only": [
+        "regress_capital",
+        "regress_coastal"
+      ],
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "rgs1c",
+      "release": "ab-78d5e8a",
+      "set": "regress",
+      "only": [
+        "regress_capital",
+        "regress_coastal"
+      ],
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}
