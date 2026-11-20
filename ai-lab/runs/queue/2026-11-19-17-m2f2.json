@@ -1,0 +1,54 @@
+{
+  "id": "2026-11-19-17-m2f2",
+  "why": "M2 iteration 2: wider target range for the new AI; full march set (7 scenarios incl. rough), new AI vs stock on the same build, 6 battles each",
+  "launches": [
+    {
+      "label": "m2n3a",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s3a",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2n3b",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s3b",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2n3c",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s3c",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}

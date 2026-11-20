@@ -1,0 +1,30 @@
+{
+  "id": "2026-11-19-19-m2x2",
+  "why": "M2 iteration 2 regression: regress set (capital, coastal, medieval, artillery), new AI attacker, 6 battles each",
+  "launches": [
+    {
+      "label": "m2x3a",
+      "release": "ab-455fe7a",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2x3b",
+      "release": "ab-455fe7a",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2x3c",
+      "release": "ab-455fe7a",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}
