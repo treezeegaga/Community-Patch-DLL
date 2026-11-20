@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-20-16-op7",
+  "why": "M3 iteration 10: early-rush plan part 4 (attack waits for the plan's whole army). Opening lab v19, new AI on Songhai, 3 games (compare op6); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op7a",
+      "release": "ab-d71d189",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op7b",
+      "release": "ab-d71d189",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op7c",
+      "release": "ab-d71d189",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op7x",
+      "release": "ab-d71d189",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
