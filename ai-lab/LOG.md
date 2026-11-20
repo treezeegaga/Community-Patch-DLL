@@ -160,6 +160,11 @@ the best of the AI and the script it is right in 15 of 15. Bar met. Its turns ar
 turns early). March m3n2b (14/14): TAKE comes 2-7 turns before the capture, sometimes with part of the army; the
 predicted turn is up to 4 early (one d10 battle fell on turn 25, logging-only build: noise, but a miss of that
 scenario's turn-12 bar). The risk for iteration 2 is a partial army attacking early on the march.
+Stock attacker, v2 (m3s2b, TREEDESKTOP, clean): agrees in 10 of 15; all five misses are TAKE where stock falls short:
+melee_only (0/2), medium_vs_medium_rough (0/2), large_vs_strong (1/2) and siege_train_vs_strong (1/2) are stock's known
+failures that the script takes 5-6 of 6 and M1 fixed for the new AI, so there the estimate is right. medium_vs_strong
+(1/2) is an estimate error: neither stock nor the script took it in the baseline. A TAKE the AI doesn't deliver mostly
+marks an AI failure.
 
 ## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
 Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
