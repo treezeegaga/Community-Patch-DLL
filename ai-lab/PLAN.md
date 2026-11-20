@@ -66,7 +66,9 @@ Facts worth knowing before touching code:
   file to `ai-lab/runs/queue/` on `ai/v2`; a watcher on the user's PC (`ai-lab/runs/Watch-LabQueue.ps1`, run by
   Task Scheduler) runs it and pushes the results and a done marker to `ai-lab/runs/done/`. Format and setup in
   `ai-lab/runs/README.md`. Don't send run requests by message any more. The PC runner session ("Civ V siege lab:
-  PC runner (box)") may still exist; use it only if the user asks.
+  PC runner (box)"), and a TREEDESKTOP runner once there is one, may be used without asking for lab upkeep only:
+  diagnosing and fixing a stuck queue, read-only checks (hashes, the pack layout), installing and removing the lab.
+  Never graphics settings, saved games or the user's own play; tell the user afterwards (ruling of 2026-11-19).
 - **The user:** rules on questions of how the AI *should* play, and signs off each milestone. Ask only at those
   points. Record every ruling in `ai-lab/LOG.md` with the date. (The user doesn't play reference battles; see the
   rulings in LOG.md.) Give times in US Eastern.

@@ -44,6 +44,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19: standing permission for lab upkeep through the PC runner sessions (BOX's, and TREEDESKTOP's once it
+  exists): diagnose and fix a stuck queue, read-only checks, install or remove the lab, without asking first; never
+  graphics settings, saved games or the user's own play; tell the user afterwards (PLAN.md section 4). Not chosen:
+  quieter updates and unannounced check-ins (so: keep reporting as before).
+
 - 2026-11-19: handover rule addition (PLAN.md section 12): after a successor has read the current state and told the
   user what it will do first, it archives its predecessor session, provided the predecessor has stopped, has pushed
   everything and has no scheduled tasks bound to it. Archive only, never delete; if archiving is refused, tell the
