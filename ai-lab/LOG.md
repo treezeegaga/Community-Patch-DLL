@@ -122,6 +122,13 @@ melee" every turn, and every Swordsman "allowed: city hp 250, damage 15-17, rece
 the city stays at 250. Both gates are open; the attack is allowed but never chosen: its score is damage dealt minus
 damage taken (`result->SetScore(0, bonus, dealt - taken)`, end of `ScoreAttackDamage`), -17, so the tactsim prefers
 moves without it. This is the second block of M1 it. 8. Not "damage not worth it", as predicted: a score, not a refusal.
+Full result (`2026-11-20-05-m3f2`, 10 launches on BOX and TREEDESKTOP, all clean): siege 71 of 90 (m3e1 69): no
+scenario drops, losses the same or lower, capture turns the same or earlier; melee_only_vs_medium 1/6 (turn 11; was
+0/6); small_vs_strong 0/6, 2.3 lost (2.2). March 42 of 42 and march3 24 of 24, every battle within the M2 bar (11 of
+11 scenarios 6/6; 4b: 65 of 66). Regress 8 of 8 (2 each).
+Decision: accepted (the plan's "one function" item: both gates now ask the same estimate; nothing got worse, the
+march bar holds with the estimate driving attacks). The prediction for melee_only missed: what still holds it back is
+the attack score, not a gate (above). That is iteration 3.
 
 ## 2026-11-20 M3 iteration 1: one siege estimate, logging only
 Class: none yet (M3's first item, PLAN 8 M3): two functions judge "can this army take this city" and disagree (M1
