@@ -17,7 +17,7 @@ import zipfile
 
 START = re.compile(r"\[SiegeLab\] START,([^,]+),(\d+),(\d+),")
 RESULT = re.compile(r"\[SiegeLab\] RESULT,([^,]+),(\d+),(\d+),(-?\d+),")
-EST = re.compile(r"^(\d+), Songhai, siege estimate for (\S+): (TAKE|NO), turn (-?\d+), melee left (\d+), city hp at end (\d+); "
+EST = re.compile(r"^(\d+), Songhai, siege estimate for (\S+): (TAKE|NO), turn (-?\d+), (?:melee now \d, )?melee left (\d+), city hp at end (\d+); "
                  r"city hp (\d+) of (\d+), heal (\d+), strike (\d+); within 4: melee (\d+), ranged (\d+)")
 
 

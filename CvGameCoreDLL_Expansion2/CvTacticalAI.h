@@ -346,6 +346,7 @@ struct CvSiegeEstimate
 	int iGarrisonDeadTurn;        // estimated turn the garrison dies, -1 if it doesn't (or none)
 	int iRangedDamageBare;        // iRangedDamagePerTurn once the garrison is dead
 	int iMeleeDamageBare;         // iMeleeDamagePerAttack once the garrison is dead
+	bool bMeleeNow;               // the plan has melee attack the city this turn (finishing it, or grinding because the ranged units alone can't get it low enough in time)
 };
 
 class CvTacticalAI

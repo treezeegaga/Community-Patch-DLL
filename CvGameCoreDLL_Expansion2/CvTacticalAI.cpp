@@ -5168,6 +5168,7 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 	kOut.iRangedDamagePerTurn = 0; kOut.iMeleeDamagePerAttack = 0; kOut.iMeleeReceivedPerAttack = 0;
 	kOut.iTurnTaken = -1; kOut.iMeleeLeft = 0; kOut.iCityHPAtEnd = 0;
 	kOut.iGarrisonHP = 0; kOut.iGarrisonDeadTurn = -1; kOut.iRangedDamageBare = 0; kOut.iMeleeDamageBare = 0;
+	kOut.bMeleeNow = false;
 	if (!pCity || eAttacker == NO_PLAYER)
 		return false;
 
@@ -5280,12 +5281,16 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 			kOut.iTurnTaken = iTurn;
 			kOut.iMeleeLeft = iLeft;
 			kOut.iCityHPAtEnd = 0;
+			if (iTurn == 1)
+				kOut.bMeleeNow = true;
 			return true;
 		}
 
 		// otherwise melee hold and heal while the ranged units alone get the city within their reach in time
 		int iTurnsLeft = iMaxTurns - iTurn;
 		bool bRangedSuffice = iReach > 0 && iCityHP - max(0, iRangedThisTurn - kOut.iCityHeal) * iTurnsLeft <= iReach;
+		if (iTurn == 1 && iReach > 0 && !bRangedSuffice)
+			kOut.bMeleeNow = true;
 		for (size_t i = 0; i < vUnits.size(); i++)
 		{
 			SSiegeUnit& u = vUnits[i];
@@ -5365,8 +5370,8 @@ void CvTacticalAI::UpdateSiegeEstimates()
 
 			m_siegeEstimates[std::make_pair(iPlayer, pCity->GetID())] = kEst;
 			if (bLog)
-				LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d; garrison hp %d, dead on turn %d, then ranged %d, melee %d",
-				pCity->getNameNoSpace().c_str(), bTake ? "TAKE" : "NO", kEst.iTurnTaken, kEst.iMeleeLeft, kEst.iCityHPAtEnd,
+				LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee now %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d; garrison hp %d, dead on turn %d, then ranged %d, melee %d",
+				pCity->getNameNoSpace().c_str(), bTake ? "TAKE" : "NO", kEst.iTurnTaken, kEst.bMeleeNow ? 1 : 0, kEst.iMeleeLeft, kEst.iCityHPAtEnd,
 				kEst.iCityHP, kEst.iCityMaxHP, kEst.iCityHeal, kEst.iCityStrike, kEst.iMelee, kEst.iRanged,
 				kEst.iRangedDamagePerTurn, kEst.iMeleeDamagePerAttack, kEst.iMeleeReceivedPerAttack,
 				kEst.iGarrisonHP, kEst.iGarrisonDeadTurn, kEst.iRangedDamageBare, kEst.iMeleeDamageBare));
@@ -8064,13 +8069,15 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 	else if (bUnitKill)
 		iBonusScore += 15;
 
-	//AI lab (M3 it. 3): when the one siege estimate says the army near this city can take it, a melee hit on the city is
-	//part of that plan: score the damage it deals, not the damage it takes (a city's strike back otherwise makes every
-	//costly hit lose to standing still, and a melee-only army never attacks)
+	//AI lab (M3 it. 3b): when the one siege estimate says the army near this city can take it and its plan has melee
+	//attack this turn (the finishing blow, or a grind the ranged units can't do alone), a melee hit on the city scores
+	//the damage it deals, not the damage it takes (a city's strike back otherwise makes every costly hit lose to standing
+	//still, and a melee-only army never attacks). Not while the ranged units can still do the work: melee spent early
+	//can't finish the city (it. 3, large_vs_strong)
 	if (pEnemyCity && !bRanged && GET_PLAYER(pUnit->getOwner()).IsNewAI())
 	{
 		const CvSiegeEstimate* pEst = GET_PLAYER(pUnit->getOwner()).GetTacticalAI()->GetSiegeEstimate(pEnemyCity);
-		if (pEst && pEst->iTurnTaken > 0)
+		if (pEst && pEst->iTurnTaken > 0 && pEst->bMeleeNow)
 			iActualDamageTaken = 0;
 	}
 
