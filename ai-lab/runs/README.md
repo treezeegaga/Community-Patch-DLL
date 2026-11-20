@@ -96,6 +96,9 @@ BOX was set up on 2026-11-19 with the lab checkout at `C:\Users\itstr\cp-ai-lab`
 pictures are built into `Run-SiegeLab.ps1` and `Run-SiegeLab.screens.json`. Every other PC gets its own
 `ai-lab\siege\hosts\<COMPUTERNAME>.json` (click positions, window, Civ V folder) and
 `ai-lab\siege\hosts\<COMPUTERNAME>.screens.json` (screen pictures), made by steps 5 and 6 below.
+Optional timing fields in `<COMPUTERNAME>.json` for a PC that starts Civ V slowly: `menuWaitSeconds` (how long to
+wait for the main menu, default 240), `calibrateWaitSeconds` (60) and `calibrateContinueClicks` (2) for `-Calibrate`.
+TREEDESKTOP uses 420, 270 and 1 (it starts in 110-230 s). The runner keeps Civ V's window on top during a run.
 
 ### TREEDESKTOP: one-time setup
 
