@@ -1,0 +1,42 @@
+{
+  "id": "2026-11-19-20-m2r3",
+  "why": "M2 reference: scripted attacker on the new rough-ground march, 6 battles",
+  "launches": [
+    {
+      "label": "m2r3a",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "only": [
+        "march_medium_vs_medium_rough"
+      ],
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r3b",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "only": [
+        "march_medium_vs_medium_rough"
+      ],
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r3c",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "only": [
+        "march_medium_vs_medium_rough"
+      ],
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}

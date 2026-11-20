@@ -85,6 +85,22 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
+Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
+normalized distance 10" every turn, no attack target, no operation.
+Cause: `CvMilitaryAI::GetArmyPathsFromCity` limits army paths to the land trade route range (10).
+Change: for a new-AI player, land range x2 (20). Distance still lowers the target's score (ScoreAttackTarget, lowest
+weight at path length 24). Commit `dce08ed`, build `ab-455fe7a`. Also a new scenario, march_medium_vs_medium_rough
+(12 tiles, rough ground near the city).
+Predicted: new AI at 12 and 16 tiles: "attack target" and an OP_CITY_ATTACK_LAND from the first turns, army leaves home
+in at least 5 of 6 battles; arrival and capture are what M2's bar then measures (not fixed yet). Stock unchanged (still
+stays home at 12+). Siege set and regress set with the new AI must not move (siege: 68 of 90 on m1f7, no scenario down
+by more than 1 in 6). Also expected and not counted: more "exposed city" defensive targets, since the same paths feed
+the defence list.
+Run (overnight, BOX): 2026-11-19-17-m2f2 (march x6 new AI and stock), -18-m2g2 (siege x6), -19-m2x2 (regress x6),
+-20-m2r3 (script on the rough march x6).
+Result: (pending)
+
 ## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)
 Cause (BOX runner): BOX's lab clone fetched only `claude/bold-feynman-cgnhjs`, so `origin/ai/v2` went stale; the
 watcher's unpushed-commit count saw phantom commits and dropped every claim, retrying every 22 s. The runner added the

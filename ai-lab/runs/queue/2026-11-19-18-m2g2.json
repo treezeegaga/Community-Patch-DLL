@@ -1,0 +1,27 @@
+{
+  "id": "2026-11-19-18-m2g2",
+  "why": "M2 iteration 2 regression: full siege set, new AI attacker, 6 battles each (M1 bar must still hold; m1f7: 68 of 90)",
+  "launches": [
+    {
+      "label": "m2g3a",
+      "release": "ab-455fe7a",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2g3b",
+      "release": "ab-455fe7a",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2g3c",
+      "release": "ab-455fe7a",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}
