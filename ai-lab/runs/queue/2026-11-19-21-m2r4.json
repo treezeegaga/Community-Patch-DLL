@@ -1,0 +1,51 @@
+{
+  "id": "2026-11-19-21-m2r4",
+  "why": "M2 reference: scripted attacker on the lab v14 march3 scenarios (3 melee + 4 ranged, fills the attack formation), 6 battles each",
+  "launches": [
+    {
+      "label": "m2r4a",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "only": [
+        "march3_vs_medium_d8",
+        "march3_vs_medium",
+        "march3_vs_medium_d16",
+        "march3_vs_medium_rough"
+      ],
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r4b",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "only": [
+        "march3_vs_medium_d8",
+        "march3_vs_medium",
+        "march3_vs_medium_d16",
+        "march3_vs_medium_rough"
+      ],
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r4c",
+      "release": "ab-455fe7a",
+      "set": "march",
+      "script": true,
+      "newAI": "none",
+      "only": [
+        "march3_vs_medium_d8",
+        "march3_vs_medium",
+        "march3_vs_medium_d16",
+        "march3_vs_medium_rough"
+      ],
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}

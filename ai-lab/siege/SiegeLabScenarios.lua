@@ -46,6 +46,9 @@ local D_CLASSICAL = { "TECH_CONSTRUCTION", "TECH_BRONZE_WORKING", "TECH_MASONRY"
 local ARMY_SMALL = { { CB, 3 }, { SPEAR, 2 } }
 local ARMY_MEDIUM = { { CB, 5 }, { SPEAR, 2 } }
 local ARMY_LARGE = { { CB, 7 }, { SPEAR, 3 } }
+-- Lab v14 (user ruling 2026-11-19): a march army the classical-era attack formation can fill (3 required melee slots,
+-- 2 required ranged; MUFORMATION_SMALL_CITY_ATTACK_FORCE). Same size as ARMY_MEDIUM, one bowman swapped for a spear.
+local ARMY_MARCH3 = { { CB, 4 }, { SPEAR, 3 } }
 
 local function weakCity() return { population = 3 } end
 local function mediumCity() return { population = 6, buildings = { "BUILDING_WALLS" }, garrison = ARCHER } end
@@ -119,6 +122,16 @@ SiegeLabScenarios.march = {
 	-- Rough ground in front of the city (PLAN.md M2: "extend with rough terrain"); 12 tiles, as the first three.
 	{ name = "march_medium_vs_medium_rough", turns = 25, atHome = true, attackerTechs = A_CLASSICAL,
 	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity(), terrain = "rough" },
+	-- Lab v14: the same marches with ARMY_MARCH3, which fills the attack formation's required slots, so the march
+	-- itself is measured (an army of 2 melee waits in "recruiting" for a third the lab never builds; LOG.md M2 it. 2).
+	{ name = "march3_vs_medium_d8", turns = 25, atHome = true, homeDistance = 8, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MARCH3, city = mediumCity() },
+	{ name = "march3_vs_medium", turns = 25, atHome = true, attackerTechs = A_CLASSICAL, defenderTechs = D_ANCIENT,
+	  army = ARMY_MARCH3, city = mediumCity() },
+	{ name = "march3_vs_medium_d16", turns = 25, atHome = true, homeDistance = 16, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MARCH3, city = mediumCity() },
+	{ name = "march3_vs_medium_rough", turns = 25, atHome = true, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MARCH3, city = mediumCity(), terrain = "rough" },
 }
 
 -- The regression set (user request 2026-11-19, PLAN.md section 8a): cases the main sets don't cover, run on stock
