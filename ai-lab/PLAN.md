@@ -166,7 +166,8 @@ Each iteration is one entry in `ai-lab/LOG.md` (template in section 10) and foll
    new done marker or launch result lands, or after about 110 minutes. When it exits: pull, read what arrived,
    record it, queue what's next, and start it again. Keep one running whenever runs are queued.
 8. **Decide** by the rule below. Accept: record the new table as the baseline. Reject: revert the commit,
-   and write one line on what the result taught you.
+   and write one line on what the result taught you. Then bring `ai-lab/CODEMAP.md` up to date: any gate or limit
+   found, log line added, function changed (accepted) or attempt reverted, script changed.
 
 **Decision rule for lab runs.** Play each scenario at least 6 times per build (three launches of the set
 at 2 repeats). A change is accepted when the scenarios it targeted move from "mostly fails" to "mostly
@@ -332,6 +333,12 @@ Decision: accepted | reverted, and one line on what was learned
 
 `ai-lab/BASELINE.md`: the current table per scenario (stock, human, current build).
 User rulings: dated lines at the top of `LOG.md`.
+`ai-lab/CODEMAP.md`: the game-code functions the project depends on (what each decides, the gates and limits found,
+the log lines each writes) and the structure of the lab and watcher scripts. Kept current at every iteration's end.
+**At a milestone's close** (user's rule, 2026-11-19): move that milestone's iteration and process entries from
+`LOG.md` to `ai-lab/LOG-archive.md` (newest first, unchanged), and leave in `LOG.md` a short "M<n>: what we learned"
+summary (what was accepted, the causes found, what failed and why, the numbers that closed it). Rulings stay in
+`LOG.md`.
 
 ## 11. Known risks
 
@@ -350,9 +357,9 @@ User rulings: dated lines at the top of `LOG.md`.
 A session's context fills up over a long project; a fresh session that starts from the written record is cheaper
 and loses less than one that runs on a compacted memory. So:
 
-**When:** at each milestone sign-off by the user, and as soon as your context passes 300,000 tokens (check with
-`get_session` on your own session: `external_metadata.context_usage.used_tokens`; check at least at the end of
-every iteration). Finish or revert the iteration in hand first; never hand over with an unexplained change on the
+**When:** at each milestone sign-off by the user, or as soon as your context passes 650,000 tokens, whichever
+comes first (user's rule, 2026-11-19; it was 300,000). Check with `get_session` on your own session
+(`external_metadata.context_usage.used_tokens`), at least at the end of every iteration. Finish or revert the iteration in hand first; never hand over with an unexplained change on the
 branch.
 
 **What:**
@@ -360,7 +367,7 @@ branch.
    the previous one: milestone and iteration in hand; the newest DLL build and what it contains; the baseline in
    use; queued runs not yet done and results not yet read; open questions for the user; anything the user must do;
    and a numbered "Next" list. Everything the successor needs that isn't already in PLAN.md, BASELINE.md or the
-   log entries. Commit and push it.
+   log entries. Make sure `ai-lab/CODEMAP.md` is current. Commit and push it.
 2. Create the successor with `create_session`: model `claude-opus-5-5`, title `Civ V AI upgrade: implementer <n>`
    (n one more than yours; you are 1 if your title has no number), tag `civ5-ai-lab`, source this repository at
    `ai/v2`, `outcome_branch` `ai/v2`, and exactly the prompt below.
@@ -379,8 +386,8 @@ The successor's prompt, word for word:
 
 > You are the implementing session for the Civ V AI project in the repository treezeegaga/Community-Patch-DLL.
 > Work only on the branch ai/v2: check it out from origin, commit there, push only there. Read ai-lab/PLAN.md
-> in full first, then the "Current state" entry at the top of ai-lab/LOG.md and the log entries it points to,
-> then ai-lab/BASELINE.md and ai-lab/runs/README.md. Carry on from the current state's "Next" list, following
+> in full first, then ai-lab/CODEMAP.md, then the "Current state" entry at the top of ai-lab/LOG.md and the log
+> entries it points to, then ai-lab/BASELINE.md and ai-lab/runs/README.md. Carry on from the current state's "Next" list, following
 > the plan's rules, loop and handover rule (sections 6, 7 and 12). The user follows this session and is the
 > person you report to and ask for rulings; give times in US Eastern. Start by telling the user in a few lines
 > what you will do first.
