@@ -28,9 +28,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   with a Swordsman; battles grouped by era; empty runs end at once; march corridor shown; runner per-PC timing and
   Civ V topmost). Lab PCs BOX and TREEDESKTOP both trusted; watcher waits with `runs/wait-for-results.sh`.
 - Queue: empty after m2f6 (read; BASELINE.md "March (M2)" complete).
+- 2026-11-20, 7:10 AM ET: this session's worker was restarted after a gap (about 11:30 PM to 7:00 AM: no work, no
+  runs; the queue was empty and both PCs idle). Since then: dashboard updated, M2 iteration 4 (`153a72e`, ranged
+  units close in) pushed and its runs queued (`2026-11-19-27-m2f9`, waiting for build `ab-153a72e`, started 7:09 AM).
 - Known, not fixed: `FindBestFitReserveUnit` fills slots greedily (a Swordsman takes a slot a Spearman could hold);
   the new AI arrives in a stream (ranged first) and is slowest on rough ground; `test/mock_run.lua` is out of date.
-- Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 11:40 PM ET with the M2 results and steps).
+- Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 7:08 AM ET on 2026-11-20 with the M2 results and steps).
 
 **Next:**
 1. (done) Dashboard updated with the march results.
@@ -123,7 +126,7 @@ doesn't wait about 2 hours behind BOX's queue. m2f3 on BOX still runs later; its
 ## 2026-11-19 M2 iteration 4: ranged units close in on the city too (rough-ground march)
 Class: the one scenario that misses the proposed M2 bar: march3_vs_medium_rough, captured 6 of 6 but on turns 17-18
 (limit 16.5; script median 11).
-Cause (m2n6b rep 1, `PlayerTacticalAILog.csv`, game turns 42-47, implementer 6, 11:50 PM ET): the army is within 3
+Cause (m2n6b rep 1, `PlayerTacticalAILog.csv`, game turns 42-47, implementer 6, 7:05 AM ET on 2026-11-20): the army is within 3
 tiles on battle turn 7, but on the first turns at the city `ExecuteCaptureCityMoves` logs "too early for attacking
 Knossos, required damage 250, expected max damage per turn 26" (on rough ground few units can strike this turn), and
 the Composite Bowmen are "unassigned after tactical moves, left to homeland" 3-4 tiles out for several turns. Only 2 of
