@@ -1,0 +1,66 @@
+2026-11-19 21:18:00  Host TREEDESKTOP (calibration C:\Users\itstr\cp-ai-lab\ai-lab\siege\hosts\TREEDESKTOP.json), Civ V in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V
+2026-11-19 21:18:00  Run 'pc2tree4': set siege, only [], repeats 2, DLL ab-78d5e8a
+2026-11-19 21:18:00    dll: Saved the stock DLL ( copies) to C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-19 21:18:01    dll: Installed ab-78d5e8a (13878272 bytes, SHA-256 DCBB12253ED8...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-19 21:18:01    installer: AILog is 1 in C:\Users\itstr\OneDrive\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-19 21:18:01    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-19 21:18:01    installer:   Runs the 'siege' set, 2 time(s) each; the AI plays the attacker; new AI: none.
+2026-11-19 21:18:01    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-19 21:18:01    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-19 21:18:29  Civ V window at 480,15 size 1600x1410
+2026-11-19 21:19:09    screen 'single' (distance 0.0)
+2026-11-19 21:19:12    screen 'setup' (distance 0.0)
+2026-11-19 21:19:15    screen 'advanced' (distance 0.0)
+2026-11-19 21:19:33  Game started; waiting for the lab
+2026-11-19 21:19:38  Lab started: [765983.140] SiegeLab: [SiegeLab] RUN,15,Songhai,Greece,56,36,HANDICAP_KING,GAMESPEED_QUICK,0,15,2,0,0
+2026-11-19 21:19:38    2 battle(s) finished
+2026-11-19 21:19:43    3 battle(s) finished
+2026-11-19 21:19:48    5 battle(s) finished
+2026-11-19 21:19:54    7 battle(s) finished
+2026-11-19 21:19:59    9 battle(s) finished
+2026-11-19 21:20:04    10 battle(s) finished
+2026-11-19 21:20:09    11 battle(s) finished
+2026-11-19 21:20:14    12 battle(s) finished
+2026-11-19 21:20:19    13 battle(s) finished
+2026-11-19 21:20:24    14 battle(s) finished
+2026-11-19 21:20:34    17 battle(s) finished
+2026-11-19 21:20:39    18 battle(s) finished
+2026-11-19 21:20:44    19 battle(s) finished
+2026-11-19 21:20:49    21 battle(s) finished
+2026-11-19 21:20:54    22 battle(s) finished
+2026-11-19 21:20:59    24 battle(s) finished
+2026-11-19 21:21:04    25 battle(s) finished
+2026-11-19 21:21:09    26 battle(s) finished
+2026-11-19 21:21:14    27 battle(s) finished
+2026-11-19 21:21:19    28 battle(s) finished
+2026-11-19 21:21:30    29 battle(s) finished
+2026-11-19 21:21:35  Lab finished ([SiegeLab] DONE)
+2026-11-19 21:22:08  Civ V did not close within 30 s; stopping it by force
+2026-11-19 21:22:12    results: Run: lab v15, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker
+2026-11-19 21:22:12    results: New AI: attacker off, defender off
+2026-11-19 21:22:13    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\pc2tree4-20261119-2122.results.csv
+2026-11-19 21:22:13    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\pc2tree4-20261119-2122.turns.csv
+2026-11-19 21:22:13    results: Saved 255 log file(s) from this launch (17.2 MB) to C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\pc2tree4-20261119-2122-logs; folder listing in _logs-folder.txt
+2026-11-19 21:22:14    results: Scenario                  Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City        
+2026-11-19 21:22:14    results:                                                                                                            strength    
+2026-11-19 21:22:14    results: --------                  ------- -------- ------------ ------------- ---------- -------------- ---------- ------------
+2026-11-19 21:22:14    results: ancient_rush_vs_open_city       2        2 2.0          100           0.0        0.0            3.0 of 3   880         
+2026-11-19 21:22:14    results: small_vs_weak                   2        2 2.0          100           0.0        0.0            2.0 of 2   924         
+2026-11-19 21:22:14    results: small_vs_medium                 2        1 11.0         83            1.0        0.0            2.0 of 2   1644        
+2026-11-19 21:22:14    results: small_vs_strong                 2        0              0             4.5        1.0            1.5 of 2   2338        
+2026-11-19 21:22:14    results: medium_vs_weak                  2        2 2.0          100           0.0        0.0            2.0 of 2   924         
+2026-11-19 21:22:14    results: medium_vs_medium                2        2 4.0          100           0.0        0.0            2.0 of 2   1644        
+2026-11-19 21:22:14    results: medium_vs_strong                2        1 7.0          83            0.0        0.5            2.0 of 2   2338        
+2026-11-19 21:22:14    results: large_vs_weak                   2        2 2.0          100           0.0        0.0            3.0 of 3   924         
+2026-11-19 21:22:14    results: large_vs_medium                 2        2 3.0          100           0.0        0.0            3.0 of 3   1644        
+2026-11-19 21:22:14    results: large_vs_strong                 2        0              92            0.0        0.0            3.0 of 3   2338        
+2026-11-19 21:22:14    results: ref_cb4_melee6_vs_walls         2        2 5.0          100           0.0        0.0            6.0 of 6   1644        
+2026-11-19 21:22:14    results: melee_only_vs_medium            2        0              0             11.0       0.0            6.0 of 6   1644        
+2026-11-19 21:22:14    results: ranged_only_vs_weak             2        0              0             12.0       0.0            0.0 of 0   924         
+2026-11-19 21:22:14    results: siege_train_vs_strong           2        1 10.0         72            0.5        0.0            3.0 of 3   2338        
+2026-11-19 21:22:14    results: medium_vs_medium_rough          2        0              92            0.0        0.0            2.0 of 2   1644        
+2026-11-19 21:22:14    results: 17 of 30 battles ended in a capture.
+2026-11-19 21:22:17    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-19 21:22:17    dll: Stock DLL restored and checked (1 copy).
+2026-11-19 21:22:17  No assertion dialogs.
+2026-11-19 21:22:17  Run saved. Civ V closed, lab removed, stock DLL restored.
