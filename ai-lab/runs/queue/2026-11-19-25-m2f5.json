@@ -1,0 +1,87 @@
+{
+  "id": "2026-11-19-25-m2f5",
+  "why": "M2 iteration 3 (spare ranged units fill optional slots), new AI: march and march3 sets x6 (do armies leave recruiting and arrive?), siege and regress sets x6 (no regression). Either trusted PC.",
+  "launches": [
+    {
+      "label": "m2n5a",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2n6a",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2n5b",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2n6b",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2n5c",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2n6c",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2g5a",
+      "release": "ab-8893a66",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2x5a",
+      "release": "ab-8893a66",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2g5b",
+      "release": "ab-8893a66",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2x5b",
+      "release": "ab-8893a66",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2g5c",
+      "release": "ab-8893a66",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2x5c",
+      "release": "ab-8893a66",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
