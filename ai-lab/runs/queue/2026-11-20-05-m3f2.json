@@ -1,0 +1,73 @@
+{
+  "id": "2026-11-20-05-m3f2",
+  "why": "M3 iteration 2: the new AI's too-early gates use the one siege estimate. Siege, march, march3 x6 and regress x2, new AI. Either trusted PC.",
+  "launches": [
+    {
+      "label": "m3f2a",
+      "release": "ab-7aa945f",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g2a",
+      "release": "ab-7aa945f",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h2a",
+      "release": "ab-7aa945f",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3f2b",
+      "release": "ab-7aa945f",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g2b",
+      "release": "ab-7aa945f",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h2b",
+      "release": "ab-7aa945f",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3f2c",
+      "release": "ab-7aa945f",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g2c",
+      "release": "ab-7aa945f",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h2c",
+      "release": "ab-7aa945f",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3x2a",
+      "release": "ab-7aa945f",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}

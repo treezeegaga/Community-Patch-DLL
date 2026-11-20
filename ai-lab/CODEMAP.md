@@ -14,7 +14,7 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
   Logs every change to `AILab_NewAI.csv`. LOG M1 it. 1; "new-AI switch at game setup".
 - Every accepted behaviour change sits behind it. Current sites (`grep -n "IsNewAI()" *.cpp`):
   `CvEconomicAI::DoReconState`, `CvMilitaryAI::GetArmyPathsFromCity`, `CvTacticalAI::PlotReinforcementMoves`,
-  `OperationalAIHelpers::IsSpareRangedForOptionalSlot`. (`PlotArmyMovesCombat` holds an army in place while enemies are near it: "Contact with enemy!".)
+  `OperationalAIHelpers::IsSpareRangedForOptionalSlot`, and (M3 it. 2, on trial) the two "too early" gates in `ExecuteCaptureCityMoves` and `ScoreAttackDamage`. (`PlotArmyMovesCombat` holds an army in place while enemies are near it: "Contact with enemy!".)
 
 ## Military AI: choosing a target and starting an operation (M2, M4)
 
@@ -53,7 +53,7 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
 | `PlotHealMoves` (≈1413), `ExecuteHeals` | sends units to heal | second pass sends units missing >20 HP not next to an enemy | "heal (first/second pass): <unit> at x:y, hp a of b" |
 | `ReviewUnassignedUnits` (≈2170) | units the tactical AI didn't use go to the homeland AI | the homeland AI then garrisons/sentries them at home | "unassigned after tactical moves, left to homeland: <unit> at x:y, army a" |
 | The two estimates disagree | `ComputeTotalExpectedDamage` vs `ScoreAttackDamage` | the single "can this army take this city" function is M3's first item (LOG M1 it. 8) | |
-| `TacticalAIHelpers::EstimateSiege` (near `ComputeTotalExpectedCityBombardDamage`) | M3's one "can this army take this city" estimate: plays the siege forward up to N turns with our land units within a range (v2: ranged shoot to 1 HP and wear the garrison down, then hit harder; melee hold and heal while the ranged alone get the city within their reach in time, else attack while they survive; taken when the melee able to attack cover what is left; city strikes weakest melee and heals 20; city heal shows in the lab's turns.csv netted into DamageAfter) | **logging only so far** (M3 it. 1), called by `CvTacticalAI::LogSiegeEstimates` once a turn from `Update`, both AIs | "siege estimate for <city>: TAKE/NO, turn, melee left, city hp at end; ..." |
+| `TacticalAIHelpers::EstimateSiege` (near `ComputeTotalExpectedCityBombardDamage`) | M3's one "can this army take this city" estimate: plays the siege forward up to N turns with our land units within a range (v2: ranged shoot to 1 HP and wear the garrison down, then hit harder; melee hold and heal while the ranged alone get the city within their reach in time, else attack while they survive; taken when the melee able to attack cover what is left; city strikes weakest melee and heals 20; city heal shows in the lab's turns.csv netted into DamageAfter) | computed by `CvTacticalAI::UpdateSiegeEstimates` at the start of `Update` (new AI, or logging), kept for the turn in `m_siegeEstimates` (not saved), read with `GetSiegeEstimate(city)`; **M3 it. 2 (on trial):** the new AI's two "too early" gates use it ("too early ... (siege estimate NO)", "refused (too early, siege estimate NO)") | "siege estimate for <city>: TAKE/NO, turn, melee left, city hp at end; ..." |
 
 Reverted attempts on these (don't repeat without new evidence): M1 it. 4 (count neighbours in "too early"), it. 6
 and 8 (`MeleeArmyCanWearDownCity` army test), M1 it. 2's heal theory (wrong cause).
