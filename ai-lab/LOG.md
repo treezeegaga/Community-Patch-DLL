@@ -102,6 +102,16 @@ by more than 1 in 6). Also expected and not counted: more "exposed city" defensi
 the defence list.
 Run (overnight, BOX): 2026-11-19-17-m2f2 (march x6 new AI and stock), -18-m2g2 (siege x6), -19-m2x2 (regress x6),
 -20-m2r3 (script on the rough march x6).
+Prediction amended before the result (implementer 6, 9:30 PM ET, from the m2d1 8-tile logs, `OperationalAILog.csv`
+m2n1c rep 1): at 8 tiles the operation starts but **never leaves the recruiting stage** in 25 turns. In the classical
+era a land city attack uses `MUFORMATION_SMALL_CITY_ATTACK_FORCE` (`GetCurrentBestFormationTypeForLandAttack`, by
+game era): 3 required melee slots, 2 required ranged slots, optional slots for melee only. ARMY_MEDIUM (2 Spearmen,
+5 Composite Bowmen) fills 4 slots; slot 2 (a third melee) stays open and `HaveEnoughUnits(..., 0)` never passes; the
+3 other bowmen fit no slot and are left to the tactical AI (they are the ones that walked in and shot the city). The
+operation was started willing to build the missing unit (`RequestCityAttack`'s iNumUnitsWillingToBuild), but the
+lab's attacker never builds units. So with iteration 2 the 2-Spearman armies (march_medium_vs_*, _rough, _d16) should
+get a target and an operation and then **stay in recruiting**, as at 8 tiles; only march_large_vs_medium (3 Spearmen)
+should fill the required slots and march. "Leaves home in 5 of 6" is predicted for march_large_vs_medium only.
 Result: (pending)
 
 ## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)
