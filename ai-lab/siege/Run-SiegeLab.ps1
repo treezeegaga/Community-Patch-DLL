@@ -55,6 +55,7 @@ public class SlInput {
     [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint dx, uint dy, uint d, UIntPtr e);
     [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint f, UIntPtr e);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint f);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr h, EnumProc p, IntPtr l);
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc p, IntPtr l);
@@ -167,6 +168,9 @@ function Set-CivFront {
     if (-not $w) { return }
     [SlInput]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [SlInput]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)   # a key press lets us take the foreground
     [SlInput]::SetForegroundWindow($w.MainWindowHandle) | Out-Null
+    # Keep Civ V above always-on-top windows (TREEDESKTOP's Claude app) for the run, so clicks and screen checks hit
+    # it. HWND_TOPMOST, no move, no size; it ends when Civ V closes.
+    [SlInput]::SetWindowPos($w.MainWindowHandle, [IntPtr](-1), 0, 0, 0, 0, 0x0003) | Out-Null
     Start-Sleep -Milliseconds 300
 }
 function Get-Abs([string]$name) { $o = Get-Origin; return @(($o[0] + $P[$name][0]), ($o[1] + $P[$name][1])) }
@@ -334,8 +338,14 @@ function Start-LabGame {
 
     # Intro movie, loading, then the legal screen. Click its Continue button until the main menu shows; never click
     # there once the menu is up, because the menu's EXIT button is at nearly the same spot.
-    $until = (Get-Date).AddSeconds(240)
-    if ($Calibrate) { Start-Sleep 60; Click Continue 4000; Click Continue 4000; Wait-Screen menu | Out-Null }
+    # Per-PC timing (hosts\<PC>.json): menuWaitSeconds (default 240), and for -Calibrate calibrateWaitSeconds (60) and
+    # calibrateContinueClicks (2). TREEDESKTOP starts in 110-230 s, and a second click there lands on EXIT.
+    $menuWait = 240; $calWait = 60; $calClicks = 2
+    if ($hostCfg -and $hostCfg.menuWaitSeconds) { $menuWait = [int]$hostCfg.menuWaitSeconds }
+    if ($hostCfg -and $hostCfg.calibrateWaitSeconds) { $calWait = [int]$hostCfg.calibrateWaitSeconds }
+    if ($hostCfg -and $hostCfg.calibrateContinueClicks) { $calClicks = [int]$hostCfg.calibrateContinueClicks }
+    $until = (Get-Date).AddSeconds($menuWait)
+    if ($Calibrate) { Start-Sleep $calWait; for ($c = 0; $c -lt $calClicks; $c++) { Click Continue 4000 }; Wait-Screen menu | Out-Null }
     else {
         while (-not (Test-MenuShown)) {
             if ((Get-Date) -gt $until) { Write-Log "FAILED: main menu never showed"; Save-Shot (Join-Path $runDir "fail-menu.png"); return $false }

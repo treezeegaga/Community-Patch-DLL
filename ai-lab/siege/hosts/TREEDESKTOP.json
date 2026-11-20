@@ -1,67 +1,70 @@
 {
-    "host":  "TREEDESKTOP",
-    "measured":  "2026-11-19T18:44:02",
-    "civDir":  "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sid Meier\u0027s Civilization V",
-    "window":  [
-                   480,
-                   15,
-                   1600,
-                   1410
-               ],
-    "area":  {
-                 "X":  3,
-                 "Y":  26,
-                 "W":  1594,
-                 "H":  1381
-             },
-    "clicks":  {
-                   "Continue":  [
-                                    804,
-                                    924
-                                ],
-                   "Neutral":  [
-                                   399,
-                                   64
-                               ],
-                   "SinglePlayer":  [
-                                        800,
-                                        586
-                                    ],
-                   "SetUpGame":  [
-                                     777,
-                                     630
-                                 ],
-                   "AdvancedSetup":  [
-                                         879,
-                                         1012
-                                     ],
-                   "QuickCombat":  [
-                                       798,
-                                       1291
-                                   ],
-                   "QuickMovement":  [
-                                         798,
-                                         1316
-                                     ],
-                   "StartGame":  [
-                                     1111,
-                                     1371
-                                 ],
-                   "BeginJourney":  [
-                                        800,
-                                        1070
-                                    ]
-               },
-    "menuPanel":  [
-                      642,
-                      556,
-                      958,
-                      949
-                  ],
-    "beginButton":  [
-                        731,
-                        1061,
-                        869,
-                        1079
-                    ]
+    "host": "TREEDESKTOP",
+    "measured": "2026-11-19T18:44:02",
+    "civDir": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sid Meier's Civilization V",
+    "window": [
+        480,
+        15,
+        1600,
+        1410
+    ],
+    "area": {
+        "X": 3,
+        "Y": 26,
+        "W": 1594,
+        "H": 1381
+    },
+    "clicks": {
+        "Continue": [
+            804,
+            924
+        ],
+        "Neutral": [
+            399,
+            64
+        ],
+        "SinglePlayer": [
+            800,
+            586
+        ],
+        "SetUpGame": [
+            777,
+            630
+        ],
+        "AdvancedSetup": [
+            879,
+            1012
+        ],
+        "QuickCombat": [
+            798,
+            1291
+        ],
+        "QuickMovement": [
+            798,
+            1316
+        ],
+        "StartGame": [
+            1111,
+            1371
+        ],
+        "BeginJourney": [
+            800,
+            1070
+        ]
+    },
+    "menuPanel": [
+        642,
+        556,
+        958,
+        949
+    ],
+    "beginButton": [
+        731,
+        1061,
+        869,
+        1079
+    ],
+    "menuWaitSeconds": 420,
+    "calibrateWaitSeconds": 270,
+    "calibrateContinueClicks": 1
 }
