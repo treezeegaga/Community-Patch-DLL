@@ -1,0 +1,44 @@
+{
+  "id": "2026-11-20-02-m3e1",
+  "why": "M3 iteration 1 (logging only): the new siege estimate logged each turn; checked against outcomes. Siege set new AI x6 (also the no-change check against m2gb), march and march3 new AI x2, siege set stock x2. Either trusted PC.",
+  "launches": [
+    {
+      "label": "m3e1a",
+      "release": "ab-69b9d72",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3n1a",
+      "release": "ab-69b9d72",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3e1b",
+      "release": "ab-69b9d72",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3c1a",
+      "release": "ab-69b9d72",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3e1c",
+      "release": "ab-69b9d72",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3s1a",
+      "release": "ab-69b9d72",
+      "newAI": "none",
+      "repeats": 2
+    }
+  ]
+}
