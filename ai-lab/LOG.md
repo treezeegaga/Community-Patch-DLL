@@ -98,6 +98,29 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 1: one siege estimate, logging only
+Class: none yet (M3's first item, PLAN 8 M3): two functions judge "can this army take this city" and disagree (M1
+it. 8). Reading them again: `ComputeTotalExpectedDamage` caps melee at 3 only for **unit** targets; for a city it drops
+every melee hit that costs more than it deals (dealt < received, unless dealt x2 > received and the unit stays above
+half health), and only counts units that can strike this turn. So a melee-only army facing a strong city counts 0,
+which is the "expected max damage per turn 0 with five Swordsmen adjacent" of M1 it. 8. `ScoreAttackDamage` judges one
+unit at a time ("too early" when the unit wears down before the city). Neither plays the siege over turns.
+Change (`69b9d72`, logging only, not behind the switch, for both AIs): `TacticalAIHelpers::EstimateSiege(attacker,
+city, range, max turns, out)` counts our land combat units within 4 tiles and plays the siege forward up to 13 turns:
+ranged units shoot (never below 1 HP), melee attack strongest first while they survive the hit and take the city when
+one hit covers what is left, idle melee heal 10, the city strikes the weakest melee unit and heals 20; travel from
+distance and moves. `CvTacticalAI::LogSiegeEstimates`, called once a turn in `Update` after the target list, writes
+"siege estimate for <city>: TAKE|NO, turn t, melee left m, city hp at end h; city hp, heal, strike; within 4: melee,
+ranged; ranged damage per turn, melee damage per attack, received" (`PlayerTacticalAILog.csv`). Read-only, no random
+numbers (damage without the random part), only what a human sees.
+Predicted: no behaviour change: siege set new AI within 1 in 6 per scenario of m2gb (69 of 90). The estimate on battle
+turn 1 says TAKE for the scenarios the script or the new AI takes (11 of 15 incl. melee_only_vs_medium, which the
+script takes 6/6) and NO for small_vs_strong, medium_vs_strong (2/6 now: either) and ranged_only_vs_weak (no melee):
+agreement in at least 13 of 15. March: NO while the army is still home (beyond 4 tiles: no line), TAKE on arrival.
+Build: `ab-69b9d72`. Run: queue request `2026-11-20-02-m3e1` (m3e1a/b/c siege new AI, m3n1a march, m3c1a march3,
+m3s1a siege stock).
+Result: (pending)
+
 ## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
 Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
 90a9c4b; both calibration launches ended "Run saved"; watcher registered (every 5 min while logged on); dry run takes
