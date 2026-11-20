@@ -160,6 +160,11 @@ Each iteration is one entry in `ai-lab/LOG.md` (template in section 10) and foll
 6. **Review and build.** Checklist, push, wait for the build, note the release name.
 7. **Run** the affected scenarios first (a few minutes), then the whole set. Ask the runner; don't wait
    idle, read code for the next class meanwhile.
+   **How to wait for runs (user's rule, 2026-11-19):** scheduled check-ins (`send_later`, scheduled tasks) are
+   refused for this session; don't rely on them. Start `ai-lab/runs/wait-for-results.sh` as a background command
+   (Bash `run_in_background`, timeout about 7,000,000 ms). It polls `origin/ai/v2` every 2 minutes and exits when a
+   new done marker or launch result lands, or after about 110 minutes. When it exits: pull, read what arrived,
+   record it, queue what's next, and start it again. Keep one running whenever runs are queued.
 8. **Decide** by the rule below. Accept: record the new table as the baseline. Reject: revert the commit,
    and write one line on what the result taught you.
 
