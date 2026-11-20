@@ -5125,27 +5125,33 @@ struct SSiegeUnit
 {
 	int iHP;
 	int iMaxHP;
-	int iDamage;   // to the city per attack
-	int iReceived; // per attack (melee only)
-	int iStrike;   // the city's strike on this unit
-	int iDelay;    // turns before it can attack
+	int iDamage;      // to the city per attack, garrison alive
+	int iReceived;    // per attack (melee only), garrison alive
+	int iDamageBare;  // the same once the garrison is dead
+	int iReceivedBare;
+	int iGarrison;    // damage to the garrison per attack
+	int iStrike;      // the city's strike on this unit
+	int iDelay;       // turns before it can attack
 	bool bRanged;
 };
 struct SSiegeUnitByDamage
 {
-	bool operator()(const SSiegeUnit& a, const SSiegeUnit& b) const { return a.iDamage > b.iDamage; }
+	bool operator()(const SSiegeUnit& a, const SSiegeUnit& b) const { return a.iDamageBare > b.iDamageBare; }
 };
 
 /// AI lab (M3): "can this army take this city". Counts the attacker's land combat units within iRange of the city
-/// and plays the siege forward turn by turn: ranged units shoot (never below 1 hit point), melee units attack while
-/// they survive the hit, the strongest first, and take the city once one hit covers what is left; melee units that
-/// don't attack heal; the city strikes the weakest melee unit (else ranged) and heals. Travel to the city is counted
-/// from distance and moves on open ground. Everything it reads is visible to a human player.
+/// and plays the siege forward turn by turn, as a sensible player would: ranged units shoot every turn (never below
+/// 1 hit point; while the garrison lives they also wear it down, and once it is dead every hit lands harder); melee
+/// units hold and heal while the ranged units alone can bring the city within their reach before the turn limit, and
+/// otherwise attack, strongest first, while they survive the hit; the city is taken when the melee units able to
+/// attack this turn cover what is left. The city strikes the weakest melee unit (else ranged) and heals. Travel to
+/// the city is counted from distance and moves on open ground. Everything it reads is visible to a human player.
 bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity, int iRange, int iMaxTurns, CvSiegeEstimate& kOut)
 {
 	kOut.iCityHP = 0; kOut.iCityMaxHP = 0; kOut.iCityHeal = 0; kOut.iCityStrike = 0; kOut.iMelee = 0; kOut.iRanged = 0;
 	kOut.iRangedDamagePerTurn = 0; kOut.iMeleeDamagePerAttack = 0; kOut.iMeleeReceivedPerAttack = 0;
 	kOut.iTurnTaken = -1; kOut.iMeleeLeft = 0; kOut.iCityHPAtEnd = 0;
+	kOut.iGarrisonHP = 0; kOut.iGarrisonDeadTurn = -1; kOut.iRangedDamageBare = 0; kOut.iMeleeDamageBare = 0;
 	if (!pCity || eAttacker == NO_PLAYER)
 		return false;
 
@@ -5156,6 +5162,8 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 		kOut.iCityHeal += pCity->getPopulation();
 	int iUnitHeal = /*10*/ GD_INT_GET(ENEMY_HEAL_RATE);
 	int iStrikeRange = pCity->getBombardRange();
+	const CvUnit* pGarrison = pCity->GetGarrisonedUnit();
+	kOut.iGarrisonHP = pGarrison ? pGarrison->GetCurrHitPoints() : 0;
 
 	std::vector<SSiegeUnit> vUnits;
 	CvPlayer& kPlayer = GET_PLAYER(eAttacker);
@@ -5175,13 +5183,25 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 		int iReceived = 0, iGarrisonDamage = 0;
 		kUnit.iDamage = GetSimulatedDamageFromAttackOnCity(pCity, pUnit, pUnit->plot(), iReceived, iGarrisonDamage, true, 0, 0, 0, true);
 		kUnit.iReceived = kUnit.bRanged ? 0 : iReceived;
+		kUnit.iGarrison = pGarrison ? iGarrisonDamage : 0;
+		if (pGarrison)
+		{
+			int iReceivedBare = 0, iUnused = 0;
+			kUnit.iDamageBare = GetSimulatedDamageFromAttackOnCity(pCity, pUnit, pUnit->plot(), iReceivedBare, iUnused, true, 0, 0, 0, true, true, NULL);
+			kUnit.iReceivedBare = kUnit.bRanged ? 0 : iReceivedBare;
+		}
+		else
+		{
+			kUnit.iDamageBare = kUnit.iDamage;
+			kUnit.iReceivedBare = kUnit.iReceived;
+		}
 		kUnit.iStrike = pCity->rangeCombatDamage(pUnit, false, pUnit->plot(), true);
 		int iMoves = max(1, pUnit->baseMoves(false));
 		int iReach = kUnit.bRanged ? max(1, pUnit->GetRange()) : 1;
 		int iTravel = max(0, iDist - iReach);
 		// a unit that can get within reach this turn still attacks this turn
 		kUnit.iDelay = iTravel <= iMoves ? 0 : (iTravel - 1) / iMoves;
-		if (kUnit.iDamage <= 0)
+		if (kUnit.iDamage <= 0 && kUnit.iDamageBare <= 0)
 			continue;
 
 		vUnits.push_back(kUnit);
@@ -5189,11 +5209,13 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 		{
 			kOut.iRanged++;
 			kOut.iRangedDamagePerTurn += kUnit.iDamage;
+			kOut.iRangedDamageBare += kUnit.iDamageBare;
 		}
 		else
 		{
 			kOut.iMelee++;
 			kOut.iMeleeDamagePerAttack += kUnit.iDamage;
+			kOut.iMeleeDamageBare += kUnit.iDamageBare;
 			kOut.iMeleeReceivedPerAttack += kUnit.iReceived;
 			kOut.iCityStrike = max(kOut.iCityStrike, kUnit.iStrike);
 		}
@@ -5201,42 +5223,75 @@ bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity
 	std::stable_sort(vUnits.begin(), vUnits.end(), SSiegeUnitByDamage());
 
 	int iCityHP = kOut.iCityHP;
+	int iGarrisonHP = kOut.iGarrisonHP;
 	for (int iTurn = 1; iTurn <= iMaxTurns; iTurn++)
 	{
 		// ranged first: they can't take the city, only bring it to 1
+		int iRangedThisTurn = 0;
 		for (size_t i = 0; i < vUnits.size(); i++)
 		{
 			SSiegeUnit& u = vUnits[i];
-			if (u.bRanged && u.iHP > 0 && u.iDelay < iTurn)
-				iCityHP = max(1, iCityHP - u.iDamage);
-		}
-		// then melee, strongest first, each only if it survives the hit
-		for (size_t i = 0; i < vUnits.size(); i++)
-		{
-			SSiegeUnit& u = vUnits[i];
-			if (u.bRanged || u.iHP <= 0)
+			if (!u.bRanged || u.iHP <= 0 || u.iDelay >= iTurn)
 				continue;
-			bool bAttacked = false;
-			if (u.iDelay < iTurn && u.iHP > u.iReceived)
+			bool bBare = iGarrisonHP <= 0;
+			int iDamage = bBare ? u.iDamageBare : u.iDamage;
+			iCityHP = max(1, iCityHP - iDamage);
+			iRangedThisTurn += iDamage;
+			if (!bBare)
 			{
-				if (u.iDamage >= iCityHP)
-				{
-					int iLeft = 0;
-					for (size_t j = 0; j < vUnits.size(); j++)
-						if (!vUnits[j].bRanged && vUnits[j].iHP > 0)
-							iLeft++;
-					kOut.iTurnTaken = iTurn;
-					kOut.iMeleeLeft = iLeft;
-					kOut.iCityHPAtEnd = 0;
-					return true;
-				}
-				iCityHP -= u.iDamage;
-				u.iHP -= u.iReceived;
-				bAttacked = true;
+				iGarrisonHP -= u.iGarrison;
+				if (iGarrisonHP <= 0 && kOut.iGarrisonDeadTurn < 0)
+					kOut.iGarrisonDeadTurn = iTurn;
 			}
-			if (!bAttacked && u.iDelay < iTurn)
+		}
+
+		// melee able to attack this turn, strongest first: do they cover what is left?
+		bool bBare = iGarrisonHP <= 0;
+		int iReach = 0;
+		for (size_t i = 0; i < vUnits.size(); i++)
+		{
+			const SSiegeUnit& u = vUnits[i];
+			int iReceived = bBare ? u.iReceivedBare : u.iReceived;
+			if (!u.bRanged && u.iHP > 0 && u.iDelay < iTurn && u.iHP > iReceived)
+				iReach += bBare ? u.iDamageBare : u.iDamage;
+		}
+		if (iReach > 0 && iReach >= iCityHP)
+		{
+			int iLeft = 0;
+			for (size_t j = 0; j < vUnits.size(); j++)
+				if (!vUnits[j].bRanged && vUnits[j].iHP > 0)
+					iLeft++;
+			kOut.iTurnTaken = iTurn;
+			kOut.iMeleeLeft = iLeft;
+			kOut.iCityHPAtEnd = 0;
+			return true;
+		}
+
+		// otherwise melee hold and heal while the ranged units alone get the city within their reach in time
+		int iTurnsLeft = iMaxTurns - iTurn;
+		bool bRangedSuffice = iReach > 0 && iCityHP - max(0, iRangedThisTurn - kOut.iCityHeal) * iTurnsLeft <= iReach;
+		for (size_t i = 0; i < vUnits.size(); i++)
+		{
+			SSiegeUnit& u = vUnits[i];
+			if (u.bRanged || u.iHP <= 0 || u.iDelay >= iTurn)
+				continue;
+			int iReceived = bBare ? u.iReceivedBare : u.iReceived;
+			int iDamage = bBare ? u.iDamageBare : u.iDamage;
+			if (!bRangedSuffice && u.iHP > iReceived && iCityHP > 1)
+			{
+				iCityHP = max(1, iCityHP - iDamage);
+				u.iHP -= iReceived;
+				if (!bBare)
+				{
+					iGarrisonHP -= u.iGarrison;
+					if (iGarrisonHP <= 0 && kOut.iGarrisonDeadTurn < 0)
+						kOut.iGarrisonDeadTurn = iTurn;
+				}
+			}
+			else
 				u.iHP = min(u.iMaxHP, u.iHP + iUnitHeal);
 		}
+
 		// the city strikes the weakest unit in its range, melee first
 		if (iStrikeRange > 0)
 		{
@@ -5289,10 +5344,11 @@ void CvTacticalAI::LogSiegeEstimates()
 			if (kEst.iMelee + kEst.iRanged == 0)
 				continue;
 
-			LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d",
+			LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d; garrison hp %d, dead on turn %d, then ranged %d, melee %d",
 				pCity->getNameNoSpace().c_str(), bTake ? "TAKE" : "NO", kEst.iTurnTaken, kEst.iMeleeLeft, kEst.iCityHPAtEnd,
 				kEst.iCityHP, kEst.iCityMaxHP, kEst.iCityHeal, kEst.iCityStrike, kEst.iMelee, kEst.iRanged,
-				kEst.iRangedDamagePerTurn, kEst.iMeleeDamagePerAttack, kEst.iMeleeReceivedPerAttack));
+				kEst.iRangedDamagePerTurn, kEst.iMeleeDamagePerAttack, kEst.iMeleeReceivedPerAttack,
+				kEst.iGarrisonHP, kEst.iGarrisonDeadTurn, kEst.iRangedDamageBare, kEst.iMeleeDamageBare));
 		}
 	}
 }
