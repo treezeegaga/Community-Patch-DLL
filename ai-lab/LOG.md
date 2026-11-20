@@ -213,6 +213,9 @@ harms, both are reverted. For the user to confirm in the morning.
 m2g2 (siege set, `ab-455fe7a`, new AI, m2g3a/b/c, clean): **70 of 90** (m1f7 on the M1 build: 68). No scenario's
 captures dropped. medium_vs_strong 4/6 (from 2/6), the rest equal, capture turns the same. Losses equal or lower
 except small_vs_strong, 2.5 from 1.7: not takeable, and losses don't count (ruling 2026-11-18). The M1 bar holds.
+m2x2 (regress set, `ab-455fe7a`, new AI, lab v16, m2x3a/b/c, clean): 24 of 24. capital 6/6 (turns 4-5), coastal 6/6
+(4-5), medieval 6/6 (3-4), artillery 6/6 (6-12), 0.2 units lost on artillery. Lab v15's era grouping works: no
+battle void.
 Result: (pending)
 
 ## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)
