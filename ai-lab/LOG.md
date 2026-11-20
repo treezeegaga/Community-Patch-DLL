@@ -207,6 +207,17 @@ Result so far (m2n1a, BOX 5:05-5:09 PM ET, new AI, 12 battles; the other six lau
   Recheck: `2026-11-19-15-m2d2` (8 and 10 tiles, new AI and stock, 6 each, `ab-1ca9bea`, BOX).
 - Earlier results: in the siege set each battle starts next to the city, so leftover operations could also have
   recruited units there; M1's results are not reread for this, but M2 and later results use v13.
+Result (all of m2d1, read by implementer 6, 9:05 PM ET): m2n1a/b/c (new AI), m2s1a/b/c (stock), m2r1 (script), all
+clean, `ab-9109672` (the old DLL: 10-tile battles void in every launch).
+- 12 and 16 tiles: 0 of 12 per AI, no damage, army at home all 25 turns. As predicted.
+- 8 tiles: **both AIs** march (stock too: the 8-tile city is inside the range of 10 for everyone). 0 of 6 captured per
+  AI. The army stops at a mean distance of 5.4-5.7 tiles and never reaches "ready" (80% within 3 tiles); only the
+  ranged units come in to shoot. New AI: the city shot to 229 of 250 (its last hit points) in 4 of 6, 41 and 192 in
+  the others; stock: 229 in 2 of 6, 5-84 in the rest. First unit within 3 tiles on turn 5 or 8-11. No losses.
+- Script: 6 of 6 (d8 turn 11, d10 turn 8, d16 turn 17).
+Decision: cause confirmed (range); iteration 2 widens it. A second class shows behind it, for M2's next iteration:
+"arrives, melee stay back", the army stalls about 5 tiles out and the city sits on its last hit points with all
+melee alive (M1 iteration 7's "close in" only reaches melee within 6 tiles of the city).
 
 ## 2026-11-19 M1 iteration 9: the new AI as defender (measurement only)
 Class: none (the M1 bar's defender part: new AI as defender must not make stock attackers more successful than the
