@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-20-14-op5",
+  "why": "M3 iteration 8: early-rush plan part 2 (research toward Composite Bowmen; plan chosen by warmonger trait). Opening lab v19, new AI on Songhai, 3 games (compare op4); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op5a",
+      "release": "ab-31db976",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op5b",
+      "release": "ab-31db976",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op5c",
+      "release": "ab-31db976",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op5x",
+      "release": "ab-31db976",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
