@@ -98,6 +98,26 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 2: the new AI's two "too early" gates ask the one estimate
+Class: melee_only_vs_medium, takeable (script 6/6), new AI 0-1 of 6 (m3e1 0/6; one capture in m3e2b): the "never
+attacks enough" class, set aside for M1. Two gates disagree and refuse (M1 it. 8): `ExecuteCaptureCityMoves`' "too
+early" (expected damage 0 with five Swordsmen adjacent, because a costly melee hit counts as nothing) and
+`ScoreAttackDamage`'s per-unit "too early" (one Swordsman is worn down before the city). Estimate v2 says TAKE for it
+on battle turn 1 (turn 2-3).
+Cause: the two gates (above); M3's first item is to make them one function.
+Change (`7aa945f`, behind `IsNewAI()`): `CvTacticalAI::UpdateSiegeEstimates` keeps the turn's estimates
+(computed at the start of `Update`, for the new AI or when logging; not saved). In `ExecuteCaptureCityMoves`, when the
+units in reach can't finish the city this turn, the new AI attempts the capture if the estimate says TAKE, else logs
+"too early for attacking <city> (siege estimate NO)". In `ScoreAttackDamage`, a melee attack on a city is "too
+early" for the new AI only if the estimate says NO ("refused (too early, siege estimate NO)"). Scoring and the other
+checks (hit point limit, damage not worth it, suicide) unchanged.
+Predicted (new AI, 6 battles each): melee_only_vs_medium from 0-1/6 to at least 4/6 by turn 7 (the M1 bar), or, if not,
+the log shows which later check refuses (expected: "damage not worth it"). small_vs_strong (estimate NO) stays 0/6
+with no more units lost. Every other siege scenario within 1 in 6 of m3e1 (69 of 90), capture turns the same or
+earlier. March and march3 keep the M2 bar (5 of 6 within 1.5x the script); regress 8 of 8.
+Build: `ab-7aa945f`. Run: queue request `2026-11-20-05-m3f2` (m3f2a-c siege, m3g2a-c march, m3h2a-c march3, m3x2a regress).
+Result: (pending)
+
 ## 2026-11-20 M3 iteration 1: one siege estimate, logging only
 Class: none yet (M3's first item, PLAN 8 M3): two functions judge "can this army take this city" and disagree (M1
 it. 8). Reading them again: `ComputeTotalExpectedDamage` caps melee at 3 only for **unit** targets; for a city it drops
