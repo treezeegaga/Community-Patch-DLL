@@ -152,3 +152,30 @@ least 5 of 6 within 1.5 times the script's median capture turn.
 Total 65 of 66. Same build: siege set 69 of 90 (m2gb), regress set 24 of 24 (m2xb). The table above is iteration 3.
 
 Stock never leaves home at 10+ tiles and barely engages at 8 (most damage 2-13%), with the corridor shown or not.
+
+## Current build: `ab-7aa945f` (M3 iteration 2: both "too early" gates use the one siege estimate)
+
+Lab v17, new AI as attacker, `2026-11-20-05-m3f2`, 6 battles per scenario (regress 2). Siege set 71 of 90 (previous
+build 69 of 90, m3e1 on `ab-69b9d72`); march 42 of 42 and march3 24 of 24, every battle within the M2 bar; regress 8 of 8.
+
+| Scenario | Captured | Capture turns | Units lost (mean) | Previous (m3e1) |
+|---|---|---|---|---|
+| ancient_rush_vs_open_city | 6/6 | 2 | 0.0 | 6/6 |
+| small_vs_weak | 6/6 | 2 | 0.0 | 6/6 |
+| small_vs_medium | 6/6 | 6-7 | 0.0 | 5/6 |
+| small_vs_strong | 0/6 | | 2.3 | 0/6 |
+| medium_vs_weak | 6/6 | 2 | 0.0 | 6/6 |
+| medium_vs_medium | 6/6 | 3-4 | 0.0 | 6/6 |
+| medium_vs_strong | 4/6 | 9-11 | 0.2 | 4/6 |
+| large_vs_weak | 6/6 | 2 | 0.0 | 6/6 |
+| large_vs_medium | 6/6 | 3 | 0.0 | 6/6 |
+| large_vs_strong | 6/6 | 5-6 | 0.0 | 6/6 |
+| ref_cb4_melee6_vs_walls | 6/6 | 5-6 | 0.0 | 6/6 |
+| melee_only_vs_medium | 1/6 | 11 | 0.0 | 0/6 |
+| ranged_only_vs_weak | 0/6 | | 0.0 | 0/6 |
+| siege_train_vs_strong | 6/6 | 6-8 | 0.2 | 6/6 |
+| medium_vs_medium_rough | 6/6 | 4-5 | 0.0 | 6/6 |
+
+March (bar = 1.5x the script's median turn): medium_vs_weak 6/6 t9; medium_vs_medium 6/6 t11; large_vs_medium 6/6
+t10-13; d8 6/6 t10; d10 6/6 t10; d16 6/6 t16-20; rough 6/6 t11-12; march3 d8 6/6 t9-10; march3 6/6 t11; march3 d16
+6/6 t15-16; march3 rough 6/6 t12-13. Units lost 0.0 except d16 0.5.
