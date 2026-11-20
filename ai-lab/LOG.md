@@ -166,6 +166,17 @@ request `2026-11-19-23-m2f3`: march3 set on `ab-455fe7a`, new AI, stock and scri
 Prediction for m2f3: new AI leaves home ("Transition to gathering stage", then movement) in at least 5 of 6 at 12 and
 16 tiles and on rough ground; at 8 tiles both AIs do; stock stays home at 12 and 16. And for the rest of m2f2, every
 2-Spearman and 3-Spearman army stays in recruiting for both AIs.
+Result m2f2 (`ab-455fe7a`, lab v14-v15, m2n3a/b/c new AI, m2s3a/b/c stock, 6 battles per march scenario each, clean,
+read 9:55 PM ET): **0 captures for both AIs.** At 12 and 16 tiles and on rough ground no unit came within 3 tiles in
+any battle (mean distance stays 11-16): the new AI's operations start (iteration 2 works) but stay in recruiting,
+like stock's at 8 and 10. 8 tiles: both AIs shoot the city (new AI to 229 in 3 of 6; stock in 2 of 6), never ready.
+10 tiles: one battle each got a unit within 3 tiles. The v14 march3 battles (m2n3a/m2s3a, 3 Spearmen) behave the same
+and are void. As the corrected prediction said.
+Decision: **pending.** The change does what it claims, but no army can leave recruiting in this set, so it can't move
+a capture here. Its real test is m2f3 (march3 with a Swordsman, armies that fill the formation, queued on the same
+build): accept if the new AI's army leaves home at 12 and 16 tiles in at least 5 of 6 and stock's doesn't; else revert.
+Iteration 3 (spare ranged units fill optional slots) waits for that decision. m2g2/m2x2 (siege and regress sets on
+this build) are the no-regression check.
 Result: (pending)
 
 ## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)
