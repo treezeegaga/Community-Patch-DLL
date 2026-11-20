@@ -278,6 +278,13 @@ most 2 in all) is the same-PC noise exactly; kept as is.
 Next: a TREEDESKTOP-only request (3 launches) once the user has set that PC up and BOX runs watcher v2, compared
 against these 6 BOX launches.
 
+## 2026-11-19 M2 reference: the script on the rough march (measurement only)
+m2r3a/b/c (`ab-455fe7a`, scripted attacker, march_medium_vs_medium_rough, 6 battles, clean, read 10:20 PM ET):
+3 of 6 captured (turns 13, 25, 25), 0-3 units lost. Rep 1 of each launch: first unit within 3 tiles on turn 9,
+ready on 18; rep 2: turn 4 and 6 (the same pattern in all three launches, as march_medium_vs_weak rep 1 in m2r0).
+So on rough ground the script takes it only half the time within 25 turns: by the takeable rule (2 of 6) it is
+takeable, reference turns 25 (the slower half).
+
 ## 2026-11-19 M2 iteration 0: the march baseline (measurement only)
 Class: none yet. M2's question: does an army that starts at home (12 tiles away) arrive ready and then take the city?
 Change: lab v10 (Lua only, no build): each TURN line adds AttackersWithin3, MeleeWithin3, RangedWithin3; each RESULT
