@@ -32,7 +32,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$WatcherVersion = 3
+$WatcherVersion = 4
 $Me = $env:COMPUTERNAME
 $state = Join-Path $env:LOCALAPPDATA "cp-ai-lab"
 New-Item -ItemType Directory -Force $state | Out-Null
@@ -160,6 +160,7 @@ function Sync-Repo {
 }
 # Watcher v3: what this PC's watcher is doing, in ai-lab/runs/status/<COMPUTERNAME>.json, so a stall can be read from the
 # repository. Pushed when the state changes, and hourly while it is anything but idle. Only this PC writes the file.
+# v4: "running" with the request and label is published when a launch starts, so the file changes with every launch.
 function Publish-Status([string]$st, [string]$detail) {
     if ($DryRun) { return }
     $now = Get-UnixNow
@@ -389,6 +390,7 @@ try {
         }
 
         Write-Log "RUN $id / $label"
+        Publish-Status "running" "$id / $label"   # watcher v4: "idle" alone never changed while launches ran
         $entry = $null
         try { $entry = Invoke-Launch $next.Launch }
         catch {
