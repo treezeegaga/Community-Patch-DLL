@@ -11,6 +11,10 @@
 --      is over it wipes both armies and the target city and stages the next one.
 --   3. Results go to Lua.log as lines starting with "[SiegeLab] " (RUN, START, TURN, RESULT, WARN, ERROR, DONE).
 --
+-- Opening mode (lab v18, M3): with set = "opening" the lab leaves the game as it is (a normal start: every civ,
+-- city-state and barbarian), autoplays SiegeLabScenarios.opening.turns turns with every major civ played by the AI,
+-- and logs one OPEN line per major civ per turn (economy and army) plus CAPTURE and WAR lines, then DONE.
+--
 -- Every engine call below was checked against the DLL's Lua bindings (CvGameCoreDLL_Expansion2/Lua), but the
 -- lab had not been run in the game when this was written. Arguments are always passed in full: the bindings
 -- read a missing argument as 0 or false, not as the C++ default.
@@ -18,7 +22,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 17
+local VERSION = 18
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -1059,8 +1063,106 @@ local function startLab()
 	end
 end
 
+------------------------------------------------------------------------------------------------------------
+-- Opening mode (lab v18): a normal game start, measured turn by turn
+------------------------------------------------------------------------------------------------------------
+
+local opening = nil
+
+local function openingLine(player, id)
+	local cities, pop = 0, 0
+	for city in player:Cities() do
+		cities = cities + 1
+		pop = pop + city:GetPopulation()
+	end
+	local melee, ranged, siege, mounted, naval, upgradeGold = 0, 0, 0, 0, 0, 0
+	local siegeCombat = typeID("UNITCOMBAT_SIEGE")
+	local mountedCombat = typeID("UNITCOMBAT_MOUNTED")
+	for unit in player:Units() do
+		if unit:IsCombatUnit() then
+			if unit:GetDomainType() == DomainTypes.DOMAIN_LAND then
+				local combat = unit:GetUnitCombatType()
+				if siegeCombat and combat == siegeCombat then siege = siege + 1
+				elseif unit:GetBaseRangedCombatStrength() > 0 then ranged = ranged + 1
+				else
+					melee = melee + 1
+					if mountedCombat and combat == mountedCombat then mounted = mounted + 1 end
+				end
+				local upgrade = unit:GetUpgradeUnitType()
+				if upgrade and upgrade >= 0 then upgradeGold = upgradeGold + unit:UpgradePrice(upgrade) end
+			else
+				naval = naval + 1
+			end
+		end
+	end
+	local settlerClass, workerClass = typeID("UNITCLASS_SETTLER"), typeID("UNITCLASS_WORKER")
+	local settlers = settlerClass and player:GetUnitClassCount(settlerClass) or 0
+	local workers = workerClass and player:GetUnitClassCount(workerClass) or 0
+	local team = Teams[player:GetTeam()]
+	local wars = 0
+	for other = 0, maxMajors() - 1 do
+		local p = Players[other]
+		if other ~= id and p and p:IsAlive() and not p:IsMinorCiv() and team:IsAtWar(p:GetTeam()) then wars = wars + 1 end
+	end
+	local newAI = player.IsNewAI and (player:IsNewAI() and 1 or 0) or -1
+	-- OPEN,turn,id,civ,newAI,cities,pop,techs,era,gold,goldRate,science,policies,happiness,melee,ranged,siege,mounted,
+	-- naval,upgradeGold,settlers,workers,wars,might
+	out(string.format("OPEN,%d,%d,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+		Game.GetGameTurn(), id, player:GetCivilizationShortDescription(), newAI, cities, pop,
+		team:GetTeamTechs():GetNumTechsKnown(), player:GetCurrentEra(), player:GetGold(), player:CalculateGoldRate(),
+		player:GetScience(), player:GetNumPolicies(), player:GetExcessHappiness(), melee, ranged, siege, mounted, naval,
+		upgradeGold, settlers, workers, wars, player:GetMilitaryMight()))
+end
+
+local function onOpeningTurn(playerID)
+	if not opening or opening.finished or playerID ~= opening.active then return end
+	local turn = Game.GetGameTurn()
+	for id = 0, maxMajors() - 1 do
+		local player = Players[id]
+		if player and player:IsAlive() and not player:IsMinorCiv() and not player:IsBarbarian() then openingLine(player, id) end
+	end
+	if turn >= opening.turns then
+		opening.finished = true
+		out("DONE")
+	end
+end
+
+local function onOpeningCapture(oldOwner, isCapital, x, y, newOwner)
+	if not opening or opening.finished then return end
+	out(string.format("CAPTURE,%d,%d,%d,%d,%d,%d", Game.GetGameTurn(), oldOwner, newOwner, isCapital and 1 or 0, x, y))
+end
+
+local function startOpening(config)
+	local active = Game.GetActivePlayer()
+	local turns = (SiegeLabScenarios.opening and SiegeLabScenarios.opening.turns) or 80
+	opening = { active = active, turns = turns, finished = false }
+	local newAI = config.newAI or "none"
+	local majors, flags = 0, ""
+	for id = 0, maxMajors() - 1 do
+		local player = Players[id]
+		if player and player:IsAlive() and not player:IsMinorCiv() and not player:IsBarbarian() then
+			majors = majors + 1
+			local on = newAI == "both" or (newAI == "attacker" and id == active) or (newAI == "defender" and id ~= active)
+			if player.SetNewAI then player:SetNewAI(on) end
+		end
+	end
+	local w, h = Map.GetGridSize()
+	local att = Players[active]
+	-- Same fields as a siege RUN line; mode 3 = opening, scenario count = majors, repeats = turns.
+	out(string.format("RUN,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%d", VERSION, att:GetCivilizationShortDescription(), "opening",
+		w, h, GameInfo.HandicapInfos[Game.GetHandicapType()].Type, GameInfo.GameSpeeds[Game.GetGameSpeedType()].Type,
+		3, majors, turns, (att.IsNewAI and (att:IsNewAI() and 1 or 0) or -1), -1))
+	if Game.GetMaxTurns() > 0 and Game.GetMaxTurns() < turns + 5 then Game.ChangeMaxTurns(turns + 5) end
+	GameEvents.PlayerDoTurn.Add(guarded(onOpeningTurn))
+	GameEvents.CityCaptureComplete.Add(guarded(onOpeningCapture))
+	Game.SetAIAutoPlay(turns + 2, active)
+	if Game.GetAIAutoPlay() == 0 then
+		out("ERROR,autoplay did not start (no free player slot for the observer)")
+	end
+end
+
 local function onLoadScreenClose()
-	if lab then return end
+	if lab or opening then return end
 	local config = SiegeLabConfig
 	if type(config) ~= "table" or not config.enabled then return end
 	if Game.IsNetworkMultiPlayer() or Game.IsHotSeat() then
@@ -1069,6 +1171,10 @@ local function onLoadScreenClose()
 	end
 	if Game.GetElapsedGameTurns() ~= 0 or Players[Game.GetActivePlayer()]:GetNumCities() > 0 then
 		out("WARN,not started: the siege lab only runs from the first turn of a new game")
+		return
+	end
+	if config.set == "opening" then
+		startOpening(config)
 		return
 	end
 	startLab()

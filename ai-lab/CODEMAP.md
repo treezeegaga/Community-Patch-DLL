@@ -85,6 +85,12 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   moved for `capital`, sea for `coast`, rough ring for `terrain = "rough"`, `homeDistance` moves the target), ends both
   sides' operations; logs a TURN line each turn and a RESULT line per battle; fixed +10 gold a turn for the attacker.
   Scripted attacker rules v3 when `-Script`.
+- **Opening mode (lab v18, M3):** `-Set opening` (`SiegeLabScenarios.opening = { turns = 80 }`): no arena, no clean-up;
+  the game as set up (every civ, city-state, barbarian) is autoplayed to that turn; `newAI` attacker = the active
+  player's civ (Songhai), defender = every other major, both = all. Lua.log: `OPEN,turn,id,civ,newAI,cities,pop,techs,
+  era,gold,goldRate,science,policies,happiness,melee,ranged,siege,mounted,naval,upgradeGold,settlers,workers,wars,might`
+  once per major civ per turn (at the active player's turn start), `CAPTURE,turn,old,new,isCapital,x,y`, then DONE. RUN
+  line mode 3. `Get-SiegeLabResults.ps1` finds no RESULT lines and saves only the logs.
 - `SiegeLabScenarios.lua`: sets `siege` (15 scenarios, 12 turns, army next to the city), `march` (25 turns, army at
   home; ARMY_MEDIUM/LARGE, 8-16 tiles, rough), `march3` (lab v16: 2 Spearmen, 1 Swordsman, 4 bowmen, which fills the
   classical attack formation) and `regress` (capital, coastal, medieval era 2, artillery era 4). Army constants at the

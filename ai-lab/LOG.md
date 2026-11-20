@@ -98,6 +98,18 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3: the opening lab, first version (lab v18; measurement only)
+PLAN M3's second item. The siege lab add-in gets an opening mode (`-Set opening`): the game as the PC's menus set it up
+(normal start, every civ, city-states, barbarians) is autoplayed to turn 80 (Quick); each turn one `OPEN` line per
+major civ (cities, population, techs, era, gold and rate, science, policies, happiness; land melee, ranged, siege and
+mounted units, naval, upgrade gold for the units that can upgrade, settlers, workers, wars, military might) and a
+`CAPTURE` line per city taken. The installer, runner, queue and watchers are unchanged (a launch = one game). Mock
+checked (`test/mock_run.lua opening`; the four battle sets still run clean). First request `2026-11-20-08-op0`
+(op0a/c stock, op0b/d new AI on Songhai, build `ab-b196ee4`): does it run on the PCs, how long does a game take, what
+the stock opening looks like. The M3 bar (user's game: war declared turn 41-50, a capital by turn 54 with about 6
+melee and 4 Composite Bowmen, no bankruptcy, 2+ cities) is read against these lines once they exist.
+Result: (pending)
+
 ## 2026-11-20 M3 iteration 3: a melee hit on a city we can take scores what it deals
 Class: melee_only_vs_medium, takeable (script 6/6 by turn 5), new AI 1 of 6 (m3f2). Bar: 5 of 6 by turn 7.
 Cause (m3f2a rep 1, game turns 55-60, `PlayerTacticalAILog.csv`): the estimate says TAKE, both gates let the attack
