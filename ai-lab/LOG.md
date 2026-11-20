@@ -101,6 +101,17 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
+Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
+90a9c4b; both calibration launches ended "Run saved"; watcher registered (every 5 min while logged on); dry run takes
+pc2tree4-6. Civ V starts slowly there (110-230 s to the legal screen), so the runner now reads per-PC timing from the
+host file (`menuWaitSeconds` 420, `calibrateWaitSeconds` 270, `calibrateContinueClicks` 1; BOX keeps 240/60/2) and
+keeps Civ V's window topmost during a run (the Claude app there is always on top). Commit bbb5a1c. pc2tree4 was
+claimed before it. Pack: TREEDESKTOP's only game core DLL is `Mods\(1) Community Patch\CvGameCore_Expansion2.dll`,
+SHA-256 262AEE88..., 16,837,632 bytes, dated 2026-11-02 8:24 PM; BOX's is 2FB6A9B9.... Same .Civ5Pkg priority and
+key; 893 files, 123,750,824 bytes. Lab runs that name a release swap this DLL anyway, but other pack files may differ
+too: both PCs were asked for a per-file hash list (`ai-lab/runs/pack/<PC>.txt`) to compare.
+
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
 normalized distance 10" every turn, no attack target, no operation.
