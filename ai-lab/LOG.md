@@ -148,6 +148,15 @@ battles of each scenario, march set and march3 set alike; at 12 and 16 tiles the
 log line says how far over the cap the others are). Captures: not predicted (M2's bar measures them). Siege and regress
 sets: no capture count down by more than 1 in 6 (their armies start within the operation's recruiting exclusion).
 Stock: unchanged by construction (not rerun).
+Result so far (m2n5a, TREEDESKTOP, `ab-8893a66`, lab v16, march set x2, clean, read 10:35 PM ET): **9 of 14 captured**,
+the first march captures by either AI. 10 of 11 attack operations went recruiting -> gathering -> movement ->
+finished. Rep 2: 6 of 7 (12 tiles weak 9, medium 12, large 10; 8 tiles 11; 10 tiles 10; rough 13; d16 arrived but
+lost 3 and didn't take it). Rep 1: 8, 10 and rough captured (turns 10-13); 12 and 16 tiles never got an operation:
+"no army path ... uncapped normalized distance -1, plots -1", i.e. **no path at all, not the cost cap** (my cost
+theory was wrong). Army paths only cross tiles the player has seen; on a fresh map the corridor isn't seen yet, and the
+lab only shows the target's tile. Lab v17: a march battle also shows the attacker a corridor 5 rows wide from home to
+the target (a scouted route). The rest of m2f5 runs on v17 (m2n5a on v16). Ready turn = capture turn in most battles:
+the army arrives in a stream, not together.
 
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
