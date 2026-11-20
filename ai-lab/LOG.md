@@ -137,6 +137,26 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 7: the early-rush plan row and its executor, part 1: the build order (new AI)
+Class: no army fielded. Songhai's 182 build choices to turn 54 in 15 opening games: 93 buildings, 46 civilians, 16
+wonders, 27 military (under 2 a game). The user's reference rush (rulings of 2026-11-20): one settler, no buildings,
+only army units, about 6 melee + 4 ranged, 2 cities.
+Cause: the stock city chooses by flavor weights among everything it can build; nothing tells it "this is a rush".
+Change (behind `IsNewAI()`): `CvMilitaryAI::SAIPlan` rows (`s_aAIPlans`, a data array for now; the database table comes
+when the pack can carry it) and two functions: `GetActivePlan()` (new AI, major, leader's primary victory pursuit is
+domination, before the row's end turn (60 on Quick, scaled), not at war with a major; no saved state) and
+`GetPlanBuild(city)`: counts land melee/ranged units and settlers (other cities' production included) and returns the
+one settler (capital only, once 2 army units stand, while cities + settlers < 2), else the best melee or foot ranged unit
+the city can train, whichever is further behind the row's 6:4, else nothing. `CvCityStrategyAI::ChooseProduction` builds
+what it returns (logged as CHOSEN) and otherwise chooses as before. Row: AIPLAN_EARLY_RUSH, 1 settler, 6 melee, 4 ranged.
+Research, gold and the march are later parts (one per iteration).
+Predicted (opening lab, new AI on Songhai, 3 games): builds to turn 54 are army units plus one settler, no buildings
+or wonders until the army is complete; land melee about 6 and ranged up to 4 (if Archery is researched in time: the
+tech path is not in yet) by turn 50-60, 2 cities; income goes negative as the army grows and gold may hit 0 (watch
+"b/c bankrupt" scrapping: if so, the gold part is next, not a revert). War: the attack op (it. 5) should now fill and
+start; a declaration by turn 80 in at least 2 of 3. Regress 8 of 8 (the lab's attacker is at war, so no plan builds).
+Build and run: below.
+
 ## 2026-11-20 M3 iteration 6: preparing for war, the treasury pays for the army (new AI)
 Class and cause: iteration 5's result: the soft supply cap counts income only, so with flat income the army stays at
 2 units per city with 160-250 gold banked, and the attack operation's units are refused ("nosupply").

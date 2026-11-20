@@ -181,6 +181,18 @@ public:
 
 	// Requests for specific military operations
 	bool RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful=true);
+
+	// new AI (ai/v2 M3 iteration 7): the plan this player follows, if any (plans are data rows, see CvMilitaryAI.cpp)
+	struct SAIPlan
+	{
+		const char* szType;
+		int iEndTurnQuick;	// the plan's build order holds until this turn (Quick speed; scaled for other speeds)
+		int iSettlers;		// settlers to build in all
+		int iMelee;			// land melee units wanted
+		int iRanged;		// land ranged units wanted
+	};
+	const SAIPlan* GetActivePlan() const;
+	UnitTypes GetPlanBuild(CvCity* pCity) const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);
 	bool RequestBullyingOperation(PlayerTypes eEnemy);
