@@ -121,6 +121,10 @@ and by 2 in large_vs_strong (2/6 vs 4/6); totals 54 and 55 of 90 (BOX's m1s9: 57
 56x36, King, Quick). The count bar is met. The pack DLL hash is not the same (262AEE88... vs 2FB6A9B9...); every lab
 launch that names a release swaps that DLL, so TREEDESKTOP is trusted once BOX's per-file listing shows the rest of
 the pack is identical. TREEDESKTOP's listing is in (`runs/pack/TREEDESKTOP.txt`, 893 files); BOX's is pending.
+10:05 PM ET: the user said "approve everything", so TREEDESKTOP is added to `runs/trusted-hosts.txt` now, on the
+count check alone; the pack comparison follows as a check, not a gate (if other pack files differ, its results are
+set aside). Its first job: `2026-11-19-24-m2f3t`, the new-AI and stock half of m2f3 (iteration 2's real test), so it
+doesn't wait about 2 hours behind BOX's queue. m2f3 on BOX still runs later; its battles add to these.
 
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
