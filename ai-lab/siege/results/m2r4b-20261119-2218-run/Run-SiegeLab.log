@@ -1,0 +1,20 @@
+2026-11-19 22:18:44  Host BOX (built-in calibration), Civ V in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V
+2026-11-19 22:18:44  Run 'm2r4b': set march, only [march3_vs_medium_d8,march3_vs_medium,march3_vs_medium_d16,march3_vs_medium_rough], repeats 2, DLL ab-455fe7a
+2026-11-19 22:18:44    dll: Installed ab-455fe7a (13880832 bytes, SHA-256 2462EA433985...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-19 22:18:44    installer: AILog is 1 in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-19 22:18:44    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-19 22:18:44    installer:   Runs march3_vs_medium_d8, march3_vs_medium, march3_vs_medium_d16, march3_vs_medium_rough from the 'march' set, 2 time(s) each; the scripted attacker plays the attacker; new AI: none.
+2026-11-19 22:18:44    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-19 22:18:44    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-19 22:19:07  Civ V window at 963,63 size 1914x2034
+2026-11-19 22:19:35    screen 'single' (distance 0.4)
+2026-11-19 22:19:38    screen 'setup' (distance 16.7)
+2026-11-19 22:19:41    screen 'advanced' (distance 4.5)
+2026-11-19 22:19:56  Game started; waiting for the lab
+2026-11-19 22:20:01  Lab finished ([SiegeLab] DONE)
+2026-11-19 22:20:34  Civ V did not close within 30 s; stopping it by force
+2026-11-19 22:20:37  FAILED: No siege lab run in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\Logs\Lua.log. Was the lab installed, and was the game a new single-player game?
+2026-11-19 22:20:41    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-19 22:20:41    dll: Stock DLL restored and checked (1 copy).
+2026-11-19 22:20:41  No assertion dialogs.
+2026-11-19 22:20:41  Run FAILED. Civ V closed, lab removed. Log: C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\m2r4b-20261119-2218-run\Run-SiegeLab.log
