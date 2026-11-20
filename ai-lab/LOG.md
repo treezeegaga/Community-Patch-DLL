@@ -111,6 +111,25 @@ Mixed armies may send melee in earlier: capture turns the same or earlier, units
 count, 2026-11-18 ruling). No siege scenario's captures drop by more than 1 in 6 from m3f2 (71 of 90); small_vs_strong
 unchanged. March and march3 keep the M2 bar; regress 8 of 8.
 Build: `ab-0410152`. Run: queue request `2026-11-20-06-m3f3` (m3f3a-c siege, m3g3a-c march, m3h3a-c march3, m3x3a regress).
+Result (all 10 launches clean): melee_only_vs_medium **6/6**, turns 5-8 (5 of 6 by turn 7: meets the M1 bar). Siege
+72 of 90 (m3f2 71), but **large_vs_strong 3/6** (m3f2 6/6, turns 5-6) and march **d16 4/6** (6/6; under the M2 bar),
+d8 5/6 and slower (10-13). Regress 8 of 8. Cause (m3f3a large_vs_strong rep 1, game turns 48-53): Spearmen hit the city
+at 163 HP (7-15 dealt, 59-69 taken), so when the ranged units had it at 21 HP they were at 5-46 HP: every finishing hit
+"refused (suicide)", the estimate turned NO. The exemption applied whenever the estimate said TAKE, not only to the
+hits its own plan makes (it holds melee while the ranged units can do the work): melee spent early, as in section 5.
+Decision: reverted in favour of 3b (two scenarios drop by 2-3 in 6). Learned: the score must follow the estimate's
+plan, not just its verdict.
+
+## 2026-11-20 M3 iteration 3b: the score exemption only for the hits the estimate's plan makes now
+Class and cause: as iteration 3 (melee_only 1/6) plus its regression (large_vs_strong, march d16: melee spent early).
+Change (`b196ee4`, behind `IsNewAI()`): the estimate records `bMeleeNow`: its plan has melee attack on turn 1 (the
+city is taken this turn, or the melee grind because the ranged units alone can't bring it within their reach before
+the limit). The score exemption (damage taken left out) applies only when the estimate says TAKE and `bMeleeNow`. The
+log line adds "melee now 0/1".
+Predicted: melee_only_vs_medium stays at least 5/6 by turn 7 (no ranged: always grind, bMeleeNow 1). large_vs_strong
+back to at least 5/6, turns 5-6 (ranged suffice: melee hold, stock scoring until the city is low). March d16 and d8
+back to 6/6 within the bar. Every other scenario within 1 in 6 of m3f2.
+Build: `ab-b196ee4`. Run: queue request `2026-11-20-07-m3f4` (m3f4a-c siege, m3g4a-c march, m3h4a-c march3, m3x4a regress).
 Result: (pending)
 
 ## 2026-11-20 M3 iteration 2: the new AI's two "too early" gates ask the one estimate

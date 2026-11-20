@@ -1,0 +1,73 @@
+{
+  "id": "2026-11-20-07-m3f4",
+  "why": "M3 iteration 3b: score exemption only when the estimate's plan has melee attack now. Siege, march, march3 x6 and regress x2, new AI. Either trusted PC.",
+  "launches": [
+    {
+      "label": "m3f4a",
+      "release": "ab-b196ee4",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g4a",
+      "release": "ab-b196ee4",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h4a",
+      "release": "ab-b196ee4",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3f4b",
+      "release": "ab-b196ee4",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g4b",
+      "release": "ab-b196ee4",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h4b",
+      "release": "ab-b196ee4",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3f4c",
+      "release": "ab-b196ee4",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g4c",
+      "release": "ab-b196ee4",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h4c",
+      "release": "ab-b196ee4",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3x4a",
+      "release": "ab-b196ee4",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
