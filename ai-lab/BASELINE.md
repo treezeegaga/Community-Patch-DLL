@@ -179,3 +179,31 @@ build 69 of 90, m3e1 on `ab-69b9d72`); march 42 of 42 and march3 24 of 24, every
 March (bar = 1.5x the script's median turn): medium_vs_weak 6/6 t9; medium_vs_medium 6/6 t11; large_vs_medium 6/6
 t10-13; d8 6/6 t10; d10 6/6 t10; d16 6/6 t16-20; rough 6/6 t11-12; march3 d8 6/6 t9-10; march3 6/6 t11; march3 d16
 6/6 t15-16; march3 rough 6/6 t12-13. Units lost 0.0 except d16 0.5.
+
+## Current build: `ab-b196ee4` (M3 iterations 2 and 3b)
+
+Lab v17, new AI as attacker, `2026-11-20-07-m3f4`, 6 battles per scenario (regress 2). Siege set **76 of 90**
+(`ab-7aa945f`: 71); march 41 of 42 and march3 24 of 24, all 11 scenarios meet the M2 bar; regress 8 of 8. All 14
+takeable siege scenarios meet the M1 bar (melee_only_vs_medium now 6/6, turns 5-7).
+
+| Scenario | Captured | Capture turns | Units lost (mean) |
+|---|---|---|---|
+| ancient_rush_vs_open_city | 6/6 | 2 | 0.0 |
+| small_vs_weak | 6/6 | 2 | 0.0 |
+| small_vs_medium | 6/6 | 6 | 0.0 |
+| small_vs_strong | 0/6 | | 1.3 |
+| medium_vs_weak | 6/6 | 2 | 0.0 |
+| medium_vs_medium | 6/6 | 3-4 | 0.0 |
+| medium_vs_strong | 4/6 | 8-12 | 0.0 |
+| large_vs_weak | 6/6 | 2 | 0.0 |
+| large_vs_medium | 6/6 | 3 | 0.0 |
+| large_vs_strong | 6/6 | 5-7 | 0.3 |
+| ref_cb4_melee6_vs_walls | 6/6 | 4 | 0.0 |
+| melee_only_vs_medium | 6/6 | 5-7 | 0.0 |
+| ranged_only_vs_weak | 0/6 | | 0.0 |
+| siege_train_vs_strong | 6/6 | 6-7 | 0.3 |
+| medium_vs_medium_rough | 6/6 | 4-5 | 0.0 |
+
+March: medium_vs_weak 6/6 t9; medium_vs_medium 6/6 t11; large_vs_medium 6/6 t10-13; d8 5/6 t10-11; d10 6/6 t9-12;
+d16 6/6 t15-17; rough 6/6 t11; march3 d8 6/6 t9-13 (5 within 10.5); march3 6/6 t11; march3 d16 6/6 t15-16; march3
+rough 6/6 t13-14. Regress: capital t4, coastal t4, medieval t3-4, artillery t6-8; no losses.
