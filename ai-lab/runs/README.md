@@ -38,7 +38,7 @@ Launch fields, all but `label` optional; each maps to a `Run-SiegeLab.ps1` optio
 | `repeats` | battles per scenario in this launch | 2 |
 | `script` | `true`: the scripted attacker plays the attacker | `false` |
 | `newAI` | `none`, `attacker`, `defender`, `both` | `none` |
-| `host` | only this PC (its Windows computer name, e.g. `BOX`) may run the launch | any lab PC |
+| `host` | only this PC (its Windows computer name, e.g. `BOX`) may run the launch | any **trusted** lab PC: those listed in `ai-lab/runs/trusted-hosts.txt` (watcher v3; a PC is added once it passes the two-PC check) |
 
 Launches of a request are taken in order, but with two PCs they run two at a time, so don't rely on one launch
 finishing before the next starts. A launch that fails before the game starts (menus) is retried once on the same PC.

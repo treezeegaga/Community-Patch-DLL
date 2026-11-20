@@ -273,9 +273,14 @@ function Get-OpenRequests {
 }
 # The next launch this PC may run, or $null.
 function Find-NextLaunch($open) {
+    $trustedFile = Join-Path $Repo "ai-lab\runs\trusted-hosts.txt"
+    $trusted = (Test-Path $trustedFile) -and (@(Get-Content $trustedFile | ForEach-Object { $_.Trim() }) -contains $Me)
     foreach ($r in $open) {
         foreach ($l in $r.Launches) {
             if ($l.host -and $l.host -ne $Me) { continue }
+            # Launches that name no host go only to PCs listed in ai-lab/runs/trusted-hosts.txt (a PC joins the list once it
+            # has passed the two-PC check); any other PC runs only launches pinned to it.
+            if (-not $l.host -and -not $trusted) { continue }
             $p = Get-LaunchPaths $r.Id $l.label
             if (Test-Path $p.Result) { continue }
             $claim = Read-Json $p.Claim
