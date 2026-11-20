@@ -2023,6 +2023,15 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 		bool bCloseIn = pZoneCity->getDamage() * 2 >= pZoneCity->GetMaxHitPoints();
 		int iRing = bCloseIn ? 1 : 2;
 		int iLoopUnit = 0;
+
+		// M2 iteration 4b: ranged units close in only once our melee are at the city (within 3 tiles), so a lone bowman
+		// doesn't walk ahead of a marching army, draw the defenders out and stop the army ("Contact with enemy!": m2n8a).
+		bool bMeleeAtCity = false;
+		for (CvUnit* pMelee = m_pPlayer->firstUnit(&iLoopUnit); pMelee != NULL && !bMeleeAtCity; pMelee = m_pPlayer->nextUnit(&iLoopUnit))
+			if (pMelee->IsCombatUnit() && pMelee->IsCanAttack() && !pMelee->IsCanAttackRanged() && pMelee->getDomainType() == DOMAIN_LAND &&
+				plotDistance(*pMelee->plot(), *pCityPlot) <= 3)
+				bMeleeAtCity = true;
+		iLoopUnit = 0;
 		for (CvUnit* pUnit = m_pPlayer->firstUnit(&iLoopUnit); pUnit != NULL; pUnit = m_pPlayer->nextUnit(&iLoopUnit))
 		{
 			if (!pUnit->canUseForTacticalAI() || !pUnit->IsCombatUnit() || !pUnit->IsCanAttack() ||
@@ -2036,6 +2045,8 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 			// 2 tiles), so next turn's attack can use them; on rough ground they were left to the homeland AI 3-4
 			// tiles out while the capture attempt said "too early" for want of their damage.
 			bool bRanged = pUnit->IsCanAttackRanged();
+			if (bRanged && !bMeleeAtCity)
+				continue;
 			int iUnitRing = bRanged ? max(1, min(2, pUnit->GetRange())) : iRing;
 
 			int iTurns = 0;
