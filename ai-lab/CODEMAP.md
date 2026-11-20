@@ -84,8 +84,9 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   sides' operations; logs a TURN line each turn and a RESULT line per battle; fixed +10 gold a turn for the attacker.
   Scripted attacker rules v3 when `-Script`.
 - `SiegeLabScenarios.lua`: sets `siege` (15 scenarios, 12 turns, army next to the city), `march` (25 turns, army at
-  home; march_* with ARMY_MEDIUM/LARGE, march3_* with 3 melee, lab v14) and `regress` (capital, coastal, medieval,
-  artillery). Army constants at the top.
+  home; ARMY_MEDIUM/LARGE, 8-16 tiles, rough), `march3` (lab v16: 2 Spearmen, 1 Swordsman, 4 bowmen, which fills the
+  classical attack formation) and `regress` (capital, coastal, medieval era 2, artillery era 4). Army constants at the
+  top. An empty battle list ends the launch at once.
 - `Install-SiegeLab.ps1` (install/remove into the pack; `-Set -Only -Repeats -Script -NewAI`), `Run-SiegeLab.ps1`
   (unattended run: install, start Civ V, click through menus by screen match, wait for DONE, close, save results,
   remove, restore the stock DLL; per-PC clicks in `hosts/<PC>.json`), `Set-LabDll.ps1` (swap in a release build,
