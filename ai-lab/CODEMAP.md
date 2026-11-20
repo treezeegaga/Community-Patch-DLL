@@ -19,7 +19,7 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
 ## Plans (M3)
 
 - `CvMilitaryAI::SAIPlan`, `s_aAIPlans` (CvMilitaryAI.cpp): the plan rows (data; a database table later). Row 1
-  AIPLAN_EARLY_RUSH: end turn 60 (Quick), 1 settler, 6 melee, 4 ranged, research toward UNITCLASS_COMPOSITE_BOWMAN (the user's game, LOG rulings 2026-11-20).
+  AIPLAN_EARLY_RUSH: end turn 60 (Quick), 1 settler, 6 melee, 4 ranged, research toward UNITCLASS_COMPOSITE_BOWMAN then UNITCLASS_SPEARMAN (M3 it. 11) (the user's game, LOG rulings 2026-11-20).
 - `GetActivePlan()`: new AI, major, the civ's trait is a warmonger's (`IsWarmonger`; M3 it. 8, was the randomized victory pursuit), before the end turn, not at war with a
   major. No saved state. `GetPlanBuild(city)`: what the row wants built next (settler, best melee, best foot ranged) or
   NO_UNIT. Hook: top of `CvCityStrategyAI::ChooseProduction` (M3 it. 7). `GetPlanResearch()`: cheapest researchable tech on the path to the row's unit; hook in `CvPlayerAI::AI_chooseResearch` before `ChooseNextTech` (M3 it. 8). `CvEconomicAI::CanWithdrawMoneyForPurchase` (the one gold gate): while a plan is active, only unit upgrades (M3 it. 9). `CountPlanArmy` / `IsPlanArmyReady()`: the plan's army (ranged counted only at the strike unit's strength once its tech is known); `RequestCityAttack` refuses a sneak attack until it is ready (M3 it. 10). Not yet in: the deficit rule.

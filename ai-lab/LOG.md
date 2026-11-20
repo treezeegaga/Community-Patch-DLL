@@ -205,6 +205,18 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-20 M3 iteration 11: the early-rush plan's second research target: the melee unit (new AI)
+Class: op7b: the full rush at Sparta brought it to 21 hp, then "melee left 0": the melee were Warriors (strength 8,
+worn down by the city's 22-28 strike). The plan's research went straight to Construction, never Bronze Working.
+Change (behind `IsNewAI()`): the row gets a second research target, `UNITCLASS_SPEARMAN`; `GetPlanResearch()` walks
+the row's targets in order and researches toward the first whose tech isn't known (Construction, then Bronze Working).
+The build order already takes the strongest melee unit a city can train; existing Warriors are upgraded from the kept
+gold (iteration 9) when it allows.
+Predicted (3 games): Bronze Working by about turn 45-50, before the march (plan army ready about turn 50-60); 2+
+Spearmen in the marching army (built or upgraded) in at least 2 of 3; where the army reaches a city, melee left at the
+last hit points, and a capture by turn 80 in at least 1 of 3. Regress 8 of 8. The war decision (op7c) is not touched.
+Build and run: below.
+
 ## 2026-11-20 M3 iteration 10: the early-rush plan, part 4: the attack waits for the plan's whole army (new AI)
 Class: wars begin with a fraction of the army (op6: 2+2 at the walls of 15).
 Change (behind `IsNewAI()`): `CvMilitaryAI::CountPlanArmy` (shared by the build order and the readiness check; once the
