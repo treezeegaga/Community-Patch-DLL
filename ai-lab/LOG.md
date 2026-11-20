@@ -98,6 +98,21 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 3: a melee hit on a city we can take scores what it deals
+Class: melee_only_vs_medium, takeable (script 6/6 by turn 5), new AI 1 of 6 (m3f2). Bar: 5 of 6 by turn 7.
+Cause (m3f2a rep 1, game turns 55-60, `PlayerTacticalAILog.csv`): the estimate says TAKE, both gates let the attack
+through, every Swordsman is "allowed: damage 15-17, received 30-34", but the city stays at 250: the attack's score is
+dealt - taken (about -17; end of `ScoreAttackDamage`), so the tactsim picks moves without it.
+Change (`0410152`, behind `IsNewAI()`): at the end of `ScoreAttackDamage`, for a melee attack on a city whose turn
+estimate says TAKE, the damage taken is left out of the score (the hit point limit, "damage not worth it" and suicide
+checks still apply before it). Only cities the army can take, so small_vs_strong (estimate NO) is unaffected.
+Predicted (new AI, 6 battles each): melee_only_vs_medium from 1/6 to at least 4/6, most by turn 7, losses allowed.
+Mixed armies may send melee in earlier: capture turns the same or earlier, units lost may rise a little (losses don't
+count, 2026-11-18 ruling). No siege scenario's captures drop by more than 1 in 6 from m3f2 (71 of 90); small_vs_strong
+unchanged. March and march3 keep the M2 bar; regress 8 of 8.
+Build: `ab-0410152`. Run: queue request `2026-11-20-06-m3f3` (m3f3a-c siege, m3g3a-c march, m3h3a-c march3, m3x3a regress).
+Result: (pending)
+
 ## 2026-11-20 M3 iteration 2: the new AI's two "too early" gates ask the one estimate
 Class: melee_only_vs_medium, takeable (script 6/6), new AI 0-1 of 6 (m3e1 0/6; one capture in m3e2b): the "never
 attacks enough" class, set aside for M1. Two gates disagree and refuse (M1 it. 8): `ExecuteCaptureCityMoves`' "too
