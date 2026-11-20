@@ -30,10 +30,10 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - Queue: empty after m2f6 (read; BASELINE.md "March (M2)" complete).
 - Known, not fixed: `FindBestFitReserveUnit` fills slots greedily (a Swordsman takes a slot a Spearman could hold);
   the new AI arrives in a stream (ranged first) and is slowest on rough ground; `test/mock_run.lua` is out of date.
-- Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 9:15 PM; not yet with iterations 2-3).
+- Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 11:40 PM ET with the M2 results and steps).
 
 **Next:**
-1. Update the dashboard with the march results.
+1. (done) Dashboard updated with the march results.
 2. With the user's bar: list the scenarios that miss it (rough ground first) and work the largest class, one change at
    a time (likely the slower, strung-out approach on rough ground: look at `PlotArmyMovesCombat` and the gather step).
 3. PLAN 8a: the setup-switch single-player check through a runner, then the MP smoke test for the user (blocked on
