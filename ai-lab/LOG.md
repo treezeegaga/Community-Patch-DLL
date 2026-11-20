@@ -133,7 +133,18 @@ stock Songhai at about 2 per city; for the new AI after the war approach the sof
 the op's units, the op fills and leaves recruiting (gathering, moving) and war is declared by turn 80 in at least 2 of 3;
 land melee+ranged at turn 80 at least 6 (op2: 3/4/7). Gold falls toward 0 but no bankruptcy (no "b/c bankrupt"
 scrapping), at least 2 cities. The stock game: unchanged (its log line confirms the cause). Regress: unchanged.
-Build and run: below.
+Build: `ab-15cf7f8`. Run: `2026-11-20-12-op3` (op3a/b/c new AI, op3s stock, op3x regress; all clean, by 3:09 PM ET).
+Result: the cause is confirmed: in nearly every turn land units = rec land, and the soft cap (2-7) sits far below real
+supply (8-16), for stock and new AI alike. But the change bought little: Songhai's income is already -4 to -7 with 3-4
+land units, so gold/30 frees about one unit, and the bank drains (op3a 0 gold at turn 60; op3c spent 190 on a Chariot
+Archer). New AI at turn 80: melee 4/3/2, ranged 1/1/1, might 42/54/26, cities 3/2/1 (op2: 2/3/6, 26/32/56); no war; the
+op still waits in recruiting (6-20 turns); "nosupply" 20/70/40. No bankruptcy. Stock op3s: 6 melee, might 60, income
++5 to +11 (a better map). Regress 8 of 8.
+Decision: **reverted** (the behaviour change; the army-size log line stays, logging only). Learned: the army is capped by
+the economy, not by a rule that ignores the bank: at turn 60-80 Songhai has 1-3 cities and income around 0 or below with
+3-5 units, so any honest army is about 4-6 land units. Stop (rule 9: third iteration on "the army is too small" without
+moving it to the bar), question written to the user below; meanwhile the next line is the economy itself (why 1-3
+cities and no income by turn 60-80).
 
 ## 2026-11-20 M3 iteration 5: a sneak attack may build the units it lacks (new AI)
 Class: no army fielded, no war declared (opening/transfer games). With Songhai's leader flavors (op1a, lab v19) its army
