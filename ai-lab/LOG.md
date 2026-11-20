@@ -9,7 +9,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
    city: 26 of 28 battles of the march set and 16 of 16 of the march3 set on lab v17, at 1.2-1.55 times the
    scripted attacker's turns. Before tonight neither AI took a single march battle. Siege set 70 of 90 and regression
    set 24 of 24 on the same build: nothing got worse. Details: LOG "M2 iteration 3", BASELINE.md "March (M2)".
-2. **Please rule on M2's bar.** Proposed: in each march scenario the script takes (all of them), capture in at least
+2. **M2's bar: adopted provisionally (rule 10), please confirm or change.** Proposed: in each march scenario the script takes (all of them), capture in at least
    5 of 6 battles within 1.5 times the script's median turns (the M1 rule, with the march start). The plan's "80% of
    the army within 3 tiles within 2 turns of each other" turns out a weak measure (the script misses it too; LOG M2
    it. 3). With 6 battles each (m2f6) the new AI meets the proposed bar in 10 of 11 march scenarios and takes 64 of
