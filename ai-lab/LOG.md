@@ -130,7 +130,12 @@ Predicted: melee_only_vs_medium stays at least 5/6 by turn 7 (no ranged: always 
 back to at least 5/6, turns 5-6 (ranged suffice: melee hold, stock scoring until the city is low). March d16 and d8
 back to 6/6 within the bar. Every other scenario within 1 in 6 of m3f2.
 Build: `ab-b196ee4`. Run: queue request `2026-11-20-07-m3f4` (m3f4a-c siege, m3g4a-c march, m3h4a-c march3, m3x4a regress).
-Result: (pending)
+Result (all 10 launches clean, BOX and TREEDESKTOP): siege **76 of 90** (m3f2 71): melee_only_vs_medium **6/6**,
+turns 5-7 (all within the M1 bar of 7); large_vs_strong 6/6, turns 5-7; no scenario drops; ref_cb4 a turn earlier (4);
+losses 0.0-0.3 except small_vs_strong 1.3 (was 2.3). March 41 of 42 and march3 24 of 24; every scenario meets the M2 bar
+(d8 5/6 and march3 d8 5/6 within it, the rest 6/6). Regress 8 of 8, a turn earlier.
+Decision: **accepted**. With it, all 14 takeable siege scenarios meet the M1 bar (melee_only_vs_medium was set aside
+at M1). Learned: the score has to follow the estimate's plan (hold melee while the ranged units can do the work).
 
 ## 2026-11-20 M3 iteration 2: the new AI's two "too early" gates ask the one estimate
 Class: melee_only_vs_medium, takeable (script 6/6), new AI 0-1 of 6 (m3e1 0/6; one capture in m3e2b): the "never
