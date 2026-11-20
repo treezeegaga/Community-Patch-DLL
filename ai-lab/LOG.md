@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-20, 11:45 AM ET), implementer 7 (updated after every accepted iteration)
+## Current state (2026-11-20, 12:25 PM ET), implementer 7 (updated after every accepted iteration)
 
 - **M2: bar met, awaiting the user's sign-off** (provisional bar, rule 10). It still holds on the current build: all
   11 march scenarios, 65 of 66 on 4b and 41 of 42 + 24 of 24 on `ab-b196ee4`.
@@ -14,7 +14,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   of 8. BASELINE.md "Current build: ab-b196ee4".
 - **Lab:** v18 (opening mode, `-Set opening`). Watcher v4 (publishes "running" per launch; status files were stuck on
   "idle"). `siege/estimate_check.py` compares the estimate with outcomes.
-- **Queued / not yet read:** `2026-11-20-08-op0` (opening lab, first try: 2 stock and 2 new-AI games to turn 80).
+- **Transfer check done** (`2026-11-20-09-tr1`, 6 games to turn 100, LOG entry): no lab fix fires in real play because
+  Songhai never takes an army to an enemy city (army 2-5 melee, 0-2 ranged; one war declared, at turn 102). New failure
+  seen: tr1c turn 98, sneak-attack operations end "NoUnits" the turn they start (needs a scenario, rule 3).
+- **Opening lab runs** (`2026-11-20-08-op0`, 4 games to turn 80): stock and new AI alike reach 2-3 cities and 3-5 melee,
+  0-1 ranged by turn 80, no war; the reference wants about 6 melee + 4 CB and a capital by turn 54.
+- **Queued / not yet read:** nothing.
 - **Relayed by the project review session (11:35 AM ET, as the user's "do it for me"; not yet confirmed by the user in
   this session):** do the transfer check now, before more M3 work (M2 treated as signed off for that only); keep this
   entry current after every accepted iteration; fix the stale watcher status files (done, watcher v4).
@@ -22,12 +27,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   TREEDESKTOP trusted on the count check); which PC's pack they play with (`runs/pack/*.txt` differ); archive
   implementers 5 and 6 (a cloud session's request to archive is refused: trusted device only).
 - **Next:**
-  1. The transfer check (PLAN 8a item 4): port the minimum of the earlier full-game harness (seeded maps, seat
-     assignment, results file); 6 seeded games to turn 100, one aggressive new-AI civ, split across both PCs; record
-     captures, assertions, and whether the lab fixes show in the game logs (e.g. "melee closing in on", "siege estimate").
-  2. Read op0: does the opening lab run on the PCs, how long a game takes, the stock opening against the M3 bar.
-  3. M3: the opening lab's measures against the user's reference (war turn 41-50, a capital by 54, ~6 melee + 4 CB),
-     then plans in data (one table row per civ) and its executor.
+  1. M3: why the opening army stays small (production and build choices by turn 60-80 in the opening logs; what the
+     economic/military AI asks for), then plans in data (one table row per civ) and its executor; the M3 bar (user's
+     game: about 6 melee + 4 CB, war by 41-50, a capital by 54) needs the user's confirmation at M3's start (PLAN).
+  2. The sneak-attack "Ended: NoUnits" failure: reproduce in the lab (rule 3), then the loop.
+  3. Repeat the transfer check at each milestone close (`-Set transfer`, `siege/transfer_check.py`).
   4. Known, not fixed: greedy slot filling in `FindBestFitReserveUnit` (CODEMAP); the dashboard has 4b, not M3.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12).
 
@@ -111,7 +115,19 @@ map) and the paired/flipped games; this informs, it doesn't gate (PLAN 8a). Read
 with battle results (moved to `Save-LaunchLogs`, called for every run), and `test/mock_run.lua`'s end checks had been
 failing on every set since lab v16-17 (stale field counts) while printing DONE: fixed, all six sets pass by exit code.
 Request: `2026-11-20-09-tr1` (tr1a-f, `ab-b196ee4`, either PC).
-Result: (pending)
+Result (6 games, BOX and TREEDESKTOP, all clean, about 5 minutes each; AI logs saved): **no lab fix fires in a real
+game yet, because the new AI never brings an army to an enemy city.** Songhai (new AI) at turn 100: 1-4 cities, land
+melee 2-5, ranged 0-2; no Songhai unit ever within 4 tiles of an enemy city (0 "siege estimate" lines in all 6), so 0
+capture attempts, 0 "melee/ranged closing in". No city changed hands in any of the 10 games (op0 included). Wars:
+tr1a Songhai declared on Korea on turn 102 (after the cut) after a WAR approach logged 130 times; tr1b WAR approach to
+Greece from turn 39, never declared, was declared on by the Aztecs (61) and Greece (91), started no attack; tr1c-f no war.
+Operations: settler escorts only, except tr1c turn 98: several `OP_CITY_ATTACK_LAND_SNEAKY` started with 5 units (Pikeman,
+Warrior, Composite Bowman, a Great General) and each "Ended: NoUnits; Duration 0" the same turn: a new failure, to be
+reproduced in a scenario before any fix (rule 3). The "preferred attack target" line (M2 it. 2's range) appears 150-211
+times per game: targets are chosen, armies are not built or sent.
+Reading: the M1/M2 fixes are untested in real play because the step before them fails: fielding an army (M3) and
+deciding to use it (M4). That is the plan's own order; it says M3's opening lab is the right next step, with the
+army's size and timing as its measure. The transfer check is repeated at each milestone close.
 
 ## 2026-11-20 M3: the opening lab, first version (lab v18; measurement only)
 PLAN M3's second item. The siege lab add-in gets an opening mode (`-Set opening`): the game as the PC's menus set it up
@@ -126,7 +142,10 @@ melee and 4 Composite Bowmen, no bankruptcy, 2+ cities) is read against these li
 Result (op0a, TREEDESKTOP, op0b, BOX; clean, about 2.5 minutes of play for 80 turns; 4 majors: Songhai, Greece,
 Morocco, the Inca): it runs. No AI logs were saved (fixed since, above). Stock Songhai (op0a): 1 city until turn 79, land
 melee 2/3/4/5 and ranged 0/0/1/1 at turns 40/50/60/80, never at war; far from the user's reference (6 melee + 4 CB, a
-capital by 54). op0c/d pending.
+capital by 54). All four (80 turns): Songhai at turn 80, stock (op0a/c): 2-3 cities, melee 3-5, ranged 1; new AI
+(op0b/d): 2-3 cities, melee 2-4, ranged 0-1, siege 0-1; never at war in any. The new AI changes nothing here (its
+changes are tactical). Against the reference (about 6 melee and 4 CB, war by 41-50, a capital by 54) the army is a
+third to a half the size and no war is declared.
 
 ## 2026-11-20 M3 iteration 3: a melee hit on a city we can take scores what it deals
 Class: melee_only_vs_medium, takeable (script 6/6 by turn 5), new AI 1 of 6 (m3f2). Bar: 5 of 6 by turn 7.
