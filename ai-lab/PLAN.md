@@ -246,10 +246,13 @@ melee_only_vs_medium set aside by the user; defender part met. The "one estimate
   heal or get recruited elsewhere. The earlier notebook lists these hand-over failures. Fix them where
   they occur.
 
-Bar (**provisional**, adopted 2026-11-20 under rule 10; awaiting the user): in each march scenario, capture in at
+Bar (adopted 2026-11-20 under rule 10, confirmed by the user's sign-off): in each march scenario, capture in at
 least 5 of 6 battles within 1.5 times the scripted attacker's median capture turn. (Proposed first: 80% of the army
 within 3 tiles within 2 turns of each other, then capture at the M1 rate; replaced because the script itself misses
 the "together" part; LOG.md M2 iteration 3.)
+
+**Closed 2026-11-20** (signed off by the user): 11 of 11 march scenarios meet the bar on `ab-9238090` (65 of 66) and on
+`ab-b196ee4`. Transfer check at the close: the fixes don't show in real games yet (no army reaches an enemy city).
 
 ### M3. The army: an honest economy fields that army on time
 
