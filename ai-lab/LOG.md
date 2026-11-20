@@ -280,6 +280,8 @@ group (regress_medieval era 2, regress_artillery era 4). Rerun of the two: `2026
 stock, 6 each). m2x2 (regress set, queued) runs on v15. Also found: `test/mock_run.lua` fails at SiegeLab.lua's
 `rosterAlive` (pairs on nil) before and after this change; the mock is out of date, not fixed yet.
 Decision: the artillery and medieval rows stand; capital and coastal wait for reg1.
+reg1 (10:40 PM ET): capital 6/6 (turn 5) and coastal 6/6 (turns 4-5), both AIs, no losses. Baseline complete in
+BASELINE.md. Capital and coastal are no harder than medium_vs_medium for either AI.
 
 ## 2026-11-19 Process: two-PC check, first try (BOX ran both halves)
 The request `2026-11-19-13-pc2check` ran on BOX between 2:00 and 2:21 PM ET under watcher v1, which predates the
