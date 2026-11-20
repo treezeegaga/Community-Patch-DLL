@@ -1,0 +1,62 @@
+{
+  "id": "2026-11-19-26-m2f6",
+  "why": "M2 iteration 3 on lab v17: one more new-AI launch of the march and march3 sets (to 6 battles per scenario on v17), and the stock AI on both sets x6 (stock baseline with the scouted corridor). Either trusted PC.",
+  "launches": [
+    {
+      "label": "m2n5d",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2n6d",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m2s7a",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2s8a",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2s7b",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2s8b",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2s7c",
+      "release": "ab-8893a66",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m2s8c",
+      "release": "ab-8893a66",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2
+    }
+  ]
+}
