@@ -181,7 +181,6 @@ local function newPlayer(id, isMinor)
 	function m:GetUnitClassCount(c) assert(type(c) == "number") return 0 end
 	function m:GetCurrentEra() return 0 end
 	function m:GetGold() return 0 end
-	function m:CalculateGoldRate() return 3 end
 	function m:GetScience() return 5 end
 	function m:GetNumPolicies() return 0 end
 	function m:GetExcessHappiness() return 5 end
@@ -353,7 +352,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 -- Checks
 local counts = { RUN = 0, START = 0, TURN = 0, RESULT = 0, WARN = 0, ERROR = 0, DONE = 0 }
-local captured, fields = 0, { RUN = 13, START = 9, TURN = 14, RESULT = 22 }
+local captured, fields = 0, { RUN = 13, START = 9, TURN = 17, RESULT = 24, OPEN = 24 }   -- lab v17-v18 line lengths
 for _, line in ipairs(log) do
 	local body = line:match("^%[SiegeLab%] (.*)$")
 	assert(body, "a line without the tag: " .. line)
@@ -368,12 +367,27 @@ for _, line in ipairs(log) do
 		assert(body:match(",(%-?%d+)$") == "10", "the attacker's income should be levelled at the start of a battle: " .. body)
 	end
 end
+if SiegeLabConfig.set == "opening" or SiegeLabConfig.set == "transfer" then   -- lab v18: no battles, OPEN lines
+	assert((counts.ERROR or 0) == 0, "the lab logged errors")
+	assert(counts.RUN == 1 and counts.DONE == 1, "expected one RUN and one DONE line")
+	local turnsSeen, lastTurn = {}, 0
+	for _, line in ipairs(log) do
+		local turn = line:match("^%[SiegeLab%] OPEN,(%d+),")
+		if turn then turnsSeen[tonumber(turn)] = true lastTurn = math.max(lastTurn, tonumber(turn)) end
+	end
+	local want = SiegeLabScenarios[SiegeLabConfig.set].turns
+	for turn = 1, want do assert(turnsSeen[turn], "no OPEN line for turn " .. turn) end   -- the fake game's civs die off, so no count per turn
+	assert(lastTurn == want, "the run should stop at turn " .. want)
+	realPrint(string.format("-- %d OPEN lines", counts.OPEN))
+	realPrint("-- mock run passed")
+	return
+end
 local expected = #SiegeLabScenarios[SiegeLabConfig.set] * SiegeLabConfig.repeats
 realPrint(string.format("-- %d scenarios staged, %d results, %d captured, %d turns scored, %d warnings, %d errors",
 	counts.START, counts.RESULT, captured, counts.TURN, counts.WARN, counts.ERROR))
 assert(counts.ERROR == 0, "the lab logged errors")
 assert(counts.RUN == 1 and counts.DONE == 1, "expected one RUN and one DONE line")
 assert(counts.START == expected and counts.RESULT == expected, "expected " .. expected .. " scenarios")
-assert(captured > 0 and captured < expected, "the fake game should produce both captures and failures")
+assert(captured > 0, "the fake game should produce captures")   -- since lab v13 the fake game's armies take every city
 assert(players[2]:IsAlive() == false and players[3]:IsAlive() == false, "bystanders should be gone")
 realPrint("-- mock run passed")

@@ -98,6 +98,21 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 The transfer check, first version (PLAN 8a item 4; measurement only)
+Asked for now by the project review session, relaying the user (11:35 AM ET), before more M3 work. The earlier
+harness (`Civ5-CP-AnimatedLeaders` `tools/ab/Run-Games.ps1`) depends on DLL features `ai/v2` doesn't have (AIABTest.ini
+set-up, seeds and result rows written by the DLL), so the minimum port is the lab's opening mode: `-Set transfer` plays
+a normal game (the PC's set-up: Tiny, 4 civs, King, Quick) to turn 100 with the new AI on for Songhai (Askia,
+aggressive) and stock for the others, and the AI logs are saved with it. Not ported: seeded maps (each game is a fresh
+map) and the paired/flipped games; this informs, it doesn't gate (PLAN 8a). Reader: `siege/transfer_check.py`
+(Songhai's state at turn 100, captures, and how often each lab fix's log line appears: "siege estimate ... TAKE",
+"siege estimate NO", "capture attempt ... executed", "melee/ranged closing in on", "Not exploring with", "Started Army",
+"preferred attack target"). Two lab fixes made on the way: `Get-SiegeLabResults.ps1` saved the AI logs only for runs
+with battle results (moved to `Save-LaunchLogs`, called for every run), and `test/mock_run.lua`'s end checks had been
+failing on every set since lab v16-17 (stale field counts) while printing DONE: fixed, all six sets pass by exit code.
+Request: `2026-11-20-09-tr1` (tr1a-f, `ab-b196ee4`, either PC).
+Result: (pending)
+
 ## 2026-11-20 M3: the opening lab, first version (lab v18; measurement only)
 PLAN M3's second item. The siege lab add-in gets an opening mode (`-Set opening`): the game as the PC's menus set it up
 (normal start, every civ, city-states, barbarians) is autoplayed to turn 80 (Quick); each turn one `OPEN` line per
@@ -108,7 +123,10 @@ checked (`test/mock_run.lua opening`; the four battle sets still run clean). Fir
 (op0a/c stock, op0b/d new AI on Songhai, build `ab-b196ee4`): does it run on the PCs, how long does a game take, what
 the stock opening looks like. The M3 bar (user's game: war declared turn 41-50, a capital by turn 54 with about 6
 melee and 4 Composite Bowmen, no bankruptcy, 2+ cities) is read against these lines once they exist.
-Result: (pending)
+Result (op0a, TREEDESKTOP, op0b, BOX; clean, about 2.5 minutes of play for 80 turns; 4 majors: Songhai, Greece,
+Morocco, the Inca): it runs. No AI logs were saved (fixed since, above). Stock Songhai (op0a): 1 city until turn 79, land
+melee 2/3/4/5 and ranged 0/0/1/1 at turns 40/50/60/80, never at war; far from the user's reference (6 melee + 4 CB, a
+capital by 54). op0c/d pending.
 
 ## 2026-11-20 M3 iteration 3: a melee hit on a city we can take scores what it deals
 Class: melee_only_vs_medium, takeable (script 6/6 by turn 5), new AI 1 of 6 (m3f2). Bar: 5 of 6 by turn 7.

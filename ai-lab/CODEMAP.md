@@ -90,7 +90,11 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   player's civ (Songhai), defender = every other major, both = all. Lua.log: `OPEN,turn,id,civ,newAI,cities,pop,techs,
   era,gold,goldRate,science,policies,happiness,melee,ranged,siege,mounted,naval,upgradeGold,settlers,workers,wars,might`
   once per major civ per turn (at the active player's turn start), `CAPTURE,turn,old,new,isCapital,x,y`, then DONE. RUN
-  line mode 3. `Get-SiegeLabResults.ps1` finds no RESULT lines and saves only the logs.
+  line mode 3. `Get-SiegeLabResults.ps1` finds no RESULT lines and saves only the logs (from 2026-11-20 12:30 PM ET:
+  `Save-LaunchLogs` runs before that early return; op0a/b on the earlier reader saved no AI logs). `-Set transfer`: the
+  same mode to turn 100 (PLAN 8a transfer check; maps not seeded, a fresh map of the PC's set-up each game).
+  `siege/transfer_check.py <logs>`: per game, the active civ's state at the last turn, captures, and counts of each lab
+  fix's log line.
 - `SiegeLabScenarios.lua`: sets `siege` (15 scenarios, 12 turns, army next to the city), `march` (25 turns, army at
   home; ARMY_MEDIUM/LARGE, 8-16 tiles, rough), `march3` (lab v16: 2 Spearmen, 1 Swordsman, 4 bowmen, which fills the
   classical attack formation) and `regress` (capital, coastal, medieval era 2, artillery era 4). Army constants at the
@@ -99,7 +103,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   (unattended run: install, start Civ V, click through menus by screen match, wait for DONE, close, save results,
   remove, restore the stock DLL; per-PC clicks in `hosts/<PC>.json`), `Set-LabDll.ps1` (swap in a release build,
   restore by SHA-256), `Get-SiegeLabResults.ps1` (Lua.log → `.results.csv` and `.turns.csv`, summary table),
-  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check of the lab's own logic: `lua5.1 test/mock_run.lua [siege|march|march3|regress]`, from `ai-lab/siege`; brought up to lab v17 on 2026-11-20: `LabEndOperations`, palaces, coast, medieval/artillery types; all four sets run clean. The fake doesn't hand the palace back when a capital falls, so regress_coastal WARNs that the lab put it back; harmless. `apt-get install lua5.1` if missing).
+  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check of the lab's own logic: `lua5.1 test/mock_run.lua [siege|march|march3|regress|opening|transfer]`, from `ai-lab/siege`; **judge it by the exit code and the last "-- mock run passed" line**, not by a DONE line: until 2026-11-20 its end checks had stale field counts (TURN 14, RESULT 22) and failed on every set while printing DONE. Now: TURN 17, RESULT 24, OPEN 24; the fake game's armies take every city since lab v13, so it checks for captures only; opening/transfer check one OPEN line every turn. The fake doesn't hand the palace back when a capital falls, so regress_coastal WARNs that the lab put it back; harmless. `apt-get install lua5.1` if missing).
 - Classes (BASELINE.md): CAP, LASTHP (≥85% damage, not taken), LOWDMG, NOATTACK, WALK. March: FirstArrivalTurn,
   ReadyTurn (80% within 3 tiles with melee and ranged).
 
