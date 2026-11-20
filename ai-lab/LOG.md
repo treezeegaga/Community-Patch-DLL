@@ -120,6 +120,21 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 6: preparing for war, the treasury pays for the army (new AI)
+Class and cause: iteration 5's result: the soft supply cap counts income only, so with flat income the army stays at
+2 units per city with 160-250 gold banked, and the attack operation's units are refused ("nosupply").
+Change (`GetSoftSupplyCap`, behind `IsNewAI()`): when preparing for war (a WAR approach) or at war, the minimum income
+it keeps drops by gold/30 (spend the bank over about 30 turns; 200 gold allows about -7 a turn). The bankruptcy guard in
+`CheckUnitBuildSanity` (no new unit under 9 turns to bankruptcy) is unchanged. Logging for both AIs (not behind the
+switch): `MilitaryAILog.csv` "army size: land units, rec land, rec naval, explorers, soft cap, supplied, to supply,
+gold, gold rate, offense weight, land defense weight", once a turn (`SetRecommendedArmyNavySize`).
+Predicted (opening lab, new AI on Songhai, 3 games vs op2): the log shows rec land = land units (the cap binding) for
+stock Songhai at about 2 per city; for the new AI after the war approach the soft cap rises by 3-6, "nosupply" stops for
+the op's units, the op fills and leaves recruiting (gathering, moving) and war is declared by turn 80 in at least 2 of 3;
+land melee+ranged at turn 80 at least 6 (op2: 3/4/7). Gold falls toward 0 but no bankruptcy (no "b/c bankrupt"
+scrapping), at least 2 cities. The stock game: unchanged (its log line confirms the cause). Regress: unchanged.
+Build and run: below.
+
 ## 2026-11-20 M3 iteration 5: a sneak attack may build the units it lacks (new AI)
 Class: no army fielded, no war declared (opening/transfer games). With Songhai's leader flavors (op1a, lab v19) its army
 at turn 80 is still 3 melee, 1 ranged; it never declares war.
@@ -142,7 +157,18 @@ military; land melee+ranged at turn 80 up by at least 2 over op1's new-AI games,
 least 2 of 3 (stock games unchanged). Watch: settlers/cities (the bar wants at least 2 cities, no bankruptcy), and
 operations ending "NoUnits"/timeout. Siege/march/regress sets: unchanged (their wars are set by the lab; requests there
 come from the same path only if the attacker's diplomacy asks): check with one regression launch.
-Build and run: below.
+Build: `ab-463dc60`. Run: `2026-11-20-11-op2` (op2a/b/c new AI on Songhai, op2x regress; all clean, 2:22-2:37 PM ET).
+Result: an `OP_CITY_ATTACK_LAND_SNEAKY` now starts in recruiting in all 3 (turns 51, 74, 60: 2-3 units, other slots
+open) and waits until the cut (8-31 turns); "lack of units" 25/2/12 (other targets or musters). Songhai at turn 80:
+melee 2/3/6 (op1 new AI 1/2/4), ranged 1/1/1, might 26/32/56 (17/30/41), cities 2/3/2; no war (prediction: 2 of 3).
+Regress 8 of 8. Why short: the muster city doesn't build for the op. `CityStrategyAIProductionLog` (op2a Gao and
+Tombouctu, turns 53-70): every military unit "SKIPPED ... nosupply", and no operation unit in the list at all.
+`CvUnitProductionAI::CheckUnitBuildSanity` refuses any land combat unit once land units reach
+`GetRecommendLandArmySize()` (operation units too); that size is a share of `CvEconomicAI::GetSoftSupplyCap()`: the
+units affordable while income stays at or above +1 (war approach) / +2-5 (peace), at least 2 per city. Banked gold
+isn't counted: Songhai's income is about 0 and it holds 160-250 gold, so the cap sits at about 4 (2 cities). Real
+supply (12) is far off.
+Decision: **accepted** (the op now starts and recruits; nothing worse; the next gate explains the miss: iteration 6).
 
 ## 2026-11-20 M3 iteration 4: lab leak: the opening lab's Songhai played with flat human flavors (lab v19)
 Class: opening army too small (Next 1): Songhai at turn 80 in op0/tr1 (10 games): about 2 cities, 3 land melee, might
