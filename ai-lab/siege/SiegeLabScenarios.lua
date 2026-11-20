@@ -116,6 +116,9 @@ SiegeLabScenarios.march = {
 	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
 	{ name = "march_medium_vs_medium_d16", turns = 25, atHome = true, homeDistance = 16, attackerTechs = A_CLASSICAL,
 	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity() },
+	-- Rough ground in front of the city (PLAN.md M2: "extend with rough terrain"); 12 tiles, as the first three.
+	{ name = "march_medium_vs_medium_rough", turns = 25, atHome = true, attackerTechs = A_CLASSICAL,
+	  defenderTechs = D_ANCIENT, army = ARMY_MEDIUM, city = mediumCity(), terrain = "rough" },
 }
 
 -- The regression set (user request 2026-11-19, PLAN.md section 8a): cases the main sets don't cover, run on stock
