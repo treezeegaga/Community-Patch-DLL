@@ -22,7 +22,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 18
+local VERSION = 19
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -1159,6 +1159,13 @@ local function startOpening(config)
 	Game.SetAIAutoPlay(turns + 2, active)
 	if Game.GetAIAutoPlay() == 0 then
 		out("ERROR,autoplay did not start (no free player slot for the observer)")
+	elseif att.LabReloadLeaderFlavors then
+		-- Lab v19: the active civ got the flat human flavors (all 5) at game start; autoplay has made it a computer
+		-- player, so load its leader's flavors as any AI civ has them (the diplomacy AI reloads its own on that switch).
+		out(string.format("FLAVORS,%d,%s,%d", Game.GetGameTurn(), att:GetCivilizationShortDescription(),
+			att:LabReloadLeaderFlavors() and 1 or 0))
+	else
+		out("WARN,this DLL has no Player:LabReloadLeaderFlavors: the active civ plays with flat human flavors")
 	end
 end
 

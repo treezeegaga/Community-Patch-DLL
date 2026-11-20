@@ -892,6 +892,7 @@ protected:
 	static int lIsNewAI(lua_State* L);
 	static int lSetNewAI(lua_State* L);
 	static int lLabEndOperations(lua_State* L);
+	static int lLabReloadLeaderFlavors(lua_State* L);
 	static int lIsEverAlive(lua_State* L);
 	static int lIsPotentiallyAlive(lua_State* L);
 	static int lIsExtendedGame(lua_State* L);

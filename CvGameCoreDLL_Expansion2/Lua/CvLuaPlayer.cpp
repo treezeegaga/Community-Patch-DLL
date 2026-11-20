@@ -816,6 +816,7 @@ void CvLuaPlayer::PushMethods(lua_State* L, int t)
 	Method(IsNewAI);
 	Method(SetNewAI);
 	Method(LabEndOperations);
+	Method(LabReloadLeaderFlavors);
 	Method(IsEverAlive);
 	Method(IsPotentiallyAlive);
 	Method(IsExtendedGame);
@@ -10226,6 +10227,17 @@ int CvLuaPlayer::lLabEndOperations(lua_State* L)
 		}
 	}
 	lua_pushinteger(L, (int)vIDs.size());
+	return 1;
+}
+//------------------------------------------------------------------------------
+//bool LabReloadLeaderFlavors(); AI lab (ai/v2) only: a human seat handed to the AI by autoplay keeps the flat human
+//flavors (all 5) it got at game start; this loads its leader's flavors (CvFlavorManager::LabReloadLeaderFlavors).
+//Returns false if the player is still human or not a major civ. The lab's opening and transfer modes call it once
+//autoplay has started. Not called by the game itself.
+int CvLuaPlayer::lLabReloadLeaderFlavors(lua_State* L)
+{
+	CvPlayerAI* pkPlayer = GetInstance(L);
+	lua_pushboolean(L, pkPlayer->GetFlavorManager()->LabReloadLeaderFlavors());
 	return 1;
 }
 //------------------------------------------------------------------------------

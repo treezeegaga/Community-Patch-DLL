@@ -110,6 +110,29 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 4: lab leak: the opening lab's Songhai played with flat human flavors (lab v19)
+Class: opening army too small (Next 1): Songhai at turn 80 in op0/tr1 (10 games): about 2 cities, 3 land melee, might
+29, while the ordinary AI civs in the same games average about 3.2 cities, 5.3 melee, might 56. Songhai's builds to
+turn 60 hold 0-2 combat units per game (`CityStrategyAIProductionLog.csv`: worker, granary, monument, shrine, settler,
+library, water mill, wonders).
+Cause: Songhai is the human seat that the lab hands to the AI with autoplay. `CvFlavorManager::Init` (game start, still
+human) sets every personality flavor to 5 for a human; `AI_Personality_Log.csv` shows FLAVOR_OFFENSE, EXPANSION,
+MILITARY_TRAINING... all 5 for Songhai in all 6 tr1 games (the AI civs: their leader's values, e.g. Aztec offense 10).
+The diplomacy AI reloads its leader personality when the seat turns AI (`CvDiplomacyAI` "Are we now an AI player?":
+Songhai's War bias 7, conquest pursuit); the flavor manager has no such switch, so builds, research and policies ran on
+flat 5s. Starting units are the same for every civ (1 melee each at turn 1). Not an AI failure: a lab leak (PLAN 7).
+The siege/march battles also ran with flat flavors for the attacker (the tactsim reads FLAVOR_OFFENSE for its minimum
+hp and loss threshold); their bars were met as measured, and they are left as they are (comparable baselines).
+Change (lab only, no game behaviour change): `CvFlavorManager::LabReloadLeaderFlavors` and Lua
+`Player:LabReloadLeaderFlavors()`: load the leader's flavors (XML, randomized as `Init` does for an AI, the map's
+expansion/growth adjustment kept) and pass the difference on as a delta (as `ChangeLeader`), so strategy flavors stay.
+Lab v19 calls it in opening/transfer mode right after autoplay starts (`FLAVORS,turn,civ,ok` line in Lua.log). Not
+called by the game; battle sets unchanged.
+Predicted: Songhai's own personality takes effect: more military in its builds by turn 40-60 and an army at turn 80
+nearer the other AI civs' (about 5 melee, might about 50), stock and new AI alike (the new AI's changes are tactical).
+If it still lags far behind, the cause is elsewhere (economy, its start) and the next step reads why.
+Build and run: below.
+
 ## 2026-11-20 The transfer check, first version (PLAN 8a item 4; measurement only)
 Asked for now by the project review session, relaying the user (11:35 AM ET), before more M3 work. The earlier
 harness (`Civ5-CP-AnimatedLeaders` `tools/ab/Run-Games.ps1`) depends on DLL features `ai/v2` doesn't have (AIABTest.ini

@@ -77,6 +77,7 @@ public:
 	void RemoveFlavorRecipient(CvFlavorRecipient* pTargetObject);
 
 	void ChangeLeader(LeaderHeadTypes eOldLeader, LeaderHeadTypes eNewLeader);
+	bool LabReloadLeaderFlavors(); // AI lab (ai/v2) only, called from Lua
 
 	// External routines used to set flavors - each call broadcasts a flavor update to all recipients
 	void ChangeActivePersonalityFlavors(const CvEnumMap<FlavorTypes, int>& piDeltaFlavorValues, const char* reason, bool effectstart);
