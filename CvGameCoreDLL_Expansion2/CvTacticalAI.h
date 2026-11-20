@@ -362,6 +362,8 @@ public:
 	// Public logging
 	FILogFile* GetLogFile();
 	void LogTacticalMessage(const CvString& strMsg);
+	// AI lab (M3): one line per enemy city at war with our land units near it: the siege estimate (logging only)
+	void LogSiegeEstimates();
 
 	// Other people want to know this too
 	const vector<CvTacticalTarget>& GetTacticalTargets() const { return m_AllTargets; }
@@ -1578,8 +1580,26 @@ private:
 };
 
 
+// AI lab (M3): "can this army take this city", the one estimate (TacticalAIHelpers::EstimateSiege)
+struct CvSiegeEstimate
+{
+	int iCityHP;                  // hit points the city has now
+	int iCityMaxHP;
+	int iCityHeal;                // per turn, 0 if blockaded
+	int iCityStrike;              // the city's strike on the weakest melee unit (0 if it can't strike)
+	int iMelee;                   // our land melee units counted
+	int iRanged;                  // our land ranged units counted
+	int iRangedDamagePerTurn;     // all ranged units together, at full use
+	int iMeleeDamagePerAttack;    // all melee units together, one attack each
+	int iMeleeReceivedPerAttack;  // all melee units together
+	int iTurnTaken;               // turn of the estimated capture (1 = this turn), -1 if not within the limit
+	int iMeleeLeft;               // melee units alive at the capture or at the limit
+	int iCityHPAtEnd;             // the city's hit points at the limit (0 if taken)
+};
+
 namespace TacticalAIHelpers
 {
+	bool EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity, int iRange, int iMaxTurns, CvSiegeEstimate& kOut);
 	bool SortByExpectedTargetDamageDescending(const CvTacticalUnit& obj1, const CvTacticalUnit& obj2);
 
 	ReachablePlots GetAllPlotsInReachThisTurn(const CvUnit* pUnit, const CvPlot* pStartPlot, int iFlags, int iMinMovesLeft=0, int iStartMoves=-1, const PlotIndexContainer& plotsToIgnoreForZOC=PlotIndexContainer());

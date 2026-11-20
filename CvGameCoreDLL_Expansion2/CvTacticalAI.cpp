@@ -268,6 +268,7 @@ void CvTacticalAI::Update()
 	UpdateVisibility();
 	DropOldFocusAreas();
 	FindTacticalTargets();
+	LogSiegeEstimates(); //AI lab (M3): logging only
 
 	//do this after updating the target list!
 	RecruitUnits();
@@ -5117,6 +5118,183 @@ int CvTacticalAI::ComputeTotalExpectedDamage(const CvTacticalTarget& kTarget)
 	std::stable_sort(m_CurrentMoveUnits.begin(), m_CurrentMoveUnits.end(), TacticalAIHelpers::SortByExpectedTargetDamageDescending);
 
 	return rtnValue;
+}
+
+// AI lab (M3): one unit in the siege estimate
+struct SSiegeUnit
+{
+	int iHP;
+	int iMaxHP;
+	int iDamage;   // to the city per attack
+	int iReceived; // per attack (melee only)
+	int iStrike;   // the city's strike on this unit
+	int iDelay;    // turns before it can attack
+	bool bRanged;
+};
+struct SSiegeUnitByDamage
+{
+	bool operator()(const SSiegeUnit& a, const SSiegeUnit& b) const { return a.iDamage > b.iDamage; }
+};
+
+/// AI lab (M3): "can this army take this city". Counts the attacker's land combat units within iRange of the city
+/// and plays the siege forward turn by turn: ranged units shoot (never below 1 hit point), melee units attack while
+/// they survive the hit, the strongest first, and take the city once one hit covers what is left; melee units that
+/// don't attack heal; the city strikes the weakest melee unit (else ranged) and heals. Travel to the city is counted
+/// from distance and moves on open ground. Everything it reads is visible to a human player.
+bool TacticalAIHelpers::EstimateSiege(PlayerTypes eAttacker, const CvCity* pCity, int iRange, int iMaxTurns, CvSiegeEstimate& kOut)
+{
+	kOut.iCityHP = 0; kOut.iCityMaxHP = 0; kOut.iCityHeal = 0; kOut.iCityStrike = 0; kOut.iMelee = 0; kOut.iRanged = 0;
+	kOut.iRangedDamagePerTurn = 0; kOut.iMeleeDamagePerAttack = 0; kOut.iMeleeReceivedPerAttack = 0;
+	kOut.iTurnTaken = -1; kOut.iMeleeLeft = 0; kOut.iCityHPAtEnd = 0;
+	if (!pCity || eAttacker == NO_PLAYER)
+		return false;
+
+	kOut.iCityMaxHP = pCity->GetMaxHitPoints();
+	kOut.iCityHP = kOut.iCityMaxHP - pCity->getDamage();
+	kOut.iCityHeal = !pCity->IsBlockadedWaterAndLand() ? /*20 in CP, 8 in VP*/ GD_INT_GET(CITY_HIT_POINTS_HEALED_PER_TURN) : 0;
+	if (MOD_BALANCE_VP && kOut.iCityHeal > 0)
+		kOut.iCityHeal += pCity->getPopulation();
+	int iUnitHeal = /*10*/ GD_INT_GET(ENEMY_HEAL_RATE);
+	int iStrikeRange = pCity->getBombardRange();
+
+	std::vector<SSiegeUnit> vUnits;
+	CvPlayer& kPlayer = GET_PLAYER(eAttacker);
+	int iLoop = 0;
+	for (CvUnit* pUnit = kPlayer.firstUnit(&iLoop); pUnit != NULL; pUnit = kPlayer.nextUnit(&iLoop))
+	{
+		if (!pUnit->IsCombatUnit() || !pUnit->IsCanAttack() || pUnit->getDomainType() != DOMAIN_LAND || pUnit->isEmbarked() || pUnit->isDelayedDeath())
+			continue;
+		int iDist = plotDistance(*pUnit->plot(), *pCity->plot());
+		if (iDist > iRange)
+			continue;
+
+		SSiegeUnit kUnit;
+		kUnit.iHP = pUnit->GetCurrHitPoints();
+		kUnit.iMaxHP = pUnit->GetMaxHitPoints();
+		kUnit.bRanged = pUnit->IsCanAttackRanged();
+		int iReceived = 0, iGarrisonDamage = 0;
+		kUnit.iDamage = GetSimulatedDamageFromAttackOnCity(pCity, pUnit, pUnit->plot(), iReceived, iGarrisonDamage, true, 0, 0, 0, true);
+		kUnit.iReceived = kUnit.bRanged ? 0 : iReceived;
+		kUnit.iStrike = pCity->rangeCombatDamage(pUnit, false, pUnit->plot(), true);
+		int iMoves = max(1, pUnit->baseMoves(false));
+		int iReach = kUnit.bRanged ? max(1, pUnit->GetRange()) : 1;
+		int iTravel = max(0, iDist - iReach);
+		// a unit that can get within reach this turn still attacks this turn
+		kUnit.iDelay = iTravel <= iMoves ? 0 : (iTravel - 1) / iMoves;
+		if (kUnit.iDamage <= 0)
+			continue;
+
+		vUnits.push_back(kUnit);
+		if (kUnit.bRanged)
+		{
+			kOut.iRanged++;
+			kOut.iRangedDamagePerTurn += kUnit.iDamage;
+		}
+		else
+		{
+			kOut.iMelee++;
+			kOut.iMeleeDamagePerAttack += kUnit.iDamage;
+			kOut.iMeleeReceivedPerAttack += kUnit.iReceived;
+			kOut.iCityStrike = max(kOut.iCityStrike, kUnit.iStrike);
+		}
+	}
+	std::stable_sort(vUnits.begin(), vUnits.end(), SSiegeUnitByDamage());
+
+	int iCityHP = kOut.iCityHP;
+	for (int iTurn = 1; iTurn <= iMaxTurns; iTurn++)
+	{
+		// ranged first: they can't take the city, only bring it to 1
+		for (size_t i = 0; i < vUnits.size(); i++)
+		{
+			SSiegeUnit& u = vUnits[i];
+			if (u.bRanged && u.iHP > 0 && u.iDelay < iTurn)
+				iCityHP = max(1, iCityHP - u.iDamage);
+		}
+		// then melee, strongest first, each only if it survives the hit
+		for (size_t i = 0; i < vUnits.size(); i++)
+		{
+			SSiegeUnit& u = vUnits[i];
+			if (u.bRanged || u.iHP <= 0)
+				continue;
+			bool bAttacked = false;
+			if (u.iDelay < iTurn && u.iHP > u.iReceived)
+			{
+				if (u.iDamage >= iCityHP)
+				{
+					int iLeft = 0;
+					for (size_t j = 0; j < vUnits.size(); j++)
+						if (!vUnits[j].bRanged && vUnits[j].iHP > 0)
+							iLeft++;
+					kOut.iTurnTaken = iTurn;
+					kOut.iMeleeLeft = iLeft;
+					kOut.iCityHPAtEnd = 0;
+					return true;
+				}
+				iCityHP -= u.iDamage;
+				u.iHP -= u.iReceived;
+				bAttacked = true;
+			}
+			if (!bAttacked && u.iDelay < iTurn)
+				u.iHP = min(u.iMaxHP, u.iHP + iUnitHeal);
+		}
+		// the city strikes the weakest unit in its range, melee first
+		if (iStrikeRange > 0)
+		{
+			int iWeakest = -1;
+			for (int iPass = 0; iPass < 2 && iWeakest < 0; iPass++)
+			{
+				for (size_t i = 0; i < vUnits.size(); i++)
+				{
+					const SSiegeUnit& u = vUnits[i];
+					if (u.iHP <= 0 || u.iDelay >= iTurn || u.iStrike <= 0 || u.bRanged != (iPass == 1))
+						continue;
+					if (iWeakest < 0 || u.iHP < vUnits[iWeakest].iHP)
+						iWeakest = (int)i;
+				}
+			}
+			if (iWeakest >= 0)
+				vUnits[iWeakest].iHP -= vUnits[iWeakest].iStrike;
+		}
+		iCityHP = min(kOut.iCityMaxHP, iCityHP + kOut.iCityHeal);
+	}
+
+	for (size_t j = 0; j < vUnits.size(); j++)
+		if (!vUnits[j].bRanged && vUnits[j].iHP > 0)
+			kOut.iMeleeLeft++;
+	kOut.iCityHPAtEnd = iCityHP;
+	return false;
+}
+
+/// AI lab (M3): logs the siege estimate once a turn for every enemy city at war with our land units within 4 tiles
+void CvTacticalAI::LogSiegeEstimates()
+{
+	if (!(GC.getLogging() && GC.getAILogging()))
+		return;
+
+	TeamTypes eOurTeam = m_pPlayer->getTeam();
+	for (int iPlayer = 0; iPlayer < MAX_PLAYERS; iPlayer++)
+	{
+		CvPlayer& kOther = GET_PLAYER((PlayerTypes)iPlayer);
+		if (!kOther.isAlive() || kOther.getTeam() == eOurTeam || !GET_TEAM(eOurTeam).isAtWar(kOther.getTeam()))
+			continue;
+
+		int iCityLoop = 0;
+		for (CvCity* pCity = kOther.firstCity(&iCityLoop); pCity != NULL; pCity = kOther.nextCity(&iCityLoop))
+		{
+			if (!pCity->plot()->isRevealed(eOurTeam))
+				continue;
+
+			CvSiegeEstimate kEst;
+			bool bTake = TacticalAIHelpers::EstimateSiege(m_pPlayer->GetID(), pCity, 4, 13, kEst);
+			if (kEst.iMelee + kEst.iRanged == 0)
+				continue;
+
+			LogTacticalMessage(CvString::format("siege estimate for %s: %s, turn %d, melee left %d, city hp at end %d; city hp %d of %d, heal %d, strike %d; within 4: melee %d, ranged %d; ranged damage per turn %d, melee damage per attack %d, received %d",
+				pCity->getNameNoSpace().c_str(), bTake ? "TAKE" : "NO", kEst.iTurnTaken, kEst.iMeleeLeft, kEst.iCityHPAtEnd,
+				kEst.iCityHP, kEst.iCityMaxHP, kEst.iCityHeal, kEst.iCityStrike, kEst.iMelee, kEst.iRanged,
+				kEst.iRangedDamagePerTurn, kEst.iMeleeDamagePerAttack, kEst.iMeleeReceivedPerAttack));
+		}
+	}
 }
 
 /// Estimates the bombard damage we can apply to a target
