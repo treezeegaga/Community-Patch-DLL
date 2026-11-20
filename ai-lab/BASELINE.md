@@ -108,3 +108,6 @@ battle, the attacker's era stayed industrial, and its classical army was disband
 | regress_coastal (rep 1 only) | 3/3, turn 5 | 3/3, turns 4-7 | 0.0 / 0.0 |
 | regress_medieval | 6/6, turns 3-4 | 6/6, turn 3 | 0.0 / 0.0 |
 | regress_artillery | 6/6, turns 6-8 | **1/6**, turn 7 (city at 30-92% most damage) | 0.0 / 0.3 |
+
+New AI on `ab-455fe7a` (M2 iteration 2), lab v16, m2x3a/b/c, 6 battles each: capital 6/6 (turns 4-5), coastal 6/6
+(4-5), medieval 6/6 (3-4), artillery 6/6 (6-12), losses 0 except artillery 0.2.
