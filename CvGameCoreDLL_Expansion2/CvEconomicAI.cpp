@@ -977,6 +977,13 @@ int CvEconomicAI::GetSoftSupplyCap() const
 		iHardSupplyCap += 3;
 	}
 
+	//new AI (ai/v2 M3 iteration 6): preparing for war or at war, the treasury pays for the army too. Stock only looks at
+	//income, so an empire with flat income stays at 2 units per city however much gold it has banked, and the units
+	//an attack operation asks for are refused ("nosupply"). Allow a deficit that spends the bank over about 30 turns;
+	//the bankruptcy guard in CheckUnitBuildSanity (no new unit under 9 turns to bankruptcy) still applies.
+	if (bWar && m_pPlayer->IsNewAI())
+		iMinDesiredGPT -= max(0, pTreasury->GetGold()) / 30;
+
 	int iCurrentRevenue = pTreasury->CalculateGrossGold();
 	int iCurrentNonUnitCosts = 0;
 	iCurrentNonUnitCosts += pTreasury->GetBuildingGoldMaintenance();

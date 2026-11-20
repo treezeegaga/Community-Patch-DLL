@@ -1886,6 +1886,23 @@ void CvMilitaryAI::SetRecommendedArmyNavySize()
 		m_iRecNavalUnits += iDiff;
 		m_iRecLandUnits -= iDiff;
 	}
+
+	//ai-lab logging (M3 iteration 6, no behaviour change): the army size the AI aims for, and the caps behind it.
+	//CvUnitProductionAI::CheckUnitBuildSanity refuses any land combat unit ("nosupply") once the land units reach
+	//the recommended land size, units for an operation included.
+	if (GC.getLogging() && GC.getAILogging())
+	{
+		CvString playerName = GetPlayer()->getCivilizationShortDescription();
+		FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(playerName), FILogFile::kDontTimeStamp);
+		if (pLog)
+		{
+			CvString msg = CvString::format("%03d, %s, army size: land units %d, rec land %d, rec naval %d, explorers %d/%d, soft cap %d, supplied %d, to supply %d, gold %d, gold rate %d, offense weight %d, land defense weight %d",
+				GC.getGame().getElapsedGameTurns(), playerName.c_str(), iNumLandUnits, m_iRecLandUnits, m_iRecNavalUnits, iNumExplorers, iExplorersNeeded,
+				m_pPlayer->GetEconomicAI()->GetSoftSupplyCap(), iNumUnitsSupplied, iNumUnitsToSupply,
+				m_pPlayer->GetTreasury()->GetGold(), m_pPlayer->calculateGoldRate(), iTotalOffenseWeight, iLandDefenseWeight);
+			pLog->Msg(msg.c_str());
+		}
+	}
 }
 
 
