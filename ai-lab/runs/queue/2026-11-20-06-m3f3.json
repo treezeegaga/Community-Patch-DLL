@@ -1,0 +1,73 @@
+{
+  "id": "2026-11-20-06-m3f3",
+  "why": "M3 iteration 3: a melee hit on a city the estimate says we can take scores damage dealt. Siege, march, march3 x6 and regress x2, new AI. Either trusted PC.",
+  "launches": [
+    {
+      "label": "m3f3a",
+      "release": "ab-0410152",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g3a",
+      "release": "ab-0410152",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h3a",
+      "release": "ab-0410152",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3f3b",
+      "release": "ab-0410152",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g3b",
+      "release": "ab-0410152",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h3b",
+      "release": "ab-0410152",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3f3c",
+      "release": "ab-0410152",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3g3c",
+      "release": "ab-0410152",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3h3c",
+      "release": "ab-0410152",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3x3a",
+      "release": "ab-0410152",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
