@@ -7,7 +7,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Milestone M2: its bar is met; it waits for the user's sign-off.** Provisional bar (rule 10): in each march
   scenario, capture in at least 5 of 6 within 1.5 times the script's median turn. Met in 11 of 11 on `ab-9238090`
   (iterations 2, 3 and 4b), lab v17: 65 of 66 march battles (stock 0 of 66). Siege set 69 of 90, regress 24 of 24.
-  BASELINE.md "March (M2)" has the table (iteration 3's numbers; 4b's are in LOG "M2 iteration 4" and should go in).
+  BASELINE.md "March (M2)" has the table, current build included.
 - **Builds:** `ab-9238090` = M1 + M2 iterations 2 (target range x2), 3 (spare ranged fill optional slots), 4b (ranged
   close in once melee are at the city). All behind `IsNewAI()`.
 - **Lab:** v17 (march3 set; era-grouped battles; march corridor shown; empty runs end; per-PC runner timing; Civ V
@@ -21,7 +21,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   4. Archive "Civ V AI upgrade: implementer 5" (a cloud session can't).
 - **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (has iteration 3's march results; not 4b yet).
 - **Next** (PLAN 7a when blocked on the user):
-  1. Put 4b's numbers in BASELINE.md "March (M2)" and the dashboard.
+  1. Put 4b's numbers on the dashboard (BASELINE.md has them).
   2. If M2 is signed off: the M2 close (move M2 entries to LOG-archive.md with a summary, PLAN 12 handover is done).
      Then the transfer check (PLAN 8a item 4) for M1 and M2: port the minimum of the earlier full-game harness.
   3. M3's first item: the single "can this army take this city" estimate (logging first; CODEMAP "The two estimates
