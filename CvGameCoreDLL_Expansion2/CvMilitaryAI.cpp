@@ -1065,6 +1065,72 @@ const CvMilitaryAI::SAIPlan* CvMilitaryAI::GetActivePlan() const
 	return pPlan;
 }
 
+/// The plan's army as it stands: land melee, land ranged and settlers, plus (bIncludeProduction) what our cities other
+/// than pExceptCity are building. Once the plan's strike unit (row's research target) can be built, only ranged units at least as strong count
+/// (M3 iteration 10: Archers at the walls can't take a city; they are upgraded, or Composite Bowmen are built).
+void CvMilitaryAI::CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduction, int& iMelee, int& iRanged, int& iSettlers) const
+{
+	iMelee = iRanged = iSettlers = 0;
+	const SAIPlan* pPlan = GetActivePlan();
+	int iStrikeRanged = 0;
+	if (pPlan && pPlan->szResearchUnitClass)
+	{
+		UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
+		UnitTypes eStrike = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
+		CvUnitEntry* pkStrike = (eStrike != NO_UNIT) ? GC.getUnitInfo(eStrike) : NULL;
+		if (pkStrike && (pkStrike->GetPrereqAndTech() == NO_TECH || GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech((TechTypes)pkStrike->GetPrereqAndTech())))
+			iStrikeRanged = pkStrike->GetRangedCombat();
+	}
+
+	int iLoop = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->isFound())
+			iSettlers++;
+		else if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE)
+		{
+			if (pLoopUnit->getUnitInfo().GetRangedCombat() > 0)
+			{
+				if (pLoopUnit->getUnitInfo().GetRangedCombat() >= iStrikeRanged)
+					iRanged++;
+			}
+			else
+				iMelee++;
+		}
+	}
+	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+	{
+		if (!bIncludeProduction || pLoopCity == pExceptCity || !pLoopCity->isProductionUnit())
+			continue;
+		CvUnitEntry* pkInfo = GC.getUnitInfo(pLoopCity->getProductionUnit());
+		if (!pkInfo)
+			continue;
+		if (pkInfo->IsFound())
+			iSettlers++;
+		else if (pkInfo->GetDomainType() == DOMAIN_LAND && pkInfo->GetCombat() > 0 && pkInfo->GetDefaultUnitAIType() != UNITAI_EXPLORE)
+		{
+			if (pkInfo->GetRangedCombat() > 0)
+			{
+				if (pkInfo->GetRangedCombat() >= iStrikeRanged)
+					iRanged++;
+			}
+			else
+				iMelee++;
+		}
+	}
+}
+
+/// Is the plan's army complete (and so free to march)? True when there is no plan.
+bool CvMilitaryAI::IsPlanArmyReady() const
+{
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan)
+		return true;
+	int iMelee = 0, iRanged = 0, iSettlers = 0;
+	CountPlanArmy(NULL, false, iMelee, iRanged, iSettlers);
+	return (iMelee >= pPlan->iMelee) && (iRanged >= pPlan->iRanged);
+}
+
 /// What the plan wants this city to build next: a unit type, or NO_UNIT when the plan has nothing to say (no plan, its
 /// army is complete, or the city can't build what is missing); the city then chooses as usual.
 UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
@@ -1075,36 +1141,7 @@ UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
 
 	//what we have, and what our other cities are building
 	int iMelee = 0, iRanged = 0, iSettlers = 0;
-	int iLoop = 0;
-	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
-	{
-		if (pLoopUnit->isFound())
-			iSettlers++;
-		else if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE)
-		{
-			if (pLoopUnit->getUnitInfo().GetRangedCombat() > 0)
-				iRanged++;
-			else
-				iMelee++;
-		}
-	}
-	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
-	{
-		if (pLoopCity == pCity || !pLoopCity->isProductionUnit())
-			continue;
-		CvUnitEntry* pkInfo = GC.getUnitInfo(pLoopCity->getProductionUnit());
-		if (!pkInfo)
-			continue;
-		if (pkInfo->IsFound())
-			iSettlers++;
-		else if (pkInfo->GetDomainType() == DOMAIN_LAND && pkInfo->GetCombat() > 0 && pkInfo->GetDefaultUnitAIType() != UNITAI_EXPLORE)
-		{
-			if (pkInfo->GetRangedCombat() > 0)
-				iRanged++;
-			else
-				iMelee++;
-		}
-	}
+	CountPlanArmy(pCity, true, iMelee, iRanged, iSettlers);
 
 	//the best melee unit, ranged unit and settler this city can build (foot archers only: they upgrade along the bowman line)
 	UnitTypes eBestMelee = NO_UNIT, eBestRanged = NO_UNIT, eSettler = NO_UNIT;
@@ -1269,6 +1306,11 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 		bool bNewAIBuild = !bCareful && m_pPlayer->IsNewAI();
 		if (bNewAIBuild && pCurrentOp != NULL)
 			return true;
+
+		//new AI (M3 iteration 10): while a plan is being prepared, the attack waits for the plan's whole army (the user
+		//marched once every unit was built and upgraded); the cities keep building it meanwhile.
+		if (bNewAIBuild && !IsPlanArmyReady())
+			return false;
 
 		//if we're being careless, just use whatever units we have and do not wait for new ones
 		if (m_pPlayer->addAIOperation(opType, (bCareful || bNewAIBuild) ? iNumUnitsWillingToBuild : 0, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)

@@ -195,6 +195,8 @@ public:
 	const SAIPlan* GetActivePlan() const;
 	UnitTypes GetPlanBuild(CvCity* pCity) const;
 	TechTypes GetPlanResearch() const;
+	bool IsPlanArmyReady() const;
+	void CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduction, int& iMelee, int& iRanged, int& iSettlers) const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);
 	bool RequestBullyingOperation(PlayerTypes eEnemy);

@@ -196,6 +196,26 @@ purchases, gifts and trades) refuses everything but `PURCHASE_TYPE_UNIT_UPGRADE`
 Predicted (3 games): no gold purchases before the war; gold at Construction 100+ in at least 2 of 3; 2+ Archers upgraded
 to Composite Bowmen before or at the declaration in at least 2 of 3; a capture by turn 80 in at least 1 of 3;
 bankruptcy gifting fewer (no purchases draining gold). Regress 8 of 8.
+Build: `ab-a4a68e6`. Run: `2026-11-20-15-op6` (op6a/b/c new AI, op6x regress; all clean, by 4:57 PM ET).
+Result: gold banks: 123/209/228 at turn 30, up to 437 (op6c, turn 60); bankruptcy gifting 0/3/0 (op5: 4/3/4); 1 gold
+purchase in all. Construction turns 38/36/34. Upgrades: 1/0/0, because by then the cities were building Composite Bowmen
+(op6c fielded 6). War in 3 of 3 (op6a by turn 40). TAKE estimates at times in all 3, no capture. Why (op6c, Athens): the
+first attack op started at turn 48 with 3 units, marched at once and the war began on arrival with "within 4: melee 2,
+ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (received 66-134), the rest stayed home
+("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
+Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
+
+## 2026-11-20 M3 iteration 10: the early-rush plan, part 4: the attack waits for the plan's whole army (new AI)
+Class: wars begin with a fraction of the army (op6: 2+2 at the walls of 15).
+Change (behind `IsNewAI()`): `CvMilitaryAI::CountPlanArmy` (shared by the build order and the readiness check; once the
+strike unit's tech is known only ranged units at least as strong as it count, so Archers get upgraded or Composite
+Bowmen are built) and `IsPlanArmyReady()` (units that exist, not ones being built, reach the row's 6 melee + 4 ranged).
+In `RequestCityAttack`, the careless (sneak attack) request of a player whose plan isn't ready returns false: no
+operation, so no early march; the cities keep building the plan's army. Once ready, the op starts as in iteration 5.
+Predicted (3 games): the first attack op starts only when 6 melee + 4 Composite Bowmen exist (about turn 45-55); the army
+at the walls on the war's first turns has at least 4 melee + 3 ranged within 4 tiles; TAKE estimates for several
+consecutive turns; a capture by turn 80 in at least 1 of 3 (bar: a capital by 54, not expected yet). Regress 8 of 8.
+Risk: the plan's turn limit (60) ends the wait if the army isn't ready by then.
 Build and run: below.
 
 ## 2026-11-20 M3 iteration 6: preparing for war, the treasury pays for the army (new AI)
