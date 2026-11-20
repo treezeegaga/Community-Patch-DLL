@@ -165,7 +165,16 @@ called by the game; battle sets unchanged.
 Predicted: Songhai's own personality takes effect: more military in its builds by turn 40-60 and an army at turn 80
 nearer the other AI civs' (about 5 melee, might about 50), stock and new AI alike (the new AI's changes are tactical).
 If it still lags far behind, the cause is elsewhere (economy, its start) and the next step reads why.
-Build and run: below.
+Build: `ab-df5ef11`. Run: `2026-11-20-10-op1` (op1a/c/e stock, op1b/d/f new AI on Songhai; BOX and TREEDESKTOP, all
+clean, 2:03-2:19 PM ET). FLAVORS line ok in all 6; Songhai's flavors move to Askia's (offense 8, defense 2, wonder 2,
+growth 8, military training 4 in op1a).
+Result (Songhai at turn 80): cities 2-4 (mean 2.5), land melee 1-5 (3.0), ranged 1-2 (1.2), might 17-44 (31.5); flat
+flavors (op0/tr1) gave about 2 cities, 3 melee, might 29. The other AI civs in op1 (18): 3.3 cities, 4.1 melee, 1.1
+ranged, might 44. At war by turn 80 in 3 of 6 (op1b/c/f; none a Songhai capture). Gold banked unspent: 75-267.
+"Requested attack ... not possible for lack of units": Songhai 25-84 per game, the other civs 252 in all.
+New-AI baseline for iteration 5 (op1b/d/f, turn 80): melee 1/2/4, ranged 2/1/1, might 17/30/41, cities 2/2/3, war 2 of 3.
+Decision: **accepted** (a lab fix: the opening lab now measures Songhai as an AI with its own personality; lab v19).
+Learned: the flavors were not what kept the army small; the "lack of units" gate is (iteration 5).
 
 ## 2026-11-20 The transfer check, first version (PLAN 8a item 4; measurement only)
 Asked for now by the project review session, relaying the user (11:35 AM ET), before more M3 work. The earlier
