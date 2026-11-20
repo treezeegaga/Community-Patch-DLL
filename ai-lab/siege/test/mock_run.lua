@@ -51,7 +51,7 @@ local function newPlot(x, y)
 	m.SetNWOfRiver, m.SetNEOfRiver = m.SetWOfRiver, m.SetWOfRiver
 	function m:SetPlotType(t, a, b, c)
 		assert(type(t) == "number" and type(a) == "boolean" and type(b) == "boolean" and type(c) == "boolean")
-		p.water, p.mountain = false, (t == 0)
+		p.water, p.mountain = (t == 3), (t == 0)   -- PlotTypes: 0 mountain, 3 ocean (lab v12 coast)
 	end
 	function m:SetTerrainType(t, a, b) assert(type(t) == "number" and type(a) == "boolean" and type(b) == "boolean") end
 	m._p = p
@@ -102,7 +102,11 @@ local function newCity(owner, x, y)
 	function m:GetStrengthValue() return 1500 end
 	function m:UpdateStrengthValue() end
 	function m:SetPopulation(v, reassign) assert(type(v) == "number" and reassign == true) c.pop = v end
-	function m:SetNumRealBuilding(b, n) assert(type(b) == "number" and type(n) == "number") end
+	function m:SetNumRealBuilding(b, n)
+		assert(type(b) == "number" and type(n) == "number")
+		if b == GameInfoTypes.BUILDING_PALACE then c.palace = n > 0 end
+	end
+	function m:IsCapital() return c.palace == true end   -- lab v12: the palace moves for a capital battle
 	function m:SetProduction(v) assert(v == 0) end
 	function m:ChangeBaseYieldRateFromMisc(yield, change)
 		assert(type(yield) == "number" and type(change) == "number")
@@ -137,6 +141,7 @@ local function newPlayer(id, isMinor)
 	local newAI = false
 	function m:SetNewAI(v) assert(type(v) == "boolean") newAI = v end
 	function m:IsNewAI() return newAI end
+	function m:LabEndOperations() return 0 end   -- lab-only DLL method (lab v13); the fake has no operations
 	function m:ChangeExtraHappinessPerCity(v) assert(type(v) == "number") end
 	function m:ChangeNumResourceTotal(r, v, fromBuilding, fromEvent) assert(type(r) == "number" and type(v) == "number" and fromBuilding == false and fromEvent == true, "resources must be booked as from an event") end
 	function m:InitCity(x, y, ...)
@@ -144,6 +149,7 @@ local function newPlayer(id, isMinor)
 		local plot = Map.GetPlot(x, y)
 		assert(plot and not plot:IsCity() and not plot:IsWater() and not plot:IsMountain(), "bad city plot")
 		local city = newCity(id, x, y)
+		city._c.palace = next(m._cities) == nil   -- a player's first city is its capital
 		m._cities[city._c.id] = city
 		plot._p.city = city
 		return city
@@ -234,8 +240,12 @@ Game = strict({
 
 local typeNames = { "YIELD_FOOD", "YIELD_PRODUCTION", "YIELD_GOLD", "TECH_AGRICULTURE", "TECH_ARCHERY", "TECH_MASONRY", "TECH_BRONZE_WORKING", "TECH_THE_WHEEL",
 	"TECH_CONSTRUCTION", "TECH_IRON_WORKING", "TECH_MATHEMATICS",
+	-- regress set (lab v12): medieval and artillery eras
+	"TECH_PHYSICS", "TECH_MACHINERY", "TECH_STEEL", "TECH_CHIVALRY", "TECH_CIVIL_SERVICE", "TECH_DYNAMITE", "TECH_RIFLING", "TECH_RAILROAD",
+	"UNIT_TREBUCHET", "UNIT_CROSSBOWMAN", "UNIT_LONGSWORDSMAN", "UNIT_PIKEMAN", "UNIT_ARTILLERY", "UNIT_RIFLEMAN",
+	"BUILDING_CASTLE", "BUILDING_ARSENAL",
 	"UNIT_WARRIOR", "UNIT_ARCHER", "UNIT_SPEARMAN", "UNIT_COMPOSITE_BOWMAN", "UNIT_SWORDSMAN", "UNIT_CATAPULT",
-	"BUILDING_WALLS", "TERRAIN_GRASS", "TERRAIN_MOUNTAIN", "FEATURE_FOREST", "RESOURCE_IRON", "RESOURCE_HORSE" }
+	"BUILDING_WALLS", "BUILDING_PALACE", "TERRAIN_COAST", "TERRAIN_GRASS", "TERRAIN_MOUNTAIN", "FEATURE_FOREST", "RESOURCE_IRON", "RESOURCE_HORSE" }
 GameInfoTypes = {}
 for i, name in ipairs(typeNames) do GameInfoTypes[name] = i - 1 end
 local function rows(list)
@@ -245,7 +255,8 @@ local techRows, unitRows = {}, {}
 for name, id in pairs(GameInfoTypes) do
 	if name:find("^TECH_") then techRows[#techRows + 1] = { ID = id, Type = name } end
 	if name:find("^UNIT_") then
-		unitRows[id] = { ID = id, Type = name, Range = (name:find("ARCHER") or name:find("BOWMAN") or name:find("CATAPULT")) and 2 or 0 }
+		unitRows[id] = { ID = id, Type = name, Range = (name:find("ARCHER") or name:find("BOWMAN") or name:find("CATAPULT") or name:find("TREBUCHET")) and 2
+			or name:find("ARTILLERY") and 3 or 0 }
 	end
 end
 GameInfo = {
