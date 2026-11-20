@@ -280,6 +280,56 @@ void CvFlavorManager::ChangeLeader(LeaderHeadTypes eOldLeader, LeaderHeadTypes e
 	}
 }
 
+/// AI lab (ai/v2) only, called from Lua (Player:LabReloadLeaderFlavors). The lab's attacker is the human seat, handed to
+/// the AI by autoplay after Init has given it the flat human flavors (all 5); the diplomacy AI reloads its leader's
+/// personality on that switch, the flavor manager doesn't. Load the leader's flavors as Init does for an AI player
+/// (leader XML, randomized), keep the map adjustment Init's caller already applied to expansion and growth, and pass
+/// the difference on as a delta (as ChangeLeader does), so active strategy flavors stay as they are. Not called by the game.
+bool CvFlavorManager::LabReloadLeaderFlavors()
+{
+	if (!m_pPlayer || !m_piPersonalityFlavor.valid() || m_pPlayer->isHuman(ISHUMAN_AI_DIPLOMACY) || !m_pPlayer->isMajorCiv())
+		return false;
+
+	LeaderHeadTypes leader = m_pPlayer->getPersonalityType();
+	CvLeaderHeadInfo* pkLeaderHeadInfo = (leader != NO_LEADER) ? GC.getLeaderHeadInfo(leader) : NULL;
+	if (!pkLeaderHeadInfo)
+		return false;
+
+	int iNumFlavors = GC.getNumFlavorTypes();
+	int iDefault = /*5*/ GD_INT_GET(DEFAULT_FLAVOR_VALUE);
+	int iMax = /*10*/ range(GD_INT_GET(PERSONALITY_FLAVOR_MAX_VALUE), 1, 100);
+	int iMin = /*1*/ range(GD_INT_GET(PERSONALITY_FLAVOR_MIN_VALUE), 1, iMax);
+	int iExpansionIndex = GC.getInfoTypeForString("FLAVOR_EXPANSION");
+	int iGrowthIndex = GC.getInfoTypeForString("FLAVOR_GROWTH");
+
+	CvEnumMap<FlavorTypes, int> aiOld;
+	aiOld.init();
+	for (int iI = 0; iI < iNumFlavors; iI++)
+	{
+		aiOld[iI] = m_piPersonalityFlavor[iI];
+		m_piPersonalityFlavor[iI] = pkLeaderHeadInfo->getFlavorValue(iI);
+	}
+	RandomizeWeights();
+
+	// the map adjustment (AdjustWeightsForMap) was applied to the flat value: carry it over
+	if (iExpansionIndex >= 0 && iExpansionIndex < iNumFlavors)
+		m_piPersonalityFlavor[iExpansionIndex] = range(m_piPersonalityFlavor[iExpansionIndex] + aiOld[iExpansionIndex] - iDefault, iMin, iMax);
+	if (iGrowthIndex >= 0 && iGrowthIndex < iNumFlavors)
+		m_piPersonalityFlavor[iGrowthIndex] = range(m_piPersonalityFlavor[iGrowthIndex] + aiOld[iGrowthIndex] - iDefault, iMin, iMax);
+
+	CvEnumMap<FlavorTypes, int> aiDelta;
+	aiDelta.init();
+	for (int iI = 0; iI < iNumFlavors; iI++)
+		aiDelta[iI] = m_piPersonalityFlavor[iI] - aiOld[iI];
+
+	ChangeActivePersonalityFlavors(aiDelta, "LAB_LEADER_FLAVORS", true);
+	ChangeCityFlavors(aiDelta, "LAB_LEADER_FLAVORS", true);
+
+	aiDelta.uninit();
+	aiOld.uninit();
+	return true;
+}
+
 /// Update to a new set of flavors
 void CvFlavorManager::ChangeActivePersonalityFlavors(const CvEnumMap<FlavorTypes, int>& piDeltaFlavorValues, const char* reason, bool effectstart)
 {

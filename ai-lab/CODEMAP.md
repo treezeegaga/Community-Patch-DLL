@@ -67,6 +67,7 @@ and 8 (`MeleeArmyCanWearDownCity` army test), M1 it. 2's heal theory (wrong caus
 | `CvHomelandAI` | moves units the tactical AI left: "garrison", "sentry point", "patrolling to", "UNIT DIVERSITY - WE NEED attack" | `PlayerHomelandAILog.csv` |
 | `CvGame::ApplyConfigLoggingSettings` (`CvGame::init`) | reads `LoggingEnabled`/`AILog` from `config.ini` (the pack's DLL never gets `[Debug]` otherwise) | logging only, not behind the switch (M0 it. 2) |
 | `Player:LabEndOperations()` (Lua, lab only, `1ca9bea`) | ends all of a player's AI operations | called by the lab for both sides at battle setup (lab v13) |
+| `CvFlavorManager::Init` | personality flavors at game start: leader XML randomized for an AI, **all 5 for a human seat**; the lab's attacker is the human seat, so it kept flat flavors under autoplay (the diplomacy AI reloads its personality on the human→AI switch, the flavor manager doesn't). Battle sets still run so (the tactsim's min hp and loss threshold read FLAVOR_OFFENSE) | `Player:LabReloadLeaderFlavors()` (lab only, M3 it. 4) loads the leader's flavors as a delta; lab v19 calls it in opening/transfer mode. Log: `FlavorAILog.csv` reason LAB_LEADER_FLAVORS |
 | `PlayerPreAIUnitUpdate` Lua hook | fired before the AI's unit update; the scripted attacker moves there | lab v8 |
 
 ## Logs: where to look
@@ -80,7 +81,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
 
 ## The lab (ai-lab/siege)
 
-- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 17; march battles show the attacker the home-target corridor (army paths only cross seen tiles); battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
+- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 19 (v19: opening/transfer give the active civ its leader's flavors, `FLAVORS` line); march battles show the attacker the home-target corridor (army paths only cross seen tiles); battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
   defender's turn, stages the army and city (techs set, research cleared, city tile revealed to the attacker, palace
   moved for `capital`, sea for `coast`, rough ring for `terrain = "rough"`, `homeDistance` moves the target), ends both
   sides' operations; logs a TURN line each turn and a RESULT line per battle; fixed +10 gold a turn for the attacker.
@@ -103,7 +104,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   (unattended run: install, start Civ V, click through menus by screen match, wait for DONE, close, save results,
   remove, restore the stock DLL; per-PC clicks in `hosts/<PC>.json`), `Set-LabDll.ps1` (swap in a release build,
   restore by SHA-256), `Get-SiegeLabResults.ps1` (Lua.log → `.results.csv` and `.turns.csv`, summary table),
-  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check of the lab's own logic: `lua5.1 test/mock_run.lua [siege|march|march3|regress|opening|transfer]`, from `ai-lab/siege`; **judge it by the exit code and the last "-- mock run passed" line**, not by a DONE line: until 2026-11-20 its end checks had stale field counts (TURN 14, RESULT 22) and failed on every set while printing DONE. Now: TURN 17, RESULT 24, OPEN 24; the fake game's armies take every city since lab v13, so it checks for captures only; opening/transfer check one OPEN line every turn. The fake doesn't hand the palace back when a capital falls, so regress_coastal WARNs that the lab put it back; harmless. `apt-get install lua5.1` if missing).
+  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check of the lab's own logic: `lua5.1 test/mock_run.lua [siege|march|march3|regress|opening|transfer]`, from `ai-lab/siege`; **judge it by the exit code and the last "-- mock run passed" line**, not by a DONE line: until 2026-11-20 its end checks had stale field counts (TURN 14, RESULT 22) and failed on every set while printing DONE. Now: TURN 17, RESULT 24, OPEN 24, one FLAVORS line in opening/transfer; the fake game's armies take every city since lab v13, so it checks for captures only; opening/transfer check one OPEN line every turn. The fake doesn't hand the palace back when a capital falls, so regress_coastal WARNs that the lab put it back; harmless. `apt-get install lua5.1` if missing).
 - Classes (BASELINE.md): CAP, LASTHP (≥85% damage, not taken), LOWDMG, NOATTACK, WALK. March: FirstArrivalTurn,
   ReadyTurn (80% within 3 tiles with melee and ranged).
 

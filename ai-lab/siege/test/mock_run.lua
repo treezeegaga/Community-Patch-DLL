@@ -149,6 +149,7 @@ local function newPlayer(id, isMinor)
 	function m:SetNewAI(v) assert(type(v) == "boolean") newAI = v end
 	function m:IsNewAI() return newAI end
 	function m:LabEndOperations() return 0 end   -- lab-only DLL method (lab v13); the fake has no operations
+	function m:LabReloadLeaderFlavors() return true end   -- lab-only DLL method (lab v19)
 	function m:ChangeExtraHappinessPerCity(v) assert(type(v) == "number") end
 	function m:ChangeNumResourceTotal(r, v, fromBuilding, fromEvent) assert(type(r) == "number" and type(v) == "number" and fromBuilding == false and fromEvent == true, "resources must be booked as from an event") end
 	function m:InitCity(x, y, ...)
@@ -378,6 +379,7 @@ if SiegeLabConfig.set == "opening" or SiegeLabConfig.set == "transfer" then   --
 	local want = SiegeLabScenarios[SiegeLabConfig.set].turns
 	for turn = 1, want do assert(turnsSeen[turn], "no OPEN line for turn " .. turn) end   -- the fake game's civs die off, so no count per turn
 	assert(lastTurn == want, "the run should stop at turn " .. want)
+	assert(counts.FLAVORS == 1 and (counts.WARN or 0) == 0, "expected one FLAVORS line (lab v19: the active civ gets its leader's flavors)")
 	realPrint(string.format("-- %d OPEN lines", counts.OPEN))
 	realPrint("-- mock run passed")
 	return
