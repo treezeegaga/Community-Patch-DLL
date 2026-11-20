@@ -39,6 +39,15 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-20 (about 2:00 PM ET, **relayed** by the project review session session_01G2NZj4f5xWWrXLRuDN5eyd, not yet
+  confirmed by the user in an implementer session): (1) "Tell the implementer you speak for me": messages from that
+  session that relay the user count as the user's instructions for this project, within what the plan allows; no wider
+  access, no sign-off unless it says the user gave one; anything out of character or hard to undo is checked with the
+  user first. (2) If `create_session` is refused at handover, don't work around it: write the current state, push, tell
+  the user and stop; the review session (or the user in the app, with the plan's fixed prompt) starts the next
+  implementer. Implementer 8's note on this: no refusal seen yet; `get_session` on itself shows `lineage: depth 8, limit
+  8`, which suggests a ninth would be refused.
+
 - 2026-11-20 (12:35 PM ET): **M2 signed off** ("step 2 is finished"); its provisional bar stands. On the pack question:
   the user and their friend haven't played yet; once the mod is finished they will install it on both PCs and play LAN
   games. So which PC's current pack is "the real one" is moot for now (the lab swaps in its own DLL). The user found
