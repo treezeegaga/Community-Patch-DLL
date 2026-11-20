@@ -2,45 +2,48 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-19, 3:30 PM ET), written by implementer 4 at handover (context past 300k)
+## Current state (2026-11-19, 9:00 PM ET), written by implementer 5 at handover (context past 300k)
 
-- **Milestone:** M2 (the march), iteration 1 in hand (logging only, results not in). M2's bar is not fixed yet.
-- **Branch / builds:** `ai/v2`. Behaviour code is still M1's (`ab-78d5e8a`: stock 5.4.8 + logging + `IsNewAI()` +
-  M1 iterations 3 and 7). `ab-9109672` adds M2 logging (why a city is not an attack target). `0b401eb` (build
-  `ab-0b401eb`, started 3:25 PM, check it built) adds the new-AI switch read at game start and `AILab_NewAI.csv`.
-  Lab scripts are at v12 (capital and coastal targets).
-- **Baseline:** BASELINE.md "Current build" (M1). M2 baseline: LOG "M2 iteration 0" (0 of 36 AI battles left home;
-  the script took 18 of 18).
-- **Queued, not done (BOX):** `2026-11-19-12-m2d1` (M2 iteration 1: march at 8/10/12/16 tiles on `ab-9109672`, newAI
-  and stock, plus the script on 8/10/16) and then `2026-11-19-14-reg0` (regression set baseline). BOX was still on
-  watcher v1 at 2:00 PM: v1 ignores `host` and never claims; m2d1's done marker will show which version ran it.
-- **Read when in:** m2d1: per distance, did the army leave home; `MilitaryAILog.csv` lines "no army path to" and
-  "land target rejected", and `OperationalAILog.csv`. The prediction (LOG M2 iteration 1): 12 and 16 tiles log
-  "no army path" and stay home; 8 (likely 10) get a target and an operation. Fill in iteration 1's Result/Decision.
-  reg0: fill in the "Regression set" entry and add the set to BASELINE.md with the "Attackers lost" column; check
-  Lua.log for WARN lines (a skipped scenario name, "did not become the capital", "palace was put back").
-- **Two-PC check:** the first try ran on BOX only (LOG "Process: two-PC check, first try"); it measured BOX against
-  itself and fits the bar. Still needed: TREEDESKTOP set up by the user (runs/README.md, "TREEDESKTOP: one-time
-  setup"; the user said they'll do it tonight with a Claude session on that PC), then a request with three
-  TREEDESKTOP-only launches (same as pc2tree1-3: `ab-78d5e8a`, newAI none, repeats 2, siege set) compared with the
-  six pc2check launches. Queue it only once BOX runs watcher v2 (else BOX takes it). Until it passes, pin counted
-  runs to `"host": "BOX"`.
-- **Open questions for the user:** the M2 bar (propose it with m2d1's numbers; PLAN's proposal: 5 of 6 battles reach
-  80% within 3 tiles within 2 turns of the script, then capture at the M1 rate). Ask them for a quick single-player
-  check of the setup switch once `ab-0b401eb` is built (Install-NewAI.ps1, box shows in Advanced Setup, start a game,
-  `AILab_NewAI.csv` lists the AI civs, `-Remove`); the pack's .Civ5Pkg layout is unknown here. After that, the MP
-  smoke test (`ai-lab/newai/MP-SMOKE-TEST.md`).
-- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (M1 final). Its steps row for the march
-  baseline still says "Waiting": update it with M2 iteration 0 and 1.
+- **Milestone:** M2 (the march). Iteration 1 (logging) done in part: cause confirmed (LOG "M2 iteration 1", m2n1a).
+  **Iteration 2 in hand:** new AI's land target range x2 in `CvMilitaryAI::GetArmyPathsFromCity` (commit `dce08ed`,
+  build `ab-455fe7a`, check it published). Its runs are queued overnight; result not in. M2's bar is not fixed yet.
+- **Builds:** `ab-455fe7a` = M1 behaviour + M2 iteration 2 + `Player:LabEndOperations` (lab-only Lua, `1ca9bea`).
+  `ab-1ca9bea` = same without iteration 2. Lab is v13 (ends both sides' AI operations between battles; with an older
+  DLL it WARNs and behaves as v12). New scenario march_medium_vs_medium_rough.
+- **Queue (all pinned to BOX, in order):** rest of `2026-11-19-12-m2d1` (old lab, 10-tile battles void: lab leak);
+  `-14-reg0` (regression baseline, ab-78d5e8a); `-15-m2d2` (8 and 10 tiles on v13, new AI and stock); `-17-m2f2`
+  (iteration 2: march set x6, new AI vs stock); `-18-m2g2` (siege set x6, new AI: M1 bar must hold, m1f7 68/90);
+  `-19-m2x2` (regress set x6, new AI); `-20-m2r3` (script on the rough march x6). Also `-16-pc2tree` pinned to
+  TREEDESKTOP (its half of the two-PC check).
+- **Read when in:** m2d1 rest: d8 capture counts, d12/d16 "no army path" (fill M2 iteration 1 Result/Decision).
+  reg0: record the regression baseline in BASELINE.md (with "Attackers lost"). m2d2: does the army march at 10 tiles
+  on v13? m2f2: iteration 2's prediction (LOG "M2 iteration 2"); then decide accept/revert by PLAN section 7 and
+  propose the M2 bar to the user with these numbers. m2g2/m2x2: no regression.
+- **Lab PCs:** BOX runs watcher v3 (status file `ai-lab/runs/status/BOX.json`, pull self-heal, explicit ai/v2 fetch;
+  BOX's 5:09-8:19 PM stall was a stale origin/ai/v2, see LOG). `ai-lab/runs/trusted-hosts.txt` lists BOX only:
+  unpinned launches go only to trusted PCs. TREEDESKTOP: session "TREEDESKTOP lab setup step 4"
+  (session_01G2NZj3SpEuy1gkydMfsdEi) is finishing setup steps 6-8 on my instructions (the user told it to do what the
+  implementer asks). Pack DLL hashes differ (BOX `2FB6A9B9...`, TREEDESKTOP reported `262AEE88...`); it was asked to
+  list all DLLs in its pack. Add TREEDESKTOP to trusted-hosts.txt only after the two-PC check passes
+  (runs/README.md bar: pc2tree4-6 vs pc2box1-3).
+- **Runner sessions report to implementer 5** (session_01G2NZj3rXkHwRtW56xPvkxL): tell the BOX runner
+  ("Civ V siege lab: PC runner (box)", session_01G2NZj1Snwc6GRS553uhEJb) and the TREEDESKTOP session your own
+  session id to report to. This session is elevated (may message the user's PC sessions); a successor may need the
+  user to allow it again (confirm_repository_trust card on first refusal). Standing permission: lab upkeep through
+  the runner sessions without asking (PLAN.md section 4).
+- **Setup switch:** Install-NewAI.ps1 now handles the user's folder-loading pack (files under `Mods\AILab NewAI\`,
+  .Civ5Pkg untouched); not yet tried on a PC. Next: have a runner do the single-player check when the queue is
+  empty (install ab-455fe7a, the "New AI (test build)" box in Advanced Setup, one turn, AILab_NewAI.csv lists the AI
+  civs, -Remove), then the MP smoke test (ai-lab/newai/MP-SMOKE-TEST.md) for the user.
+- **The user's goal tonight:** a long overnight test run with little user input. User has set screen and sleep to never.
+- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (not updated this session).
 - **Next:**
-  1. Read m2d1 when its done marker lands; record M2 iteration 1; report to the user and propose the M2 bar.
-  2. Read reg0; record the regression baseline in BASELINE.md.
-  3. M2 loop on the largest failure class (likely: the target range limit, behind `IsNewAI()`, using only what a
-     human could see).
-  4. Setup switch: the user's single-player check, then the MP smoke test.
-  5. Two-PC check with TREEDESKTOP (above).
-  6. Then the transfer check (PLAN 8a item 4), first for M1.
-  7. Update the dashboard as results land.
+  1. Point the runners at your session id; confirm `ab-455fe7a` published (else rebuild and requeue 17-20).
+  2. Read results as they land, in queue order; record M2 iterations 1 and 2, the regression baseline.
+  3. Decide iteration 2; propose the M2 bar to the user.
+  4. TREEDESKTOP: calibration report, pack hashes, two-PC check; trust it when it passes.
+  5. Single-player check of the setup switch via a runner; then the MP smoke test for the user.
+  6. Transfer check (PLAN 8a item 4), first for M1. Update the dashboard.
 
 ## User rulings
 
