@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-20-11-op2",
+  "why": "M3 iteration 5: new AI, a sneak attack request may build the units it lacks. Opening lab v19, new AI on Songhai, 3 games (compare op1b/d/f); one regress launch as a no-change check. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op2a",
+      "release": "ab-463dc60",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op2b",
+      "release": "ab-463dc60",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op2c",
+      "release": "ab-463dc60",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op2x",
+      "release": "ab-463dc60",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
