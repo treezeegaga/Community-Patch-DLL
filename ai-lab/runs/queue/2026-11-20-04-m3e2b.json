@@ -1,0 +1,32 @@
+{
+  "id": "2026-11-20-04-m3e2b",
+  "why": "M3 iteration 1, estimate v2 (logging only): siege set new AI and stock, march and march3 new AI, 2 each. Either trusted PC. Replaces 2026-11-20-03-m3e2, withdrawn unrun: it named ab-a0f7eff, which is never built (the push's tip was the merge 7dd3e85, same code).",
+  "launches": [
+    {
+      "label": "m3e2b",
+      "release": "ab-7dd3e85",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3s2b",
+      "release": "ab-7dd3e85",
+      "newAI": "none",
+      "repeats": 2
+    },
+    {
+      "label": "m3n2b",
+      "release": "ab-7dd3e85",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 2
+    },
+    {
+      "label": "m3c2b",
+      "release": "ab-7dd3e85",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
