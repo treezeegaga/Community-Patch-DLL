@@ -154,6 +154,12 @@ then predicts is the real one or up to 3 turns early (22 of 22 battles).
 No-change check met: m3e1a/b/c (BOX, clean) 69 of 90, as m2gb (69); every scenario within 1 in 6 except
 medium_vs_strong 4/6 (m2gb 2/6, earlier 1-2/6: up, not down). v1 over the 6 battles: agrees in 11 of 15 (the three
 above plus medium_vs_strong 4/6 captured, estimate NO): misses the bar of 13.
+v2 (`ab-7dd3e85`): m3e2b (BOX, clean, 24 of 30) agrees in 13 of 15; the two "misses" are TAKE for medium_vs_strong
+(1/2 here, 4/6 in m3e1) and melee_only_vs_medium (1/2 here, the first capture on this build; script 6/6), so against
+the best of the AI and the script it is right in 15 of 15. Bar met. Its turns are optimistic (predicted capture 0-3
+turns early). March m3n2b (14/14): TAKE comes 2-7 turns before the capture, sometimes with part of the army; the
+predicted turn is up to 4 early (one d10 battle fell on turn 25, logging-only build: noise, but a miss of that
+scenario's turn-12 bar). The risk for iteration 2 is a partial army attacking early on the march.
 
 ## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
 Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
