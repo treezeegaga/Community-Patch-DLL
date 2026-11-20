@@ -140,7 +140,15 @@ Three caveats, which make M0 unfinished:
 8. **The PC is the user's gaming machine.** Restore the stock pack DLL and remove the lab after every run.
    Never leave Civ V running. Don't touch graphics settings or saved games.
 9. **Stop and write to the user** when: three iterations in a row on the same failure move nothing; a bar
-   looks wrong or unreachable; a ruling is needed; or a change would break rule 4 or 7 to work.
+   looks wrong or unreachable; a ruling is needed; or a change would break rule 4 or 7 to work. "Stop" means stop
+   that line of work and write the question, never stop working (rules 10-12).
+10. **Provisional rulings** (user's rule, 2026-11-20). When a bar or a ruling is needed and the user is away, adopt
+   your own proposed version provisionally, mark it "provisional" in LOG.md (and in this plan, where it is a bar),
+   and keep working on it. The user confirms or changes it later; if they change it, re-judge what depended on it.
+11. **When blocked on the user, work down the list in section 7a** instead of waiting.
+12. **Never go idle without a wake-up** (user's rule, 2026-11-20). Before ending any turn, leave a timed background
+   wait running (`ai-lab/runs/wait-for-results.sh`, at most 110 minutes), even when the queue is empty, so the
+   session is re-invoked within two hours.
 
 ## 7. The loop
 
@@ -164,7 +172,8 @@ Each iteration is one entry in `ai-lab/LOG.md` (template in section 10) and foll
    refused for this session; don't rely on them. Start `ai-lab/runs/wait-for-results.sh` as a background command
    (Bash `run_in_background`, timeout about 7,000,000 ms). It polls `origin/ai/v2` every 2 minutes and exits when a
    new done marker or launch result lands, or after about 110 minutes. When it exits: pull, read what arrived,
-   record it, queue what's next, and start it again. Keep one running whenever runs are queued.
+   record it, queue what's next, and start it again. Keep one running at all times, queue empty or not (rule 12): a
+   timeout with nothing new is the cue to take the next item from section 7a.
 8. **Decide** by the rule below. Accept: record the new table as the baseline. Reject: revert the commit,
    and write one line on what the result taught you. Then bring `ai-lab/CODEMAP.md` up to date: any gate or limit
    found, log line added, function changed (accepted) or attempt reverted, script changed.
@@ -175,6 +184,19 @@ succeeds" (for captures: from at most 1 in 6 to at least 4 in 6), and no other s
 drops by more than 1 in 6 or its losses rise by more than a third. An effect too small to see in 6 battles
 is not what this stage is after; don't chase it with more repeats. When repeats of the *same build*
 disagree wildly, the lab has a leak: fix the lab first.
+
+## 7a. Work that never needs the user (when blocked on the user, work down this list)
+
+In this order, unless an item is already in hand or can't move:
+1. **The next iteration on the largest failing class** of the current milestone, under the provisional bar (rule 10).
+2. **CODEMAP upkeep**: anything learned but not yet in `ai-lab/CODEMAP.md`; the out-of-date `siege/test/mock_run.lua`.
+3. **The transfer-check harness** (section 8a item 4): port the minimum of the earlier full-game harness (seeded maps,
+   seat assignment, results file) to `ai/v2`, then run it for the closed milestones.
+4. **The next milestone's lab**: for M3, the single "can this army take this city" estimate (logging first, checked
+   against the lab's results) and the opening lab (a normal start cut at turn 60-80).
+5. **Lab hygiene**: known stock bugs worth a scenario (CODEMAP "known, not fixed"), lab leaks, faster runs.
+Anything that changes the user's PC beyond the lab (installing the setup switch in the pack, graphics, saves) or
+needs the user at the PC (the multiplayer smoke test) is not on this list.
 
 ## 8. Milestones
 
@@ -224,8 +246,10 @@ melee_only_vs_medium set aside by the user; defender part met. The "one estimate
   heal or get recruited elsewhere. The earlier notebook lists these hand-over failures. Fix them where
   they occur.
 
-Bar (proposed): at least 5 of 6 battles reach the M1 starting state (80% of the army within 3 tiles of the
-city, within 2 turns of each other, siege and melee included) and then capture at the M1 rate.
+Bar (**provisional**, adopted 2026-11-20 under rule 10; awaiting the user): in each march scenario, capture in at
+least 5 of 6 battles within 1.5 times the scripted attacker's median capture turn. (Proposed first: 80% of the army
+within 3 tiles within 2 turns of each other, then capture at the M1 rate; replaced because the script itself misses
+the "together" part; LOG.md M2 iteration 3.)
 
 ### M3. The army: an honest economy fields that army on time
 

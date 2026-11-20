@@ -44,6 +44,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-20 (7:20 AM ET): three standing rules after a lost night (PLAN.md rules 10-12 and section 7a): (1) when a
+  bar or ruling is needed and the user is away, adopt the proposed version provisionally, mark it "provisional" here
+  and keep working; (2) keep a list of work that never needs the user (PLAN 7a) and work down it instead of
+  stopping; (3) never go idle without a timed background wait (re-invoked within two hours).
+- 2026-11-20 (provisional, rule 10): **M2 bar**: capture in at least 5 of 6 within 1.5 times the script's median
+  capture turn, per march scenario. Awaiting the user's confirmation.
+
 - 2026-11-19 (about 9:30 PM ET): the user is asleep for 8 hours and asks for no approvals meanwhile ("I trust you").
   Overnight the implementer carries on by the plan's rules without asking. Anything that needs a ruling is written
   up for the morning, and the work goes on with whatever doesn't depend on it.
