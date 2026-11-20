@@ -94,3 +94,17 @@ worse for the defender (large_vs_strong 3/6 vs 2/6). Met.
 
 So M1 starts with five failing takeable scenarios: small_vs_medium, large_vs_strong, melee_only_vs_medium,
 siege_train_vs_strong and medium_vs_medium_rough. Seven takeable scenarios already pass and must not get worse.
+
+## Regression set (PLAN.md 8a item 2)
+
+Run reg0 (2026-11-19, `ab-78d5e8a`, lab v13, BOX; new AI as attacker rgn0a/b/c, stock rgs0a/b/c, 6 battles each,
+clean). **Rep 2 of regress_capital and regress_coastal is void** in every launch: it came after rep 1's artillery
+battle, the attacker's era stayed industrial, and its classical army was disbanded as "long obsolete", one unit a turn
+(fixed in lab v15). Those two rows use rep 1 only (3 battles); the rerun is `2026-11-19-22-reg1`.
+
+| Scenario | New AI: captured, turns | Stock: captured, turns | Attackers lost (mean, new / stock) |
+|---|---|---|---|
+| regress_capital (rep 1 only) | 3/3, turn 5 | 3/3, turn 5 | 0.0 / 0.0 |
+| regress_coastal (rep 1 only) | 3/3, turn 5 | 3/3, turns 4-7 | 0.0 / 0.0 |
+| regress_medieval | 6/6, turns 3-4 | 6/6, turn 3 | 0.0 / 0.0 |
+| regress_artillery | 6/6, turns 6-8 | **1/6**, turn 7 (city at 30-92% most damage) | 0.0 / 0.3 |

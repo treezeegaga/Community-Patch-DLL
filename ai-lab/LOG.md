@@ -170,7 +170,16 @@ regress_capital and regress_coastal (both medium_vs_medium with that one change)
 regress_artillery (3 artillery, 4 riflemen vs pop 12, walls, castle and arsenal, rifleman inside, 2 outside;
 15 turns). Units lost is the summary's "Attackers lost" column and goes into BASELINE.md for this set.
 Queued: `2026-11-19-14-reg0`, `ab-78d5e8a`, newAI attacker and stock, 3 launches x 2 repeats each, on BOX.
-Result: (pending)
+Result (rgn0a/b/c new AI, rgs0a/b/c stock, clean, read 9:15 PM ET; table in BASELINE.md): regress_medieval 6/6 both
+(turns 3-4); regress_artillery new AI 6/6 (turns 6-8), stock 1/6; capital and coastal 3 of 3 on rep 1 for both, turn
+4-7, no losses. **Lab leak:** every rep-2 capital and coastal battle is void: it ran after rep 1's artillery battle,
+the attacker's era stayed industrial (an era never drops), and `DisbandLongObsoleteUnits` scrapped its Spearmen and
+bowmen one a turn ("Disbanding long obsolete unit", PlayerHomelandAILog.csv, 17 lines in rgn0a; all 7 gone by turn 7,
+0 killed by the enemy). Fix: lab v15 groups battles by a scenario `era` field, lowest first, repeats outer within a
+group (regress_medieval era 2, regress_artillery era 4). Rerun of the two: `2026-11-19-22-reg1` (ab-78d5e8a, new AI and
+stock, 6 each). m2x2 (regress set, queued) runs on v15. Also found: `test/mock_run.lua` fails at SiegeLab.lua's
+`rosterAlive` (pairs on nil) before and after this change; the mock is out of date, not fixed yet.
+Decision: the artillery and medieval rows stand; capital and coastal wait for reg1.
 
 ## 2026-11-19 Process: two-PC check, first try (BOX ran both halves)
 The request `2026-11-19-13-pc2check` ran on BOX between 2:00 and 2:21 PM ET under watcher v1, which predates the

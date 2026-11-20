@@ -78,7 +78,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
 
 ## The lab (ai-lab/siege)
 
-- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 14): on turn 0 clears a flat arena; per battle, during the
+- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 15; battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
   defender's turn, stages the army and city (techs set, research cleared, city tile revealed to the attacker, palace
   moved for `capital`, sea for `coast`, rough ring for `terrain = "rough"`, `homeDistance` moves the target), ends both
   sides' operations; logs a TURN line each turn and a RESULT line per battle; fixed +10 gold a turn for the attacker.
@@ -90,7 +90,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   (unattended run: install, start Civ V, click through menus by screen match, wait for DONE, close, save results,
   remove, restore the stock DLL; per-PC clicks in `hosts/<PC>.json`), `Set-LabDll.ps1` (swap in a release build,
   restore by SHA-256), `Get-SiegeLabResults.ps1` (Lua.log → `.results.csv` and `.turns.csv`, summary table),
-  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check).
+  `Measure-SiegeLabClicks.ps1` (new-PC setup), `test/mock_run.lua` (offline check, `lua5.1 test/mock_run.lua`; out of date as of v15: fails in `rosterAlive`).
 - Classes (BASELINE.md): CAP, LASTHP (≥85% damage, not taken), LOWDMG, NOATTACK, WALK. March: FirstArrivalTurn,
   ReadyTurn (80% within 3 tiles with melee and ranged).
 

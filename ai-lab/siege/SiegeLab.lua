@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 14
+local VERSION = 15
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -100,10 +100,21 @@ local function buildQueue(config)
 		end
 	end
 	-- Repeats are the outer loop, so anything that drifts over a long run affects every scenario alike.
+	-- Lab v15: but battles are grouped by the scenario's `era` (default 0), lowest first, with repeats outer within
+	-- a group. A player's era never goes back down, so after a later-era battle the attacker's older units are
+	-- scrapped as "long obsolete" (reg0: every rep-2 capital and coastal battle after rep 1's artillery battle).
+	local eras, seen = {}, {}
+	for _, sc in ipairs(chosen) do
+		local e = sc.era or 0
+		if not seen[e] then seen[e] = true; eras[#eras + 1] = e end
+	end
+	table.sort(eras)
 	local queue = {}
-	for rep = 1, (config.repeats or 1) do
-		for _, sc in ipairs(chosen) do
-			queue[#queue + 1] = { sc = sc, rep = rep }
+	for _, e in ipairs(eras) do
+		for rep = 1, (config.repeats or 1) do
+			for _, sc in ipairs(chosen) do
+				if (sc.era or 0) == e then queue[#queue + 1] = { sc = sc, rep = rep } end
+			end
 		end
 	end
 	return queue, #chosen
