@@ -18,7 +18,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 15
+local VERSION = 16
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -947,6 +947,7 @@ local function startLab()
 	local queue, scenarioCount = buildQueue(config)
 	if #queue == 0 then
 		out("ERROR,no scenarios to run")
+		out("DONE")   -- lab v16: end the launch at once rather than leave the runner waiting
 		return
 	end
 
