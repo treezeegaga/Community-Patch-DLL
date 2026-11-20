@@ -2,48 +2,43 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-19, 9:00 PM ET), written by implementer 5 at handover (context past 300k)
+## Current state (2026-11-19, 11:20 PM ET), written by implementer 6 (overnight; the user asked for no approvals)
 
-- **Milestone:** M2 (the march). Iteration 1 (logging) done in part: cause confirmed (LOG "M2 iteration 1", m2n1a).
-  **Iteration 2 in hand:** new AI's land target range x2 in `CvMilitaryAI::GetArmyPathsFromCity` (commit `dce08ed`,
-  build `ab-455fe7a`, check it published). Its runs are queued overnight; result not in. M2's bar is not fixed yet.
-- **Builds:** `ab-455fe7a` = M1 behaviour + M2 iteration 2 + `Player:LabEndOperations` (lab-only Lua, `1ca9bea`).
-  `ab-1ca9bea` = same without iteration 2. Lab is v13 (ends both sides' AI operations between battles; with an older
-  DLL it WARNs and behaves as v12). New scenario march_medium_vs_medium_rough.
-- **Queue (all pinned to BOX, in order):** rest of `2026-11-19-12-m2d1` (old lab, 10-tile battles void: lab leak);
-  `-14-reg0` (regression baseline, ab-78d5e8a); `-15-m2d2` (8 and 10 tiles on v13, new AI and stock); `-17-m2f2`
-  (iteration 2: march set x6, new AI vs stock); `-18-m2g2` (siege set x6, new AI: M1 bar must hold, m1f7 68/90);
-  `-19-m2x2` (regress set x6, new AI); `-20-m2r3` (script on the rough march x6). Also `-16-pc2tree` pinned to
-  TREEDESKTOP (its half of the two-PC check).
-- **Read when in:** m2d1 rest: d8 capture counts, d12/d16 "no army path" (fill M2 iteration 1 Result/Decision).
-  reg0: record the regression baseline in BASELINE.md (with "Attackers lost"). m2d2: does the army march at 10 tiles
-  on v13? m2f2: iteration 2's prediction (LOG "M2 iteration 2"); then decide accept/revert by PLAN section 7 and
-  propose the M2 bar to the user with these numbers. m2g2/m2x2: no regression.
-- **Lab PCs:** BOX runs watcher v3 (status file `ai-lab/runs/status/BOX.json`, pull self-heal, explicit ai/v2 fetch;
-  BOX's 5:09-8:19 PM stall was a stale origin/ai/v2, see LOG). `ai-lab/runs/trusted-hosts.txt` lists BOX only:
-  unpinned launches go only to trusted PCs. TREEDESKTOP: session "TREEDESKTOP lab setup step 4"
-  (session_01G2NZj3SpEuy1gkydMfsdEi) is finishing setup steps 6-8 on my instructions (the user told it to do what the
-  implementer asks). Pack DLL hashes differ (BOX `2FB6A9B9...`, TREEDESKTOP reported `262AEE88...`); it was asked to
-  list all DLLs in its pack. Add TREEDESKTOP to trusted-hosts.txt only after the two-PC check passes
-  (runs/README.md bar: pc2tree4-6 vs pc2box1-3).
-- **Runner sessions report to implementer 5** (session_01G2NZj3rXkHwRtW56xPvkxL): tell the BOX runner
-  ("Civ V siege lab: PC runner (box)", session_01G2NZj1Snwc6GRS553uhEJb) and the TREEDESKTOP session your own
-  session id to report to. This session is elevated (may message the user's PC sessions); a successor may need the
-  user to allow it again (confirm_repository_trust card on first refusal). Standing permission: lab upkeep through
-  the runner sessions without asking (PLAN.md section 4).
-- **Setup switch:** Install-NewAI.ps1 now handles the user's folder-loading pack (files under `Mods\AILab NewAI\`,
-  .Civ5Pkg untouched); not yet tried on a PC. Next: have a runner do the single-player check when the queue is
-  empty (install ab-455fe7a, the "New AI (test build)" box in Advanced Setup, one turn, AILab_NewAI.csv lists the AI
-  civs, -Remove), then the MP smoke test (ai-lab/newai/MP-SMOKE-TEST.md) for the user.
-- **The user's goal tonight:** a long overnight test run with little user input. User has set screen and sleep to never.
-- **Dashboard:** https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (not updated this session).
-- **Next:**
-  1. Point the runners at your session id; confirm `ab-455fe7a` published (else rebuild and requeue 17-20).
-  2. Read results as they land, in queue order; record M2 iterations 1 and 2, the regression baseline.
-  3. Decide iteration 2; propose the M2 bar to the user.
-  4. TREEDESKTOP: calibration report, pack hashes, two-PC check; trust it when it passes.
-  5. Single-player check of the setup switch via a runner; then the MP smoke test for the user.
-  6. Transfer check (PLAN 8a item 4), first for M1. Update the dashboard.
+**For the user this morning (short):**
+1. **The march works.** With M2 iterations 2 and 3 (new AI only) armies leave home, march 8-16 tiles and take the
+   city: 26 of 28 battles of the march set and 16 of 16 of the march3 set on lab v17, at 1.2-1.55 times the
+   scripted attacker's turns. Before tonight neither AI took a single march battle. Siege set 70 of 90 and regression
+   set 24 of 24 on the same build: nothing got worse. Details: LOG "M2 iteration 3", BASELINE.md "March (M2)".
+2. **Please rule on M2's bar.** Proposed: in each march scenario the script takes (all of them), capture in at least
+   5 of 6 battles within 1.5 times the script's median turns (the M1 rule, with the march start). The plan's "80% of
+   the army within 3 tiles within 2 turns of each other" turns out a weak measure (the script misses it too; LOG M2
+   it. 3). On today's numbers the new AI meets the proposed bar everywhere except rough ground (1.55x) and possibly
+   march_medium_vs_medium (3 of 4 so far); m2f6 brings every scenario to 6 battles.
+3. **Confirm two overnight decisions:** iteration 2 (target range x2) accepted, first provisionally, then with
+   iteration 3's results; TREEDESKTOP trusted on the two-PC count check (passed: 14 of 15 scenarios within 1 in 6).
+4. **The two PCs' packs differ** (`runs/pack/BOX.txt` vs `TREEDESKTOP.txt`): the game core DLL (BOX 13,867,520 bytes,
+   TREEDESKTOP 16,837,632, dated Nov 2), `Override/CIV5Units.xml` (1 byte longer on TREEDESKTOP) and two extra map
+   files on TREEDESKTOP (`Override/Civ5Maps_DLC_SP_Maps_2.xml`, `_3.xml`). Lab runs swap the DLL and the counts agree,
+   so lab results are unaffected as far as can be seen. **For your multiplayer games both PCs need the same pack**:
+   which copy is the one you and your friend play with?
+5. Archive "Civ V AI upgrade: implementer 5" yourself (a cloud session can't).
+
+**State:**
+- Milestone M2. Iterations 2 (`dce08ed`) and 3 (`8893a66`) accepted. Newest build `ab-8893a66`. Lab v17 (march3 set
+  with a Swordsman; battles grouped by era; empty runs end at once; march corridor shown; runner per-PC timing and
+  Civ V topmost). Lab PCs BOX and TREEDESKTOP both trusted; watcher waits with `runs/wait-for-results.sh`.
+- Queued: `2026-11-19-26-m2f6` (new AI march/march3 one more launch each; stock on v17 x6). Read it into BASELINE.md
+  "March (M2)" (stock column, and the new AI to 6 battles).
+- Known, not fixed: `FindBestFitReserveUnit` fills slots greedily (a Swordsman takes a slot a Spearman could hold);
+  the new AI arrives in a stream (ranged first) and is slowest on rough ground; `test/mock_run.lua` is out of date.
+- Dashboard: https://claude.ai/artifact/VuEFfTGtehw613tQvRx9Gj (updated 9:15 PM; not yet with iterations 2-3).
+
+**Next:**
+1. Read m2f6; complete BASELINE "March (M2)"; update the dashboard.
+2. With the user's bar: list the scenarios that miss it (rough ground first) and work the largest class, one change at
+   a time (likely the slower, strung-out approach on rough ground: look at `PlotArmyMovesCombat` and the gather step).
+3. PLAN 8a: the setup-switch single-player check through a runner, then the MP smoke test for the user (blocked on
+   question 4: same pack on both PCs); the transfer check (6 seeded games to turn 100) for M1 and M2.
 
 ## User rulings
 
@@ -157,6 +152,25 @@ theory was wrong). Army paths only cross tiles the player has seen; on a fresh m
 lab only shows the target's tile. Lab v17: a march battle also shows the attacker a corridor 5 rows wide from home to
 the target (a scouted route). The rest of m2f5 runs on v17 (m2n5a on v16). Ready turn = capture turn in most battles:
 the army arrives in a stream, not together.
+Result (all of m2f5, `ab-8893a66`, new AI, both PCs, all clean, read 11:15 PM ET):
+- March set on v17 (m2n5b/c, 4 battles per scenario): **26 of 28 captured.** 12 tiles weak 4/4 (turn 9), medium 3/4
+  (12-13), large 4/4 (11-13); 8 tiles 3/4 (11); 10 tiles 4/4 (10); 16 tiles 4/4 (16-23); rough 4/4 (13-15).
+  Losses 0-0.5. (m2n5a on v16: 9 of 14, the misses all "no path" on unseen ground.)
+- March3 set on v17 (m2n6b/c): **16 of 16.** 8 tiles turn 9, 12 tiles 11, 16 tiles 15-16, rough 17-18.
+  (m2n6a on v16: 4 of 8.)
+- Against the script (m2r0/m2r1/m2r5, median turns): march3 8 tiles 9 vs 7 (1.3x), 12 tiles 11 vs 9.5 (1.2x), 16
+  tiles 16 vs 12 (1.3x), rough 17 vs 11 (1.55x); march medium 12.5 vs 9 (1.4x), large 12 vs 10 (1.2x).
+- Siege set (m2g5a/b/c): 70 of 90 (iteration 2: 70; M1 build: 68). No scenario down; losses equal or lower.
+- Regress set (m2x5a/b/c): 24 of 24.
+- "Ready" (80% within 3 tiles) within 2 turns of the first arrival: new AI in 5 of 11 scenarios (all battles), else
+  ready only on the capture turn: the ranged units come in early and the rest later. The script misses it too in
+  march_large (2/6) and march_medium_vs_weak (3/6). So "ready" is a weak measure; captures and turns are the clear one.
+Decision: **accepted** (iteration 3, and with it iteration 2, whose range the 12- and 16-tile captures need). The
+targeted scenarios went from 0 of 6 (both AIs, every march scenario) to at least 4 of 4 or 3 of 4 on v17; nothing
+else dropped. Taught: the march was blocked by four things in a row (range, formation slots, unseen ground in the lab,
+and the lab's own wrong army), each hidden behind the last; the operational log showed each one.
+m2f6 queued: one more new-AI launch per set (to 6 battles on v17) and the stock AI on v17 (stock baseline with the
+corridor shown).
 
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max

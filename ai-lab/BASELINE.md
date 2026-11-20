@@ -111,3 +111,23 @@ battle, the attacker's era stayed industrial, and its classical army was disband
 
 New AI on `ab-455fe7a` (M2 iteration 2), lab v16, m2x3a/b/c, 6 battles each: capital 6/6 (turns 4-5), coastal 6/6
 (4-5), medieval 6/6 (3-4), artillery 6/6 (6-12), losses 0 except artillery 0.2.
+
+## March (M2)
+
+12 tiles from home unless named; 25 turns; King, Quick. Script = scripted attacker (the reference).
+New AI = `ab-8893a66` (M2 iterations 2 and 3), lab v17, m2n5b/c and m2n6b/c (4 battles each so far; m2f6 adds 2).
+Stock = no march capture on any build or lab so far (m2s0-m2s4: armies stay home or wait in recruiting).
+
+| Scenario | Script: captured, median turn | New AI: captured, turns | Stock |
+|---|---|---|---|
+| march_medium_vs_weak | 6/6, 7-17 | 4/4, 9 | 0/6 |
+| march_medium_vs_medium | 6/6, 9 | 3/4, 12-13 | 0/6 |
+| march_large_vs_medium | 6/6, 10 | 4/4, 11-13 | 0/6 |
+| march_medium_vs_medium_d8 | 2/2, 7 and 15 | 3/4, 11 | 0/6 |
+| march_medium_vs_medium_d10 | 2/2, 7 and 9 | 4/4, 10 | 0/6 |
+| march_medium_vs_medium_d16 | 2/2, 11 and 23 | 4/4, 16-23 | 0/6 |
+| march_medium_vs_medium_rough | 3/6, 13-25 | 4/4, 13-15 | 0/6 |
+| march3_vs_medium_d8 | 6/6, 7 | 4/4, 9 | 0/6 |
+| march3_vs_medium | 6/6, 9.5 | 4/4, 11 | 0/6 |
+| march3_vs_medium_d16 | 6/6, 12 | 4/4, 15-16 | 0/6 |
+| march3_vs_medium_rough | 6/6, 11 | 4/4, 17-18 | 0/6 |
