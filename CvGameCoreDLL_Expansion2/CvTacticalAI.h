@@ -1595,6 +1595,10 @@ struct CvSiegeEstimate
 	int iTurnTaken;               // turn of the estimated capture (1 = this turn), -1 if not within the limit
 	int iMeleeLeft;               // melee units alive at the capture or at the limit
 	int iCityHPAtEnd;             // the city's hit points at the limit (0 if taken)
+	int iGarrisonHP;              // the garrison's hit points now (0 if none)
+	int iGarrisonDeadTurn;        // estimated turn the garrison dies, -1 if it doesn't (or none)
+	int iRangedDamageBare;        // iRangedDamagePerTurn once the garrison is dead
+	int iMeleeDamageBare;         // iMeleeDamagePerAttack once the garrison is dead
 };
 
 namespace TacticalAIHelpers
