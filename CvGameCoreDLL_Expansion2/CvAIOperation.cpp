@@ -1393,7 +1393,8 @@ bool CvAIOperation::FindBestFitReserveUnit(OperationSlot thisOperationSlot, vect
 		if (pBestUnit != NULL)
 		{
 			CvUnitEntry* unitInfo = GC.getUnitInfo(pBestUnit->getUnitType());
-			if (unitInfo->GetUnitAIType(thisSlotEntry.m_primaryUnitType) || unitInfo->GetUnitAIType(thisSlotEntry.m_secondaryUnitType))
+			if (unitInfo->GetUnitAIType(thisSlotEntry.m_primaryUnitType) || unitInfo->GetUnitAIType(thisSlotEntry.m_secondaryUnitType) ||
+				OperationalAIHelpers::IsSpareRangedForOptionalSlot(pBestUnit, thisSlotEntry))
 			{
 				pThisArmy->AddUnit(pBestUnit->GetID(), thisOperationSlot.m_iSlotID, thisSlotEntry.m_requiredSlot);
 
@@ -3317,7 +3318,47 @@ int OperationalAIHelpers::IsUnitSuitableForRecruitment(CvUnit* pLoopUnit, const 
 		}
 	}
 
+	// AI lab (ai/v2), new AI only: a ranged unit that fits no slot may take an optional land combat slot, so spare
+	// ranged units march with the army, and (HaveEnoughUnits) two of them can stand in for a missing required melee
+	// unit (user ruling 2026-11-19, LOG.md M2 iteration 3).
+	if (iMatchingIndex < 0)
+	{
+		for (size_t i=0; i<availableSlots.size(); i++)
+		{
+			if (IsSpareRangedForOptionalSlot(pLoopUnit, availableSlots[i].second))
+			{
+				iMatchingIndex = (int)i;
+				break;
+			}
+		}
+	}
+
 	return iMatchingIndex;
+}
+
+/// AI lab (ai/v2): new AI only. True for a land ranged unit (one that can be RANGED or CITY_BOMBARD) and an optional
+/// slot meant for a land combat unit. Never for a required slot, a civilian slot or a naval one.
+bool OperationalAIHelpers::IsSpareRangedForOptionalSlot(const CvUnit* pUnit, const CvFormationSlotEntry& slot)
+{
+	if (!pUnit || slot.m_requiredSlot || !GET_PLAYER(pUnit->getOwner()).IsNewAI())
+		return false;
+	if (pUnit->getDomainType() != DOMAIN_LAND || !pUnit->IsCombatUnit() || !pUnit->IsCanAttackRanged())
+		return false;
+	CvUnitEntry* unitInfo = GC.getUnitInfo(pUnit->getUnitType());
+	if (!unitInfo || !(unitInfo->GetUnitAIType(UNITAI_RANGED) || unitInfo->GetUnitAIType(UNITAI_CITY_BOMBARD)))
+		return false;
+	switch (slot.m_primaryUnitType)
+	{
+	case UNITAI_ATTACK:
+	case UNITAI_DEFENSE:
+	case UNITAI_COUNTER:
+	case UNITAI_FAST_ATTACK:
+	case UNITAI_RANGED:
+	case UNITAI_CITY_BOMBARD:
+		return true;
+	default:
+		return false;
+	}
 }
 
 CvPlot* OperationalAIHelpers::FindEnemiesNearHomelandPlot(PlayerTypes ePlayer, PlayerTypes eEnemy, DomainTypes eDomain, CvPlot* pRefPlot, int iMaxDistance)
