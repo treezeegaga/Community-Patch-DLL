@@ -145,6 +145,21 @@ Composite Bowmen, which fills the formation's required slots): march3_vs_medium_
 march3_vs_medium_d16, march3_vs_medium_rough. m2f2 runs the whole march set, so it plays them too, new AI and stock.
 Predicted for them: new AI leaves home in at least 5 of 6 at 8, 12 and 16 tiles and on the rough ground; stock only
 at 8 tiles. Script reference: `2026-11-19-21-m2r4`.
+**Correction (implementer 6, 9:40 PM ET, from m2n3a, the first iteration-2 launch):** iteration 2 works as far as it
+goes: with the range at 20 the new AI names the 12- and 16-tile cities as "preferred attack target" and starts an
+OP_CITY_ATTACK_LAND in every battle. But m2n3a took 0 of 22, and **march_large_vs_medium and all four v14 march3
+scenarios also stayed in "recruiting"**: "Found 7 potential units", then only 2 Spearmen (slots 0-1) and 2 bowmen
+(slots 3-4) added; slot 2 open; the third Spearman goes to a sentry point ("UNIT DIVERSITY - WE NEED attack"). Slot 2
+of MUFORMATION_SMALL_CITY_ATTACK_FORCE is ATTACK/FAST_ATTACK, and `FindBestFitReserveUnit` matches a slot only by the
+unit type's AI roles: a Spearman has DEFENSE (slots 0-1 are ATTACK/DEFENSE) but not ATTACK, so no number of Spearmen
+fills slot 2. My v14 march3 army (3 Spearmen) was built on a wrong assumption. Lab v16: the march3 scenarios move to
+their own set `march3`, with 2 Spearmen, 1 Swordsman and 4 bowmen (Iron Working), so the rest of m2f2 runs the
+original 7 march scenarios as asked; the v14 march3 battles in m2n3a are void (a lab mistake). An empty battle list
+now ends the launch at once (DONE after "no scenarios to run"); m2r4, queued for the v14 names, will be one. New
+request `2026-11-19-23-m2f3`: march3 set on `ab-455fe7a`, new AI, stock and script, 6 battles each.
+Prediction for m2f3: new AI leaves home ("Transition to gathering stage", then movement) in at least 5 of 6 at 12 and
+16 tiles and on rough ground; at 8 tiles both AIs do; stock stays home at 12 and 16. And for the rest of m2f2, every
+2-Spearman and 3-Spearman army stays in recruiting for both AIs.
 Result: (pending)
 
 ## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)

@@ -1,0 +1,81 @@
+{
+  "id": "2026-11-19-23-m2f3",
+  "why": "M2 iteration 2 with armies that fill the classical attack formation (lab v16 march3 set: 2 Spearmen, 1 Swordsman, 4 Composite Bowmen; 8, 12, 16 tiles and rough): new AI, stock and script, 6 battles each",
+  "launches": [
+    {
+      "label": "m2n4a",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s4a",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r5a",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2n4b",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s4b",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r5b",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2n4c",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2s4c",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    },
+    {
+      "label": "m2r5c",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "script": true,
+      "newAI": "none",
+      "repeats": 2,
+      "host": "BOX"
+    }
+  ]
+}

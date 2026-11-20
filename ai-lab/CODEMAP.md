@@ -32,7 +32,7 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
 | Function | What it decides | Gates and limits | Log lines (`OperationalAILog.csv`) |
 |---|---|---|---|
 | `CvAIOperation::SetUpArmy` (≈1280) | first state | "Skip recruiting" only if no required slot is open, else "Initial stage is recruiting" | "Initial stage is recruiting", "Started Army ..." |
-| `GrabUnitsFromTheReserves` / `FindBestFitReserveUnit` | fills free slots in slot order with the best-scored unit whose `Unit_AITypes` include the slot's primary or secondary type | `IsUnitSuitableForRecruitment`: not healing, ≥70% HP, not within `TACTICAL_COMBAT_MAX_TARGET_DISTANCE` of the target, not recently deployed, not explore/settle, reachable from muster. Units matching no free slot are left out (the lab's spare bowmen) | "Found N potential units ...", "Added <unit> to slot k ...", "PRE/POST Recruiting Units for army ...; <slot list, Open>" |
+| `GrabUnitsFromTheReserves` / `FindBestFitReserveUnit` | fills free slots in slot order with the best-scored unit whose `Unit_AITypes` include the slot's primary or secondary type (**a Spearman has DEFENSE, not ATTACK: it can't take an ATTACK/FAST_ATTACK slot**, so a classical army needs a Swordsman or horse for slot 2) | `IsUnitSuitableForRecruitment`: not healing, ≥70% HP, not within `TACTICAL_COMBAT_MAX_TARGET_DISTANCE` of the target, not recently deployed, not explore/settle, reachable from muster. Units matching no free slot are left out (the lab's spare bowmen) | "Found N potential units ...", "Added <unit> to slot k ...", "PRE/POST Recruiting Units for army ...; <slot list, Open>" |
 | `CheckTransitionToNextStage` (≈1530), `ARMYAISTATE_WAITING_FOR_UNITS_TO_REINFORCE` | recruiting → gathering | `OperationalAIHelpers::HaveEnoughUnits(slots, 0)` (CvArmyAI.cpp ≈809): at least 1 required filled and free required ≤ optional present / 2. **0 missing allowed here, though the op started allowing 1-3** (it waits for units to be built; the lab's attacker builds none: M2 it. 2 amended) | "Transition to gathering stage" |
 | same, `WAITING_FOR_UNITS_TO_CATCH_UP` | gathering → moving | furthest unit within the gather tolerance of the muster | "Transition to movement stage" |
 | `MOVING_TO_DESTINATION`, `PercentFromMusterPointToTarget` | progress; abort if stalled | within 2 of goal counts as there | |
@@ -78,7 +78,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
 
 ## The lab (ai-lab/siege)
 
-- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 15; battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
+- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 16; battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
   defender's turn, stages the army and city (techs set, research cleared, city tile revealed to the attacker, palace
   moved for `capital`, sea for `coast`, rough ring for `terrain = "rough"`, `homeDistance` moves the target), ends both
   sides' operations; logs a TURN line each turn and a RESULT line per battle; fixed +10 gold a turn for the attacker.
