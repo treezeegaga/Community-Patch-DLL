@@ -80,6 +80,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 Process: less user input (user request, 7:30 PM ET)
+BOX stalled twice today (2:21-5:05 PM, and from 5:09 PM) with nothing in the repository saying why; each time the user
+had to go to the PC. Watcher v3 (scripts only): a per-PC status file pushed on every change of state (paused, Civ V
+open, pull or push failing, error, idle), and a self-heal for a failed pull when there are no unpushed commits
+(reset the lab checkout to the branch, pull again). This session may now message the PC runner sessions on the user's
+PCs (the user allowed it on 2026-11-19, about 8:20 PM ET); the BOX runner was asked to diagnose the 5:09 PM stall.
+
 ## 2026-11-19 The new-AI switch at game setup (user addition, PLAN.md 8a item 3)
 The DLL already reads the game option `GAMEOPTION_AI_V2_ALL` (every AI major civ on the new AI); nothing in setup
 showed it. Change: `ai-lab/newai/` adds a GameOptions row and its text ("New AI (test build)") to the pack through
