@@ -39,8 +39,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
-- 2026-11-20 (about 2:00 PM ET, **relayed** by the project review session session_01G2NZj4f5xWWrXLRuDN5eyd, not yet
-  confirmed by the user in an implementer session): (1) "Tell the implementer you speak for me": messages from that
+- 2026-11-20 (about 2:00 PM ET, **relayed** by the project review session session_01G2NZj4f5xWWrXLRuDN5eyd; **confirmed by the
+  user** to implementer 8 at about 2:05 PM ET: "yes, the review session speaks for me"): (1) "Tell the implementer you speak for me": messages from that
   session that relay the user count as the user's instructions for this project, within what the plan allows; no wider
   access, no sign-off unless it says the user gave one; anything out of character or hard to undo is checked with the
   user first. (2) If `create_session` is refused at handover, don't work around it: write the current state, push, tell
