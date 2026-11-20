@@ -120,6 +120,30 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-20 M3 iteration 5: a sneak attack may build the units it lacks (new AI)
+Class: no army fielded, no war declared (opening/transfer games). With Songhai's leader flavors (op1a, lab v19) its army
+at turn 80 is still 3 melee, 1 ranged; it never declares war.
+Cause (`MilitaryAILog.csv`): from turn 32-57 Songhai wants war (preferred target Corinth) and logs "requested attack on
+Corinth, from Gao, not possible for lack of units" every turn (op1a 25 times; tr1 games 2-95). Every AI civ does the
+same (tr1/op1a: 2-108 per civ per game, from turn 32-100). `CvDiplomacyAI::DoMakeWarOnPlayer` asks
+`CvMilitaryAI::RequestCityAttack(target, 3, bCareful)`; with bCareful false (the usual case) RequestCityAttack passes
+**0 allowed missing units** to `addAIOperation` ("if we're being careless, just use whatever units we have"), so the
+operation starts only if the whole formation already exists. Otherwise it is never created, and cities only build units
+for an operation's open slots (`PeekAtNextUnitToBuildForOperationSlot`, muster city): nothing builds the army. The same
+gate explains tr1c's "Ended: NoUnits; Duration 0" (Next item 2): `addAIOperation` aborts right after `Init` when
+`GetNumUnitsNeededToBeBuilt` > 0 allowed.
+Change (behind `IsNewAI()`, `RequestCityAttack`): a careless request passes `iNumUnitsWillingToBuild` (3 for a major, 1 for a
+city-state) like a careful one, so the operation starts in recruiting and the muster city builds the missing units; while
+an operation of that type against that city exists, the request returns true (no second operation; diplomacy asks again
+every turn until the army is in place).
+Predicted (opening lab, new AI on Songhai, 3 games vs op1's 3): Songhai's "lack of units" lines drop to near 0 and an
+`OperationalAILog` city attack starts in recruiting soon after the war approach (turn 32-57); its muster city builds
+military; land melee+ranged at turn 80 up by at least 2 over op1's new-AI games, and a war declared by turn 80 in at
+least 2 of 3 (stock games unchanged). Watch: settlers/cities (the bar wants at least 2 cities, no bankruptcy), and
+operations ending "NoUnits"/timeout. Siege/march/regress sets: unchanged (their wars are set by the lab; requests there
+come from the same path only if the attacker's diplomacy asks): check with one regression launch.
+Build and run: below.
+
 ## 2026-11-20 M3 iteration 4: lab leak: the opening lab's Songhai played with flat human flavors (lab v19)
 Class: opening army too small (Next 1): Songhai at turn 80 in op0/tr1 (10 games): about 2 cities, 3 land melee, might
 29, while the ordinary AI civs in the same games average about 3.2 cities, 5.3 melee, might 56. Songhai's builds to

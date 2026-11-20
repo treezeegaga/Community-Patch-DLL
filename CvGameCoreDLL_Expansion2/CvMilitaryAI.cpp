@@ -1074,8 +1074,16 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
 				continue;
 		}
 
+		//new AI (ai/v2 M3 iteration 5): a careless request (a sneak attack, the diplomacy AI's war approach) may also build
+		//the units it lacks; stock allows 0 missing, so without a ready army the request fails every turn, no operation
+		//exists, and no city is ever asked to build for it ("not possible for lack of units"). The operation's open slots
+		//are what the muster city builds for. One operation per target: while one is under way, the request is served.
+		bool bNewAIBuild = !bCareful && m_pPlayer->IsNewAI();
+		if (bNewAIBuild && pCurrentOp != NULL)
+			return true;
+
 		//if we're being careless, just use whatever units we have and do not wait for new ones
-		if (m_pPlayer->addAIOperation(opType, bCareful ? iNumUnitsWillingToBuild : 0, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)
+		if (m_pPlayer->addAIOperation(opType, (bCareful || bNewAIBuild) ? iNumUnitsWillingToBuild : 0, eTargetPlayer, pTargetPlot->getPlotCity(), pMusterPlot->getPlotCity()) != NULL)
 			return true;
 		else
 		{
