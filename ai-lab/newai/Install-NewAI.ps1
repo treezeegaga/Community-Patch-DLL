@@ -33,6 +33,10 @@ if ($pkgs.Count -ne 1) { throw "Expected one .Civ5Pkg file in $pack, found $($pk
 $pkg = $pkgs[0].FullName
 $files = @("AILab_NewAIOption.xml", "AILab_NewAIOption_Text.xml")
 $lines = @("    <GameData>AILab_NewAIOption.xml</GameData>", "    <TextData>AILab_NewAIOption_Text.xml</TextData>")
+# Two pack layouts. "Folder": the .Civ5Pkg loads whole folders (<Directory>Mods</Directory>, as the user's pack does;
+# every .xml/.sql under them is read), so the two files go in a folder of their own under Mods and the .Civ5Pkg is not
+# touched. "List": the .Civ5Pkg lists its files in a <Gameplay> section, so two lines are added there.
+$folderDir = Join-Path $pack "Mods\AILab NewAI"
 $state = Join-Path $env:LOCALAPPDATA "cp-ai-lab"
 $pause = Join-Path $state "PAUSE"
 $pausedByUs = Join-Path $state "PAUSE.by-Install-NewAI"
@@ -57,6 +61,7 @@ function Clear-CivCache {
 if ($Remove) {
     if ($clean -ne $text) { [IO.File]::WriteAllText($pkg, $clean, $enc) }
     foreach ($f in $files) { Remove-Item (Join-Path $pack $f) -Force -ErrorAction SilentlyContinue }
+    if (Test-Path $folderDir) { Remove-Item $folderDir -Recurse -Force }
     & (Join-Path $PSScriptRoot "..\siege\Set-LabDll.ps1") -Restore -CivDir $CivDir -PackName $PackName
     Clear-CivCache
     if (Test-Path $pausedByUs) {
@@ -80,13 +85,21 @@ if (-not (Test-Path $pause)) {
 }
 
 $i = $clean.IndexOf("</Gameplay>")
-if ($i -lt 0) { throw "No </Gameplay> section in $pkg; the checkbox can't be added this way. Nothing was changed but the pause." }
+$folderMode = $clean -match '<Directory>\s*Mods\s*</Directory>'
+if ($i -lt 0 -and -not $folderMode) { throw "$pkg has neither a </Gameplay> section nor a Mods directory; the checkbox can't be added. Nothing was changed but the pause." }
 & (Join-Path $PSScriptRoot "..\siege\Set-LabDll.ps1") -Release $Release -CivDir $CivDir -PackName $PackName
-foreach ($f in $files) { Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $pack $f) -Force }
-# Insert at the start of the </Gameplay> line, so the indentation of that line is kept.
-$lineStart = $clean.LastIndexOf("`n", $i) + 1
-$new = $clean.Substring(0, $lineStart) + ($lines -join $nl) + $nl + $clean.Substring($lineStart)
-[IO.File]::WriteAllText($pkg, $new, $enc)
+if ($folderMode) {
+    New-Item -ItemType Directory -Force $folderDir | Out-Null
+    foreach ($f in $files) { Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $folderDir $f) -Force }
+    Write-Output "Checkbox files put in $folderDir (the pack loads its Mods folder; .Civ5Pkg unchanged)."
+}
+else {
+    foreach ($f in $files) { Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $pack $f) -Force }
+    # Insert at the start of the </Gameplay> line, so the indentation of that line is kept.
+    $lineStart = $clean.LastIndexOf("`n", $i) + 1
+    $new = $clean.Substring(0, $lineStart) + ($lines -join $nl) + $nl + $clean.Substring($lineStart)
+    [IO.File]::WriteAllText($pkg, $new, $enc)
+}
 Clear-CivCache
 
 $dll = Join-Path $env:LOCALAPPDATA "cp-ai-lab\builds\$Release\CvGameCore_Expansion2.dll"

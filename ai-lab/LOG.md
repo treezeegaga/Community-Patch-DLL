@@ -85,6 +85,16 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   scenarios marked not takeable is dropped (PLAN.md updated), and the scripted attacker no longer protects its units.
 - 2026-11-18: M0 signed off by the user, with the takeable list in BASELINE.md as proposed. M1 starts.
 
+## 2026-11-19 Process: why BOX stalled 5:09-8:19 PM, and the pack check (BOX runner's report, 8:20 PM ET)
+Cause (BOX runner): BOX's lab clone fetched only `claude/bold-feynman-cgnhjs`, so `origin/ai/v2` went stale; the
+watcher's unpushed-commit count saw phantom commits and dropped every claim, retrying every 22 s. The runner added the
+ai/v2 fetch refspec to the clone; the watcher now fetches with an explicit refspec as well (so a fresh clone can't
+repeat it). Queue moving again from 8:19 PM (m2s1a, m2n1b, m2s1b...). v3 parses cleanly on BOX.
+Pack: BOX's pack DLL SHA-256 is `2FB6A9B9...` (the stock DLL the launches report); TREEDESKTOP's setup session reported
+`262AEE88...`. **The two packs differ**, so the two-PC check can't pass until that is explained. The pack loads whole
+folders (`<GameplaySkin><Directory>Mods</Directory><Directory>UI</Directory>`, no `<Gameplay>` section);
+Install-NewAI.ps1 now puts the checkbox files in `Mods\AILab NewAI\` for such a pack and leaves the .Civ5Pkg alone.
+
 ## 2026-11-19 Process: less user input (user request, 7:30 PM ET)
 BOX stalled twice today (2:21-5:05 PM, and from 5:09 PM) with nothing in the repository saying why; each time the user
 had to go to the PC. Watcher v3 (scripts only): a per-PC status file pushed on every change of state (paused, Civ V
