@@ -47,6 +47,10 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-19 (about 9:30 PM ET): the user is asleep for 8 hours and asks for no approvals meanwhile ("I trust you").
+  Overnight the implementer carries on by the plan's rules without asking. Anything that needs a ruling is written
+  up for the morning, and the work goes on with whatever doesn't depend on it.
+
 - 2026-11-19 (about 9:30 PM ET): hand over at milestone sign-off or past 650,000 tokens of context, whichever comes
   first (was 300,000). New `ai-lab/CODEMAP.md` (game functions, gates, log lines, script structure), kept current
   every iteration and read by a successor right after PLAN.md. At a milestone's close its entries move to
