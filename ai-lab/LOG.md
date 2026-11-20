@@ -45,6 +45,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   bank and losing about 5 gold a turn." So the early-rush row is: no buildings; army units only (archers while
   Construction is researched, melee alongside); gold kept for one purpose, upgrading the archers to Composite Bowmen
   the turn the tech lands; march at once; about 60 gold left and about -5 a turn at the declaration is acceptable.
+  Added a few minutes later: "oh I built one settler": the one non-army build (hence the second, undeveloped city).
 
 - 2026-11-20 (about 3:20 PM ET, the user, on the M3 reference game): "I had 2 cities at turn 54 when I captured the
   capital. The second city was completely undeveloped. I basically saved up money from barb hunting and ruins and then
