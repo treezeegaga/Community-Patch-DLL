@@ -87,6 +87,13 @@ local function newUnit(owner, unitType, x, y)
 		Map.GetPlot(u.x, u.y)._p.units[u.id] = nil
 		GameEvents.UnitPrekill.fire(u.owner, u.id, u.type, u.x, u.y, false, by)
 	end
+	-- opening mode (lab v18)
+	function m:IsCombatUnit() return true end
+	function m:GetDomainType() return DomainTypes.DOMAIN_LAND end
+	function m:GetUnitCombatType() return -1 end
+	function m:GetBaseRangedCombatStrength() return (u.type % 2 == 0) and 7 or 0 end
+	function m:GetUpgradeUnitType() return -1 end
+	function m:UpgradePrice(t) assert(type(t) == "number") return 0 end
 	m._u = u
 	return strict(m, "unit")
 end
@@ -170,6 +177,17 @@ local function newPlayer(id, isMinor)
 		local i = 0
 		return function() i = i + 1 return list[i] end
 	end
+	-- opening mode (lab v18)
+	function m:GetUnitClassCount(c) assert(type(c) == "number") return 0 end
+	function m:GetCurrentEra() return 0 end
+	function m:GetGold() return 0 end
+	function m:CalculateGoldRate() return 3 end
+	function m:GetScience() return 5 end
+	function m:GetNumPolicies() return 0 end
+	function m:GetExcessHappiness() return 5 end
+	function m:GetMilitaryMight() return 10 end
+	function m:SetNewAI(v) assert(type(v) == "boolean") m._newAI = v end
+	function m:IsNewAI() return m._newAI == true end
 	function m:Cities()
 		local list = {}
 		for _, city in pairs(m._cities) do list[#list + 1] = city end
@@ -197,7 +215,7 @@ local function newTeam(id)
 	end
 	function m:IsHasTech(t) return m._techs[t] == true end
 	local progress = {}
-	local techs = { GetResearchProgress = function(_, t) return progress[t] or 0 end,
+	local techs = { GetNumTechsKnown = function() local n = 0 for _ in pairs(m._techs) do n = n + 1 end return n end, GetResearchProgress = function(_, t) return progress[t] or 0 end,
 		SetResearchProgress = function(_, t, v, pl) assert(type(t) == "number" and v == 0 and type(pl) == "number") progress[t] = v end }
 	function m:GetTeamTechs() return techs end
 	function m:SetHasTech(t, v, pl, first, announce, noBonus)
@@ -207,6 +225,7 @@ local function newTeam(id)
 	return strict(m, "team")
 end
 
+DomainTypes = { DOMAIN_SEA = 0, DOMAIN_AIR = 1, DOMAIN_LAND = 2 }
 Players, Teams = players, teams
 for id = 0, 4 do players[id] = newPlayer(id, id >= 3) teams[id] = newTeam(id) end
 for id = 0, 4 do players[id]:InitUnit(1, 10 + id, 2) end   -- everyone's starting unit

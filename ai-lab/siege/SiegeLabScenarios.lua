@@ -168,3 +168,7 @@ SiegeLabScenarios.regress = {
 	  city = { population = 12, buildings = { "BUILDING_WALLS", "BUILDING_CASTLE", "BUILDING_ARSENAL" }, garrison = RIFLE },
 	  defenders = { { RIFLE, 2 } } },
 }
+
+-- The opening lab (lab v18, M3): not a list of battles. A normal game start played by the AI to this turn; the lab
+-- logs every major civ's economy and army each turn (OPEN lines). Run with -Set opening.
+SiegeLabScenarios.opening = { turns = 80 }
