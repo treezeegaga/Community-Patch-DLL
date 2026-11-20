@@ -1189,6 +1189,12 @@ bool CvEconomicAI::CanWithdrawMoneyForPurchase(PurchaseType ePurchase, int iAmou
 {
 	int iBalance = m_pPlayer->GetTreasury()->GetGold();
 
+	//new AI (ai/v2 M3 iteration 9): while a plan is being prepared (the early rush), the treasury is kept for upgrading
+	//the army (the user's rule: gold for nothing but the archers' upgrade the turn the strike unit's tech lands). No
+	//unit, building or tile purchases and no gold gifts or trades until the plan ends (its turn limit, or a war).
+	if (ePurchase != PURCHASE_TYPE_UNIT_UPGRADE && m_pPlayer->GetMilitaryAI()->GetActivePlan() != NULL)
+		return false;
+
 	// Update this item's priority
 	if(iPriority != -1)
 	{
