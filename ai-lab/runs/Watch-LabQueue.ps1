@@ -134,13 +134,15 @@ function Push-Contested([string]$path, [string]$message) {
     try { Invoke-Git @("push", "-q", "origin", "HEAD:$Branch") | Out-Null; return $true }
     catch {
         Write-Log "  push of '$message' refused; dropping it ($($_.Exception.Message))"
-        try { Invoke-Git @("fetch", "-q", "origin", $Branch) | Out-Null } catch {}
+        try { Invoke-Git @("fetch", "-q", "origin", "+refs/heads/${Branch}:refs/remotes/origin/${Branch}") | Out-Null } catch {}
         Invoke-Git @("reset", "-q", "--hard", "origin/$Branch") | Out-Null
         return $false
     }
 }
 function Sync-Repo {
-    Invoke-Git @("fetch", "-q", "origin", $Branch) | Out-Null
+    # Explicit refspec: a clone made with another branch only would otherwise leave origin/<branch> stale, and the
+    # unpushed-commit count (Get-Ahead) then blocks every claim (BOX, 2026-11-19 5:09-8:19 PM).
+    Invoke-Git @("fetch", "-q", "origin", "+refs/heads/${Branch}:refs/remotes/origin/${Branch}") | Out-Null
     try { Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null }
     catch {
         $pullError = $_.Exception.Message
