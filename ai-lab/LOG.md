@@ -294,6 +294,11 @@ most 2 in all) is the same-PC noise exactly; kept as is.
 Next: a TREEDESKTOP-only request (3 launches) once the user has set that PC up and BOX runs watcher v2, compared
 against these 6 BOX launches.
 
+## 2026-11-19 M2 reference: the script on the march3 set (measurement only)
+m2r5a/b/c (BOX, `ab-455fe7a`, lab v16, scripted attacker, march3 set, 6 battles each, clean, read 11:10 PM ET): 24 of 24
+captured, no losses. Capture turns (median): 8 tiles 7, 12 tiles 9.5, 16 tiles 12, rough 11. (m2f3's AI half on the
+iteration-2 build: 0 captures, as m2f3t.)
+
 ## 2026-11-19 M2 reference: the script on the rough march (measurement only)
 m2r3a/b/c (`ab-455fe7a`, scripted attacker, march_medium_vs_medium_rough, 6 battles, clean, read 10:20 PM ET):
 3 of 6 captured (turns 13, 25, 25), 0-3 units lost. Rep 1 of each launch: first unit within 3 tiles on turn 9,
