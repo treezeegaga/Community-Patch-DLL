@@ -994,6 +994,11 @@ map<int, SPath> CvMilitaryAI::GetArmyPathsFromCity(CvCity* pMusterCity, bool bWa
 
 	//re-use trade route distance to get an era-appropriate max distance
 	int iMaxNormDist = m_pPlayer->GetTrade()->GetTradeRouteRange(bWater?DOMAIN_SEA:DOMAIN_LAND, pMusterCity);
+	//ai-lab M2 iteration 2: the land trade route range (10 in the Community Patch) leaves out an enemy city 12 or more
+	//moves away, so the army never leaves home for it. A human would march that far; the new AI looks twice as far.
+	//ScoreAttackTarget already weighs distance (down to its lowest weight at path length 24).
+	if (!bWater && m_pPlayer->IsNewAI())
+		iMaxNormDist *= 2;
 	SPathFinderUserData data(m_pPlayer->GetID(), bWater?PT_ARMY_WATER:PT_ARMY_LAND, NO_PLAYER, INT_MAX);
 	data.iMaxNormalizedDistance = iMaxNormDist;
 	data.iFlags |= CvUnit::MOVEFLAG_IGNORE_RIGHT_OF_PASSAGE;
