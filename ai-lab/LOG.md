@@ -179,6 +179,23 @@ Predicted (3 games, new AI on Songhai): the plan runs in 3 of 3; Construction kn
 that exist then are upgraded by the stock AI's own upgrade logic only if gold allows (often not: part 3); Composite
 Bowmen built from then on; where 2+ Composite Bowmen reach the city, the estimate turns TAKE and a capture by turn 80
 in at least 1 of 3. Bankruptcy gifting may persist (part 3). Regress 8 of 8.
+Build: `ab-31db976`. Run: `2026-11-20-14-op5` (op5a/b/c new AI, op5x regress; all clean, by 4:29 PM ET).
+Result: the plan runs in 3 of 3; Construction on turns 43/37/39; war declared in 3 of 3 (turns 50-60; op4 1 of 3);
+armies at turn 60-70: 6-8 melee, 1-5 ranged, might 62-109. No capture. Most ranged at the walls are still Archers:
+"Need gold for Archer upgrade, available 17-53, needed 55" (op5b/c); the gold went on buying Archers (140) and a Scout
+(100) instead. 3-4 units gifted "b/c bankrupt" per game. Regress 8 of 8.
+Decision: **accepted** (wars now in 3 of 3, Construction on time; nothing worse). Learned: the user's own rule is
+needed: gold only for the upgrade.
+
+## 2026-11-20 M3 iteration 9: the early-rush plan, part 3: gold kept for the upgrade (new AI)
+Class: plan armies at the walls with Archers that can't be upgraded (55 gold each; 17-53 available) because gold went
+on unit and scout purchases (140, 100).
+Change (behind `IsNewAI()`): `CvEconomicAI::CanWithdrawMoneyForPurchase` (the one gate for unit, building, tile
+purchases, gifts and trades) refuses everything but `PURCHASE_TYPE_UNIT_UPGRADE` while `GetActivePlan()` is not NULL
+(before turn 60 and before a war with a major). Upgrades go ahead as soon as the gold is there (stock homeland logic).
+Predicted (3 games): no gold purchases before the war; gold at Construction 100+ in at least 2 of 3; 2+ Archers upgraded
+to Composite Bowmen before or at the declaration in at least 2 of 3; a capture by turn 80 in at least 1 of 3;
+bankruptcy gifting fewer (no purchases draining gold). Regress 8 of 8.
 Build and run: below.
 
 ## 2026-11-20 M3 iteration 6: preparing for war, the treasury pays for the army (new AI)
