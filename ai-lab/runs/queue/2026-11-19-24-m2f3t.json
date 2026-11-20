@@ -1,0 +1,54 @@
+{
+  "id": "2026-11-19-24-m2f3t",
+  "why": "Same as 2026-11-19-23-m2f3 (iteration 2's real test, march3 set with a Swordsman), new AI and stock x6, run on TREEDESKTOP now so it doesn't wait behind BOX's queue. The script half stays in m2f3 on BOX.",
+  "launches": [
+    {
+      "label": "m2n4ta",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "m2s4ta",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "m2n4tb",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "m2s4tb",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "m2n4tc",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "attacker",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "m2s4tc",
+      "release": "ab-455fe7a",
+      "set": "march3",
+      "newAI": "none",
+      "repeats": 2,
+      "host": "TREEDESKTOP"
+    }
+  ]
+}
