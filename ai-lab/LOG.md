@@ -216,7 +216,19 @@ Predicted (3 games): the first attack op starts only when 6 melee + 4 Composite 
 at the walls on the war's first turns has at least 4 melee + 3 ranged within 4 tiles; TAKE estimates for several
 consecutive turns; a capture by turn 80 in at least 1 of 3 (bar: a capital by 54, not expected yet). Regress 8 of 8.
 Risk: the plan's turn limit (60) ends the wait if the army isn't ready by then.
-Build and run: below.
+Build: `ab-d71d189`. Run: `2026-11-20-16-op7` (op7a/b/c new AI, op7x regress; all clean, by 5:25 PM ET).
+Result: no capture; three different stories. op7b: the op waited to turn 60 (the plan's limit), started with 7 units,
+reached Sparta turn 65-66 with "within 4: melee 4, ranged 4"; TAKE turns 66-72; Sparta 200 -> 21 hp by turn 72-73, then
+"melee left 0": the melee were Warriors, held at distance 3-5 ("tactical move 0") while the city was above half, closed in
+late (18 "closing in" lines from 71) and were worn down; nothing left for the last hit; Sparta healed back. op7c: never
+at war: its only major neighbour, Greece, stayed FRIENDLY (approach log), preferred targets were city-states (Hanoi,
+Ragusa); army 6-7 melee + 5-6 ranged by turn 60-70 sat idle, then 7 units gifted "b/c bankrupt" (turns 74-80). op7a:
+at war from turn 49 (declared on Songhai: 1 melee near Sparta), the op recruited from turn 53 and arrived at 67; 4-5 melee
+2 ranged. Regress 8 of 8.
+Decision: **accepted** (the full rush army now arrives together, op7b shot a city to 21 hp: the nearest yet; nothing
+worse). Learned: three separate gaps remain: (1) the melee are Warriors (the research goes straight to Construction, no
+Bronze Working) and are held back until late; (2) the war decision is diplomacy's (op7c: friendly to the only neighbour;
+M4's subject); (3) an idle or long war drains gold into bankruptcy gifting (the deficit rule).
 
 ## 2026-11-20 M3 iteration 6: preparing for war, the treasury pays for the army (new AI)
 Class and cause: iteration 5's result: the soft supply cap counts income only, so with flat income the army stays at
