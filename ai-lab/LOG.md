@@ -259,6 +259,13 @@ Result so far (m2n1a, BOX 5:05-5:09 PM ET, new AI, 12 battles; the other six lau
   Recheck: `2026-11-19-15-m2d2` (8 and 10 tiles, new AI and stock, 6 each, `ab-1ca9bea`, BOX).
 - Earlier results: in the siege set each battle starts next to the city, so leftover operations could also have
   recruited units there; M1's results are not reread for this, but M2 and later results use v13.
+Recheck m2d2 (`ab-1ca9bea`, lab v13, m2n2a/b/c new AI, m2s2a/b/c stock, 6 battles per distance each, clean, read 9:30
+PM ET): 0 captures. 8 tiles: both AIs damage the city in every battle (new AI most damage 0-229, stock 5-229; three
+battles at 229 of 250), first unit within 3 tiles on turns 5-15, never "ready" (mean distance 5.4-6.6). 10 tiles: an
+operation now starts in every battle (v13 ends the last battle's operation; one new operation per battle in the log),
+but no damage and the army stays home (mean distance 9.5-9.7). Every operation stays in "recruiting" ("Initial stage
+is recruiting", 3-4 units, never "Transition to gathering stage"): the 3-melee formation, as found above. At 10 tiles
+not even the unrecruited bowmen go in. The 10-tile battles of m2d1 stay void; these replace them.
 Result (all of m2d1, read by implementer 6, 9:05 PM ET): m2n1a/b/c (new AI), m2s1a/b/c (stock), m2r1 (script), all
 clean, `ab-9109672` (the old DLL: 10-tile battles void in every launch).
 - 12 and 16 tiles: 0 of 12 per AI, no damage, army at home all 25 turns. As predicted.
