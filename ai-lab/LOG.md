@@ -115,6 +115,12 @@ claimed before it. Pack: TREEDESKTOP's only game core DLL is `Mods\(1) Community
 SHA-256 262AEE88..., 16,837,632 bytes, dated 2026-11-02 8:24 PM; BOX's is 2FB6A9B9.... Same .Civ5Pkg priority and
 key; 893 files, 123,750,824 bytes. Lab runs that name a release swap this DLL anyway, but other pack files may differ
 too: both PCs were asked for a per-file hash list (`ai-lab/runs/pack/<PC>.txt`) to compare.
+Two-PC check (`2026-11-19-16-pc2tree`, pc2tree4-6 on TREEDESKTOP, all clean, read 9:45 PM ET) against BOX's pc2box1-3
+(same build `ab-78d5e8a`, stock AI, 6 battles per scenario each): captures differ by 0 or 1 in 14 of 15 scenarios
+and by 2 in large_vs_strong (2/6 vs 4/6); totals 54 and 55 of 90 (BOX's m1s9: 57). RUN lines match (civs, map
+56x36, King, Quick). The count bar is met. The pack DLL hash is not the same (262AEE88... vs 2FB6A9B9...); every lab
+launch that names a release swaps that DLL, so TREEDESKTOP is trusted once BOX's per-file listing shows the rest of
+the pack is identical. TREEDESKTOP's listing is in (`runs/pack/TREEDESKTOP.txt`, 893 files); BOX's is pending.
 
 ## 2026-11-19 M2 iteration 2: the new AI looks twice as far for attack targets
 Class: never leaves home: 36 of 36 (m2n0/m2s0); cause confirmed by m2n1a: "no army path ... plot distance 12 (16), max
