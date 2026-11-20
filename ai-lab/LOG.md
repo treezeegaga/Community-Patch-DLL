@@ -119,7 +119,15 @@ script takes 6/6) and NO for small_vs_strong, medium_vs_strong (2/6 now: either)
 agreement in at least 13 of 15. March: NO while the army is still home (beyond 4 tiles: no line), TAKE on arrival.
 Build: `ab-69b9d72`. Run: queue request `2026-11-20-02-m3e1` (m3e1a/b/c siege new AI, m3n1a march, m3c1a march3,
 m3s1a siege stock).
-Result: (pending)
+Result (v1, m3e1a, BOX, 23 of 30, clean): first-turn estimate agrees with the outcome in 12 of 15 scenarios; it says NO
+for small_vs_medium, medium_vs_medium and large_vs_strong, all captured. Two model errors, from `turns.csv` and the
+estimate's own per-turn hp: (1) the garrison: while it lives each hit is weak (small_vs_medium: 37 a turn, net 17 after
+the 20 heal), once it dies on battle turn 3 the damage nearly triples (66, net 46); v1 kept the garrison-alive figures.
+(2) v1 sent melee in from turn 1 (Spearmen deal 13, take 38) so they were spent on a full-health city; the AI and the
+script hold them until the city is low. Estimate v2 (`a0f7eff`, built as `ab-7dd3e85` after a merge): tracks garrison
+hp and switches to the bare-city figures once it dies; melee hold and heal while the ranged units alone can bring the
+city within the melee's reach before the limit, otherwise grind; taken when the melee able to attack this turn cover
+what is left. Run `2026-11-20-04-m3e2b` (m3e2b, m3s2b, m3n2b, m3c2b). m3e1b/c still run on v1: the no-change check.
 
 ## 2026-11-19 Process: TREEDESKTOP set up (its setup session's report, 9:20 PM ET)
 Steps 4-8 done: calibration `hosts/TREEDESKTOP.json` and `.screens.json` (window 1600x1410 at 480,15) pushed in
