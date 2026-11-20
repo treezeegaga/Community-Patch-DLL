@@ -8064,6 +8064,16 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
 	else if (bUnitKill)
 		iBonusScore += 15;
 
+	//AI lab (M3 it. 3): when the one siege estimate says the army near this city can take it, a melee hit on the city is
+	//part of that plan: score the damage it deals, not the damage it takes (a city's strike back otherwise makes every
+	//costly hit lose to standing still, and a melee-only army never attacks)
+	if (pEnemyCity && !bRanged && GET_PLAYER(pUnit->getOwner()).IsNewAI())
+	{
+		const CvSiegeEstimate* pEst = GET_PLAYER(pUnit->getOwner()).GetTacticalAI()->GetSiegeEstimate(pEnemyCity);
+		if (pEst && pEst->iTurnTaken > 0)
+			iActualDamageTaken = 0;
+	}
+
 	result->SetScore(0, iBonusScore, iActualCityDamageDealt + iTotalActualUnitDamageDealt - iActualDamageTaken);
 
 	return bCityKill || bUnitKill;
