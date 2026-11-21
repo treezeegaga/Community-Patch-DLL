@@ -134,6 +134,7 @@ local function newPlayer(id, isMinor)
 	function m:GetTeam() return id end
 	function m:GetNumCities() local n = 0 for _ in pairs(m._cities) do n = n + 1 end return n end
 	function m:GetCivilizationShortDescription() return "Civ" .. id end
+	function m:GetStartingPlot() return Map.GetPlot(id, id) end
 	-- Upkeep grows with the turn count, as in the game; cities add whatever extra gold they were given.
 	function m:CalculateGoldRate()
 		local units, extra = 0, 0
@@ -300,7 +301,7 @@ function print(line)
 end
 
 ------------------------------------------------------------------------------------------------------------
-SiegeLabConfig = { enabled = true, set = arg[1] or "siege", repeats = 2, only = {}, human = false }
+SiegeLabConfig = { enabled = true, set = arg[1] or "siege", repeats = 2, only = {}, human = false, seed = 4242 }
 dofile("SiegeLab.lua")
 Events.LoadScreenClose.fire()
 
@@ -380,6 +381,9 @@ if SiegeLabConfig.set == "opening" or SiegeLabConfig.set == "transfer" then   --
 	for turn = 1, want do assert(turnsSeen[turn], "no OPEN line for turn " .. turn) end   -- the fake game's civs die off, so no count per turn
 	assert(lastTurn == want, "the run should stop at turn " .. want)
 	assert(counts.FLAVORS == 1 and (counts.WARN or 0) == 0, "expected one FLAVORS line (lab v19: the active civ gets its leader's flavors)")
+	local startsLine
+	for _, line in ipairs(log) do startsLine = startsLine or line:match("^%[SiegeLab%] STARTS,(.*)$") end
+	assert(counts.STARTS == 1 and startsLine and startsLine:match("^4242,Civ0:%d+:%d+"), "expected one STARTS line with the seed and the starts (lab v20)")
 	realPrint(string.format("-- %d OPEN lines", counts.OPEN))
 	realPrint("-- mock run passed")
 	return

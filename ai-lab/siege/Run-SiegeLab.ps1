@@ -36,6 +36,7 @@ param(
     [switch]$Script,                 # the lab's scripted attacker plays the attacker (the reference), not the AI
     [ValidateSet("none", "attacker", "defender", "both")]
     [string]$NewAI = "none",         # which side uses the new AI (ai/v2 DLL builds)
+    [int]$Seed = 0,                  # map and game seed set in config.ini for this run (lab v20); 0 = random
     [string]$CivDir = "",            # default: the host file's civDir, else the usual Steam folder
     [string]$MyGames = "$([Environment]::GetFolderPath('MyDocuments'))\My Games\Sid Meier's Civilization 5",
     [string]$OutDir = (Join-Path $PSScriptRoot "results")
@@ -440,7 +441,7 @@ try {
     Write-Log "Host $hostName$(if ($hostCfg) { " (calibration $hostFile)" } else { ' (built-in calibration)' }), Civ V in $CivDir"
     Write-Log "Run '$Label': set $Set, only [$($Only -join ',')], repeats $Repeats, DLL $(if ($Release) { $Release } else { 'stock (as installed)' })"
     if ($Release) { & $dllSwitcher -Release $Release -CivDir $CivDir | ForEach-Object { Write-Log "  dll: $_" } }
-    & $installer -Set $Set -Only $Only -Repeats $Repeats -Script:$Script -NewAI $NewAI -EnableLogging -CivDir $CivDir -MyGames $MyGames | ForEach-Object { Write-Log "  installer: $_" }
+    & $installer -Set $Set -Only $Only -Repeats $Repeats -Script:$Script -NewAI $NewAI -Seed $Seed -EnableLogging -CivDir $CivDir -MyGames $MyGames | ForEach-Object { Write-Log "  installer: $_" }
 
     $launched = Get-Date
     if (-not (Start-LabGame)) { throw "Could not get a new game started (see the screenshots in $runDir)" }

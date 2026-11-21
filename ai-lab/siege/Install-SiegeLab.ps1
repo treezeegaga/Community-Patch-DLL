@@ -20,6 +20,7 @@ param(
     [switch]$Script,               # the lab's scripted attacker plays instead of the AI (the reference in place of a human)
     [ValidateSet("none", "attacker", "defender", "both")]
     [string]$NewAI = "none",       # which side uses the new AI (ai/v2 DLL builds; the switch in CvPlayer::IsNewAI)
+    [int]$Seed = 0,                # map and game seed (config.ini MapRandSeed/SyncRandSeed) so runs share a map; 0 = random
     [switch]$EnableLogging,        # set LoggingEnabled = 1 (the lab's results) and AILog = 1 (the game's AI logs) in config.ini
     [switch]$Remove
 )
@@ -43,7 +44,27 @@ if (-not $inGame.Contains($marker)) { throw "The pack's InGame.lua has no add-in
 # Take the lab's line out, wherever it is; installing puts it back right after the marker.
 $inGame = [regex]::Replace($inGame, "\r?\n" + [regex]::Escape($addinLine), "")
 
+# Lab v20: the map and game seed. Civ V reads [CONFIG] MapRandSeed and SyncRandSeed from config.ini when it starts
+# (CvPreGame::loadFromIni; 0 = from the clock). Installing sets both to -Seed; removing puts both back to 0.
+function Set-LabSeed([int]$value) {
+    $configIni = Join-Path $MyGames "config.ini"
+    if (-not (Test-Path $configIni)) { if ($value -ne 0) { Write-Warning "No $configIni; the seed is not set" }; return }
+    $ansi = [Text.Encoding]::Default
+    $ini = [IO.File]::ReadAllText($configIni, $ansi)
+    $before = $ini
+    foreach ($key in @("MapRandSeed", "SyncRandSeed")) {
+        if ($ini -match "(?m)^[ \t]*$key[ \t]*=") { $ini = [regex]::Replace($ini, "(?m)^([ \t]*$key[ \t]*=[ \t]*)-?\d*", "`${1}$value") }
+        elseif ($value -ne 0) {
+            $section = [regex]'(?m)^\[CONFIG\][ \t]*\r?$'
+            if ($section.IsMatch($ini)) { $ini = $section.Replace($ini, "[CONFIG]`r`n$key = $value", 1) }
+            else { $ini = $ini.TrimEnd() + "`r`n`r`n[CONFIG]`r`n$key = $value`r`n" }
+        }
+    }
+    if ($ini -ne $before) { [IO.File]::WriteAllText($configIni, $ini, $ansi); Write-Output "MapRandSeed and SyncRandSeed set to $value in $configIni" }
+}
+
 if ($Remove) {
+    Set-LabSeed 0
     [IO.File]::WriteAllText($inGamePath, $inGame, $utf8)
     if (Test-Path $labDir) { Remove-Item -Recurse -Force $labDir }
     Write-Output "Siege lab removed from $pack"
@@ -77,12 +98,15 @@ SiegeLabConfig = {
 	human = $humanLua,
 	attacker = "$attackerLua",
 	newAI = "$NewAI",
+	seed = $Seed,
 }
 "@
 [IO.File]::WriteAllText((Join-Path $labDir "SiegeLabConfig.lua"), $config.Replace("`r`n", "`n").Replace("`n", "`r`n"), $utf8)
 
 $inGame = $inGame.Replace($marker, "$marker`r`n$addinLine")
 [IO.File]::WriteAllText($inGamePath, $inGame, $utf8)
+
+Set-LabSeed $Seed
 
 # The lab reports through Lua.log, which the game only writes with logging on.
 $configIni = Join-Path $MyGames "config.ini"

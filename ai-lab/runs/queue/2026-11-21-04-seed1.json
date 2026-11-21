@@ -1,0 +1,42 @@
+{
+  "id": "2026-11-21-04-seed1",
+  "why": "Lab v20 / watcher v5 check: does a fixed config.ini seed give the same map? seedA/B/C seed 101 (BOX, TREEDESKTOP, BOX again), seedD seed 202. Compare the STARTS lines.",
+  "launches": [
+    {
+      "label": "seedA",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 101,
+      "host": "BOX"
+    },
+    {
+      "label": "seedB",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 101,
+      "host": "TREEDESKTOP"
+    },
+    {
+      "label": "seedC",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 101,
+      "host": "BOX"
+    },
+    {
+      "label": "seedD",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 202,
+      "host": "BOX"
+    }
+  ]
+}

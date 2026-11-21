@@ -22,7 +22,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 19
+local VERSION = 20
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -1153,6 +1153,17 @@ local function startOpening(config)
 	out(string.format("RUN,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%d", VERSION, att:GetCivilizationShortDescription(), "opening",
 		w, h, GameInfo.HandicapInfos[Game.GetHandicapType()].Type, GameInfo.GameSpeeds[Game.GetGameSpeedType()].Type,
 		3, majors, turns, (att.IsNewAI and (att:IsNewAI() and 1 or 0) or -1), -1))
+	-- Lab v20: the seed the installer set in config.ini (0 = none) and every major's start, so runs that should share a
+	-- map can be checked to have done so (same STARTS line).
+	local starts = {}
+	for id = 0, maxMajors() - 1 do
+		local player = Players[id]
+		if player and player:IsAlive() and not player:IsMinorCiv() and not player:IsBarbarian() then
+			local plot = player.GetStartingPlot and player:GetStartingPlot()
+			starts[#starts + 1] = string.format("%s:%d:%d", player:GetCivilizationShortDescription(), plot and plot:GetX() or -1, plot and plot:GetY() or -1)
+		end
+	end
+	out(string.format("STARTS,%d,%s", tonumber(config.seed) or 0, table.concat(starts, ";")))
 	if Game.GetMaxTurns() > 0 and Game.GetMaxTurns() < turns + 5 then Game.ChangeMaxTurns(turns + 5) end
 	GameEvents.PlayerDoTurn.Add(guarded(onOpeningTurn))
 	GameEvents.CityCaptureComplete.Add(guarded(onOpeningCapture))
