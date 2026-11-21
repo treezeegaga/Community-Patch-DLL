@@ -216,6 +216,7 @@ permitting). Logged in MilitaryAILog as "plan upgrade:". Wars end the plan, so u
 Predicted (3 games): "plan upgrade" lines the turn Construction lands (about turn 42-50) with 3+ Archers upgraded in
 at least 2 of 3; the attack op starts within about 5 turns of that (before turn 55) in at least 2 of 3; a capture by
 turn 80 in at least 1 of 3. Regress 8 of 8 (Songhai there has no plan: no change). The war decision is not touched.
+Build: `ab-c07b5fe`. Run: `2026-11-21-01-op9` (op9a/b/c new AI, op9x regress).
 
 ## 2026-11-20 M3 iteration 11: the early-rush plan's second research target: the melee unit (new AI)
 Class: op7b: the full rush at Sparta brought it to 21 hp, then "melee left 0": the melee were Warriors (strength 8,

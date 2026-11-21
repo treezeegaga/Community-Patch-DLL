@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-21-01-op9",
+  "why": "M3 iteration 12: early-rush plan upgrades its army with the kept gold the turn Composite Bowmen land. Opening lab v19, new AI on Songhai, 3 games (compare op7); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op9a",
+      "release": "ab-c07b5fe",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op9b",
+      "release": "ab-c07b5fe",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op9c",
+      "release": "ab-c07b5fe",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op9x",
+      "release": "ab-c07b5fe",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
