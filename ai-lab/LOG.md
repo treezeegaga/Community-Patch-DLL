@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-20, 11:40 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 1:40 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -15,24 +15,22 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
   override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
   plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
-  (14). Reverted: 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
+  (14), no city-state operations during the plan (16). Reverted: 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
 - **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
   Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
-- **Where the newest code stands (it. 14, build `ab-23e0802` + it. 15 reverted), seeds 101-606:** army 6+4 ready turn
-  43-59; war with a major on 4 of 6 (ours turns 53, 59, 65; Greece's on us t52); captures of majors: York t67 (101), St. Petersburg t63 +
-  Novgorod t80 (505), Corinth t66 (202, Greece declared on us t52); 303 (no major near) and 606 nothing. Gold 0 by turn 80 on 4 of 6.
-  No capital taken by 60 yet.
-- **The gap now:** the attack operation, not the approach. 606: approach WAR toward Greece from turn 40, but the sneak
-  attack marched on Mombasa (a city-state the diplomacy ignores), "succeeded" at its walls without war and disbanded;
-  the follow-up on Athens recruited 3 units and never more. 303: no major civ near (only city-states as attack targets).
+- **Where the newest code stands (its. 14 + 16, build `ab-05dc217`), seeds 101-606:** army 6+4 ready turn 43-59; war
+  with a major on 5 of 6 (ours turns 52, 53, 59, 65; Greece's on us t52); captures: Athens t59 (606, **a capital by
+  60**), St. Petersburg t63 + Novgorod t80 (505), Corinth t66 (202), York t67 (101); 404 war t53 no capture; 303 no
+  major near. Gold 0 by turn 80 on 4 of 6 (turns 64-73, after the war starts).
+- **Gaps now:** 404 (war t53 on Persia, no capture: not read yet); 101 army ready only turn 59 (slow); gold runs out
+  during the war (the user allows a deficit, but bankruptcy gifts/scraps units: "b/c bankrupt").
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
-  (3) war when the army is ready and the estimate says a target can be taken: tried as it. 15 (fed the approach), no
-  effect; next: make the operation go to that target. (4) this section kept current. Later: the plan seen working on
+  (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
+  it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Next:** it. 16: while the plan prepares, its sneak attack goes only to a major's city (the one the approach and
-  the estimate point at), not a city-state's (diag606 replay first, to see whom that march was against). Then the bankruptcy gate on war
-  (`IsWarWouldBankruptUs`; the user allows a deficit in the war) and the slow second city.
+- **Next:** read 404 (why no capture of Persepolis); then the war-time treasury (no unit scrapping/gifting while the
+  plan's war is on; the user allows a deficit) and the slow army on 101; then two other warmonger civs.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
@@ -222,6 +220,11 @@ city-states is already IGNORE, so feeding the approach would not stop them; the 
 Predicted (seeds 101-606 against it. 14): 606: a sneak attack on Athens with 6+ units and war on Greece by turn 55;
 other seeds unchanged or better where they had city-state operations; captures at least it. 14's (York, Corinth, St.
 Petersburg, Novgorod), and a capital by turn 60 on at least 1 seed. Regress 8 of 8.
+Build: `ab-05dc217`. Run: `2026-11-21-10-cmp3` (i16s101-606, i16x regress; done by about 1:30 AM ET).
+Result: **606: war on Greece turn 52, Athens (the capital) taken turn 59** (it. 14: no war); 101, 202, 303, 404, 505
+identical to it. 14 (they had no city-state operations). Captures: York t67, Corinth t66, St. Petersburg t63 +
+Novgorod t80, Athens t59. Gold 0 on 606 from turn 67 (it. 14: 64). Regress 8 of 8.
+Decision: **accepted** (prediction held: 606 war by 55, a capital by 60 on 1 seed, nothing worse).
 
 ## 2026-11-21 Lab v20: fixed seeds; the seed check (seed1)
 Launch field `seed` (watcher v5) sets config.ini `MapRandSeed` and `SyncRandSeed` for the run (back to 0 after); the

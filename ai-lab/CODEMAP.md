@@ -38,7 +38,7 @@ siege estimate) instead of replacing it, and say so in the LOG entry. Results so
 | When an attack may start (`CvMilitaryAI::RequestCityAttack`) | sneak attack refused until the plan's army stands (`IsPlanArmyReady`) | it. 10: op6 marched 2+2 of 15; op7 marched whole (Sparta to 21 hp) |
 | Unit upgrades (`CvHomelandAI::PlotUpgradeMoves`, after tactical moves, idle units at home) | `DoPlanUpgrades` first in `AI_unitUpdate`, anywhere in our land | it. 12: op8 no upgrades with 300 gold; op9 2-3 Archers upgraded the turn the tech landed, 2 captures of 3 |
 | Plan length | active through its war until the first capture or turn 90 (it. 14) | seeded cmp1b (6 starts against it. 13): never worse; seed 404 gold 220 at turn 80 instead of bankrupt turn 59, seed 505 a second capture (Novgorod), seed 202 bankrupt turn 73 instead of 63 |
-| Operations against city-states (`CvMilitaryAI::RequestCityAttack` for a minor, `RequestBullyingOperation`) | none while the plan is active (it. 16) | pending (diag606: shows of force on Mombasa/Cape Town every 2 turns took the 6+4 army; Athens never attacked) |
+| Operations against city-states (`CvMilitaryAI::RequestCityAttack` for a minor, `RequestBullyingOperation`) | none while the plan is active (it. 16) | it. 16 seeded: diag606 showed shows of force on Mombasa/Cape Town every 2 turns took the 6+4 army; with the hook 606 declares on Greece t52 and takes Athens t59; other seeds identical |
 
 ## Military AI: choosing a target and starting an operation (M2, M4)
 
