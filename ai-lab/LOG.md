@@ -203,6 +203,14 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 Lab v20: fixed seeds; the seed check (seed1)
+Launch field `seed` (watcher v5) sets config.ini `MapRandSeed` and `SyncRandSeed` for the run (back to 0 after); the
+opening lab logs a STARTS line (seed, each major's start). Check `2026-11-21-04-seed1`: seedA (BOX) and seedB
+(TREEDESKTOP), seed 101, build `ab-23e0802`: the same STARTS line (Songhai, Greece, the Aztecs, England) and all 320
+OPEN lines identical. **Same seed + same build = the same game, on either PC.** So a decision is a matched comparison
+on a set of seeds: differences come from the code alone, and luck is sampled only by using more seeds. Step-3 decisions
+from now on: 6 seeds (101, 202, 303, 404, 505, 606), before and after.
+
 ## 2026-11-21 M3 iteration 15: the plan's ready army declares on a target the estimate says it takes (new AI)
 Class (review relay of 8 PM, point 3): op7c, op9b, op10b: the plan's army stood ready (6+4) and no war on a major came;
 the war approach never chose war. The war decision is otherwise M4's.
@@ -217,6 +225,7 @@ Logged in MilitaryAILog: "plan war target: <city> (<civ>), estimated capture tur
 Predicted (6 seeded games against it. 14 on the same seeds): a plan war target logged within 3 turns of the army
 counting ready in at least 5 of 6; war on a major in at least 5 of 6 (it. 14: fewer), before turn 60 in at least 4;
 captures more than it. 14 on the same seeds. Regress 8 of 8 (no plan there).
+Build: `ab-22f16eb` (`ab-c013b84` failed to compile: a const logger). Run: `2026-11-21-05-cmp1` (it. 13/14/15 on seeds 101-606, i15x regress).
 
 ## 2026-11-21 M3 iteration 14: the early-rush plan carries on through its war (new AI)
 Class: op10c: once the war began the plan ended (iteration 10's rule), the cities built Shrines, the gold bought them,
