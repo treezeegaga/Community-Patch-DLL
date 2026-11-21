@@ -500,6 +500,41 @@ int CvAIOperation::GrabUnitsFromTheReserves(CvPlot* pMusterPlot, CvPlot* pTarget
 		}
 	}
 
+	//ai/v2 lab (logging only): for the new AI, why each land combat unit not taken was left out
+	if (GC.getLogging() && GC.getAILogging() && GET_PLAYER(m_eOwner).IsNewAI() && !IsNavalOperation())
+	{
+		int iSkipLoop = 0;
+		for (CvUnit* pSkip = GET_PLAYER(m_eOwner).firstUnit(&iSkipLoop); pSkip != NULL; pSkip = GET_PLAYER(m_eOwner).nextUnit(&iSkipLoop))
+		{
+			if (pSkip->getDomainType() != DOMAIN_LAND || !pSkip->IsCombatUnit())
+				continue;
+			if (OperationalAIHelpers::IsUnitSuitableForRecruitment(pSkip, turnsFromMuster, pTargetPlot, IsNavalOperation(), bOcean, freeSlotInfo) >= 0)
+				continue;
+			const char* szWhy = "no matching slot";
+			if (pSkip->getArmyID() != -1)
+				szWhy = "in another army";
+			else if (pSkip->IsGarrisoned() && pSkip->GetGarrisonedCity()->NeedsGarrison())
+				szWhy = "needed garrison";
+			else if (!pSkip->canUseForAIOperation())
+				szWhy = "threatened zone or enemy near";
+			else if (pSkip->shouldHeal(false))
+				szWhy = "healing";
+			else if (plotDistance(*pSkip->plot(), *pTargetPlot) < TACTICAL_COMBAT_MAX_TARGET_DISTANCE)
+				szWhy = "already close to target";
+			else if (pSkip->IsRecentlyDeployedFromOperation())
+				szWhy = "recently deployed";
+			else if (pSkip->GetCurrHitPoints() * 100 < pSkip->GetMaxHitPoints() * GD_INT_GET(AI_OPERATIONAL_PERCENT_HEALTH_FOR_OPERATION))
+				szWhy = "not healthy";
+			else if (pSkip->AI_getUnitAIType() == UNITAI_EXPLORE)
+				szWhy = "explorer";
+			else if (turnsFromMuster.find(pSkip->plot()->GetPlotIndex()) == turnsFromMuster.end() && !turnsFromMuster.empty())
+				szWhy = "too far from muster";
+			CvString strSkip;
+			strSkip.Format("Recruit skip: %s at (%d:%d): %s", pSkip->getName().GetCString(), pSkip->getX(), pSkip->getY(), szWhy);
+			LogOperationSpecialMessage(strSkip);
+		}
+	}
+
 	if (GC.getLogging() && GC.getAILogging())
 	{
 		CvString strMsg;
