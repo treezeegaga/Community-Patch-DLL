@@ -31,7 +31,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Review relay of 10:05 AM Nov 21 (user):** (1) never leave the PCs idle: before going quiet, queue several hours
   from the standing backlog (PLAN 7a); (2) holdout seeds 707-1212, check only, never for tuning (PLAN 7a, BASELINE);
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
-  of this heading's text, push, stop (the review session starts implementer 9).
+  of this heading's text, push, **tell the user in chat that I'm ready** (correction 12:27 PM: no automatic check reads
+  the marker; the user asks the review session to start implementer 9), stop. Keep the queue deep before going quiet.
 - **Queued (backlog):** `16-civho` (other civs on the holdout seeds), `17-long` (tuning seeds to turn 100).
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
