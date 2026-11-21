@@ -196,6 +196,7 @@ public:
 	UnitTypes GetPlanBuild(CvCity* pCity) const;
 	TechTypes GetPlanResearch() const;
 	bool IsPlanArmyReady() const;
+	int DoPlanUpgrades();
 	void CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduction, int& iMelee, int& iRanged, int& iSettlers) const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);

@@ -282,6 +282,9 @@ void CvPlayerAI::AI_unitUpdate(bool bUpdateHomelandAI)
 	}
 	else
 	{
+		//new AI (M3 iteration 12): a plan's upgrades come first, so upgraded units move this turn
+		GetMilitaryAI()->DoPlanUpgrades();
+
 		// Now let the tactical AI run.  Putting it after the operations update allows units who have
 		// just been handed off to the tactical AI to get a move in the same turn they switch between
 		GetTacticalAI()->Update();
