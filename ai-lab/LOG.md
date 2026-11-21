@@ -19,12 +19,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
   Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
 - **Where the newest code stands (it. 14, build `ab-23e0802` + it. 15 reverted), seeds 101-606:** army 6+4 ready turn
-  43-59; war on a major on 3 of 6 (turns 53, 59, 65); captures of majors: York t67 (101), St. Petersburg t63 +
-  Novgorod t80 (505); 202 takes Corinth (a city-state) only; 303 and 606 nothing. Gold 0 by turn 80 on 4 of 6.
+  43-59; war with a major on 4 of 6 (ours turns 53, 59, 65; Greece's on us t52); captures of majors: York t67 (101), St. Petersburg t63 +
+  Novgorod t80 (505), Corinth t66 (202, Greece declared on us t52); 303 (no major near) and 606 nothing. Gold 0 by turn 80 on 4 of 6.
   No capital taken by 60 yet.
 - **The gap now:** the attack operation, not the approach. 606: approach WAR toward Greece from turn 40, but the sneak
   attack marched on Mombasa (a city-state the diplomacy ignores), "succeeded" at its walls without war and disbanded;
-  the follow-up on Athens recruited 3 units and never more. 202/303: army ready, no war on a major (not yet read).
+  the follow-up on Athens recruited 3 units and never more. 303: no major civ near (only city-states as attack targets).
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: tried as it. 15 (fed the approach), no
   effect; next: make the operation go to that target. (4) this section kept current. Later: the plan seen working on
@@ -234,7 +234,7 @@ captures more than it. 14 on the same seeds. Regress 8 of 8 (no plan there).
 Build: `ab-ab21a61` (`ab-c013b84` and `22f16eb` failed to compile: a const logger, then an uninitialized estimate).
 Run: `2026-11-21-08-cmp1c` (i15s101-606, i15x regress; cmp1 itself failed for want of the build). Same seeds = same maps.
 Result: a target logged in 3 of 6 (404 Persepolis turn 47, 505 St. Petersburg turn 55, 606 Athens turn 48; none on
-101/202/303); **every game identical to it. 14** on its seed (wars 101 t65, 404 t53, 505 t59; none on 202/303/606).
+101/202/303); **every game identical to it. 14** on its seed (wars 101 t65, 404 t53, 505 t59, 202 Greece declares t52; none on 303/606).
 The approach toward the target was already WAR before the change (606: WAR toward Greece from turn 40, "TGT
 Favorable"), so feeding it changed nothing. Why 606 has no war: a sneak attack (operation 1231, turn 44) marched on
 Mombasa, a city-state the diplomacy ignores; at its walls it "succeeded", flagged army-in-place against Mombasa, no war
@@ -259,7 +259,7 @@ capture by 80; op11b army 6+5 and 398 gold by turn 60, no war with a major, gold
 op11c war on Greece turn 62, gold 330-500 kept, melee 6 to 4, no capture. No Shrines bought during a plan war. Captures
 0 of 3. Regress 8 of 8.
 **Seeded comparison** (`2026-11-21-07-cmp1b`, it. 13 build `ab-32caacd` against it. 14 `ab-23e0802`, seeds 101-606;
-101/202 for it. 14 from seed1's seedA/seedD): 101, 303, 606 identical; 202 Corinth (city-state) turn 66 not 63, bankrupt
+101/202 for it. 14 from seed1's seedA/seedD): 101, 303, 606 identical; 202 (Greece declares turn 52) Corinth, a Greek city, turn 66 not 63, bankrupt
 turn 73 not 63; 404 war t53 Persia both, it. 14 keeps 220 gold and 4 ranged at turn 80 (it. 13 bankrupt turn 59, 1
 ranged); 505 St. Petersburg turn 63 both, it. 14 also takes Novgorod turn 80. Decision: **accepted** (never worse on
 the same start; better on 3 of 6).
@@ -323,14 +323,14 @@ idle units at home; melee quality needs the upgrade path (or the plan building t
 | seed | it. 10: ready / war / capture / bankrupt | it. 11: ready / war / capture / bankrupt |
 |---|---|---|
 | 101 | t70 / t65 England / - / t82 | t68 / t64 England / Hastings t67 / - |
-| 202 | never / none / Corinth (city-state) t61 / t68 | never / none / Corinth t69 / t72 |
+| 202 | never / Greece declares t52 / Corinth (Greek) t61 / t68 | never / Greece declares t52 / Corinth t69 / t72 |
 | 303 | t58 / none / - / t72 | t53 / none / - / t77 |
 | 404 | t43 / t53 Persia / - / t59 | identical game |
 | 505 | t57 / t63 Russia / St. Petersburg t68 / - | identical game |
 | 606 | t47 / t72 Greece / Athens (capital) t80 / t64 | t48 / t59 Greece / - (melee 0 at t80) / t69 |
-Major-civ captures 2 against 2; one seed better each way (101 for it. 11, 606 for it. 10), two seeds unchanged.
+Major-civ captures 3 against 3 (Corinth on 202 is a Greek city; corrected 11:55 PM); one seed better each way (101 for it. 11, 606 for it. 10), two seeds unchanged.
 Decision: **revert stands** (no measurable gain; one fewer override). Also seen: gold hits 0 before turn 80 in 9 of
-12 games, and on 3 of 6 seeds no war on a major by turn 80, on both builds.
+12 games, and on 2 of 6 seeds no war with a major by turn 80, on both builds.
 
 ## 2026-11-20 M3 iteration 10: the early-rush plan, part 4: the attack waits for the plan's whole army (new AI)
 Class: wars begin with a fraction of the army (op6: 2+2 at the walls of 15).
