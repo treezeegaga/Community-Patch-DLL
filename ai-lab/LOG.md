@@ -209,6 +209,20 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 16: no operations against city-states while the plan is active (new AI)
+Class: seed 606 (it. 14 code, every build so far): approach WAR toward Greece from turn 40, army 6+4 ready turn 47, no
+war. The diag606 replay (build `ab-4752664`, operation-start log names enemy and target; the identical game) shows why:
+operation 1231 (turn 44, 6 units) went against Mombasa, then Cape Town (turns 55, 64, 66) and Mombasa (68-74), 6-7
+units each, ending at the walls without war (the city-states' approach is IGNORE); the one operation on Athens (turn
+48) got 3 units and never more.
+Change (behind `IsNewAI()` via `GetActivePlan()`): `CvMilitaryAI::RequestCityAttack` refuses a city-state target and
+`RequestBullyingOperation` refuses any target while the plan is active (before its war and through it, to the first
+capture or turn 90). Feeding instead (point 2): these operations start while the diplomacy's approach to the
+city-states is already IGNORE, so feeding the approach would not stop them; the request is the one place they meet.
+Predicted (seeds 101-606 against it. 14): 606: a sneak attack on Athens with 6+ units and war on Greece by turn 55;
+other seeds unchanged or better where they had city-state operations; captures at least it. 14's (York, Corinth, St.
+Petersburg, Novgorod), and a capital by turn 60 on at least 1 seed. Regress 8 of 8.
+
 ## 2026-11-21 Lab v20: fixed seeds; the seed check (seed1)
 Launch field `seed` (watcher v5) sets config.ini `MapRandSeed` and `SyncRandSeed` for the run (back to 0 after); the
 opening lab logs a STARTS line (seed, each major's start). Check `2026-11-21-04-seed1`: seedA (BOX) and seedB
