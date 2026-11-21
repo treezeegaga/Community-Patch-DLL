@@ -1,0 +1,111 @@
+{
+    "id":  "2026-11-21-01-op9",
+    "status":  "done",
+    "message":  "",
+    "watcherVersion":  4,
+    "host":  "BOX, TREEDESKTOP",
+    "hosts":  [
+                  "BOX",
+                  "TREEDESKTOP"
+              ],
+    "markedBy":  "TREEDESKTOP",
+    "started":  "2026-11-20T20:00:39",
+    "finished":  "2026-11-20T20:10:53",
+    "requestCommit":  "8a46efd30",
+    "stockDll":  "BOX: ok; TREEDESKTOP: ok",
+    "launches":  [
+                     {
+                         "label":  "op9a",
+                         "host":  "BOX",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/op9a-20261120-2000-run",
+                         "summary":  [
+                                         "  results: Run: lab v19, Songhai attacking opening, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker on, defender not in this DLL",
+                                         "  results: Saved 244 log file(s) from this launch (17.1 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\op9a-20261120-2004-logs; folder listing in _logs-folder.txt",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-20T20:00:39",
+                         "finished":  "2026-11-20T20:04:40",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  4
+                     },
+                     {
+                         "label":  "op9b",
+                         "host":  "TREEDESKTOP",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/op9b-20261120-2003-run",
+                         "summary":  [
+                                         "  results: Run: lab v19, Songhai attacking opening, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker on, defender not in this DLL",
+                                         "  results: Saved 252 log file(s) from this launch (17.6 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\op9b-20261120-2007-logs; folder listing in _logs-folder.txt",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-20T20:03:03",
+                         "finished":  "2026-11-20T20:07:57",
+                         "stockDll":  "ok",
+                         "packDll":  "262AEE88C5312C4B",
+                         "watcherVersion":  4
+                     },
+                     {
+                         "label":  "op9c",
+                         "host":  "BOX",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/op9c-20261120-2005-run",
+                         "summary":  [
+                                         "  results: Run: lab v19, Songhai attacking opening, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker on, defender not in this DLL",
+                                         "  results: Saved 186 log file(s) from this launch (13.3 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\op9c-20261120-2009-logs; folder listing in _logs-folder.txt",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-20T20:05:14",
+                         "finished":  "2026-11-20T20:09:10",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  4
+                     },
+                     {
+                         "label":  "op9x",
+                         "host":  "TREEDESKTOP",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/op9x-20261120-2008-run",
+                         "summary":  [
+                                         "  results: Run: lab v19, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker on, defender off",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\op9x-20261120-2010.results.csv",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\op9x-20261120-2010.turns.csv",
+                                         "  results: Saved 243 log file(s) from this launch (13.6 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\op9x-20261120-2010-logs; folder listing in _logs-folder.txt",
+                                         "  results: Scenario          Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength Ready ",
+                                         "  results: --------          ------- -------- ------------ ------------- ---------- -------------- ---------- ------------- ----- ",
+                                         "  results: regress_capital         2        2 4.5          100           0.0        0.0            2.0 of 2   1894          2 o...",
+                                         "  results: regress_coastal         2        2 4.0          100           0.0        0.0            2.0 of 2   1644          2 o...",
+                                         "  results: regress_medieval        2        2 3.5          100           0.0        0.0            3.0 of 3   2824          2 o...",
+                                         "  results: regress_artillery       2        2 6.0          100           0.0        0.0            4.0 of 4   6122          2 o...",
+                                         "  results: 8 of 8 battles ended in a capture.",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-20T20:08:16",
+                         "finished":  "2026-11-20T20:10:53",
+                         "stockDll":  "ok",
+                         "packDll":  "262AEE88C5312C4B",
+                         "watcherVersion":  4
+                     }
+                 ]
+}
