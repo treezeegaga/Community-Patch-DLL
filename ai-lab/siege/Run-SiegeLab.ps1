@@ -143,7 +143,10 @@ if ($hostCfg) {
 
 function Get-CivProcess { Get-Process CivilizationV -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1 }
 function Get-Origin {
+    # Civ V's window can be missing for a moment while it loads (BOX, 2026-11-21: "Cannot index into a null array"
+    # twice, 15 s after the window first showed); wait up to 15 s for it before giving up.
     $w = Get-CivProcess
+    for ($i = 0; $i -lt 15 -and -not $w; $i++) { Start-Sleep 1; $w = Get-CivProcess }
     if (-not $w) { return $null }
     $r = New-Object SlInput+RECT
     [SlInput]::GetWindowRect($w.MainWindowHandle, [ref]$r) | Out-Null
