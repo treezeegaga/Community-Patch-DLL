@@ -211,6 +211,7 @@ Class: op9b gave 750 gold to city-states while preparing (op9a 250), went bankru
 Change (behind `IsNewAI()` via `GetActivePlan()`): while a plan is active, the gold-gift list is emptied.
 Predicted (3 games): no "Gold Gift" lines for Songhai before its war; no bankruptcy gifting before turn 60; gold at the
 march 150+; a capture by turn 80 in at least 2 of 3. Regress 8 of 8.
+Build: `ab-32caacd`. Run: `2026-11-21-02-op10` (op10a/b/c new AI, op10x regress).
 
 ## 2026-11-21 M3 iteration 12: the early-rush plan, part 5: the upgrade step (new AI)
 Class: the plan's army counts ready only when Composite Bowmen are built (turn 60+), and nothing is upgraded: the stock

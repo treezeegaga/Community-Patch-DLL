@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-21-02-op10",
+  "why": "M3 iteration 13: early-rush plan gives no gold to city-states while preparing. Opening lab v19, new AI on Songhai, 3 games (compare op9); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op10a",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op10b",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op10c",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op10x",
+      "release": "ab-32caacd",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
