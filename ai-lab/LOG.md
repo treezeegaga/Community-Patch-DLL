@@ -231,6 +231,12 @@ taken (`iTurnTaken >= 1`), `ExecuteCaptureCityMoves()` runs first; the unit atta
 as before. Feeding (point 2): the order of two existing steps, gated by the existing estimate; not a plan override.
 Predicted (12 tuning seeds against the accepted build): a capture on at least 2 of 1313/1515/1616/1717 (none now);
 the 5 seeds with captures keep them (606 Athens by 60); captures 7+ of 12. Regress 8 of 8.
+Build: `ab-62054f6`. Run: `2026-11-21-20a-cmp7` (i20s on the 12 tuning seeds, i20x regress).
+Result: 10 of 12 identical in outcome to the accepted build; no new capture (1313, 1515, 1616, 1717 still none);
+505 took St. Petersburg turn 62 (63) but not Novgorod (turn 80 before). 1313: the capture attempt now counts 6-7
+units in reach and expects 54-59 damage a turn, yet Attila's Court goes 147, 132, 127 and back up to 156: the attacks
+are ordered but most do not land (not read further). Regress 8 of 8.
+Decision: **reverted** (prediction failed: no capture on the four TAKE-but-standing seeds).
 
 ## 2026-11-21 The six added tuning seeds, baseline (build `ab-006a7f0`, its. 14+16; no decision)
 `2026-11-21-19-tune2`, Songhai seat, new AI vs stock:
