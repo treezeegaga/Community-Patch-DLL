@@ -1904,6 +1904,16 @@ void CvTacticalAI::PlotExploitFlanksMoves(CvTacticalDominanceZone* pZone)
 	(void)pZone; //unused but can be inspected
 	ClearCurrentMoveUnits(AI_TACTICAL_FLANKATTACK);
 
+	//new AI (M3 iteration 20): when the siege estimate says the zone's city can be taken, the city goes first
+	//(as in the surgical strike); otherwise the ranged units spend their shots on the units around it first
+	//(d1313b: four Composite Bowmen in range of Attila's Court every turn, estimate TAKE, the city lost 15-27 hp a turn)
+	if (m_pPlayer->IsNewAI() && pZone && pZone->GetZoneCity() && pZone->GetZoneCity()->getOwner() != m_pPlayer->GetID())
+	{
+		const CvSiegeEstimate* pEst = GetSiegeEstimate(pZone->GetZoneCity());
+		if (pEst && pEst->iTurnTaken >= 1)
+			ExecuteCaptureCityMoves();
+	}
+
 	for (CvTacticalTarget* pTarget = GetFirstZoneTarget(AI_TACTICAL_TARGET_ENEMY_COMBAT_UNIT, AL_MEDIUM); pTarget!=NULL; pTarget = GetNextZoneTarget(AL_MEDIUM))
 		ExecuteDestroyEnemyUnits(*pTarget, AL_MEDIUM);
 
@@ -1916,6 +1926,16 @@ void CvTacticalAI::PlotSteamrollMoves(CvTacticalDominanceZone* pZone)
 {
 	(void)pZone; //unused but can be inspected
 	ClearCurrentMoveUnits(AI_TACTICAL_STEAMROLL);
+
+	//new AI (M3 iteration 20): when the siege estimate says the zone's city can be taken, the city goes first
+	//(as in the surgical strike); otherwise the ranged units spend their shots on the units around it first
+	//(d1313b: four Composite Bowmen in range of Attila's Court every turn, estimate TAKE, the city lost 15-27 hp a turn)
+	if (m_pPlayer->IsNewAI() && pZone && pZone->GetZoneCity() && pZone->GetZoneCity()->getOwner() != m_pPlayer->GetID())
+	{
+		const CvSiegeEstimate* pEst = GetSiegeEstimate(pZone->GetZoneCity());
+		if (pEst && pEst->iTurnTaken >= 1)
+			ExecuteCaptureCityMoves();
+	}
 
 	// See if there are any kill attacks we can make.
 	for (CvTacticalTarget* pTarget = GetFirstZoneTarget(AI_TACTICAL_TARGET_ENEMY_COMBAT_UNIT, AL_HIGH); pTarget != NULL; pTarget = GetNextZoneTarget(AL_HIGH))

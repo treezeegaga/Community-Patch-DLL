@@ -219,6 +219,19 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 20: when the estimate says TAKE, the city goes first in the steamroll and flank postures (new AI)
+Class (tuning set): the estimate says TAKE for turns and the city stands (1313, 1515, 1616, 1717). The d1313b replay
+(build `ab-0aa0ea5`, ranged-position log; the identical game): from turn 66 all four Composite Bowmen stand 2 tiles
+from Attila's Court, "can shoot it from here 1", full moves, every turn, assigned to tactical moves 20/21 (STEAMROLL,
+FLANKATTACK); the city loses 15-27 hp a turn. `PlotSteamrollMoves` and `PlotExploitFlanksMoves` first run
+`ExecuteDestroyEnemyUnits` on every enemy unit in the zone and only then `ExecuteCaptureCityMoves` with what is left,
+so the bowmen's shots go to the units around the city. (The surgical-strike posture goes for the city first.)
+Change (behind `IsNewAI()`): in both postures, when the zone's city is an enemy's and `GetSiegeEstimate` says it is
+taken (`iTurnTaken >= 1`), `ExecuteCaptureCityMoves()` runs first; the unit attacks and the final capture call follow
+as before. Feeding (point 2): the order of two existing steps, gated by the existing estimate; not a plan override.
+Predicted (12 tuning seeds against the accepted build): a capture on at least 2 of 1313/1515/1616/1717 (none now);
+the 5 seeds with captures keep them (606 Athens by 60); captures 7+ of 12. Regress 8 of 8.
+
 ## 2026-11-21 The six added tuning seeds, baseline (build `ab-006a7f0`, its. 14+16; no decision)
 `2026-11-21-19-tune2`, Songhai seat, new AI vs stock:
 | seed | new AI: army 6+4 / war / capture | stock |
