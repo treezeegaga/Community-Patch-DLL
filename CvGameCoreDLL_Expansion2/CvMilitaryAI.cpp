@@ -1054,12 +1054,21 @@ const CvMilitaryAI::SAIPlan* CvMilitaryAI::GetActivePlan() const
 		return NULL;
 
 	const SAIPlan* pPlan = &s_aAIPlans[0];
-	int iEndTurn = pPlan->iEndTurnQuick * GC.getGame().getGameSpeedInfo().getTrainPercent() / 67;
-	if (GC.getGame().getElapsedGameTurns() >= iEndTurn)
-		return NULL;
+	int iTrainPercent = GC.getGame().getGameSpeedInfo().getTrainPercent();
+	int iElapsed = GC.getGame().getElapsedGameTurns();
 
-	//the build order is the preparation: once a war with a major civ is on, the city chooses as usual
+	//M3 iteration 14: the plan carries on through its war (units only, gold kept for upgrades) until the first city is
+	//taken, or turn 90 (Quick); before the war it ends at the row's end turn (iteration 10 ended it at the declaration:
+	//op10c's war gold then went to Shrines while the army was worn down)
 	if (GetNumberCivsAtWarWith(false) > 0)
+	{
+		bool bCaptured = m_pPlayer->getNumCities() + m_pPlayer->getCitiesLost() > m_pPlayer->GetNumCitiesFounded();
+		if (bCaptured || iElapsed >= 90 * iTrainPercent / 67)
+			return NULL;
+		return pPlan;
+	}
+
+	if (iElapsed >= pPlan->iEndTurnQuick * iTrainPercent / 67)
 		return NULL;
 
 	return pPlan;
@@ -1124,7 +1133,7 @@ void CvMilitaryAI::CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduct
 bool CvMilitaryAI::IsPlanArmyReady() const
 {
 	const SAIPlan* pPlan = GetActivePlan();
-	if (!pPlan)
+	if (!pPlan || GetNumberCivsAtWarWith(false) > 0) //at war the plan doesn't hold attacks back (M3 iteration 14)
 		return true;
 	int iMelee = 0, iRanged = 0, iSettlers = 0;
 	CountPlanArmy(NULL, false, iMelee, iRanged, iSettlers);

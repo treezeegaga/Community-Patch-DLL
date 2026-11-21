@@ -205,13 +205,29 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 14: the early-rush plan carries on through its war (new AI)
+Class: op10c: once the war began the plan ended (iteration 10's rule), the cities built Shrines, the gold bought them,
+and the army wore down without replacements; op9a's war after turn 60 had no plan at all.
+Change (behind `IsNewAI()`): `GetActivePlan()` at war with a major: the plan stays active until the first city is taken
+(cities + lost > founded) or turn 90 (Quick), so cities keep building army units up to the row's 6+4, gold stays for
+upgrades, no city-state gifts; `IsPlanArmyReady()` is true at war (no hold on attacks). Before a war, unchanged.
+Predicted (3 games): during the plan's war no Shrine/building purchase and cities building army units; melee at 4+ ten
+turns into the war; a capture by turn 80 in at least 1 of 3 (in a game with a war on a major). Regress 8 of 8.
+
 ## 2026-11-21 M3 iteration 13: the early-rush plan keeps its gold from city-states (new AI)
 Class: op9b gave 750 gold to city-states while preparing (op9a 250), went bankrupt and gifted units away;
 `CvDiplomacyAI::DoContactMinorCivs` gold gifts don't pass `CanWithdrawMoneyForPurchase`.
 Change (behind `IsNewAI()` via `GetActivePlan()`): while a plan is active, the gold-gift list is emptied.
 Predicted (3 games): no "Gold Gift" lines for Songhai before its war; no bankruptcy gifting before turn 60; gold at the
 march 150+; a capture by turn 80 in at least 2 of 3. Regress 8 of 8.
-Build: `ab-32caacd`. Run: `2026-11-21-02-op10` (op10a/b/c new AI, op10x regress).
+Build: `ab-32caacd`. Run: `2026-11-21-02-op10` (op10a/b/c new AI, op10x regress; all clean, by 8:37 PM ET).
+Result: no gold gifts while the plan was active in all 3 (gifts again only after it ended: turns 60/60/66); no bankruptcy
+gifting before turn 60; gold at the end of the plan 426/469/212. But captures 0 of 3: op10a army slow (5+3 at turn 55,
+second city turn 45), war on Greece turn 66, melee lost; op10b army 6+4 by turn 50 with 469 gold, no war with a major
+(Wittenberg, a city-state, turn 62); op10c war on Greece turn 57 with 6+5, then the plan ended and its gold went to
+three Shrines and a Warrior (turns 56-59), melee worn down to 2, bankrupt turn 71. Regress (op10x) 8 of 8.
+Decision: **accepted** (its own prediction held: no gifts, gold kept; the lost captures come from the war itself and the
+war decision, not from gold kept). Learned: the plan must last through its war.
 
 ## 2026-11-21 M3 iteration 12: the early-rush plan, part 5: the upgrade step (new AI)
 Class: the plan's army counts ready only when Composite Bowmen are built (turn 60+), and nothing is upgraded: the stock
