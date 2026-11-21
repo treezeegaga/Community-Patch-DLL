@@ -539,6 +539,10 @@ bool CvMilitaryAI::RequestBullyingOperation(PlayerTypes eEnemy)
 	if (GET_PLAYER(eEnemy).isBarbarian())
 		return false;
 
+	//new AI (M3 iteration 16): no shows of force while the early-rush plan is active (see RequestCityAttack)
+	if (GetActivePlan() != NULL)
+		return false;
+
 	// If we already have an operation on the way, don't send another one
 	if (m_pPlayer->HasAnyOffensiveOperationsAgainstPlayer(eEnemy))
 		return false;
@@ -1341,6 +1345,11 @@ TechTypes CvMilitaryAI::GetPlanResearch() const
 
 bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsWillingToBuild, bool bCareful)
 {
+	//new AI (M3 iteration 16): while the early-rush plan is active its army is kept for a major civ's city; no
+	//operations against city-states (diag606: shows of force on Mombasa and Cape Town every 2 turns took 6-7 units)
+	if (GET_PLAYER(eIntendedTarget).isMinorCiv() && GetActivePlan() != NULL)
+		return false;
+
 	//note that a given target might be repeated with different muster points / army types
 	for (size_t i = 0; i < m_potentialAttackTargets.size(); i++)
 	{
