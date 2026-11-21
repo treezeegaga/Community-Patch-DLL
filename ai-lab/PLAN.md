@@ -277,7 +277,8 @@ the "together" part; LOG.md M2 iteration 3.)
 - Seed the rows from `STRIKE_PLANS_RESEARCH.md` and the user's own Aztec opening in `HUMAN_GAME.md`.
 
 Bar (set with the user at the start of M3): for the early-rush row, the reference is the user's game:
-war declared around turn 41–50 and a capital taken by turn 54 on Quick, with about 6 melee and 4
+war declared around turn 41–50 and a capital taken by about turn 60 on Quick (the user's own Aztec game took one by
+turn 54, but with the Jaguar's early strength; ruling of 2026-11-20, 11 PM ET), with about 6 melee and 4
 Composite Bowmen. The economy must not collapse to get there (no bankruptcy, at least 2 cities).
 
 ### M4. The decision: who to attack, when, and when to stop

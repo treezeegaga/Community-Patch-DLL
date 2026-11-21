@@ -9,7 +9,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **The review session speaks for the user** (session_01G2NZj4f5xWWrXLRuDN5eyd; PLAN section 4). Its 8 PM relay (four
   points, below) is being worked; replies to it by send_message are refused here (untrusted device), so answer in chat.
 - **Milestones:** M0-M2 closed. **M3 in progress.** Bar (user's game, confirmed): early rush, war about turn 41-50,
-  a capital taken by turn 54 on Quick with about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
+  a capital taken by about turn 60 on Quick (ruling of 11 PM; was 54) with about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
   before the war is decided. Rulings: one settler, no buildings, gold only for upgrades right before the attack.
 - **M3 so far:** the siege estimate (its. 1-3b); sneak attacks may build missing units (it. 5); lab flavor leak fixed
   (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans"): build
@@ -39,6 +39,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## User rulings
 
+- 2026-11-20 (about 11 PM ET, the user, relayed by the review session): "I think if I was able to get a capital by 54,
+  using Aztecs with Jaguars, the goal for AI could probably be a little later, maybe 60?" So step 3's bar is a capital
+  taken by about turn 60 on Quick (was 54). The rest stands: about 6 melee + 4 Composite Bowmen, at least 2 cities, one
+  settler, no buildings, gold only for the upgrade; the war still starts about turn 41-50 (if results show that can't
+  hold, raise it with the user rather than moving it).
 - 2026-11-20 (about 3:30 PM ET, the user, more on the reference rush): "I used gold for nothing except upgrading units
   right before I attacked. I built no buildings, just army units. I was building archers while I researched, and as
   soon as the research finished I upgraded all of my archers and then immediately marched to war with about 60g in my
