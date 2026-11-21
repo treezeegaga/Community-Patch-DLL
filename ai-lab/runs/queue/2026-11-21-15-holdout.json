@@ -1,0 +1,102 @@
+{
+  "id": "2026-11-21-15-holdout",
+  "why": "Backlog (b): holdout baseline (seeds 707-1212, never used for tuning). Current accepted build, new AI in the Songhai seat (hoN) and stock (hoS). Either trusted PC.",
+  "launches": [
+    {
+      "label": "hoN707",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 707
+    },
+    {
+      "label": "hoS707",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1,
+      "seed": 707
+    },
+    {
+      "label": "hoN808",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 808
+    },
+    {
+      "label": "hoS808",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1,
+      "seed": 808
+    },
+    {
+      "label": "hoN909",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 909
+    },
+    {
+      "label": "hoS909",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1,
+      "seed": 909
+    },
+    {
+      "label": "hoN1010",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 1010
+    },
+    {
+      "label": "hoS1010",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1,
+      "seed": 1010
+    },
+    {
+      "label": "hoN1111",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 1111
+    },
+    {
+      "label": "hoS1111",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1,
+      "seed": 1111
+    },
+    {
+      "label": "hoN1212",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 1212
+    },
+    {
+      "label": "hoS1212",
+      "release": "ab-006a7f0",
+      "set": "opening",
+      "newAI": "none",
+      "repeats": 1,
+      "seed": 1212
+    }
+  ]
+}

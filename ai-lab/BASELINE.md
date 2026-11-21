@@ -207,3 +207,11 @@ takeable siege scenarios meet the M1 bar (melee_only_vs_medium now 6/6, turns 5-
 March: medium_vs_weak 6/6 t9; medium_vs_medium 6/6 t11; large_vs_medium 6/6 t10-13; d8 5/6 t10-11; d10 6/6 t9-12;
 d16 6/6 t15-17; rough 6/6 t11; march3 d8 6/6 t9-13 (5 within 10.5); march3 6/6 t11; march3 d16 6/6 t15-16; march3
 rough 6/6 t13-14. Regress: capital t4, coastal t4, medieval t3-4, artillery t6-8; no losses.
+
+## Opening lab seeds (M3, from 2026-11-21)
+
+- **Tuning set:** seeds 101, 202, 303, 404, 505, 606 (every decision is compared on these, before and after).
+- **Holdout set:** seeds 707, 808, 909, 1010, 1111, 1212. Never used to choose or tune a change; run only as a check,
+  stock and new AI, at the current accepted build now (baseline: `2026-11-21-15-holdout`, build `ab-006a7f0`, its.
+  4-5, 7-10, 12-14, 16) and again before M3 closes.
+
