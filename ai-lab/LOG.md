@@ -238,8 +238,15 @@ Mongolia (606); not for Greece, the Aztecs, Russia, Indonesia, Spain, the Nether
 war in 5 of 6 cases (Japan t54, Persia t56, Denmark t64, Mongolia t72, England t77); stock civs in the same games:
 none. Captures by plan civs by turn 80: 0 (Songhai's games aside). civN101 failed: the new-AI civs (England first)
 destroyed the Songhai seat around turn 63-65 and Civ V's "you have been defeated" screen stopped the autoplay (lab
-gap: a defeated seat should end the run cleanly). Note: the Aztecs (the user's reference civ) don't count as a
-warmonger under `IsWarmonger`.
+gap: a defeated seat should end the run cleanly). (Correction: the Aztecs do count as a warmonger: see 16-civho;
+their only tuning seed, 101, was the failed game.)
+**More backlog** (same build): `16-civho` (other civs on the holdout seeds): the plan switched on for the Ottomans,
+the Shoshone (707), Mongolia (1010), the Aztecs (1111), Assyria (1212); their wars: the Ottomans on the Shoshone t79,
+the Aztecs on Songhai t71; Mongolia and Assyria none (Greece declared on Mongolia t52); captures 0. `17-long`
+(tuning seeds to turn 100, Songhai new AI): no capture after turn 80 on any seed (the same 5 as by 80), none lost;
+at turn 100 gold rates -1 to -24 (404: -24 with 114 gold), 3 of 6 at 0 gold.
+Read as: beyond Songhai on the tuning seeds, the plan does not yet produce captures; its wars come late (52-79).
+
 
 ## 2026-11-21 M3 iteration 19: the plan's upgrade takes the strongest upgrade open now, not the game's default (new AI)
 Class: the plan's melee stay Warriors on every seed (404: "melee damage per attack 7-8" at Persepolis). The diagup
