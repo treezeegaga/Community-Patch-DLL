@@ -1,0 +1,45 @@
+[924271.625] columns StrategicViewType, TileType are not unique
+[924271.625] While executing - 'INSERT INTO ArtDefine_StrategicView(StrategicViewType, TileType, Asset) VALUES(?,?,?)'
+[924273.765] no such table: ContentPackage.LocalizedText
+[924273.765] no such table: ContentPackage.LocalizedText
+[924273.765] no such table: ContentPackage.LocalizedText
+[924274.468] no such table: ContentPackage.LocalizedText
+[924275.906] columns StrategicViewType, TileType are not unique
+[924275.906] While executing - 'INSERT INTO ArtDefine_StrategicView(StrategicViewType, TileType, Asset) VALUES(?,?,?)'
+[924277.390] no such table: ContentPackage.LocalizedText
+[924277.390] no such table: ContentPackage.LocalizedText
+[924277.390] no such table: ContentPackage.LocalizedText
+[924279.343] columns StrategicViewType, TileType are not unique
+[924279.343] While executing - 'insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') values (?, ?, ?);'
+[924279.343] In XMLSerializer while inserting row into table insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') with  values (ART_DEF_FEATURE_FOUNTAIN_YOUTH, Feature, SV_Fountain_of_Youth.dds, ).
+[924279.343] In XMLSerializer while updating table ArtDefine_StrategicView from file Assets\DLC\Shared\StrategicView\Civ5ArtDefines_SV_Shared_Features.xml.
+[924279.343] columns StrategicViewType, TileType are not unique
+[924279.343] columns StrategicViewType, TileType are not unique
+[924279.343] While executing - 'insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') values (?, ?, ?);'
+[924279.343] In XMLSerializer while inserting row into table insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') with  values (ART_DEF_RESOURCE_STONE, Resource, SV_Stone.dds, ).
+[924279.343] In XMLSerializer while updating table ArtDefine_StrategicView from file Assets\DLC\Shared\StrategicView\Civ5ArtDefines_SV_Shared_Resources.xml.
+[924279.343] columns StrategicViewType, TileType are not unique
+[924281.906] 
+-- SQLite Memory Statistics --
+Memory Usage:
+		[Cur]		[Max]
+Malloc:		8843648		79089720
+PageCache:	7		13
+LookAside:	0		0
+Scratch:	0		1
+
+Static Buffer Overflows:
+		[TooLarge]	[NoSpace]
+PageCache:	8029728		65803080
+Scratch:	0		0
+
+Largest Allocations:
+Malloc:		262144
+PageCache:	1172
+Scratch:	6640
+
+Prepared Statements:
+Current:		10
+------------------------------
+[924311.640] no such column: Type
+[924311.640] In Query - select * from Natural_Wonder_Placement where Type = ? LIMIT 1
