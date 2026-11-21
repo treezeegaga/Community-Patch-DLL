@@ -219,6 +219,23 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 The six added tuning seeds, baseline (build `ab-006a7f0`, its. 14+16; no decision)
+`2026-11-21-19-tune2`, Songhai seat, new AI vs stock:
+| seed | new AI: army 6+4 / war / capture | stock |
+|---|---|---|
+| 1313 | t55 / on the Huns t65 / - (estimate TAKE for Attila's Court turns 65-74, 10 turns) | no war |
+| 1414 | t49 / on Greece t59 / - | no war |
+| 1515 | t39 / on Sweden t51 / - (TAKE for Sigtuna/Stockholm from t52) | no war |
+| 1616 | t56 / on the Huns t63 / - (TAKE for Attila's Court from t67) | on the Huns t81 |
+| 1717 | t53 / on Greece t66 / - (TAKE for Corinth from t69) | no war |
+| 1818 | t47 / on the Celts t55 / **Edinburgh (the Celtic capital) t64** | (failed once: Civ V window lost; re-queued) |
+Tuning set now (12 seeds, this build): captures on 5 of 12; capitals Athens t59 (606), Edinburgh t64 (1818).
+**New failure class in the tuning set:** the siege estimate says TAKE for several turns and the city doesn't fall
+(1313, 1515, 1616, 1717). 1313: the estimate counts 4 ranged within 4 tiles at 96-100 damage a turn; the city's
+hp goes 200, 173, 147, 132, 128 (turns 65-69) and the capture attempt's "expected max damage per turn" is 11-25;
+Warriors make 7-8 damage melee hits on it. Next: `2026-11-21-19a-diag1313` replays 1313 with a log of where our ranged
+units stand (distance, can they shoot the city) each turn.
+
 ## 2026-11-21 Holdout finding (not acted on): a nearly taken city left standing while melee close in on another
 On holdout seed 909 (hoN909, its. 14+16) Argos sat at 21 hp turns 70-72 ("attempting capture of Argos, required damage
 21"): the one Warrior in reach (17 hp, then 9) struck for 19-20 each turn, while a Spearman and three Warriors 3-5
