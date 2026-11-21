@@ -48,6 +48,22 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
+## 2026-11-21 M3 iteration 21: explorer Warriors return to attack duty when the plan marches (new AI)
+Direction (review relay 3:10 PM): before more Songhai tuning, why the other warmonger civs declare and take nothing.
+Class (tuning seeds, other civs with the new AI, `rlog2` on the rebuilt tip): first operations leave with 4 of ~10
+units (England t60, Japan t48). "Recruit skip" (OperationalAILog): Japan's first operation skipped 3 Warriors as
+"explorer" (the homeland AI made early Warriors UNITAI_EXPLORE; `IsUnitSuitableForRecruitment` never takes explorers)
+while `CountPlanArmy` counts them, so the plan says ready with units that never march; Songhai on 1313 and 1515: 1
+each. England's were "threatened zone or enemy near" (Greek units by its cities; not addressed here).
+Change (behind `IsNewAI()` via `GetActivePlan()`, in `DoPlanUpgrades`, i.e. once the strike unit's tech is known):
+land melee units whose AI type is UNITAI_EXPLORE but whose default isn't (Warriors, not Scouts) are set to
+UNITAI_ATTACK; logged "plan: explorer ... back to attack duty". Feeding (point 2): the plan's own step; the stock
+explore assignment stays until the march.
+Predicted (opening set, 12 tuning seeds, Songhai new AI against i16s/t2N; and other civs new AI against civN/civ2N):
+"back to attack duty" lines for Japan and on 1313/1515; first operations of plan civs recruit more units on average
+than before; captures by plan civs other than Songhai by turn 80: at least 1 (before: 0); Songhai captures not fewer
+(5 of 12). Regress 8 of 8. (Holdout untouched.)
+
 ## Purge of the full-desktop screenshots from ai/v2's history (user via review session, 3:10 PM ET Nov 21)
 **Done (3:50 PM ET), user confirmed in chat ("go ahead"):** the user couldn't pause the PCs, so instead the backlog
 was stopped and watcher v6 pushed first (`Repair-RewrittenHistory`: when the checkout is more than 50 commits ahead

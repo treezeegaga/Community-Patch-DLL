@@ -1223,6 +1223,29 @@ int CvMilitaryAI::DoPlanUpgrades()
 	if (pkStrike->GetPrereqAndTech() != NO_TECH && !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech((TechTypes)pkStrike->GetPrereqAndTech()))
 		return 0;
 
+	//M3 iteration 21: once the strike unit's tech is known the whole army marches; melee units the homeland AI made
+	//explorers (early Warriors) go back to attack duty, or no operation recruits them ("Recruit skip: ... explorer":
+	//Japan 3 of its melee at its first attack, rlogC303) while the plan counts them as ready
+	{
+		int iExpLoop = 0;
+		for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iExpLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iExpLoop))
+		{
+			if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->IsCanAttackRanged())
+				continue;
+			if (pLoopUnit->AI_getUnitAIType() != UNITAI_EXPLORE || pLoopUnit->getUnitInfo().GetDefaultUnitAIType() == UNITAI_EXPLORE)
+				continue;
+			pLoopUnit->AI_setUnitAIType(UNITAI_ATTACK);
+			if (GC.getLogging() && GC.getAILogging())
+			{
+				CvString strPlayerName = m_pPlayer->getCivilizationShortDescription();
+				FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(strPlayerName), FILogFile::kDontTimeStamp);
+				pLog->Msg(CvString::format("%03d, %s, plan: explorer %s %d back to attack duty, X: %d, Y: %d",
+					GC.getGame().getElapsedGameTurns(), m_pPlayer->getCivilizationShortDescription(), pLoopUnit->getName().GetCString(),
+					pLoopUnit->GetID(), pLoopUnit->getX(), pLoopUnit->getY()).c_str());
+			}
+		}
+	}
+
 	int iUpgraded = 0;
 	for (int iPass = 0; iPass < 2; iPass++) //0: ranged, 1: melee
 	{
