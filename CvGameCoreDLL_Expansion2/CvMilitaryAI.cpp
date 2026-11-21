@@ -1333,7 +1333,7 @@ void CvMilitaryAI::LogPlanWarTarget(PlayerTypes eTarget, const CvCity* pCity, co
 {
 	if (!pCity || !GC.getLogging() || !GC.getAILogging())
 		return;
-	CvString playerName = GetPlayer()->getCivilizationShortDescription();
+	CvString playerName = m_pPlayer->getCivilizationShortDescription();
 	FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(playerName), FILogFile::kDontTimeStamp);
 	if (pLog)
 	{
