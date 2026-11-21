@@ -36745,6 +36745,9 @@ void CvDiplomacyAI::DoContactMinorCivs()
 
 	// Do we want to give someone Gold enough to actually do it?
 	veMinorsToGiveGold.StableSortItems(); // Sort from highest desirability to lowest
+	//new AI (M3 iteration 13): while a plan is preparing its army, its gold is kept for the upgrades (user ruling: gold for nothing else)
+	if (GetPlayer()->GetMilitaryAI()->GetActivePlan() != NULL)
+		veMinorsToGiveGold.clear();
 	for (int i = 0; i < veMinorsToGiveGold.size(); i++)
 	{
 		int iGoldLeft = GetPlayer()->GetTreasury()->GetGold();
