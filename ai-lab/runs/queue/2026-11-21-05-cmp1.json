@@ -1,0 +1,141 @@
+{
+  "id": "2026-11-21-05-cmp1",
+  "why": "Seeded comparison (review relay point 1): iterations 13 / 14 / 15 on the same 6 starts (seeds 101-606); it. 14 on 101 and 202 is seedA/seedD of seed1. Plus it. 15 regress. Either trusted PC.",
+  "launches": [
+    {
+      "label": "i15s101",
+      "release": "ab-22f16eb",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 101
+    },
+    {
+      "label": "i15s202",
+      "release": "ab-22f16eb",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 202
+    },
+    {
+      "label": "i15s303",
+      "release": "ab-22f16eb",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 303
+    },
+    {
+      "label": "i15s404",
+      "release": "ab-22f16eb",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 404
+    },
+    {
+      "label": "i15s505",
+      "release": "ab-22f16eb",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 505
+    },
+    {
+      "label": "i15s606",
+      "release": "ab-22f16eb",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 606
+    },
+    {
+      "label": "i14s303",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 303
+    },
+    {
+      "label": "i14s404",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 404
+    },
+    {
+      "label": "i14s505",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 505
+    },
+    {
+      "label": "i14s606",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 606
+    },
+    {
+      "label": "i13s101",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 101
+    },
+    {
+      "label": "i13s202",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 202
+    },
+    {
+      "label": "i13s303",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 303
+    },
+    {
+      "label": "i13s404",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 404
+    },
+    {
+      "label": "i13s505",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 505
+    },
+    {
+      "label": "i13s606",
+      "release": "ab-32caacd",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 606
+    },
+    {
+      "label": "i15x",
+      "release": "ab-22f16eb",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
