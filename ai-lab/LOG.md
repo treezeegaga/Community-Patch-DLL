@@ -22,6 +22,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   with a major on 5 of 6 (ours turns 52, 53, 59, 65; Greece's on us t52); captures: Athens t59 (606, **a capital by
   60**), St. Petersburg t63 + Novgorod t80 (505), Corinth t66 (202), York t67 (101); 404 war t53 no capture; 303 no
   major near. Gold 0 by turn 80 on 4 of 6 (turns 64-73, after the war starts).
+- **Tuning set widened** (12:55 PM): seeds 101-606 plus 1313, 1414, 1515, 1616, 1717, 1818 (baseline queued:
+  `19-tune2`). Holdout unchanged.
 - **Holdout (check only):** clearly worse than the tuning set: 2 of 6 captures, turns 78-79, no capital (LOG backlog
   entry). Other warmonger civs with the plan declare war (5 of 6) but take nothing by turn 80.
 - **Gaps now:** 404: Persepolis (250 hp, heals 20) needs the 4 Composite Bowmen at its walls; only 2 arrive and the
@@ -216,6 +218,16 @@ first attack op started at turn 48 with 3 units, marched at once and the war beg
 ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (received 66-134), the rest stayed home
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
+
+## 2026-11-21 Holdout finding (not acted on): a nearly taken city left standing while melee close in on another
+On holdout seed 909 (hoN909, its. 14+16) Argos sat at 21 hp turns 70-72 ("attempting capture of Argos, required damage
+21"): the one Warrior in reach (17 hp, then 9) struck for 19-20 each turn, while a Spearman and three Warriors 3-5
+tiles away with full moves were sent "closing in on Athens (ring 2)" by `CvTacticalAI::PlotReinforcementMoves` (the
+new AI's closing-in, M2 it. 4): each unit goes to the zone city processed first, not the one nearest capture. On
+1212 the estimate says TAKE for Assur/Nineveh turns 56-60, no capture by 80 (not read further). The tuning seeds
+show no such case (every city brought under 60 hp fell the next turn: 202, 505, 606), so per the holdout rule this
+is **not** used to choose a change. Instead the tuning set grows by six seeds (1313-1818, below); if the class
+shows there, it is fixed from there.
 
 ## 2026-11-21 Backlog: the holdout baseline and other warmonger civs (build `ab-006a7f0`, its. 14+16; no decision)
 **Holdout set** (seeds 707-1212, never used for tuning; `2026-11-21-15-holdout`; Songhai seat, new AI vs stock):
