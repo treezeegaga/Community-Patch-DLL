@@ -1,0 +1,8 @@
+{
+  "id": "2026-11-21-19a-diag1313",
+  "why": "Replay of tuning seed 1313 (accepted code + ranged-position logging, no behaviour change): why the estimate says TAKE for Attila's Court turns 65-74 but the city loses only 15-27 hp a turn. Plus the t2S1818 stock baseline again (failed once: window lost). Either trusted PC.",
+  "launches": [
+    { "label": "d1313", "release": "ab-0aa0ea5", "set": "opening", "newAI": "attacker", "repeats": 1, "seed": 1313 },
+    { "label": "t2S1818b", "release": "ab-006a7f0", "set": "opening", "newAI": "none", "repeats": 1, "seed": 1818 }
+  ]
+}
