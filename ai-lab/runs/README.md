@@ -188,3 +188,10 @@ at least 13 of the 15 scenarios, and by at most 2 in 6 in all of them. That is t
 of the same build on one PC (the plan's decision rule, section 7). As a cross-check, BOX's half is also compared with
 BOX's earlier stock set on the same build (m1s9a/b/c): the two PCs should differ no more than BOX differs from itself.
 Request: `2026-11-19-13-pc2check` (labels `pc2box1-3` on BOX, `pc2tree1-3` on TREEDESKTOP).
+
+## Results are public
+
+Everything a run saves under `ai-lab/siege/results/` is pushed to a public repository. Screenshots show only Civ V's
+own window (`Save-Shot` in `Run-SiegeLab.ps1`); never add a capture of the whole screen or of another window, and keep
+anything personal off the lab PCs' Civ V window.
+
