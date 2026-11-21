@@ -32,7 +32,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$WatcherVersion = 5
+$WatcherVersion = 6
 $Me = $env:COMPUTERNAME
 $state = Join-Path $env:LOCALAPPDATA "cp-ai-lab"
 New-Item -ItemType Directory -Force $state | Out-Null
@@ -115,6 +115,7 @@ function Push-Results([string]$message) {
     }
     $staged = & git -C $Repo diff --cached --name-only
     if ($staged) { Invoke-Git @("commit", "-q", "-m", $message) | Out-Null }
+    Repair-RewrittenHistory $(if ($staged) { (& git -C $Repo rev-parse HEAD) -join "" } else { "" })
     for ($i = 1; $i -le 4; $i++) {
         try { Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null; Invoke-Git @("push", "-q", "origin", "HEAD:$Branch") | Out-Null; return $true }
         catch {
@@ -139,10 +140,26 @@ function Push-Contested([string]$path, [string]$message) {
         return $false
     }
 }
+# Watcher v6: the branch's history was rewritten on GitHub (2026-11-21: screenshots purged). This checkout then has the
+# old commits "ahead" of origin; a pull would try to replay them. Keep them in a local backup branch (never pushed),
+# put the checkout on the new history, and carry over only $KeepCommit (a results commit just made), if given.
+function Repair-RewrittenHistory([string]$KeepCommit = "") {
+    Invoke-Git @("fetch", "-q", "origin", "+refs/heads/${Branch}:refs/remotes/origin/${Branch}") | Out-Null
+    $ahead = Get-Ahead
+    if ($ahead -le 50) { return }
+    $backup = "old-history-" + (Get-Date -Format "yyyyMMdd-HHmm")
+    Write-Log "HISTORY REWRITTEN on origin ($ahead local commits not on origin/$Branch): old history kept in local branch $backup; resetting to origin/$Branch"
+    Invoke-Git @("branch", "-f", $backup, "HEAD") | Out-Null
+    Invoke-Git @("reset", "-q", "--hard", "origin/$Branch") | Out-Null
+    if ($KeepCommit) {
+        try { Invoke-Git @("cherry-pick", $KeepCommit) | Out-Null; Write-Log "  carried over $KeepCommit" }
+        catch { try { & git -C $Repo cherry-pick --abort 2>$null | Out-Null } catch {}; Write-Log "  could not carry over $KeepCommit (it stays in $backup)" }
+    }
+}
 function Sync-Repo {
     # Explicit refspec: a clone made with another branch only would otherwise leave origin/<branch> stale, and the
     # unpushed-commit count (Get-Ahead) then blocks every claim (BOX, 2026-11-19 5:09-8:19 PM).
-    Invoke-Git @("fetch", "-q", "origin", "+refs/heads/${Branch}:refs/remotes/origin/${Branch}") | Out-Null
+    Repair-RewrittenHistory
     try { Invoke-Git @("pull", "-q", "--rebase", "origin", $Branch) | Out-Null }
     catch {
         $pullError = $_.Exception.Message
