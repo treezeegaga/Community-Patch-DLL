@@ -5375,6 +5375,23 @@ void CvTacticalAI::UpdateSiegeEstimates()
 				kEst.iCityHP, kEst.iCityMaxHP, kEst.iCityHeal, kEst.iCityStrike, kEst.iMelee, kEst.iRanged,
 				kEst.iRangedDamagePerTurn, kEst.iMeleeDamagePerAttack, kEst.iMeleeReceivedPerAttack,
 				kEst.iGarrisonHP, kEst.iGarrisonDeadTurn, kEst.iRangedDamageBare, kEst.iMeleeDamageBare));
+			//ai/v2 lab (logging only): where our ranged units near the city stand at the start of our turn, and whether
+			//they could shoot it from there (the estimate counts every ranged unit within 4 as firing each turn)
+			if (bLog && m_pPlayer->IsNewAI())
+			{
+				int iUnitLoop = 0;
+				for (CvUnit* pU = m_pPlayer->firstUnit(&iUnitLoop); pU != NULL; pU = m_pPlayer->nextUnit(&iUnitLoop))
+				{
+					if (pU->getDomainType() != DOMAIN_LAND || !pU->IsCanAttackRanged())
+						continue;
+					int iDist = plotDistance(*pU->plot(), *pCity->plot());
+					if (iDist > 6)
+						continue;
+					LogTacticalMessage(CvString::format("ranged near %s: %s %d at distance %d, range %d, hp %d, moves %d, can shoot it from here %d, army %d, tactical move %d, homeland move %d",
+						pCity->getNameNoSpace().c_str(), pU->getName().c_str(), pU->GetID(), iDist, pU->GetRange(), pU->GetCurrHitPoints(), pU->getMoves(),
+						pU->canRangeStrikeAt(pCity->getX(), pCity->getY()) ? 1 : 0, pU->getArmyID(), (int)pU->getTacticalMove(), (int)pU->getHomelandMove()));
+				}
+			}
 		}
 	}
 }
