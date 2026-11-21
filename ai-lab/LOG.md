@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 10:50 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, noon ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -15,7 +15,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
   override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
   plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
-  (14), no city-state operations during the plan (16). Reverted: 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
+  (14), no city-state operations during the plan (16). Reverted: 19 (strongest open upgrade: none open), 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
 - **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
   Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
 - **Where the newest code stands (its. 14 + 16, build `ab-05dc217`), seeds 101-606:** army 6+4 ready turn 43-59; war
@@ -30,7 +30,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   from the standing backlog (PLAN 7a); (2) holdout seeds 707-1212, check only, never for tuning (PLAN 7a, BASELINE);
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
   of this heading's text, push, stop (the review session starts implementer 9).
-- **Queued:** `13b-cmp6` (it. 19 on 101-606 + regress), `14-civs` (backlog a: other warmonger civs, new AI and stock),
+- **Queued:** `14-civs` (backlog a: other warmonger civs, new AI and stock),
   `15-holdout` (backlog b: holdout baseline, new AI and stock), all but cmp5 on build `ab-006a7f0`.
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
@@ -228,6 +228,14 @@ Feeding (point 2): no new override; the plan's existing upgrade step.
 Predicted (seeds 101-606 against it. 16): "plan upgrade: Warrior to Spearman" on at least 4 of the 5 seeds with a
 major near (gold allowing); captures at least it. 16's 5; 404's siege estimate shows more melee damage per attack
 than it. 16 at Persepolis; 606 Athens by 60. Regress 8 of 8.
+Build: `ab-4882f25`. Run: `2026-11-21-13b-cmp6` (i19s101-606, i19x regress).
+Result: **every game identical to it. 16**; no melee upgrade anywhere. Bronze Working (stock research) turns 44-52 on
+101/202/303/606, never on 404/505 by 80; with it known and gold up to 254 (101), still no Warrior upgraded. In the game
+data actually played the Warrior's only upgrade class is the Swordsman (`GetUpgradeUnitType` names it, and the new
+loop found no other class): the repository's VP SQL (`PreUnitChanges.sql` deletes all, `UnitChanges2.sql` adds
+Warrior to Spearman) is not what the lab PCs' installed pack has. Regress 8 of 8.
+Decision: **reverted** (no effect). Learned: a Warrior becomes a better melee unit only through Iron Working (and an
+iron resource) in the played data; otherwise the plan must build Spearmen (Bronze Working) instead of Warriors.
 
 ## 2026-11-21 M3 iteration 18: iteration 11 again (Bronze Working after Construction), now that upgrades work (new AI)
 Class: seed 404 (its. 14+16): at Persepolis's walls 2 Warriors + 3 Composite Bowmen, "melee damage per attack 7-8"
