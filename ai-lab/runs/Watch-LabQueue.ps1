@@ -32,7 +32,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
-$WatcherVersion = 4
+$WatcherVersion = 5
 $Me = $env:COMPUTERNAME
 $state = Join-Path $env:LOCALAPPDATA "cp-ai-lab"
 New-Item -ItemType Directory -Force $state | Out-Null
@@ -204,6 +204,7 @@ function Read-Request($file) {
         if ($l.release -and $l.release -notmatch '^ab-[A-Za-z0-9.-]+$') { throw "bad release '$($l.release)'" }
         if ($l.newAI -and @("none", "attacker", "defender", "both") -notcontains $l.newAI) { throw "bad newAI '$($l.newAI)'" }
         if ($l.host -and $l.host -notmatch '^[A-Za-z0-9_-]+$') { throw "bad host '$($l.host)'" }
+        if ($l.seed -and [string]$l.seed -notmatch '^[0-9]{1,9}$') { throw "bad seed '$($l.seed)'" }
         foreach ($n in @($l.only)) { if ($n -and $n -notmatch '^[A-Za-z0-9_]+$') { throw "bad scenario name '$n'" } }
     }
     $queuedAt = (& git -C $Repo log -1 --format=%ct -- "ai-lab/runs/queue/$($file.Name)") -as [long]
@@ -317,6 +318,7 @@ function Invoke-Launch($l) {
         if ($l.repeats) { $a += @("-Repeats", [string]$l.repeats) }
         if ($l.script) { $a += "-Script" }
         if ($l.newAI) { $a += @("-NewAI", $l.newAI) }
+        if ($l.seed) { $a += @("-Seed", [string]$l.seed) }
         Write-Log "  launch $($l.label), attempt $attempt"
         & powershell.exe @a | Out-Null
         $entry.exitCode = $LASTEXITCODE

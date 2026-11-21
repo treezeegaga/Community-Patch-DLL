@@ -38,6 +38,7 @@ Launch fields, all but `label` optional; each maps to a `Run-SiegeLab.ps1` optio
 | `repeats` | battles per scenario in this launch | 2 |
 | `script` | `true`: the scripted attacker plays the attacker | `false` |
 | `newAI` | `none`, `attacker`, `defender`, `both` | `none` |
+| `seed` | 1-999999999: Civ V's map and game seed for this launch (config.ini `MapRandSeed`/`SyncRandSeed`, put back to 0 afterwards; watcher v5, lab v20). Launches with the same seed and setup should get the same map; check the `STARTS` line | random |
 | `host` | only this PC (its Windows computer name, e.g. `BOX`) may run the launch | any **trusted** lab PC: those listed in `ai-lab/runs/trusted-hosts.txt` (watcher v3; a PC is added once it passes the two-PC check) |
 
 Launches of a request are taken in order, but with two PCs they run two at a time, so don't rely on one launch
