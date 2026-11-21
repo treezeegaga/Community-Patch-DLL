@@ -213,6 +213,7 @@ Change (behind `IsNewAI()`): `GetActivePlan()` at war with a major: the plan sta
 upgrades, no city-state gifts; `IsPlanArmyReady()` is true at war (no hold on attacks). Before a war, unchanged.
 Predicted (3 games): during the plan's war no Shrine/building purchase and cities building army units; melee at 4+ ten
 turns into the war; a capture by turn 80 in at least 1 of 3 (in a game with a war on a major). Regress 8 of 8.
+Build: `ab-23e0802`. Run: `2026-11-21-03-op11` (op11a/b/c new AI, op11x regress).
 
 ## 2026-11-21 M3 iteration 13: the early-rush plan keeps its gold from city-states (new AI)
 Class: op9b gave 750 gold to city-states while preparing (op9a 250), went bankrupt and gifted units away;

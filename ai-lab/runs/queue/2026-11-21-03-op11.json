@@ -1,0 +1,34 @@
+{
+  "id": "2026-11-21-03-op11",
+  "why": "M3 iteration 14: early-rush plan carries on through its war. Opening lab v19, new AI on Songhai, 3 games (compare op9/op10); one regress launch. Either trusted PC.",
+  "launches": [
+    {
+      "label": "op11a",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op11b",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op11c",
+      "release": "ab-23e0802",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1
+    },
+    {
+      "label": "op11x",
+      "release": "ab-23e0802",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
