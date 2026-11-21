@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 2:00 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 10:15 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -26,6 +26,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   melee are Warriors (it. 17 log). 101: army ready only turn 59. Gold runs out during the war on 4 of 6 (units then
   gifted/scrapped "b/c bankrupt"). Lab logs added (no behaviour change): operation start names enemy and target;
   "Recruit skip" says why a unit stayed out of an operation (OperationalAILog).
+- **Review relay of 10:05 AM Nov 21 (user):** (1) never leave the PCs idle: before going quiet, queue several hours
+  from the standing backlog (PLAN 7a); (2) holdout seeds 707-1212, check only, never for tuning (PLAN 7a, BASELINE);
+  (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
+  of this heading's text, push, stop (the review session starts implementer 9).
+- **Queued:** `13-cmp5` (it. 18 on 101-606 + regress), `14-civs` (backlog a: other warmonger civs, new AI and stock),
+  `15-holdout` (backlog b: holdout baseline, new AI and stock), all but cmp5 on build `ab-006a7f0`.
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
   it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
