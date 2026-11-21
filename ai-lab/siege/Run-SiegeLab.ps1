@@ -192,8 +192,25 @@ function Click([string]$name, [int]$waitMs = 1500) {
     Start-Sleep -Milliseconds $waitMs
 }
 function Save-Shot([string]$path) {
-    $bmp = New-Object System.Drawing.Bitmap ([SlInput]::GetSystemMetrics(0)), ([SlInput]::GetSystemMetrics(1))   # the whole screen
-    $g = [System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen(0, 0, 0, 0, $bmp.Size); $g.Dispose()
+    # Only Civ V's own window, never the rest of the desktop (user's ruling, 2026-11-21: the results are pushed to the
+    # repository). Civ V is brought to the front (and kept on top) first so no other window covers the captured area;
+    # with no Civ V window there is no picture, only a log line.
+    $w = Get-CivProcess
+    if (-not $w) {
+        if (Get-Command Write-Log -ErrorAction SilentlyContinue) { Write-Log "  (no screenshot: no Civ V window)" }
+        return
+    }
+    Set-CivFront
+    $o = Get-Origin
+    $sw = [SlInput]::GetSystemMetrics(0); $sh = [SlInput]::GetSystemMetrics(1)
+    $x = [Math]::Max(0, $o[0]); $y = [Math]::Max(0, $o[1])
+    $cw = [Math]::Min($o[0] + $o[2], $sw) - $x; $ch = [Math]::Min($o[1] + $o[3], $sh) - $y
+    if ($cw -le 0 -or $ch -le 0) {
+        if (Get-Command Write-Log -ErrorAction SilentlyContinue) { Write-Log "  (no screenshot: Civ V window off screen)" }
+        return
+    }
+    $bmp = New-Object System.Drawing.Bitmap $cw, $ch
+    $g = [System.Drawing.Graphics]::FromImage($bmp); $g.CopyFromScreen($x, $y, 0, 0, $bmp.Size); $g.Dispose()
     $bmp.Save($path); $bmp.Dispose()
 }
 
