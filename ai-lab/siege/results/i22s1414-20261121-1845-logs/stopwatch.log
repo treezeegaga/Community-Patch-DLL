@@ -1,0 +1,68 @@
+[932997.281] , Discovering Base Game Map Scripts, 0.000698
+[932997.937] , CreateCoreDatabase, 0.642460
+[932998.171] , 	cvAudioManager::LoadExtraContentScripts, 0.066086
+[932998.171] , cvAudioSystem::Startup, 0.066112
+[932998.187] , DISCOVERING MODS, 0.015327
+[932998.203] , 	Generate BaseGame Loc Database., 0.001236
+[932998.203] , 		Get Package Files, 0.004594
+[932998.203] , 		Generate Specific DLC Database, 0.002981
+[932998.218] , 		Get Package Files, 0.007266
+[932998.218] , 		Generate Specific DLC Database, 0.003507
+[932998.218] , 		Get Package Files, 0.005727
+[932998.218] , 		Generate Specific DLC Database, 0.002901
+[932998.234] , 		Get Package Files, 0.005800
+[932998.234] , 		Generate Specific DLC Database, 0.003304
+[932998.234] , 		Get Package Files, 0.004479
+[932998.234] , 		Generate Specific DLC Database, 0.002500
+[932998.250] , 		Get Package Files, 0.003439
+[932998.250] , 		Generate Specific DLC Database, 0.001951
+[932998.250] , 		Get Package Files, 0.008369
+[932998.250] , 		Generate Specific DLC Database, 0.003904
+[932998.265] , 		Get Package Files, 0.003503
+[932998.265] , 		Generate Specific DLC Database, 0.002045
+[932998.265] , 		Get Package Files, 0.000002
+[932998.312] , 		Get Package Files, 0.051526
+[932998.328] , 		Generate Specific DLC Database, 0.009948
+[932998.390] , 		Get Package Files, 0.065774
+[932998.406] , 		Generate Specific DLC Database, 0.012385
+[932998.406] , 		Get Package Files, 0.000000
+[932998.406] , 		Get Package Files, 0.003991
+[932998.406] , 		Generate Specific DLC Database, 0.001394
+[932998.406] , 		Get Package Files, 0.000001
+[932998.406] , 	Generate DLC Loc Databases., 0.212823
+[932999.187] , 	CvLocalizationDatabaseFactory::GenerateMergedLocalizationDatabase(), 0.779715
+[932999.187] , New Localization Code, 0.994854
+[932999.562] , 	BeforeDeactivateMods - Release Database Cache, 0.000071
+[932999.562] , 	BeforeDeactivateMods - Unload DLL, 0.000002
+[932999.562] , 	AfterDeactivateMods - Reset filesystem, 0.000000
+[933000.234] , 		LoadCoreDatabase - Detach Loc Database, 0.008151
+[933000.234] , 		LoadCoreDatabase - Load Database, 0.010243
+[933001.046] , 			CvLocalizationDatabaseFactory::GenerateMergedLocalizationDatabase(), 0.804765
+[933001.406] , 		LoadCoreDatabase - Attach Loc Database, 1.168375
+[933001.406] , 	AfterDeactivateMods - Rollback Database, 1.844621
+[933001.562] , 		Load DLC into Game Database, 0.145865
+[933001.562] , 	AfterDeactivateMods - Load DLC, 0.145877
+[933001.562] , 		Discovering Base Game Map Scripts, 0.000552
+[933001.906] , 		Parse Map Scripts, 0.346826
+[933001.906] , 	Discover and Parse Base Game Map Scripts, 0.347414
+[933001.906] , 		SetActiveDLCandMods - Import Mod Files into filesystem, 0.000340
+[933001.906] , 		SetActiveDLCandMods - Perform OnModActivated Actions, 0.000122
+[933001.906] , 	SetActiveDLCandMods - Activate Mods, 0.000479
+[933002.296] , 	SetActiveDLCandMods - Notify Localization Database Updated, 0.393590
+[933002.312] , 	SetActiveDLCandMods - Reload GameCore DLL, 0.022614
+[933002.328] , 	SetActiveDLCandMods - Refresh include() file list, 0.008685
+[933002.328] , 	SetActiveDLCandMods - Refresh Gameplay DLL Data, 0.000003
+[933002.328] , 	SetActiveDLCandMods - Perform Gameplay Database Post Processing, 0.004348
+[933002.843] , 	SetActiveDLCandMods - Cache Game Database Data, 0.515242
+[933002.843] , 	SetActiveDLCandMods - Rescan Localized Audio, 0.000298
+[933002.906] , SetActiveDLCandMods, 3.349689
+[933005.625] , LoadUnitLibraries via Database, 2.256802
+[933009.578] , Discovering Base Game Maps, 0.000564
+[933009.609] , (Lua) Modding.CanEnableMod, 0.000175
+[933009.609] , (Lua) Modding.CanEnableMod, 0.000123
+[933009.640] , Discovering Base Game Maps, 0.000570
+[933009.718] , Discovering Base Game Maps, 0.000568
+[933021.015] , Discovering Base Game Maps, 0.000641
+[933028.625] , CvMapGenerator - GetMapInitData(), 0.000000
+[933029.125] , CvMapGenerator - GenerateRandomMap(), 0.487453
+[933029.140] , CvMapGenerator - GetGameInitialItemsOverrides(), 0.000001
