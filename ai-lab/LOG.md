@@ -31,7 +31,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
 - **Next:** it. 16: while the plan prepares, its sneak attack goes only to a major's city (the one the approach and
-  the estimate point at), not a city-state's; read 202/303 to see why no war there. Then the bankruptcy gate on war
+  the estimate point at), not a city-state's (diag606 replay first, to see whom that march was against). Then the bankruptcy gate on war
   (`IsWarWouldBankruptUs`; the user allows a deficit in the war) and the slow second city.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
