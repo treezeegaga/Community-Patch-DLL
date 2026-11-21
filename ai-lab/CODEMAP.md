@@ -24,6 +24,21 @@ accepted or reverted, a script changed. Line numbers are approximate (5.4.8 base
   major. At war with a major (M3 it. 14): active until the first city taken or turn 90 (Quick); `IsPlanArmyReady()` true at war. No saved state. `GetPlanBuild(city)`: what the row wants built next (settler, best melee, best foot ranged) or
   NO_UNIT. Hook: top of `CvCityStrategyAI::ChooseProduction` (M3 it. 7). `GetPlanResearch()`: cheapest researchable tech on the path to the row's unit; hook in `CvPlayerAI::AI_chooseResearch` before `ChooseNextTech` (M3 it. 8). `CvEconomicAI::CanWithdrawMoneyForPurchase` (the one gold gate): while a plan is active, only unit upgrades (M3 it. 9). `CountPlanArmy` / `IsPlanArmyReady()`: the plan's army (ranged counted only at the strike unit's strength once its tech is known); `RequestCityAttack` refuses a sneak attack until it is ready (M3 it. 10). `DoPlanUpgrades()`: once the strike unit's tech is known, upgrades every plan unit in our territory with the kept gold (ranged, then melee), called first in `CvPlayerAI::AI_unitUpdate` before tactical moves; the stock `CvHomelandAI::PlotUpgradeMoves` runs after them and takes only idle units at home (M3 it. 12). City-state gold gifts (`CvDiplomacyAI::DoContactMinorCivs`) are off while a plan is active (M3 it. 13). Not yet in: the deficit rule.
 
+### Where the plan overrides a stock decision (rule 4: keep this list short; review relay 2026-11-20)
+
+Before adding a row: check whether the same effect can be had by feeding the stock decision (its weights, flavors, the
+siege estimate) instead of replacing it, and say so in the LOG entry. Results so far are 3 games each on different maps.
+
+| Stock decision | Override (hook) | Real-game result behind it |
+|---|---|---|
+| What a city builds (`CvCityStrategyAI::ChooseProduction`) | `GetPlanBuild`: settler, then melee/ranged up to 6+4 | it. 7: stock builds mostly buildings; plan army 6-9 melee + 4-6 ranged by turn 50-60 (op4, op5) |
+| What is researched (`CvPlayerAI::AI_chooseResearch`) | `GetPlanResearch`: path to Composite Bowmen | it. 8: Construction by turn 37-46 instead of not at all by 80 (op5) |
+| When gold is spent (`CvEconomicAI::CanWithdrawMoneyForPurchase`) | only unit upgrades while the plan is active | it. 9: gold kept (op6: 200-370 at turn 50), Archer/Scout purchases gone |
+| City-state gold gifts (`CvDiplomacyAI::DoContactMinorCivs`) | none while the plan is active | it. 13: op9b gave 750 and went bankrupt; op10: no gifts, gold 212-469 |
+| When an attack may start (`CvMilitaryAI::RequestCityAttack`) | sneak attack refused until the plan's army stands (`IsPlanArmyReady`) | it. 10: op6 marched 2+2 of 15; op7 marched whole (Sparta to 21 hp) |
+| Unit upgrades (`CvHomelandAI::PlotUpgradeMoves`, after tactical moves, idle units at home) | `DoPlanUpgrades` first in `AI_unitUpdate`, anywhere in our land | it. 12: op8 no upgrades with 300 gold; op9 2-3 Archers upgraded the turn the tech landed, 2 captures of 3 |
+| Plan length | active through its war until the first capture or turn 90 (it. 14) | pending (op10c: war gold went to Shrines, army not replaced) |
+
 ## Military AI: choosing a target and starting an operation (M2, M4)
 
 | Function | What it decides | Gates and limits found | Log lines (file) |

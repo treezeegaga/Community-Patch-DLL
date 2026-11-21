@@ -2,38 +2,36 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-20, 12:45 PM ET), written by implementer 7 at handover (M2 signed off)
+## Current state (2026-11-20, 9:15 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
-- **Talk to the user in plain words** (their ruling today): "step 3: the AI builds that army in time" rather than "M3";
-  "the mod" rather than "the pack"; explain any term the first time.
-- **Milestones:** M0, M1, M2 closed (M2 signed off 2026-11-20 12:35 PM ET). **M3 in progress.**
-- **M3 so far:** first item done: the one "can this army take this city" function, `TacticalAIHelpers::EstimateSiege`
-  (LOG M3 iterations 1-3b; CODEMAP). Accepted behind `IsNewAI()`: it. 2 (both "too early" city-attack gates ask it),
-  it. 3b (a melee hit the estimate's plan makes now scores the damage it deals). Reverted: it. 3 (melee spent early).
-- **M3 bar:** PLAN says set with the user at M3's start. Proposed to the user 12:25 PM ET, no answer yet; adopt it
-  provisionally (rule 10): for the early-rush row, war declared around turn 41-50 and a capital taken by turn 54 on Quick
-  with about 6 melee and 4 Composite Bowmen, no bankruptcy, at least 2 cities (the user's Aztec game, HUMAN_GAME.md).
-- **Newest build:** `ab-b196ee4` = M1 + M2 (its. 2, 3, 4b) + M3 (its. 2, 3b) + the estimate's log line. Siege 76 of 90
-  (all 14 takeable scenarios meet the M1 bar), march and march3 meet the M2 bar, regress 8 of 8 (BASELINE.md).
-- **Lab:** v18: battle sets plus `-Set opening` (80 turns) and `-Set transfer` (100 turns): a normal game autoplayed,
-  OPEN lines per civ per turn, CAPTURE lines, AI logs saved. Readers: `siege/estimate_check.py`,
-  `siege/transfer_check.py`. Mock: judge by exit code (CODEMAP). Watcher v4 (status shows "running <request> / <label>").
-- **Where things stand in real games** (`2026-11-20-08-op0`, `2026-11-20-09-tr1`, LOG entries): Songhai, stock or new
-  AI, has 2-3 cities and 2-5 melee, 0-2 ranged at turn 80-100, rarely declares war, and never brings an army to an
-  enemy city, so no lab fix fires in real play. The gap is fielding the army (M3) and deciding to use it (M4).
-- **Queued / unread:** nothing.
-- **Open for the user** (none blocks work): confirm the M3 bar above; whether the "project review session"
-  (session_01G2NZj4f5xWWrXLRuDN5eyd) speaks for them (it relayed "do the transfer check now", "keep Current state
-  current", "fix watcher status": all done); archive implementers 5, 6 and 7 in the Claude app (a cloud session's
-  archive request is refused: trusted device only).
-- **Next:**
-  1. M3: why the opening army stays small. Read the op0/tr1 logs (`PlayerEconomyAILog`, city build choices,
-     `MilitaryAILog` "UNIT DIVERSITY"/military strategies, flavors) for what Songhai builds by turn 40-60 and why; then
-     the loop (rule 3: the opening lab is the scenario). Then plans in data (one table row per civ) and its executor.
-  2. The sneak-attack "Ended: NoUnits; Duration 0" failure (tr1c turn 98, `OperationalAILog.csv`): reproduce in a lab
-     scenario first (rule 3), then the loop.
-  3. Known, not fixed: greedy slot filling in `FindBestFitReserveUnit` (CODEMAP). The dashboard shows M2 4b, not M3.
-  4. The transfer check again at each milestone close (`-Set transfer -NewAI attacker`, 6 games, `transfer_check.py`).
+- **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
+  pack"; explain any term the first time. Times in US Eastern.
+- **The review session speaks for the user** (session_01G2NZj4f5xWWrXLRuDN5eyd; PLAN section 4). Its 8 PM relay (four
+  points, below) is being worked; replies to it by send_message are refused here (untrusted device), so answer in chat.
+- **Milestones:** M0-M2 closed. **M3 in progress.** Bar (user's game, confirmed): early rush, war about turn 41-50,
+  a capital taken by turn 54 on Quick with about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
+  before the war is decided. Rulings: one settler, no buildings, gold only for upgrades right before the attack.
+- **M3 so far:** the siege estimate (its. 1-3b); sneak attacks may build missing units (it. 5); lab flavor leak fixed
+  (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans"): build
+  order (it. 7), research toward Composite Bowmen (it. 8), gold kept for upgrades (it. 9), attack waits for the plan's
+  army (it. 10), upgrades the turn the tech lands (it. 12), no city-state gold gifts (it. 13). Reverted: 3, 6, 11.
+- **Real games so far** (opening lab, Songhai, Tiny map, 4 civs, 3 games per decision, **each on a different random
+  map**): captures 0 of 15 before it. 12; op9 (it. 12) 2 of 3 (Sigtuna turn 72; Mecca, a capital, turn 73); op10 (it.
+  13) 0 of 3. Wars come turns 57-66 or not at all (op9b, op10b: army ready, no war on a major) - the war decision.
+- **Newest build:** `ab-23e0802` (its. 4-5, 7-10, 12-14 + the army-size log line). Regress 8 of 8 on every build.
+- **Queued / unread:** `2026-11-21-03-op11` (it. 14, plan through its war; 3 unseeded games, judged with the seeded
+  re-run below); `2026-11-21-04-seed1` (does a fixed seed give the same map? STARTS lines of seedA/B/C must match).
+- **Review relay of 8 PM (user), being worked:** (1) at least 6 games per decision, both PCs, the same 6 starts before
+  and after: lab v20 / watcher v5 add a launch `seed` (config.ini MapRandSeed/SyncRandSeed) and a STARTS line; until
+  seeds are confirmed every LOG entry says its comparison is across different maps; then re-run it. 11 (Spearman)
+  under the scheme. (2) CODEMAP list of every stock decision the plan overrides, with the result behind it; before a
+  new override, check whether feeding the stock decision does it, and say so in the LOG. (3) Next iteration: the new
+  AI declares war when the plan's army is ready and the siege estimate says a target in reach can be taken (that one
+  decision only; the rest of war/peace stays for M4). (4) This section, kept current. Later: the plan seen working on
+  two other warmonger civs before M3 closes.
+- **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
+- **Next:** read seed1; if seeds hold, pick 6 seeds and re-run its. 11, 13 vs 14 matched (before/after on the same
+  seeds, both PCs); then the war-declaration iteration.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
@@ -213,6 +211,7 @@ Change (behind `IsNewAI()`): `GetActivePlan()` at war with a major: the plan sta
 upgrades, no city-state gifts; `IsPlanArmyReady()` is true at war (no hold on attacks). Before a war, unchanged.
 Predicted (3 games): during the plan's war no Shrine/building purchase and cities building army units; melee at 4+ ten
 turns into the war; a capture by turn 80 in at least 1 of 3 (in a game with a war on a major). Regress 8 of 8.
+Note: this comparison (op11 against op9/op10) is across different random maps; the decision waits for a seeded re-run (6 matched starts, review relay of 8 PM).
 Build: `ab-23e0802`. Run: `2026-11-21-03-op11` (op11a/b/c new AI, op11x regress).
 
 ## 2026-11-21 M3 iteration 13: the early-rush plan keeps its gold from city-states (new AI)
