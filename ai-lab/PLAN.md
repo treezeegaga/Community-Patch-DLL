@@ -203,6 +203,21 @@ In this order, unless an item is already in hand or can't move:
 4. **The next milestone's lab**: for M3, the single "can this army take this city" estimate (logging first, checked
    against the lab's results) and the opening lab (a normal start cut at turn 60-80).
 5. **Lab hygiene**: known stock bugs worth a scenario (CODEMAP "known, not fixed"), lab leaks, faster runs.
+
+**Standing run backlog (user via review session, 2026-11-21 10:05 AM ET): never let the lab PCs sit idle.** Before going
+quiet for any reason (waiting on a result, on the user, the end of an iteration at night), queue enough runs from this
+list to fill several hours on both PCs; they need no decision. Top the queue up from it; tick off what ran.
+- (a) Other warmonger civs: the current accepted build on seeds 101-606 with `newAI: defender` (the new AI for every
+  major but the Songhai seat: Greece on every seed, Aztecs, England, Netherlands, Denmark, Japan, Persia, Ethiopia,
+  Russia, Indonesia, Spain, Mongolia) and the same with `newAI: none` (stock), to see whether the plan's selection
+  rule (`IsWarmonger`) and the plan itself work beyond Songhai. First queued: `2026-11-21-14-civs` (build `ab-006a7f0`).
+- (b) The holdout set (below): stock and new AI at the current accepted build, now and before M3 closes.
+- (c) Repeat (a)/(b) after every accepted iteration.
+
+**Holdout set (2026-11-21): seeds 707, 808, 909, 1010, 1111, 1212.** Never used to choose or tune a change; run only as
+a check (stock and new AI), now as a baseline and again before M3 closes. If it does clearly worse than the tuning set
+(101-606), LOG.md says so plainly. Tuning set: seeds 101, 202, 303, 404, 505, 606.
+
 Anything that changes the user's PC beyond the lab (installing the setup switch in the pack, graphics, saves) or
 needs the user at the PC (the multiplayer smoke test) is not on this list.
 
