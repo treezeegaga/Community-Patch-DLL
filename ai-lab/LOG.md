@@ -227,7 +227,11 @@ upgrades, no city-state gifts; `IsPlanArmyReady()` is true at war (no hold on at
 Predicted (3 games): during the plan's war no Shrine/building purchase and cities building army units; melee at 4+ ten
 turns into the war; a capture by turn 80 in at least 1 of 3 (in a game with a war on a major). Regress 8 of 8.
 Note: this comparison (op11 against op9/op10) is across different random maps; the decision waits for a seeded re-run (6 matched starts, review relay of 8 PM).
-Build: `ab-23e0802`. Run: `2026-11-21-03-op11` (op11a/b/c new AI, op11x regress).
+Build: `ab-23e0802`. Run: `2026-11-21-03-op11` (op11a/b/c new AI, op11x regress; all clean, by 9:08 PM ET).
+Result (unmatched maps): op11a war on Greece turn 56, the plan held through it (gold 300 to 39, army 7+6 kept), no
+capture by 80; op11b army 6+5 and 398 gold by turn 60, no war with a major, gold then to city-states, bankrupt turn 79;
+op11c war on Greece turn 62, gold 330-500 kept, melee 6 to 4, no capture. No Shrines bought during a plan war. Captures
+0 of 3. Regress 8 of 8. Decision: **pending** the seeded comparison (it. 13 vs 14 vs 15 on the same 6 starts).
 
 ## 2026-11-21 M3 iteration 13: the early-rush plan keeps its gold from city-states (new AI)
 Class: op9b gave 750 gold to city-states while preparing (op9a 250), went bankrupt and gifted units away;
