@@ -89,7 +89,7 @@ and 8 (`MeleeArmyCanWearDownCity` army test), M1 it. 2's heal theory (wrong caus
 
 | Function | Effect | Status |
 |---|---|---|
-| `CvEconomicAI::DoReconState` (≈3510) | turns combat units into explorers, farthest from home first (the army at the enemy's walls), units older than 3 turns | **New AI (M1 it. 3, accepted):** not within 5 tiles of a revealed enemy city at war (`IsNearEnemyCityAtWar`). Log "Not exploring with <unit>: near an enemy city at war" / "Creating new land explorer" (`PlayerEconomyAILog.csv`) |
+| `CvEconomicAI::DoReconState` (≈3510) | turns combat units into explorers, farthest from home first (the army at the enemy's walls), units older than 3 turns | **New AI (M1 it. 3, accepted):** not within 5 tiles of a revealed enemy city at war (`IsNearEnemyCityAtWar`). **M3 it. 22 (pending):** none while `CvMilitaryAI::IsPlanMarching()`, log "plan army marches". Log "Not exploring with <unit>: near an enemy city at war" / "Creating new land explorer" (`PlayerEconomyAILog.csv`) |
 | `CvEconomicAI::DisbandLongObsoleteUnits` (≈4376) | scraps units more than 2 eras behind | the lab resets research (`clearResearch`, lab v6) so it doesn't fire; "Disbanding long obsolete unit" (`PlayerHomelandAILog.csv`) |
 | `CvHomelandAI` | moves units the tactical AI left: "garrison", "sentry point", "patrolling to", "UNIT DIVERSITY - WE NEED attack" | `PlayerHomelandAILog.csv` |
 | `CvGame::ApplyConfigLoggingSettings` (`CvGame::init`) | reads `LoggingEnabled`/`AILog` from `config.ini` (the pack's DLL never gets `[Debug]` otherwise) | logging only, not behind the switch (M0 it. 2) |

@@ -3633,6 +3633,17 @@ void CvEconomicAI::DoReconState()
 				continue;
 			}
 
+			// AI lab (ai/v2), M3 iteration 22: while a plan's army marches, its fighting units stay soldiers. Without
+			// this the Warriors that DoPlanUpgrades returns to attack duty are made explorers again the next turn.
+			if (pLoopUnit->IsCombatUnit() && !pLoopUnit->IsGainsXPFromScouting() &&
+				pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE && m_pPlayer->GetMilitaryAI()->IsPlanMarching())
+			{
+				if (GC.getLogging() && GC.getAILogging())
+					LogEconomyMessage(CvString::format("Not exploring with %s %d: plan army marches",
+						pLoopUnit->getName().GetCString(), pLoopUnit->GetID()));
+				continue;
+			}
+
 			int iDistance = m_pPlayer->GetCityDistanceInPlots(pLoopUnit->plot());
 
 			// Prime explorer units

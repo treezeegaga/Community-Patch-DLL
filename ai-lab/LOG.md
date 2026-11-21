@@ -53,6 +53,16 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
+## 2026-11-21 M3 iteration 22: plan soldiers stay soldiers while the army marches (new AI)
+Class (cmp8, other civs): after it. 21, `CvEconomicAI::DoReconState` makes the same Warriors explorers again the next
+turn (Denmark's Warrior 1111 sent "back to attack duty" 12 times on 303), so they only join an operation formed in
+between. Change (new AI only, via `GetActivePlan()`): new `CvMilitaryAI::IsPlanMarching()` (the guard of
+`DoPlanUpgrades`, now shared); `DoReconState` takes no combat unit that isn't a native explorer as a new explorer while
+it's true; log "Not exploring with X: plan army marches" (PlayerEconomyAILog). Scouts still explore.
+Predicted (12 tuning seeds Songhai i22s against i21s; 11 other-civ seeds i22c against i21c): "back to attack duty"
+lines fall to about one per unit (cmp8: 25-64 per game on 7 seeds); plan civs' first operations not smaller (6.8);
+plan-civ captures by 80 at least 1; Songhai capitals not fewer than 4. Regress 8 of 8. Holdout untouched.
+
 ## 2026-11-21 M3 iteration 21: explorer Warriors return to attack duty when the plan marches (new AI)
 Direction (review relay 3:10 PM): before more Songhai tuning, why the other warmonger civs declare and take nothing.
 Class (tuning seeds, other civs with the new AI, `rlog2` on the rebuilt tip): first operations leave with 4 of ~10

@@ -1210,17 +1210,31 @@ UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
 /// upgrades for the plan's army wherever it stands in our territory (ranged first, then melee), before operations and
 /// tactical moves run, so the army is complete that same turn and can march. The stock upgrade (CvHomelandAI::
 /// PlotUpgradeMoves) only reaches units still idle at home after the tactical moves. Returns the number upgraded.
-int CvMilitaryAI::DoPlanUpgrades()
+//new AI: a plan is active and its strike unit's tech is known (the whole army marches)
+bool CvMilitaryAI::IsPlanMarching() const
 {
 	const SAIPlan* pPlan = GetActivePlan();
 	if (!pPlan || !pPlan->szResearchUnitClass)
-		return 0;
+		return false;
 	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
 	UnitTypes eStrike = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
 	CvUnitEntry* pkStrike = (eStrike != NO_UNIT) ? GC.getUnitInfo(eStrike) : NULL;
 	if (!pkStrike)
-		return 0;
+		return false;
 	if (pkStrike->GetPrereqAndTech() != NO_TECH && !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech((TechTypes)pkStrike->GetPrereqAndTech()))
+		return false;
+	return true;
+}
+
+int CvMilitaryAI::DoPlanUpgrades()
+{
+	if (!IsPlanMarching())
+		return 0;
+	const SAIPlan* pPlan = GetActivePlan();
+	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
+	UnitTypes eStrike = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
+	CvUnitEntry* pkStrike = (eStrike != NO_UNIT) ? GC.getUnitInfo(eStrike) : NULL;
+	if (!pkStrike)
 		return 0;
 
 	//M3 iteration 21: once the strike unit's tech is known the whole army marches; melee units the homeland AI made
