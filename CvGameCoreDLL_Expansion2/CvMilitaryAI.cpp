@@ -1244,7 +1244,30 @@ int CvMilitaryAI::DoPlanUpgrades()
 			CvUnit* pUnit = m_pPlayer->getUnit(vUnits[i]);
 			if (!pUnit)
 				continue;
-			if (!pUnit->CanUpgradeRightNow(false))
+			//M3 iteration 19: of the unit's upgrade classes, the strongest it can take right now (diagup: the Warrior's
+			//default upgrade is the Swordsman, Iron Working unknown, so it was never upgraded though the Spearman was open)
+			UnitTypes eOld = pUnit->getUnitType();
+			UnitTypes eNew = NO_UNIT;
+			int iBestStrength = 0;
+			if (pUnit->isReadyForUpgrade())
+			{
+				for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+				{
+					if (!pUnit->getUnitInfo().GetUpgradeUnitClass(iClass))
+						continue;
+					UnitTypes eCand = m_pPlayer->GetSpecificUnitType((UnitClassTypes)iClass);
+					CvUnitEntry* pkCand = (eCand != NO_UNIT) ? GC.getUnitInfo(eCand) : NULL;
+					if (!pkCand || !pUnit->CanUpgradeTo(eCand, false) || !m_pPlayer->HasResourceForNewUnit(eCand, false, true, eOld))
+						continue;
+					int iStrength = (iPass == 0) ? pkCand->GetRangedCombat() : pkCand->GetCombat();
+					if (iStrength > iBestStrength)
+					{
+						iBestStrength = iStrength;
+						eNew = eCand;
+					}
+				}
+			}
+			if (eNew == NO_UNIT)
 			{
 				//ai/v2 lab (logging only): why a plan unit isn't upgraded
 				UnitTypes eWant = pUnit->GetUpgradeUnitType();
@@ -1263,17 +1286,13 @@ int CvMilitaryAI::DoPlanUpgrades()
 				}
 				continue;
 			}
-			UnitTypes eOld = pUnit->getUnitType();
-			UnitTypes eNew = pUnit->GetUpgradeUnitType();
-			if (!m_pPlayer->HasResourceForNewUnit(eNew, false, true, eOld))
-				continue;
 			int iPrice = pUnit->upgradePrice(eNew);
 			CvArmyAI* pArmy = m_pPlayer->getArmyAI(pUnit->getArmyID());
 			int iArmySlot = -1;
 			if (pArmy)
 				iArmySlot = pArmy->RemoveUnit(pUnit->GetID(), true);
 			pUnit->setHomelandMove(AI_HOMELAND_MOVE_NONE);
-			CvUnit* pNewUnit = pUnit->DoUpgrade();
+			CvUnit* pNewUnit = pUnit->DoUpgradeTo(eNew);
 			if (pNewUnit)
 			{
 				iUpgraded++;
