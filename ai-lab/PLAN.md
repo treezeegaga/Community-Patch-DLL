@@ -218,7 +218,8 @@ list to fill several hours on both PCs; they need no decision. Top the queue up 
 
 **Holdout set (2026-11-21): seeds 707, 808, 909, 1010, 1111, 1212.** Never used to choose or tune a change; run only as
 a check (stock and new AI), now as a baseline and again before M3 closes. If it does clearly worse than the tuning set
-(101-606), LOG.md says so plainly. Tuning set: seeds 101, 202, 303, 404, 505, 606.
+(101-606), LOG.md says so plainly. Tuning set: seeds 101, 202, 303, 404, 505, 606, and from 2026-11-21 1:00 PM ET also 1313, 1414, 1515, 1616, 1717, 1818
+(widened because a failure class showed on the holdout only; the holdout itself is never used to choose).
 
 Anything that changes the user's PC beyond the lab (installing the setup switch in the pack, graphics, saves) or
 needs the user at the PC (the multiplayer smoke test) is not on this list.
