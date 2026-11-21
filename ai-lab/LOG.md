@@ -226,6 +226,15 @@ walks the targets in order). Feeding (point 2): no new override; the existing re
 Predicted (seeds 101-606 against it. 16): "plan upgrade: Warrior to Spearman" on at least 4 of the 5 seeds with a
 major near; the attack ready no more than 3 turns later; 404 takes Persepolis by turn 70; 606 Athens by 60; captures
 at least it. 16's 5. Regress 8 of 8.
+Build: `ab-ef4f37b`. Run: `2026-11-21-13-cmp5` (i18s101-606, i18x regress).
+Result: **no "Warrior to Spearman" upgrade on any seed**; only the Archer upgrades as before. Bronze Working was known
+by turn 40 anyway (TechAILog, 404 and 606, also before this change), and 404 keeps 220 gold to turn 80: something in
+`CanUpgradeRightNow` refuses the Warriors. Per seed: 404, 505 identical to it. 16; 202 identical but for the army mix;
+606 Athens turn 58 (59); 303 army ready turn 53 (58), still no major near; 101 worse: ready turn 68 (59), Hastings
+turn 67 instead of York, gold 39 (254). Regress 8 of 8.
+Decision: **reverted** (prediction failed: no Spearmen; the research order only shuffled the games). Next: a logging-
+only line in `DoPlanUpgrades` says why each refused upgrade fails (moves, price, gold, tech, territory, the game's own
+reason), replayed on seed 404 (`2026-11-21-13a-diagup`).
 
 ## 2026-11-21 M3 iteration 17: a city's needed garrison doesn't count toward the plan's army (new AI)
 Class: seed 404 (its. 14+16): army 6+4 by turn 43, sneak attack turn 47, war at Persepolis turn 53, no capture. The
