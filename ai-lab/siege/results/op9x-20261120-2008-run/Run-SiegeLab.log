@@ -1,0 +1,36 @@
+2026-11-20 20:08:17  Host TREEDESKTOP (calibration C:\Users\itstr\cp-ai-lab\ai-lab\siege\hosts\TREEDESKTOP.json), Civ V in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V
+2026-11-20 20:08:17  Run 'op9x': set regress, only [], repeats 2, DLL ab-c07b5fe
+2026-11-20 20:08:17    dll: Installed ab-c07b5fe (13900288 bytes, SHA-256 85D3007917A6...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-20 20:08:17    installer: AILog is 1 in C:\Users\itstr\OneDrive\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-20 20:08:17    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-20 20:08:17    installer:   Runs the 'regress' set, 2 time(s) each; the AI plays the attacker; new AI: attacker.
+2026-11-20 20:08:17    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-20 20:08:17    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-20 20:08:42  Civ V window at 480,15 size 1600x1410
+2026-11-20 20:09:22    screen 'single' (distance 0.0)
+2026-11-20 20:09:25    screen 'setup' (distance 0.0)
+2026-11-20 20:09:28    screen 'advanced' (distance 0.0)
+2026-11-20 20:09:43  Game started; waiting for the lab
+2026-11-20 20:09:48  Lab started: [848191.781] SiegeLab: [SiegeLab] RUN,19,Songhai,Greece,56,36,HANDICAP_KING,GAMESPEED_QUICK,0,4,2,1,0
+2026-11-20 20:09:48    2 battle(s) finished
+2026-11-20 20:09:53    4 battle(s) finished
+2026-11-20 20:09:58    6 battle(s) finished
+2026-11-20 20:10:03    7 battle(s) finished
+2026-11-20 20:10:08  Lab finished ([SiegeLab] DONE)
+2026-11-20 20:10:42  Civ V did not close within 30 s; stopping it by force
+2026-11-20 20:10:45    results: Run: lab v19, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker
+2026-11-20 20:10:45    results: New AI: attacker on, defender off
+2026-11-20 20:10:45    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\op9x-20261120-2010.results.csv
+2026-11-20 20:10:45    results: Saved C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\op9x-20261120-2010.turns.csv
+2026-11-20 20:10:46    results: Saved 243 log file(s) from this launch (13.6 MB) to C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\op9x-20261120-2010-logs; folder listing in _logs-folder.txt
+2026-11-20 20:10:46    results: Scenario          Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength Ready 
+2026-11-20 20:10:46    results: --------          ------- -------- ------------ ------------- ---------- -------------- ---------- ------------- ----- 
+2026-11-20 20:10:46    results: regress_capital         2        2 4.5          100           0.0        0.0            2.0 of 2   1894          2 o...
+2026-11-20 20:10:46    results: regress_coastal         2        2 4.0          100           0.0        0.0            2.0 of 2   1644          2 o...
+2026-11-20 20:10:46    results: regress_medieval        2        2 3.5          100           0.0        0.0            3.0 of 3   2824          2 o...
+2026-11-20 20:10:46    results: regress_artillery       2        2 6.0          100           0.0        0.0            4.0 of 4   6122          2 o...
+2026-11-20 20:10:46    results: 8 of 8 battles ended in a capture.
+2026-11-20 20:10:49    installer: Siege lab removed from C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-20 20:10:49    dll: Stock DLL restored and checked (1 copy).
+2026-11-20 20:10:49  No assertion dialogs.
+2026-11-20 20:10:49  Run saved. Civ V closed, lab removed, stock DLL restored.
