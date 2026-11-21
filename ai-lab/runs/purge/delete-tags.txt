@@ -1,6 +1,7 @@
-# Delete the 73 build releases/tags whose commits carry the full-desktop screenshots (run AFTER the rewritten
-# ai/v2 is pushed). Needs the GitHub CLI logged in with push access: gh auth status
-# PowerShell or bash, from any folder:
+# Delete the build releases/tags whose commits carry the full-desktop screenshots (the rewritten ai/v2 is already
+# pushed, 2026-11-21 3:50 PM ET). Needs the GitHub CLI logged in with push access (gh auth status). Run each line in
+# PowerShell or bash. If one says "release not found", delete the bare tag instead:
+#   git push https://github.com/treezeegaga/Community-Patch-DLL --delete refs/tags/<tag>
 gh release delete ab-006a7f0 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-00ae537 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-010b8a5 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
@@ -23,6 +24,7 @@ gh release delete ab-31db976 --repo treezeegaga/Community-Patch-DLL --cleanup-ta
 gh release delete ab-32caacd --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-3fd2741 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-401f952 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
+gh release delete ab-416e779 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-455fe7a --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-463dc60 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-4752664 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
@@ -73,5 +75,5 @@ gh release delete ab-efffbc3 --repo treezeegaga/Community-Patch-DLL --cleanup-ta
 gh release delete ab-f55613f --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-fe5dc41 --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
 gh release delete ab-fe6a1ec --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y
-# ab-ai-v2-latest: moved to the new tip by the next build; delete it too if the build does not move it:
+# ab-ai-v2-latest is moved to the new tip by the next build; if it still points at an old commit, delete it too:
 gh release delete ab-ai-v2-latest --repo treezeegaga/Community-Patch-DLL --cleanup-tag -y

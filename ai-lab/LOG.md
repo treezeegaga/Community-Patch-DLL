@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, noon ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 4:00 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -22,6 +22,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   with a major on 5 of 6 (ours turns 52, 53, 59, 65; Greece's on us t52); captures: Athens t59 (606, **a capital by
   60**), St. Petersburg t63 + Novgorod t80 (505), Corinth t66 (202), York t67 (101); 404 war t53 no capture; 303 no
   major near. Gold 0 by turn 80 on 4 of 6 (turns 64-73, after the war starts).
+- **Screenshot purge done 3:50 PM** (history rewritten, see the purge entry); the user still has to delete 74 old
+  build releases (`ai-lab/runs/purge/delete-tags.txt`). Older build names and hashes in this log refer to the old history.
 - **Tuning set widened** (12:35 PM): seeds 101-606 plus 1313, 1414, 1515, 1616, 1717, 1818 (baseline queued:
   `19-tune2`). Holdout unchanged.
 - **Holdout (check only):** clearly worse than the tuning set: 2 of 6 captures, turns 78-79, no capital (LOG backlog
@@ -46,8 +48,20 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
-## Plan: purge the full-desktop screenshots from ai/v2's history (user via review session, 3:10 PM ET Nov 21)
-Not started; the destructive steps wait for the user's confirmation in the implementer's chat.
+## Purge of the full-desktop screenshots from ai/v2's history (user via review session, 3:10 PM ET Nov 21)
+**Done (3:50 PM ET), user confirmed in chat ("go ahead"):** the user couldn't pause the PCs, so instead the backlog
+was stopped and watcher v6 pushed first (`Repair-RewrittenHistory`: when the checkout is more than 50 commits ahead
+of origin, it keeps the old commits in a local branch `old-history-<date>`, never pushed, resets to origin, and carries
+over a just-made results commit); both PCs reported idle on v6 before the rewrite. `git filter-branch --index-filter`
+on `d64b737^..ai/v2` (old tip `12a00bad2`) removed every `ai-lab/siege/results/*.png`, the 39 window-only ones too;
+checks: no such PNG anywhere in the rewritten history, 1,321 commits both sides, the tip tree identical apart from
+those 39 PNGs, `6ddb63174` (before the lab) unchanged. Force-pushed with lease: ai/v2 is now `a4ac7293e`; for 7
+minutes after it, nothing old came back. Backups of the old history: this session's local branch
+`old-history-backup` (lost with this container) and each lab PC's `old-history-<date>` branch (made on its next
+sync). **Still for the user:** delete the 74 old build releases/tags (`ai-lab/runs/purge/delete-tags.txt`, needs
+`gh`); until then they keep the old commits reachable. **Build names in this log from before 3:50 PM Nov 21
+(`ab-...`) no longer resolve once deleted**; commit hashes in older entries refer to the old history.
+The original plan follows.
 **What is affected** (checked 3:40 PM): PNGs under `ai-lab/siege/results/` enter ai/v2 at `d64b737` (2026-11-15
 11:19, "Siege lab results: diag2"); 377 commits add them; 1,292 commits from there to the tip. All were full-desktop
 shots until `a017a7ce3` (window-only, 12:41 PM Nov 21); the tip (`5662ad807`) removed all 391. **73 `ab-` build
