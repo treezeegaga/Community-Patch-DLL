@@ -22,7 +22,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   with a major on 5 of 6 (ours turns 52, 53, 59, 65; Greece's on us t52); captures: Athens t59 (606, **a capital by
   60**), St. Petersburg t63 + Novgorod t80 (505), Corinth t66 (202), York t67 (101); 404 war t53 no capture; 303 no
   major near. Gold 0 by turn 80 on 4 of 6 (turns 64-73, after the war starts).
-- **Tuning set widened** (12:55 PM): seeds 101-606 plus 1313, 1414, 1515, 1616, 1717, 1818 (baseline queued:
+- **Tuning set widened** (12:35 PM): seeds 101-606 plus 1313, 1414, 1515, 1616, 1717, 1818 (baseline queued:
   `19-tune2`). Holdout unchanged.
 - **Holdout (check only):** clearly worse than the tuning set: 2 of 6 captures, turns 78-79, no capital (LOG backlog
   entry). Other warmonger civs with the plan declare war (5 of 6) but take nothing by turn 80.
