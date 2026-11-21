@@ -230,7 +230,7 @@ Sigtuna turn 72** (first opening capture). op9c: war on Arabia turn 60, **captur
 6+4 by turn 40 but no war with a major (targets Mombasa, a city-state); 750 gold given to city-states (turns 43/48/54),
 bankrupt from turn 55, units gifted. op9a also gave 250 to Cape Town (turn 53) and its capital built a Water Mill on turn
 50 (the second city's slow Warrior already counted as army). Attack within 5 turns of the upgrades: no (60-66).
-Decision: **accepted** pending op9x (captures 2 of 3, from 0 of 15). Learned: city-state gold gifts bypass the gold gate;
+Regress (op9x) 8 of 8, clean. Decision: **accepted** (captures 2 of 3, from 0 of 15). Learned: city-state gold gifts bypass the gold gate;
 production counted from a slow second city stalls the capital.
 
 ## 2026-11-20 M3 iteration 11: the early-rush plan's second research target: the melee unit (new AI)
