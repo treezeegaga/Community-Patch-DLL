@@ -1,0 +1,61 @@
+{
+  "id": "2026-11-21-12-cmp4",
+  "why": "It. 17 (garrisons not counted in the plan army) on seeds 101-606 against it. 16 (cmp3), plus regress. Either trusted PC.",
+  "launches": [
+    {
+      "label": "i17s404",
+      "release": "ab-f55613f",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 404
+    },
+    {
+      "label": "i17s606",
+      "release": "ab-f55613f",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 606
+    },
+    {
+      "label": "i17s101",
+      "release": "ab-f55613f",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 101
+    },
+    {
+      "label": "i17s202",
+      "release": "ab-f55613f",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 202
+    },
+    {
+      "label": "i17s303",
+      "release": "ab-f55613f",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 303
+    },
+    {
+      "label": "i17s505",
+      "release": "ab-f55613f",
+      "set": "opening",
+      "newAI": "attacker",
+      "repeats": 1,
+      "seed": 505
+    },
+    {
+      "label": "i17x",
+      "release": "ab-f55613f",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 2
+    }
+  ]
+}
