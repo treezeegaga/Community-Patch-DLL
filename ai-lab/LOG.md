@@ -30,7 +30,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   from the standing backlog (PLAN 7a); (2) holdout seeds 707-1212, check only, never for tuning (PLAN 7a, BASELINE);
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
   of this heading's text, push, stop (the review session starts implementer 9).
-- **Queued:** `13a-diagup` (seed 404 replay: why Warriors aren't upgraded), `14-civs` (backlog a: other warmonger civs, new AI and stock),
+- **Queued:** `13b-cmp6` (it. 19 on 101-606 + regress), `14-civs` (backlog a: other warmonger civs, new AI and stock),
   `15-holdout` (backlog b: holdout baseline, new AI and stock), all but cmp5 on build `ab-006a7f0`.
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
@@ -214,6 +214,20 @@ first attack op started at turn 48 with 3 units, marched at once and the war beg
 ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (received 66-134), the rest stayed home
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
+
+## 2026-11-21 M3 iteration 19: the plan's upgrade takes the strongest upgrade open now, not the game's default (new AI)
+Class: the plan's melee stay Warriors on every seed (404: "melee damage per attack 7-8" at Persepolis). The diagup
+replay (seed 404, build `ab-54bc2ba`, upgrade-refusal log; the identical game): every refused melee upgrade is
+"Warrior to Swordsman, price 55, tech 0" (176 times) and "Spearman to Pikeman, tech 0": `CvUnit::GetUpgradeUnitType`
+returns the last of the unit's upgrade classes, and the Warrior has two (Spearman from VP's table, Swordsman); the
+Swordsman needs Iron Working, unknown, so the Warrior is never upgraded although Bronze Working (turn 40) opens the
+Spearman. (Also: 16 Archer refusals "must be in friendly territory".)
+Change (behind `IsNewAI()` via `GetActivePlan()`, in the plan's own hook `DoPlanUpgrades`): for each unit, of its upgrade
+classes, the strongest (melee or ranged strength) that `CanUpgradeTo` now and has the resources, via `DoUpgradeTo`.
+Feeding (point 2): no new override; the plan's existing upgrade step.
+Predicted (seeds 101-606 against it. 16): "plan upgrade: Warrior to Spearman" on at least 4 of the 5 seeds with a
+major near (gold allowing); captures at least it. 16's 5; 404's siege estimate shows more melee damage per attack
+than it. 16 at Persepolis; 606 Athens by 60. Regress 8 of 8.
 
 ## 2026-11-21 M3 iteration 18: iteration 11 again (Bronze Working after Construction), now that upgrades work (new AI)
 Class: seed 404 (its. 14+16): at Persepolis's walls 2 Warriors + 3 Composite Bowmen, "melee damage per attack 7-8"
