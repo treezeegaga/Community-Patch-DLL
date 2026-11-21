@@ -205,6 +205,13 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 13: the early-rush plan keeps its gold from city-states (new AI)
+Class: op9b gave 750 gold to city-states while preparing (op9a 250), went bankrupt and gifted units away;
+`CvDiplomacyAI::DoContactMinorCivs` gold gifts don't pass `CanWithdrawMoneyForPurchase`.
+Change (behind `IsNewAI()` via `GetActivePlan()`): while a plan is active, the gold-gift list is emptied.
+Predicted (3 games): no "Gold Gift" lines for Songhai before its war; no bankruptcy gifting before turn 60; gold at the
+march 150+; a capture by turn 80 in at least 2 of 3. Regress 8 of 8.
+
 ## 2026-11-21 M3 iteration 12: the early-rush plan, part 5: the upgrade step (new AI)
 Class: the plan's army counts ready only when Composite Bowmen are built (turn 60+), and nothing is upgraded: the stock
 upgrade (`CvHomelandAI::PlotUpgradeMoves`) runs after tactical and operational moves and takes only idle units at home
@@ -216,7 +223,14 @@ permitting). Logged in MilitaryAILog as "plan upgrade:". Wars end the plan, so u
 Predicted (3 games): "plan upgrade" lines the turn Construction lands (about turn 42-50) with 3+ Archers upgraded in
 at least 2 of 3; the attack op starts within about 5 turns of that (before turn 55) in at least 2 of 3; a capture by
 turn 80 in at least 1 of 3. Regress 8 of 8 (Songhai there has no plan: no change). The war decision is not touched.
-Build: `ab-c07b5fe`. Run: `2026-11-21-01-op9` (op9a/b/c new AI, op9x regress).
+Build: `ab-c07b5fe`. Run: `2026-11-21-01-op9` (op9a/b/c new AI, op9x regress; games done by 8:10 PM ET).
+Result: plan upgrades 3/2/3 Archers on turns 42-44 / 37 / 43-52. op9a: war on Sweden turn 66 with 6+4, **captured
+Sigtuna turn 72** (first opening capture). op9c: war on Arabia turn 60, **captured Mecca (capital) turn 73**. op9b: army
+6+4 by turn 40 but no war with a major (targets Mombasa, a city-state); 750 gold given to city-states (turns 43/48/54),
+bankrupt from turn 55, units gifted. op9a also gave 250 to Cape Town (turn 53) and its capital built a Water Mill on turn
+50 (the second city's slow Warrior already counted as army). Attack within 5 turns of the upgrades: no (60-66).
+Decision: **accepted** pending op9x (captures 2 of 3, from 0 of 15). Learned: city-state gold gifts bypass the gold gate;
+production counted from a slow second city stalls the capital.
 
 ## 2026-11-20 M3 iteration 11: the early-rush plan's second research target: the melee unit (new AI)
 Class: op7b: the full rush at Sparta brought it to 21 hp, then "melee left 0": the melee were Warriors (strength 8,
