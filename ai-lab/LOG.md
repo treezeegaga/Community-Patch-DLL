@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 1:40 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 12:55 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -220,7 +220,7 @@ city-states is already IGNORE, so feeding the approach would not stop them; the 
 Predicted (seeds 101-606 against it. 14): 606: a sneak attack on Athens with 6+ units and war on Greece by turn 55;
 other seeds unchanged or better where they had city-state operations; captures at least it. 14's (York, Corinth, St.
 Petersburg, Novgorod), and a capital by turn 60 on at least 1 seed. Regress 8 of 8.
-Build: `ab-05dc217`. Run: `2026-11-21-10-cmp3` (i16s101-606, i16x regress; done by about 1:30 AM ET).
+Build: `ab-05dc217`. Run: `2026-11-21-10-cmp3` (i16s101-606, i16x regress; done by 12:50 AM ET).
 Result: **606: war on Greece turn 52, Athens (the capital) taken turn 59** (it. 14: no war); 101, 202, 303, 404, 505
 identical to it. 14 (they had no city-state operations). Captures: York t67, Corinth t66, St. Petersburg t63 +
 Novgorod t80, Athens t59. Gold 0 on 606 from turn 67 (it. 14: 64). Regress 8 of 8.
