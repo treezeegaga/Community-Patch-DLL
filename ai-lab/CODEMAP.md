@@ -36,7 +36,7 @@ siege estimate) instead of replacing it, and say so in the LOG entry. Results so
 | When gold is spent (`CvEconomicAI::CanWithdrawMoneyForPurchase`) | only unit upgrades while the plan is active | it. 9: gold kept (op6: 200-370 at turn 50), Archer/Scout purchases gone |
 | City-state gold gifts (`CvDiplomacyAI::DoContactMinorCivs`) | none while the plan is active | it. 13: op9b gave 750 and went bankrupt; op10: no gifts, gold 212-469 |
 | When an attack may start (`CvMilitaryAI::RequestCityAttack`) | sneak attack refused until the plan's army stands (`IsPlanArmyReady`) | it. 10: op6 marched 2+2 of 15; op7 marched whole (Sparta to 21 hp); it. 17 (needed garrisons not counted) reverted: 606 later, 404 still no capture |
-| Unit upgrades (`CvHomelandAI::PlotUpgradeMoves`, after tactical moves, idle units at home) | `DoPlanUpgrades` first in `AI_unitUpdate`, anywhere in our land | it. 12: op8 no upgrades with 300 gold; op9 2-3 Archers upgraded the turn the tech landed, 2 captures of 3; it. 19: the strongest upgrade class open now (the Warrior's default is the Swordsman), pending |
+| Unit upgrades (`CvHomelandAI::PlotUpgradeMoves`, after tactical moves, idle units at home) | `DoPlanUpgrades` first in `AI_unitUpdate`, anywhere in our land | it. 12: op8 no upgrades with 300 gold; op9 2-3 Archers upgraded the turn the tech landed, 2 captures of 3 |
 | Plan length | active through its war until the first capture or turn 90 (it. 14) | seeded cmp1b (6 starts against it. 13): never worse; seed 404 gold 220 at turn 80 instead of bankrupt turn 59, seed 505 a second capture (Novgorod), seed 202 bankrupt turn 73 instead of 63 |
 | Operations against city-states (`CvMilitaryAI::RequestCityAttack` for a minor, `RequestBullyingOperation`) | none while the plan is active (it. 16) | it. 16 seeded: diag606 showed shows of force on Mombasa/Cape Town every 2 turns took the 6+4 army; with the hook 606 declares on Greece t52 and takes Athens t59; other seeds identical |
 
@@ -145,3 +145,12 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   12 min) and publishes release `ab-<short commit>` **of the pushed tip only**. So fetch and merge `origin/ai/v2` before
   committing code (the lab PCs push results all the time); if a push is refused and you merge, the release is named
   after the merge commit, not your code commit (2026-11-20: `ab-a0f7eff` never existed, the build was `ab-7dd3e85`).
+
+## The played game data is the installed pack, not this repository's SQL (found 2026-11-21, M3 it. 19)
+
+The lab PCs play the user's installed mod pack. Its unit data can differ from `(2) Vox Populi/Database Changes`: in the
+repository the Warrior's only upgrade is the Spearman (`PreUnitChanges.sql` clears `Unit_ClassUpgrades`,
+`UnitChanges2.sql` adds UNITCLASS_WARRIOR to UNITCLASS_SPEARMAN), but in the played games `CvUnit::GetUpgradeUnitType`
+gives the Swordsman (Iron Working) and no other class. Check game data in a game log (e.g. the "plan upgrade refused"
+line in `MilitaryAILog.csv`), not in the SQL.
+
