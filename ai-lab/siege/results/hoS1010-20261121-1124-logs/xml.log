@@ -1,0 +1,35 @@
+[906495.062] **** Remapping IDs in Game Database *****
+[906495.062] Table CivilianAttackPriorities: Negative IDs found, no remapping
+[906495.062] Remapping took 0.003299 seconds
+[906495.062] *** SKIPPING Game Database Validation. ****
+[906495.062] You can enable it by setting 'ValidateGameDatabase = 1' in config.ini
+[906495.515] **** Validating Prefetch Process *****
+[906495.515] ERROR: gc.getNumEventInfos <= 0
+[906495.515] ERROR: gc.getNumEventChoiceInfos <= 0
+[906495.515] ERROR: gc.getNumCityEventInfos <= 0
+[906495.515] ERROR: gc.getNumCityEventChoiceInfos <= 0
+[906495.515] ERROR: gc.getNumCorporationInfos <= 0
+[906495.515] **** VALIDATION FAILED *****
+[906495.515] SetGlobalActionInfo
+[906495.593] 
+-- SQLite Memory Statistics --
+Memory Usage:
+		[Cur]		[Max]
+Malloc:		8843576		79089664
+PageCache:	7		13
+LookAside:	0		0
+Scratch:	0		1
+
+Static Buffer Overflows:
+		[TooLarge]	[NoSpace]
+PageCache:	8029728		65803080
+Scratch:	0		0
+
+Largest Allocations:
+Malloc:		262144
+PageCache:	1172
+Scratch:	6640
+
+Prepared Statements:
+Current:		10
+------------------------------
