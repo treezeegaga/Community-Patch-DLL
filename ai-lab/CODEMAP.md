@@ -38,6 +38,7 @@ siege estimate) instead of replacing it, and say so in the LOG entry. Results so
 | When an attack may start (`CvMilitaryAI::RequestCityAttack`) | sneak attack refused until the plan's army stands (`IsPlanArmyReady`) | it. 10: op6 marched 2+2 of 15; op7 marched whole (Sparta to 21 hp) |
 | Unit upgrades (`CvHomelandAI::PlotUpgradeMoves`, after tactical moves, idle units at home) | `DoPlanUpgrades` first in `AI_unitUpdate`, anywhere in our land | it. 12: op8 no upgrades with 300 gold; op9 2-3 Archers upgraded the turn the tech landed, 2 captures of 3 |
 | Plan length | active through its war until the first capture or turn 90 (it. 14) | pending (op10c: war gold went to Shrines, army not replaced) |
+| The war approach toward a major (`CvDiplomacyAI::SelectBestApproachTowardsMajorCiv`) | fed, not replaced: WAR weighted highest toward `GetPlanWarTarget` (ready army, estimate says it takes a seen city within 12 tiles); the zero-out conditions and the approach curve still apply (it. 15) | pending (op7c/op9b/op10b: ready army, no war on a major) |
 
 ## Military AI: choosing a target and starting an operation (M2, M4)
 
