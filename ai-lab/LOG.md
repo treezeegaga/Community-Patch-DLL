@@ -203,6 +203,21 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 15: the plan's ready army declares on a target the estimate says it takes (new AI)
+Class (review relay of 8 PM, point 3): op7c, op9b, op10b: the plan's army stood ready (6+4) and no war on a major came;
+the war approach never chose war. The war decision is otherwise M4's.
+Change (behind `IsNewAI()` via `GetActivePlan()`): `CvMilitaryAI::GetPlanWarTarget`: before any war with a major and
+once `IsPlanArmyReady()`, the major owning a city we have seen within 12 tiles of our cities that
+`TacticalAIHelpers::EstimateSiege` says our army takes (our land units within 12 tiles counted as if at its walls;
+city hit points, strike, garrison as seen), earliest capture, then capital, then nearest. Fed into the stock decision,
+not replacing it (point 2): in `CvDiplomacyAI::SelectBestApproachTowardsMajorCiv` the WAR score toward that civ is set
+above all others, before the zero-out conditions (no attack target, war would bankrupt us, recent peace, can't declare)
+and the approach curve. The stock path then runs the sneak attack: operation, march, declaration at the walls.
+Logged in MilitaryAILog: "plan war target: <city> (<civ>), estimated capture turn, melee left, war weight".
+Predicted (6 seeded games against it. 14 on the same seeds): a plan war target logged within 3 turns of the army
+counting ready in at least 5 of 6; war on a major in at least 5 of 6 (it. 14: fewer), before turn 60 in at least 4;
+captures more than it. 14 on the same seeds. Regress 8 of 8 (no plan there).
+
 ## 2026-11-21 M3 iteration 14: the early-rush plan carries on through its war (new AI)
 Class: op10c: once the war began the plan ended (iteration 10's rule), the cities built Shrines, the gold bought them,
 and the army wore down without replacements; op9a's war after turn 60 had no plan at all.

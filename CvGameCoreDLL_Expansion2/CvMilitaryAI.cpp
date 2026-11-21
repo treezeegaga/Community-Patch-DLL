@@ -1274,6 +1274,76 @@ int CvMilitaryAI::DoPlanUpgrades()
 	return iUpgraded;
 }
 
+/// M3 iteration 15 (review relay of 2026-11-20, point 3): whom the plan's ready army should attack, or NO_PLAYER. Before
+/// any war with a major, once the plan's army stands: the major civ owning a city we have seen, within 12 tiles of one
+/// of our cities, that the siege estimate says our army takes (counting our land units within that distance of it, as
+/// if they marched there). Earliest estimated capture first, then a capital, then the nearest. The diplomacy AI feeds
+/// it into its war approach (CvDiplomacyAI::SelectBestApproachTowardsMajorCiv); all its own limits stay.
+PlayerTypes CvMilitaryAI::GetPlanWarTarget(CvCity** ppCity, CvSiegeEstimate* pEstimate) const
+{
+	if (ppCity)
+		*ppCity = NULL;
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || GetNumberCivsAtWarWith(false) > 0 || !IsPlanArmyReady())
+		return NO_PLAYER;
+
+	const int iMaxDistance = 12;
+	TeamTypes eMyTeam = m_pPlayer->getTeam();
+	PlayerTypes eBest = NO_PLAYER;
+	CvCity* pBestCity = NULL;
+	CvSiegeEstimate kBest;
+	int iBestScore = INT_MAX;
+	for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
+	{
+		PlayerTypes eOther = (PlayerTypes)iPlayer;
+		CvPlayer& kOther = GET_PLAYER(eOther);
+		if (eOther == m_pPlayer->GetID() || !kOther.isAlive() || !kOther.isMajorCiv() || kOther.getTeam() == eMyTeam)
+			continue;
+		if (!GET_TEAM(eMyTeam).isHasMet(kOther.getTeam()) || !GET_TEAM(eMyTeam).canDeclareWar(kOther.getTeam(), m_pPlayer->GetID()))
+			continue;
+		int iCityLoop = 0;
+		for (CvCity* pCity = kOther.firstCity(&iCityLoop); pCity != NULL; pCity = kOther.nextCity(&iCityLoop))
+		{
+			if (!pCity->plot()->isRevealed(eMyTeam))
+				continue;
+			int iDistance = m_pPlayer->GetCityDistanceInPlots(pCity->plot());
+			if (iDistance > iMaxDistance)
+				continue;
+			CvSiegeEstimate kEst;
+			if (!TacticalAIHelpers::EstimateSiege(m_pPlayer->GetID(), pCity, iMaxDistance, 13, kEst) || kEst.iTurnTaken < 1)
+				continue;
+			int iScore = kEst.iTurnTaken * 100 + (pCity->isCapital() ? 0 : 50) + iDistance;
+			if (iScore < iBestScore)
+			{
+				iBestScore = iScore;
+				eBest = eOther;
+				pBestCity = pCity;
+				kBest = kEst;
+			}
+		}
+	}
+	if (ppCity)
+		*ppCity = pBestCity;
+	if (pEstimate && pBestCity)
+		*pEstimate = kBest;
+	return eBest;
+}
+
+void CvMilitaryAI::LogPlanWarTarget(PlayerTypes eTarget, const CvCity* pCity, const CvSiegeEstimate& kEst, int iWarWeight) const
+{
+	if (!pCity || !GC.getLogging() || !GC.getAILogging())
+		return;
+	CvString playerName = GetPlayer()->getCivilizationShortDescription();
+	FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(playerName), FILogFile::kDontTimeStamp);
+	if (pLog)
+	{
+		CvString msg = CvString::format("%03d, %s, plan war target: %s (%s), estimated capture turn %d, melee left %d, war weight %d",
+			GC.getGame().getElapsedGameTurns(), playerName.c_str(), pCity->getNameNoSpace().c_str(),
+			GET_PLAYER(eTarget).getCivilizationShortDescription(), kEst.iTurnTaken, kEst.iMeleeLeft, iWarWeight);
+		pLog->Msg(msg.c_str());
+	}
+}
+
 static bool IsTechOnPathTo(TechTypes eTech, TechTypes eTarget, vector<char>& vSeen)
 {
 	if (eTech == eTarget)
