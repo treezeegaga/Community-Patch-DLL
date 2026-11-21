@@ -209,6 +209,18 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 18: iteration 11 again (Bronze Working after Construction), now that upgrades work (new AI)
+Class: seed 404 (its. 14+16): at Persepolis's walls 2 Warriors + 3 Composite Bowmen, "melee damage per attack 7-8"
+against 250 hp, siege estimate NO every turn; it. 17's 404 run: 5 melee (4 Warriors) "about 20". The plan's melee
+are Warriors on every seed. It. 11 researched Bronze Working but no Warrior was upgraded (the stock upgrade move needs
+idle units at home); it. 12 since added `DoPlanUpgrades` (melee pass, anywhere in our land, kept gold). In this mod
+the Warrior upgrades to the Spearman (`UnitChanges2.sql`: UNITCLASS_WARRIOR to UNITCLASS_SPEARMAN, Bronze Working).
+Change: it. 11's code re-applied unchanged (the row's second research target `UNITCLASS_SPEARMAN`; `GetPlanResearch`
+walks the targets in order). Feeding (point 2): no new override; the existing research and upgrade hooks.
+Predicted (seeds 101-606 against it. 16): "plan upgrade: Warrior to Spearman" on at least 4 of the 5 seeds with a
+major near; the attack ready no more than 3 turns later; 404 takes Persepolis by turn 70; 606 Athens by 60; captures
+at least it. 16's 5. Regress 8 of 8.
+
 ## 2026-11-21 M3 iteration 17: a city's needed garrison doesn't count toward the plan's army (new AI)
 Class: seed 404 (its. 14+16): army 6+4 by turn 43, sneak attack turn 47, war at Persepolis turn 53, no capture. The
 diag404 replay (build `ab-006a7f0`, recruit-skip log; the identical game) shows the operation took 5 of 10: two units
