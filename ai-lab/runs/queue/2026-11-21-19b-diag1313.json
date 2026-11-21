@@ -1,0 +1,7 @@
+{
+  "id": "2026-11-21-19b-diag1313",
+  "why": "Retry of diag1313 on TREEDESKTOP (BOX failed twice at start-up: 'Cannot index into a null array'). Same build, same seed.",
+  "launches": [
+    { "label": "d1313b", "release": "ab-0aa0ea5", "set": "opening", "newAI": "attacker", "repeats": 1, "seed": 1313, "host": "TREEDESKTOP" }
+  ]
+}
