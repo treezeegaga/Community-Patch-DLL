@@ -1102,10 +1102,6 @@ void CvMilitaryAI::CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduct
 			iSettlers++;
 		else if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE)
 		{
-			//M3 iteration 17: a city's needed garrison never joins the attack (diag404: 2 of 10 held back as garrisons, the
-			//army marched 2 melee + 3 ranged), so it is not counted; the cities build the plan's army on top of it
-			if (pLoopUnit->IsGarrisoned() && pLoopUnit->GetGarrisonedCity() && pLoopUnit->GetGarrisonedCity()->NeedsGarrison())
-				continue;
 			if (pLoopUnit->getUnitInfo().GetRangedCombat() > 0)
 			{
 				if (pLoopUnit->getUnitInfo().GetRangedCombat() >= iStrikeRanged)

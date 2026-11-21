@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 12:55 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 3:05 AM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -15,22 +15,24 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
   override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
   plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
-  (14), no city-state operations during the plan (16). Reverted: 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
+  (14), no city-state operations during the plan (16). Reverted: 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
 - **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
   Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
 - **Where the newest code stands (its. 14 + 16, build `ab-05dc217`), seeds 101-606:** army 6+4 ready turn 43-59; war
   with a major on 5 of 6 (ours turns 52, 53, 59, 65; Greece's on us t52); captures: Athens t59 (606, **a capital by
   60**), St. Petersburg t63 + Novgorod t80 (505), Corinth t66 (202), York t67 (101); 404 war t53 no capture; 303 no
   major near. Gold 0 by turn 80 on 4 of 6 (turns 64-73, after the war starts).
-- **Gaps now:** 404 (war t53 on Persia, no capture: not read yet); 101 army ready only turn 59 (slow); gold runs out
-  during the war (the user allows a deficit, but bankruptcy gifts/scraps units: "b/c bankrupt").
+- **Gaps now:** 404: Persepolis (250 hp, heals 20) needs the 4 Composite Bowmen at its walls; only 2 arrive and the
+  melee are Warriors (it. 17 log). 101: army ready only turn 59. Gold runs out during the war on 4 of 6 (units then
+  gifted/scrapped "b/c bankrupt"). Lab logs added (no behaviour change): operation start names enemy and target;
+  "Recruit skip" says why a unit stayed out of an operation (OperationalAILog).
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
   it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Next:** read 404 (why no capture of Persepolis); then the war-time treasury (no unit scrapping/gifting while the
-  plan's war is on; the user allows a deficit) and the slow army on 101; then two other warmonger civs.
+- **Next:** the plan's operation takes its ranged units first (404), or the war-time treasury (no scrapping/gifting
+  of the plan's units during its war); then 101's slow army; then two other warmonger civs.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
@@ -220,6 +222,14 @@ stock garrison rule still holds the garrisons back.
 Predicted (seeds 101-606 against it. 16): army ready 0-8 turns later; the plan's first operation recruits 7+ units on
 at least 4 of the 5 seeds with a major near; 404 takes Persepolis by turn 70; 606 still takes Athens (by turn 65);
 captures at least it. 16's 5. Regress 8 of 8.
+Build: `ab-f55613f`. Run: `2026-11-21-12-cmp4` (i17s101-606, i17x regress).
+Result: 101, 202, 303, 505 identical to it. 16; 404: first operation 7 units (Spearman, 4 Warriors, 2 Composite
+Bowmen) but turn 55 (it. 16: 47), war turn 58, no capture; 606: war turn 57, Athens turn 61 (it. 16: 52 / 59).
+Regress 8 of 8. Why 404 still fails: the siege estimate for Persepolis says NO every turn 59-80 (250 hp, heals 20,
+strikes 33-58; at the walls 5 melee + 2 ranged = 24 ranged damage a turn): the army reaches the walls with 2 of its
+4-5 Composite Bowmen (the others held home: "threatened zone", healing), and its melee are Warriors (melee damage
+per attack about 20 against 250 hp). Decision: **reverted** (prediction failed: no Persepolis, Athens later, past 60).
+Learned: on 404 the gap is the strike's composition at the walls (ranged count, melee quality), not its head count.
 
 ## 2026-11-21 M3 iteration 16: no operations against city-states while the plan is active (new AI)
 Class: seed 606 (it. 14 code, every build so far): approach WAR toward Greece from turn 40, army 6+4 ready turn 47, no
