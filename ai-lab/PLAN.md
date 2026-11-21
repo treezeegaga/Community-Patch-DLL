@@ -213,6 +213,8 @@ list to fill several hours on both PCs; they need no decision. Top the queue up 
   rule (`IsWarmonger`) and the plan itself work beyond Songhai. First queued: `2026-11-21-14-civs` (build `ab-006a7f0`).
 - (b) The holdout set (below): stock and new AI at the current accepted build, now and before M3 closes.
 - (c) Repeat (a)/(b) after every accepted iteration.
+- (d) Ran 2026-11-21: `14-civs`, `15-holdout` (LOG backlog entry). Queued: `16-civho` ((a) on the holdout seeds),
+  `17-long` (tuning seeds to turn 100). Lab gap to fix: a defeated Songhai seat stalls the run (civN101).
 
 **Holdout set (2026-11-21): seeds 707, 808, 909, 1010, 1111, 1212.** Never used to choose or tune a change; run only as
 a check (stock and new AI), now as a baseline and again before M3 closes. If it does clearly worse than the tuning set
