@@ -207,6 +207,20 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 17: a city's needed garrison doesn't count toward the plan's army (new AI)
+Class: seed 404 (its. 14+16): army 6+4 by turn 43, sneak attack turn 47, war at Persepolis turn 53, no capture. The
+diag404 replay (build `ab-006a7f0`, recruit-skip log; the identical game) shows the operation took 5 of 10: two units
+"needed garrison" (Spearman, Warrior), two "threatened zone or enemy near" (Persian scouts/raiders at home), and one
+found no open slot; it marched 2 Warriors + 3 Composite Bowmen, too few melee to take the city; the follow-up operation
+(turn 54) gathered home units and needed 19 turns to arrive.
+Change (behind `IsNewAI()` via `GetActivePlan()`): `CvMilitaryAI::CountPlanArmy` skips a unit garrisoned in a city that
+`NeedsGarrison()` (exposed or under siege), so the build order makes the 6+4 on top of the garrisons and the attack
+waits for them. Feeding (point 2): this changes the plan's own count (an existing hook), not a stock decision; the
+stock garrison rule still holds the garrisons back.
+Predicted (seeds 101-606 against it. 16): army ready 0-8 turns later; the plan's first operation recruits 7+ units on
+at least 4 of the 5 seeds with a major near; 404 takes Persepolis by turn 70; 606 still takes Athens (by turn 65);
+captures at least it. 16's 5. Regress 8 of 8.
+
 ## 2026-11-21 M3 iteration 16: no operations against city-states while the plan is active (new AI)
 Class: seed 606 (it. 14 code, every build so far): approach WAR toward Greece from turn 40, army 6+4 ready turn 47, no
 war. The diag606 replay (build `ab-4752664`, operation-start log names enemy and target; the identical game) shows why:
