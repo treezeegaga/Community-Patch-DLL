@@ -32,7 +32,7 @@ siege estimate) instead of replacing it, and say so in the LOG entry. Results so
 | Stock decision | Override (hook) | Real-game result behind it |
 |---|---|---|
 | What a city builds (`CvCityStrategyAI::ChooseProduction`) | `GetPlanBuild`: settler, then melee/ranged up to 6+4 | it. 7: stock builds mostly buildings; plan army 6-9 melee + 4-6 ranged by turn 50-60 (op4, op5) |
-| What is researched (`CvPlayerAI::AI_chooseResearch`) | `GetPlanResearch`: path to Composite Bowmen | it. 8: Construction by turn 37-46 instead of not at all by 80 (op5) |
+| What is researched (`CvPlayerAI::AI_chooseResearch`) | `GetPlanResearch`: path to Composite Bowmen | it. 8: Construction by turn 37-46 instead of not at all by 80 (op5); it. 18: then Bronze Working (Spearman), pending |
 | When gold is spent (`CvEconomicAI::CanWithdrawMoneyForPurchase`) | only unit upgrades while the plan is active | it. 9: gold kept (op6: 200-370 at turn 50), Archer/Scout purchases gone |
 | City-state gold gifts (`CvDiplomacyAI::DoContactMinorCivs`) | none while the plan is active | it. 13: op9b gave 750 and went bankrupt; op10: no gifts, gold 212-469 |
 | When an attack may start (`CvMilitaryAI::RequestCityAttack`) | sneak attack refused until the plan's army stands (`IsPlanArmyReady`) | it. 10: op6 marched 2+2 of 15; op7 marched whole (Sparta to 21 hp); it. 17 (needed garrisons not counted) reverted: 606 later, 404 still no capture |

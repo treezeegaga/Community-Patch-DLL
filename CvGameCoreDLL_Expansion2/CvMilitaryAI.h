@@ -191,6 +191,7 @@ public:
 		int iMelee;			// land melee units wanted
 		int iRanged;		// land ranged units wanted
 		const char* szResearchUnitClass;	// research toward this unit first (the rush's strike unit)
+		const char* szResearchUnitClass2;	// then toward this one (the rush's melee unit)
 	};
 	const SAIPlan* GetActivePlan() const;
 	UnitTypes GetPlanBuild(CvCity* pCity) const;
