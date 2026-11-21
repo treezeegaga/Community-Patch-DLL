@@ -22,6 +22,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   with a major on 5 of 6 (ours turns 52, 53, 59, 65; Greece's on us t52); captures: Athens t59 (606, **a capital by
   60**), St. Petersburg t63 + Novgorod t80 (505), Corinth t66 (202), York t67 (101); 404 war t53 no capture; 303 no
   major near. Gold 0 by turn 80 on 4 of 6 (turns 64-73, after the war starts).
+- **Holdout (check only):** clearly worse than the tuning set: 2 of 6 captures, turns 78-79, no capital (LOG backlog
+  entry). Other warmonger civs with the plan declare war (5 of 6) but take nothing by turn 80.
 - **Gaps now:** 404: Persepolis (250 hp, heals 20) needs the 4 Composite Bowmen at its walls; only 2 arrive and the
   melee are Warriors (it. 17 log). 101: army ready only turn 59. Gold runs out during the war on 4 of 6 (units then
   gifted/scrapped "b/c bankrupt"). Lab logs added (no behaviour change): operation start names enemy and target;
@@ -30,8 +32,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   from the standing backlog (PLAN 7a); (2) holdout seeds 707-1212, check only, never for tuning (PLAN 7a, BASELINE);
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
   of this heading's text, push, stop (the review session starts implementer 9).
-- **Queued:** `14-civs` (backlog a: other warmonger civs, new AI and stock),
-  `15-holdout` (backlog b: holdout baseline, new AI and stock), all but cmp5 on build `ab-006a7f0`.
+- **Queued (backlog):** `16-civho` (other civs on the holdout seeds), `17-long` (tuning seeds to turn 100).
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
   it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
@@ -214,6 +215,30 @@ first attack op started at turn 48 with 3 units, marched at once and the war beg
 ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (received 66-134), the rest stayed home
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
+
+## 2026-11-21 Backlog: the holdout baseline and other warmonger civs (build `ab-006a7f0`, its. 14+16; no decision)
+**Holdout set** (seeds 707-1212, never used for tuning; `2026-11-21-15-holdout`; Songhai seat, new AI vs stock):
+| seed | civs | new AI: war / capture / t80 | stock: war / capture |
+|---|---|---|---|
+| 707 | Greece, Shoshone, Ottomans | we declare on Greece t54 / - / 2 cities, 8+4, 133 gold | - / - |
+| 808 | Greece, Venice, Carthage | on Mogadishu (city-state) t65 / - | - / - |
+| 909 | Greece, Korea, France | on Greece t64 / - / gold 0 | Greece on us t69 / - (1 city left) |
+| 1010 | Greece, Iroquois, Mongolia | on the Iroquois t72 / Onondaga t78 | on Mongolia t81 / - |
+| 1111 | Greece, Aztecs, Russia | on the Aztecs t63 / Teotihuacan t79 | - / - |
+| 1212 | Greece, Portugal, Assyria | on Assyria t56 / - / gold 0 | - / - |
+**The holdout does clearly worse than the tuning set**: captures 2 of 6, at turns 78-79, no capital (tuning set, same
+build: 4 of 6, turns 59-67, Athens a capital t59). Wars come on 6 of 6 (5 on a major) but late (54-72) and the sieges
+fail. Stock: 0 captures, 1 war of its own. Read as: the plan's gains are real against stock, but the turn-60 capital is
+not general yet; the tuning seeds are kinder than average. Seed 808's war went to a city-state after all (the it. 16
+hook covers operations, not the diplomacy's own city-state war declarations).
+**Other warmonger civs** (`2026-11-21-14-civs`, tuning seeds, new AI for every major but the Songhai seat, vs stock):
+the plan switched on (`IsWarmonger`; "plan upgrade" lines) for England (202), Denmark and Japan (303), Persia (404),
+Mongolia (606); not for Greece, the Aztecs, Russia, Indonesia, Spain, the Netherlands or Ethiopia. Plan civs declared
+war in 5 of 6 cases (Japan t54, Persia t56, Denmark t64, Mongolia t72, England t77); stock civs in the same games:
+none. Captures by plan civs by turn 80: 0 (Songhai's games aside). civN101 failed: the new-AI civs (England first)
+destroyed the Songhai seat around turn 63-65 and Civ V's "you have been defeated" screen stopped the autoplay (lab
+gap: a defeated seat should end the run cleanly). Note: the Aztecs (the user's reference civ) don't count as a
+warmonger under `IsWarmonger`.
 
 ## 2026-11-21 M3 iteration 19: the plan's upgrade takes the strongest upgrade open now, not the game's default (new AI)
 Class: the plan's melee stay Warriors on every seed (404: "melee damage per attack 7-8" at Persepolis). The diagup
