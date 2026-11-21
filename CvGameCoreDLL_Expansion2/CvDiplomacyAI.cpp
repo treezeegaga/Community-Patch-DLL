@@ -20635,22 +20635,6 @@ void CvDiplomacyAI::SelectBestApproachTowardsMajorCiv(PlayerTypes ePlayer, bool 
 		}
 	}
 
-	//new AI (M3 iteration 15): the plan's ready army and the siege estimate pick a target (CvMilitaryAI::GetPlanWarTarget);
-	//war toward it is weighted above every other approach. The zero-out conditions below (no attack target, bankruptcy,
-	//recent peace, can't declare) still apply, and the approach curve still smooths it over turns.
-	{
-		CvCity* pPlanCity = NULL;
-		CvSiegeEstimate kPlanEst;
-		if (GetPlayer()->GetMilitaryAI()->GetPlanWarTarget(&pPlanCity, &kPlanEst) == ePlayer && pPlanCity)
-		{
-			int iHighest = 0;
-			for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
-				iHighest = max(iHighest, vApproachScores[iApproachLoop]);
-			vApproachScores[CIV_APPROACH_WAR] = iHighest * 2 + 100;
-			GetPlayer()->GetMilitaryAI()->LogPlanWarTarget(ePlayer, pPlanCity, kPlanEst, vApproachScores[CIV_APPROACH_WAR]);
-		}
-	}
-
 	// Negative approach weights - cap at zero!
 	for (int iApproachLoop = 0; iApproachLoop < NUM_CIV_APPROACHES; iApproachLoop++)
 	{

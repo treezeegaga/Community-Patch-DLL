@@ -148,8 +148,6 @@ FDataStream& operator>>(FDataStream&, CvAttackTarget&);
 //!  - One instance for each civ (player or AI)
 //!  - Accessed by any class that needs to check a civ's AI strategy state
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-struct CvSiegeEstimate; //CvTacticalAI.h
-
 class CvMilitaryAI
 {
 public:
@@ -199,8 +197,6 @@ public:
 	TechTypes GetPlanResearch() const;
 	bool IsPlanArmyReady() const;
 	int DoPlanUpgrades();
-	PlayerTypes GetPlanWarTarget(CvCity** ppCity = NULL, CvSiegeEstimate* pEstimate = NULL) const;
-	void LogPlanWarTarget(PlayerTypes eTarget, const CvCity* pCity, const CvSiegeEstimate& kEst, int iWarWeight) const;
 	void CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduction, int& iMelee, int& iRanged, int& iSettlers) const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);

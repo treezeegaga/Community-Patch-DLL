@@ -2,38 +2,37 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-20, 10:55 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-20, 11:40 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
-- **The review session speaks for the user** (session_01G2NZj4f5xWWrXLRuDN5eyd; PLAN section 4). Its 8 PM relay (four
-  points, below) is being worked; replies to it by send_message are refused here (untrusted device), so answer in chat.
-- **Milestones:** M0-M2 closed. **M3 in progress.** Bar (user's game, confirmed): early rush, war about turn 41-50,
-  a capital taken by about turn 60 on Quick (ruling of 11 PM; was 54) with about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
-  before the war is decided. Rulings: one settler, no buildings, gold only for upgrades right before the attack.
+- **The review session speaks for the user** (session_01G2NZj4f5xWWrXLRuDN5eyd; PLAN section 4); replies to it by
+  send_message are refused here (untrusted device), so answer in chat.
+- **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital taken by about
+  turn 60 on Quick (ruling of 11 PM; was 54), about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
+  before the war is decided. One settler, no buildings, gold only for upgrades right before the attack.
 - **M3 so far:** the siege estimate (its. 1-3b); sneak attacks may build missing units (it. 5); lab flavor leak fixed
-  (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans"): build
-  order (it. 7), research toward Composite Bowmen (it. 8), gold kept for upgrades (it. 9), attack waits for the plan's
-  army (it. 10), upgrades the turn the tech lands (it. 12), no city-state gold gifts (it. 13). Reverted: 3, 6, 11.
-- **Real games so far** (opening lab, Songhai, Tiny map, 4 civs, 3 games per decision, **each on a different random
-  map**): captures 0 of 15 before it. 12; op9 (it. 12) 2 of 3 (Sigtuna turn 72; Mecca, a capital, turn 73); op10 (it.
-  13) 0 of 3. Wars come turns 57-66 or not at all (op9b, op10b: army ready, no war on a major) - the war decision.
-- **Seeds hold** (seed1): the same seed and build give the identical game on either PC. Seeds 101-606 are the 6 starts.
-  It. 11 re-run seeded (cmp2): no gain, revert stands. Gold hits 0 before turn 80 in 9 of 12 seeded games.
-- **Newest build:** `ab-ab21a61` (it. 15, the war target; two build fixes). Regress 8 of 8 on every build so far.
-- **Queued:** `2026-11-21-07-cmp1b` (its. 13 and 14 on seeds 101-606; it. 14 101/202 = seedA/seedD) and
-  `2026-11-21-08-cmp1c` (it. 15 on seeds 101-606 + regress). cmp1 itself failed: the it. 15 build didn't compile.
-- **Review relay of 8 PM (user), being worked:** (1) at least 6 games per decision, both PCs, the same 6 starts before
-  and after: lab v20 / watcher v5 add a launch `seed` (config.ini MapRandSeed/SyncRandSeed) and a STARTS line; until
-  seeds are confirmed every LOG entry says its comparison is across different maps; then re-run it. 11 (Spearman)
-  under the scheme. (2) CODEMAP list of every stock decision the plan overrides, with the result behind it; before a
-  new override, check whether feeding the stock decision does it, and say so in the LOG. (3) Next iteration: the new
-  AI declares war when the plan's army is ready and the siege estimate says a target in reach can be taken (that one
-  decision only; the rest of war/peace stays for M4). (4) This section, kept current. Later: the plan seen working on
+  (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
+  override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
+  plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
+  (14). Reverted: 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
+- **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
+  Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
+- **Where the newest code stands (it. 14, build `ab-23e0802` + it. 15 reverted), seeds 101-606:** army 6+4 ready turn
+  43-59; war on a major on 3 of 6 (turns 53, 59, 65); captures of majors: York t67 (101), St. Petersburg t63 +
+  Novgorod t80 (505); 202 takes Corinth (a city-state) only; 303 and 606 nothing. Gold 0 by turn 80 on 4 of 6.
+  No capital taken by 60 yet.
+- **The gap now:** the attack operation, not the approach. 606: approach WAR toward Greece from turn 40, but the sneak
+  attack marched on Mombasa (a city-state the diplomacy ignores), "succeeded" at its walls without war and disbanded;
+  the follow-up on Athens recruited 3 units and never more. 202/303: army ready, no war on a major (not yet read).
+- **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
+  (3) war when the army is ready and the estimate says a target can be taken: tried as it. 15 (fed the approach), no
+  effect; next: make the operation go to that target. (4) this section kept current. Later: the plan seen working on
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Next:** read cmp1b/cmp1c; decide its. 14 and 15 per seed against their predictions; then the bankruptcy gate on
-  war (`IsWarWouldBankruptUs`, the user allows a deficit in the war) and the slow second city.
+- **Next:** it. 16: while the plan prepares, its sneak attack goes only to a major's city (the one the approach and
+  the estimate point at), not a city-state's; read 202/303 to see why no war there. Then the bankruptcy gate on war
+  (`IsWarWouldBankruptUs`; the user allows a deficit in the war) and the slow second city.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
@@ -232,7 +231,18 @@ Logged in MilitaryAILog: "plan war target: <city> (<civ>), estimated capture tur
 Predicted (6 seeded games against it. 14 on the same seeds): a plan war target logged within 3 turns of the army
 counting ready in at least 5 of 6; war on a major in at least 5 of 6 (it. 14: fewer), before turn 60 in at least 4;
 captures more than it. 14 on the same seeds. Regress 8 of 8 (no plan there).
-Build: `ab-22f16eb` (`ab-c013b84` failed to compile: a const logger). Run: `2026-11-21-05-cmp1` (it. 13/14/15 on seeds 101-606, i15x regress).
+Build: `ab-ab21a61` (`ab-c013b84` and `22f16eb` failed to compile: a const logger, then an uninitialized estimate).
+Run: `2026-11-21-08-cmp1c` (i15s101-606, i15x regress; cmp1 itself failed for want of the build). Same seeds = same maps.
+Result: a target logged in 3 of 6 (404 Persepolis turn 47, 505 St. Petersburg turn 55, 606 Athens turn 48; none on
+101/202/303); **every game identical to it. 14** on its seed (wars 101 t65, 404 t53, 505 t59; none on 202/303/606).
+The approach toward the target was already WAR before the change (606: WAR toward Greece from turn 40, "TGT
+Favorable"), so feeding it changed nothing. Why 606 has no war: a sneak attack (operation 1231, turn 44) marched on
+Mombasa, a city-state the diplomacy ignores; at its walls it "succeeded", flagged army-in-place against Mombasa, no war
+(approach IGNORE) and disbanded; the next operation, on Athens (1251, turn 48), recruited 3 units and then found 0 to
+recruit every turn to 80 ("Land Army under construction"; "requested attack on Cape Town ... lack of units").
+Regress 8 of 8. Decision: **reverted** (prediction failed: no game changed). Learned: the gap is not the approach but
+the operation: which city it marches on (a minor's, chosen by `RequestCityAttack` for a different owner than the
+approach's target) and recruiting after the first army disbands.
 
 ## 2026-11-21 M3 iteration 14: the early-rush plan carries on through its war (new AI)
 Class: op10c: once the war began the plan ended (iteration 10's rule), the cities built Shrines, the gold bought them,
@@ -247,7 +257,12 @@ Build: `ab-23e0802`. Run: `2026-11-21-03-op11` (op11a/b/c new AI, op11x regress;
 Result (unmatched maps): op11a war on Greece turn 56, the plan held through it (gold 300 to 39, army 7+6 kept), no
 capture by 80; op11b army 6+5 and 398 gold by turn 60, no war with a major, gold then to city-states, bankrupt turn 79;
 op11c war on Greece turn 62, gold 330-500 kept, melee 6 to 4, no capture. No Shrines bought during a plan war. Captures
-0 of 3. Regress 8 of 8. Decision: **pending** the seeded comparison (it. 13 vs 14 vs 15 on the same 6 starts).
+0 of 3. Regress 8 of 8.
+**Seeded comparison** (`2026-11-21-07-cmp1b`, it. 13 build `ab-32caacd` against it. 14 `ab-23e0802`, seeds 101-606;
+101/202 for it. 14 from seed1's seedA/seedD): 101, 303, 606 identical; 202 Corinth (city-state) turn 66 not 63, bankrupt
+turn 73 not 63; 404 war t53 Persia both, it. 14 keeps 220 gold and 4 ranged at turn 80 (it. 13 bankrupt turn 59, 1
+ranged); 505 St. Petersburg turn 63 both, it. 14 also takes Novgorod turn 80. Decision: **accepted** (never worse on
+the same start; better on 3 of 6).
 
 ## 2026-11-21 M3 iteration 13: the early-rush plan keeps its gold from city-states (new AI)
 Class: op9b gave 750 gold to city-states while preparing (op9a 250), went bankrupt and gifted units away;
