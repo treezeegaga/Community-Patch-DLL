@@ -1292,6 +1292,8 @@ PlayerTypes CvMilitaryAI::GetPlanWarTarget(CvCity** ppCity, CvSiegeEstimate* pEs
 	PlayerTypes eBest = NO_PLAYER;
 	CvCity* pBestCity = NULL;
 	CvSiegeEstimate kBest;
+	memset(&kBest, 0, sizeof(kBest));
+	kBest.iTurnTaken = -1;
 	int iBestScore = INT_MAX;
 	for (int iPlayer = 0; iPlayer < MAX_MAJOR_CIVS; iPlayer++)
 	{
