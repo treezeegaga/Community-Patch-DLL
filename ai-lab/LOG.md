@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-20, 9:15 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-20, 10:55 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -18,9 +18,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Real games so far** (opening lab, Songhai, Tiny map, 4 civs, 3 games per decision, **each on a different random
   map**): captures 0 of 15 before it. 12; op9 (it. 12) 2 of 3 (Sigtuna turn 72; Mecca, a capital, turn 73); op10 (it.
   13) 0 of 3. Wars come turns 57-66 or not at all (op9b, op10b: army ready, no war on a major) - the war decision.
-- **Newest build:** `ab-23e0802` (its. 4-5, 7-10, 12-14 + the army-size log line). Regress 8 of 8 on every build.
-- **Queued / unread:** `2026-11-21-03-op11` (it. 14, plan through its war; 3 unseeded games, judged with the seeded
-  re-run below); `2026-11-21-04-seed1` (does a fixed seed give the same map? STARTS lines of seedA/B/C must match).
+- **Seeds hold** (seed1): the same seed and build give the identical game on either PC. Seeds 101-606 are the 6 starts.
+  It. 11 re-run seeded (cmp2): no gain, revert stands. Gold hits 0 before turn 80 in 9 of 12 seeded games.
+- **Newest build:** `ab-ab21a61` (it. 15, the war target; two build fixes). Regress 8 of 8 on every build so far.
+- **Queued:** `2026-11-21-07-cmp1b` (its. 13 and 14 on seeds 101-606; it. 14 101/202 = seedA/seedD) and
+  `2026-11-21-08-cmp1c` (it. 15 on seeds 101-606 + regress). cmp1 itself failed: the it. 15 build didn't compile.
 - **Review relay of 8 PM (user), being worked:** (1) at least 6 games per decision, both PCs, the same 6 starts before
   and after: lab v20 / watcher v5 add a launch `seed` (config.ini MapRandSeed/SyncRandSeed) and a STARTS line; until
   seeds are confirmed every LOG entry says its comparison is across different maps; then re-run it. 11 (Spearman)
@@ -30,8 +32,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   decision only; the rest of war/peace stays for M4). (4) This section, kept current. Later: the plan seen working on
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Next:** read seed1; if seeds hold, pick 6 seeds and re-run its. 11, 13 vs 14 matched (before/after on the same
-  seeds, both PCs); then the war-declaration iteration.
+- **Next:** read cmp1b/cmp1c; decide its. 14 and 15 per seed against their predictions; then the bankruptcy gate on
+  war (`IsWarWouldBankruptUs`, the user allows a deficit in the war) and the slow second city.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
@@ -296,6 +298,19 @@ plan's limit; the army counted ready late), wars at turns 70-80 (op8a 80, op8b a
 estimates NO, no capture. Bankruptcy gifting 0/0/6. Regress 8 of 8.
 Decision: **reverted** (the prediction failed: no Spearmen in the army; wars later). Learned: upgrades happen only for
 idle units at home; melee quality needs the upgrade path (or the plan building the better melee), not just the tech.
+**Seeded re-run (review relay point 1), `2026-11-21-06-cmp2`, 12 games, both PCs, the same 6 starts:** it. 10 build
+`ab-d71d189` (i10s*) against it. 11 build `ab-6071462` (i11s*), seeds 101-606, Songhai, 80 turns.
+| seed | it. 10: ready / war / capture / bankrupt | it. 11: ready / war / capture / bankrupt |
+|---|---|---|
+| 101 | t70 / t65 England / - / t82 | t68 / t64 England / Hastings t67 / - |
+| 202 | never / none / Corinth (city-state) t61 / t68 | never / none / Corinth t69 / t72 |
+| 303 | t58 / none / - / t72 | t53 / none / - / t77 |
+| 404 | t43 / t53 Persia / - / t59 | identical game |
+| 505 | t57 / t63 Russia / St. Petersburg t68 / - | identical game |
+| 606 | t47 / t72 Greece / Athens (capital) t80 / t64 | t48 / t59 Greece / - (melee 0 at t80) / t69 |
+Major-civ captures 2 against 2; one seed better each way (101 for it. 11, 606 for it. 10), two seeds unchanged.
+Decision: **revert stands** (no measurable gain; one fewer override). Also seen: gold hits 0 before turn 80 in 9 of
+12 games, and on 3 of 6 seeds no war on a major by turn 80, on both builds.
 
 ## 2026-11-20 M3 iteration 10: the early-rush plan, part 4: the attack waits for the plan's whole army (new AI)
 Class: wars begin with a fraction of the army (op6: 2+2 at the walls of 15).
