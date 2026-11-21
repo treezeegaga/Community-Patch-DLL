@@ -46,6 +46,39 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
+## Plan: purge the full-desktop screenshots from ai/v2's history (user via review session, 3:10 PM ET Nov 21)
+Not started; the destructive steps wait for the user's confirmation in the implementer's chat.
+**What is affected** (checked 3:40 PM): PNGs under `ai-lab/siege/results/` enter ai/v2 at `d64b737` (2026-11-15
+11:19, "Siege lab results: diag2"); 377 commits add them; 1,292 commits from there to the tip. All were full-desktop
+shots until `a017a7ce3` (window-only, 12:41 PM Nov 21); the tip (`5662ad807`) removed all 391. **73 `ab-` build
+tags/releases** point at commits at or after `d64b737` (list: `ai-lab/runs/purge/delete-tags.txt`); the other 252
+tags point at older commits on other branches (Nov 1-7) without such files. No other branch carries them: every other
+branch tip has none, and only `claude/bold-feynman-cgnhjs` is newer than `d64b737` (the review session found none).
+**Steps**
+1. The user pauses both lab PCs (`New-Item $env:LOCALAPPDATA\cp-ai-lab\PAUSE`) once they finish their current
+   game; the implementer checks both status files say `paused` and nothing is claimed.
+2. Rewrite (implementer, here): `git filter-branch --index-filter` on `d64b737^..ai/v2` removing every
+   `ai-lab/siege/results/*.png` (also the few window-only shots since `a017a7ce3`: simpler, one rule); commits before
+   `d64b737` keep their hashes. Check: no `ai-lab/siege/results/*.png` anywhere in the rewritten history; the tip's
+   tree equals the current tip's apart from those window-only PNGs; same commit count. Trial run: see below.
+3. Backup: the old history stays on both lab PCs: before resetting, the user renames each lab checkout folder (e.g.
+   `cp-ai-lab` to `cp-ai-lab-old-history`), so a private copy stays off GitHub until the user deletes it.
+4. Force-push the rewritten ai/v2 (implementer). If refused here, the user runs the same from a PC (commands to be
+   written then).
+5. The user deletes the 73 releases and tags: `ai-lab/runs/purge/delete-tags.txt` (`gh release delete ... --cleanup-tag`).
+   The push in step 4 builds the new tip, so the lab has a current build again. **Build names in this log older than
+   the purge no longer resolve.**
+6. Each lab PC: fresh clone of ai/v2 into the old folder name (or `git fetch` + `git reset --hard origin/ai/v2`),
+   then delete the PAUSE file. The watcher only pulls with rebase and pushes ai/v2: after the reset it has no old
+   commits to replay.
+7. What remains: GitHub keeps unreachable commits viewable by direct hash link for a while; only GitHub Support can
+   purge them for sure. The request to send: "Please run a garbage collection / purge cached views of unreachable
+   commits for treezeegaga/Community-Patch-DLL: branch ai/v2 was rewritten to remove screenshots of my desktop from
+   files under ai-lab/siege/results/ (e.g. setup-before-start.png); the old commits and the deleted ab-* tags should
+   no longer be reachable." Forks or clones made before the rewrite keep their copies.
+8. Never again: the lab saves only Civ V's window (`Save-Shot`, since `a017a7ce3`; no other script captures the
+   screen); `ai-lab/runs/README.md` says results are public.
+
 ## User rulings
 
 - 2026-11-20 (about 11 PM ET, the user, relayed by the review session): "I think if I was able to get a capital by 54,
