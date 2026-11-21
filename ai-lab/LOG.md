@@ -205,6 +205,18 @@ ranged 2" of an army of 7-9 melee and 5-6 ranged; the Warriors wore down (receiv
 ("unassigned ... left to homeland ... garrison"). Regress 8 of 8.
 Decision: **accepted** (gold kept, gifting down, nothing worse). Learned: the march must wait for the plan's army.
 
+## 2026-11-21 M3 iteration 12: the early-rush plan, part 5: the upgrade step (new AI)
+Class: the plan's army counts ready only when Composite Bowmen are built (turn 60+), and nothing is upgraded: the stock
+upgrade (`CvHomelandAI::PlotUpgradeMoves`) runs after tactical and operational moves and takes only idle units at home
+(op8a: no upgrade line with 286-370 gold). The user upgraded all Archers the turn the tech landed and marched at once.
+Change (behind `IsNewAI()`): `CvMilitaryAI::DoPlanUpgrades()`, called first in `CvPlayerAI::AI_unitUpdate` (before
+tactical/operational moves): while the plan is active and the strike unit's tech is known, every plan unit (land combat,
+not explorer) in our territory that can upgrade now is upgraded with the kept gold, ranged first, then melee (iron
+permitting). Logged in MilitaryAILog as "plan upgrade:". Wars end the plan, so upgrades stop at the declaration.
+Predicted (3 games): "plan upgrade" lines the turn Construction lands (about turn 42-50) with 3+ Archers upgraded in
+at least 2 of 3; the attack op starts within about 5 turns of that (before turn 55) in at least 2 of 3; a capture by
+turn 80 in at least 1 of 3. Regress 8 of 8 (Songhai there has no plan: no change). The war decision is not touched.
+
 ## 2026-11-20 M3 iteration 11: the early-rush plan's second research target: the melee unit (new AI)
 Class: op7b: the full rush at Sparta brought it to 21 hp, then "melee left 0": the melee were Warriors (strength 8,
 worn down by the city's 22-28 strike). The plan's research went straight to Construction, never Bronze Working.

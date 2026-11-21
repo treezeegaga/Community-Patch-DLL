@@ -1193,6 +1193,78 @@ UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
 	return NO_UNIT;
 }
 
+/// M3 iteration 12: the user's upgrade step. The turn the plan's strike unit can be built, the gold the plan kept buys
+/// upgrades for the plan's army wherever it stands in our territory (ranged first, then melee), before operations and
+/// tactical moves run, so the army is complete that same turn and can march. The stock upgrade (CvHomelandAI::
+/// PlotUpgradeMoves) only reaches units still idle at home after the tactical moves. Returns the number upgraded.
+int CvMilitaryAI::DoPlanUpgrades()
+{
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || !pPlan->szResearchUnitClass)
+		return 0;
+	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
+	UnitTypes eStrike = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
+	CvUnitEntry* pkStrike = (eStrike != NO_UNIT) ? GC.getUnitInfo(eStrike) : NULL;
+	if (!pkStrike)
+		return 0;
+	if (pkStrike->GetPrereqAndTech() != NO_TECH && !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech((TechTypes)pkStrike->GetPrereqAndTech()))
+		return 0;
+
+	int iUpgraded = 0;
+	for (int iPass = 0; iPass < 2; iPass++) //0: ranged, 1: melee
+	{
+		vector<int> vUnits;
+		int iLoop = 0;
+		for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+		{
+			if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->isDelayedDeath())
+				continue;
+			if (pLoopUnit->getUnitInfo().GetDefaultUnitAIType() == UNITAI_EXPLORE)
+				continue;
+			bool bRanged = pLoopUnit->getUnitInfo().GetRangedCombat() > 0;
+			if (bRanged != (iPass == 0))
+				continue;
+			vUnits.push_back(pLoopUnit->GetID());
+		}
+		for (size_t i = 0; i < vUnits.size(); i++)
+		{
+			CvUnit* pUnit = m_pPlayer->getUnit(vUnits[i]);
+			if (!pUnit || !pUnit->CanUpgradeRightNow(false))
+				continue;
+			UnitTypes eOld = pUnit->getUnitType();
+			UnitTypes eNew = pUnit->GetUpgradeUnitType();
+			if (!m_pPlayer->HasResourceForNewUnit(eNew, false, true, eOld))
+				continue;
+			int iPrice = pUnit->upgradePrice(eNew);
+			CvArmyAI* pArmy = m_pPlayer->getArmyAI(pUnit->getArmyID());
+			int iArmySlot = -1;
+			if (pArmy)
+				iArmySlot = pArmy->RemoveUnit(pUnit->GetID(), true);
+			pUnit->setHomelandMove(AI_HOMELAND_MOVE_NONE);
+			CvUnit* pNewUnit = pUnit->DoUpgrade();
+			if (pNewUnit)
+			{
+				iUpgraded++;
+				if (pArmy)
+					pArmy->AddUnit(pNewUnit->GetID(), iArmySlot, pArmy->GetSlotInfo(iArmySlot).m_requiredSlot);
+				if (GC.getLogging() && GC.getAILogging())
+				{
+					CvString playerName = GetPlayer()->getCivilizationShortDescription();
+					FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(playerName), FILogFile::kDontTimeStamp);
+					if (pLog)
+					{
+						CvString msg = CvString::format("%03d, %s, plan upgrade: %s to %s for %d gold, gold left %d, X: %d, Y: %d",
+							GC.getGame().getElapsedGameTurns(), playerName.c_str(), GC.getUnitInfo(eOld)->GetDescription(), GC.getUnitInfo(eNew)->GetDescription(),
+							iPrice, m_pPlayer->GetTreasury()->GetGold(), pNewUnit->getX(), pNewUnit->getY());
+						pLog->Msg(msg.c_str());
+					}
+				}
+			}
+		}
+	}
+	return iUpgraded;
+}
+
 static bool IsTechOnPathTo(TechTypes eTech, TechTypes eTarget, vector<char>& vSeen)
 {
 	if (eTech == eTarget)
