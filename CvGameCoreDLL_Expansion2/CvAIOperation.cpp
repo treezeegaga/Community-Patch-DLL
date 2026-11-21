@@ -1114,6 +1114,14 @@ void CvAIOperation::LogOperationStart() const
 
 		strOutBuf += strTemp2;
 
+		//ai/v2 lab: who the operation is against and which city it targets (logging only)
+		CvPlot* pLogTarget = GetTargetPlot();
+		CvCity* pLogCity = pLogTarget ? pLogTarget->getPlotCity() : NULL;
+		CvString strTemp3;
+		strTemp3.Format("; enemy %s; target city %s (owner %s)", m_eEnemy != NO_PLAYER ? GET_PLAYER(m_eEnemy).getCivilizationShortDescription() : "none",
+			pLogCity ? pLogCity->getName().c_str() : "none", pLogCity ? GET_PLAYER(pLogCity->getOwner()).getCivilizationShortDescription() : "none");
+		strOutBuf += strTemp3;
+
 		pLog->Msg(strOutBuf);
 	}
 }
