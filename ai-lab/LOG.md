@@ -324,6 +324,17 @@ branch tip has none, and only `claude/bold-feynman-cgnhjs` is newer than `d64b73
 
 ## User rulings
 
+- 2026-11-22 (about 9:40 AM ET, the user, relayed by the review session after its analysis of the night's 48 extra
+  seeds 1919-6666, build of it. 22): (1) **the 48 seeds are the measuring set** and its figures the headline (Songhai new
+  AI: a capture by turn 100 on 13 of 48, 27%; a capital by about 60 on 1-2 of 48; stock 0); the 6-seed holdout is a spot
+  check; the 48 are never used for tuning (pick new seeds if more tuning maps are needed). (2) The stalled wars are the
+  largest loss (25 of 38 wars take nothing): carry on with the stalled sieges in the battle lab, and use those 25 to show
+  how common each kind of stall is (estimate NO vs TAKE and nothing happens). (3) The plan needs a way out: a civ whose
+  rush fails or succeeds must go back to its economy (at turn 100 with no capture: science under half of stock's,
+  population a third lower). Track "state at turn 100 against stock on the same map" beside captures; the exit is its own
+  iteration with its own prediction. (4) Vary the neighbour: Greece is seat 1 in every game (remembered setup); change
+  that and say in the log which results are all-Greece. (5) After the sieges, one look at the late declarations (army
+  ready, no war for 20+ turns: about a third of games). No change to the rules or the bar.
 - 2026-11-20 (about 11 PM ET, the user, relayed by the review session): "I think if I was able to get a capital by 54,
   using Aztecs with Jaguars, the goal for AI could probably be a little later, maybe 60?" So step 3's bar is a capital
   taken by about turn 60 on Quick (was 54). The rest stands: about 6 melee + 4 Composite Bowmen, at least 2 cities, one

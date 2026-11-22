@@ -216,6 +216,8 @@ list to fill several hours on both PCs; they need no decision. Top the queue up 
 - (d) Ran 2026-11-21: `14-civs`, `15-holdout` (LOG backlog entry). Ran `16-civho`, `17-long`; ran `18-long2`, `19-tune2`;
   queued `20-tune2more` (seeds 1313-1818 to turn 100, and other civs on them). Lab gap to fix: a defeated Songhai seat stalls the run (civN101).
 
+**Measuring set (user, 2026-11-22): seeds 1919-6666, step 101 (48 maps).** The headline figures come from these (new AI
+and stock on the same maps, captures and the state at turn 100); never used to choose or tune a change.
 **Holdout set (2026-11-21): seeds 707, 808, 909, 1010, 1111, 1212.** Never used to choose or tune a change; run only as
 a check (stock and new AI), now as a baseline and again before M3 closes. If it does clearly worse than the tuning set
 (101-606), LOG.md says so plainly. Tuning set: seeds 101, 202, 303, 404, 505, 606, and from 2026-11-21 12:35 PM ET also 1313, 1414, 1515, 1616, 1717, 1818
