@@ -102,6 +102,11 @@ Ended: DiploOpinionChange"; Mongolia's on Ife restarted 7 times for the same rea
 toward the target leaves WAR before the declaration and the stock code drops the sneak attack.
 
 
+## 2026-11-21 Songhai to turn 100 on the tuning seeds (`26-long22`, build `ab-d0f5828`, it. 22)
+Captures on 6 of 12 (by 80: 4): 202 Corinth t66, Athens t71 (capital), Sparta t85; 606 Athens t56 (capital); 1515
+Stockholm t60 (capital), Helsinki t95; 1818 Edinburgh t64 (capital); 101 York t92; 303 Osaka t97 (Japan's, war t95).
+None on 404, 505, 1313, 1414, 1616, 1717 even with wars from t54-78: the army reaches war and stalls at the walls.
+
 ## 2026-11-21 Holdout to turn 100 (`25-holong22`, build `ab-d0f5828`, it. 22; check only)
 Songhai new AI: captures on 3 of 6: Sparta t67 + **Athens t86 (capital)** (707), **Athens t88 (capital)** (808, war
 only t84), Argos t70 (909); none on 1010, 1111, 1212. Other civs new AI (4 of 6 read): no capture by 100.
