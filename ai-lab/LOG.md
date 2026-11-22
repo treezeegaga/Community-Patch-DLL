@@ -51,7 +51,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
 - **Stage table** (section below Current state, review relay 11:10 PM): the army is completed 12-23 turns after
-  Construction, and 7 of 18 Songhai sieges never bring a city under half. Next iterations aim at army completion.
+  Construction, and 7 of 18 Songhai sieges never bring a city under half. **User's order (11:40 PM): work the stalled
+  sieges now, alongside army completion**: stalls sorted (LOG entry "Stalled sieges sorted": b1 bowmen never close
+  to range 2, e.g. 505; b2 city shot down but melee gone, e.g. 1616); next, copy 505 and 1616 into the battle lab as
+  scenarios and iterate there; full games carry army completion (check the gold held when Construction lands; the
+  user banked about 250 gold and spent it to 31 on the upgrades). Track "walls to under half" and the never-count.
 - **Earlier next step** (it. 24b in test): other warmonger civs' sneak attacks are cancelled before the declaration
   ("Ended: DiploOpinionChange": Japan on Gao t56 with 7 units, Mongolia on Ife 7 times), so keep the plan's sneak
   attack (or its WAR approach) until it declares. Also England's army completes only t69. Then the holdout capitals.
@@ -121,6 +125,22 @@ Script: `ai-lab/runs/stages.py`.
 largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
+
+## 2026-11-21 Stalled sieges sorted (review relay of 11:40 PM: work the sieges now, alongside army completion)
+Siege estimate turn by turn while the army stood at the walls (PlayerTacticalAILog, it. 22 builds, to turn 100).
+Every stall starts as **TAKE** for several turns and turns into NO as the army wears down; none is a plain "too weak
+on arrival". Two kinds:
+- **(b1) TAKE, the city is never shot:** 505 St. Petersburg t60-67 TAKE (3 melee + 4 ranged within 4), hit points
+  200/200 all 8 turns; the Composite Bowmen sit 3-4 tiles out ("can shoot it from here 0" on 25 of 26 lines, tactical
+  moves 17 and 20 = steamroll) and never step to range 2; then NO (1 melee, 0 ranged). Same in holdout 1111
+  Teotihuacan (t67-84 TAKE, 5-6 melee + 1-3 ranged, 200/200 for 17 turns; picture only). Likely 1313, 1414
+  (TAKE 2-4 turns, then NO, 250 hp capitals) and 1717.
+- **(b2) TAKE, the city is shot down but the melee is gone first:** 1616 Attila's Court t56-68 TAKE, bowmen in range
+  (37 of 52 lines "can shoot 1"), city 200 to 88, melee 3 to 1, then NO and the city heals back to 250. 404
+  Persepolis (TAKE 18 turns, down to 157/250, melee 4) is near this kind.
+Next (rule 3): copy 505 (b1) and 1616 (b2) into the battle lab as scenarios, the army as it arrived and the city as it
+was, and check they reproduce the stall on the current build; then iterate in the lab while the full games carry the
+army-completion work. Not yet done (handover). Holdout games are not used to build scenarios.
 
 ## 2026-11-21 M3 iteration 24: the plan's sneak attack on a major isn't cancelled when the approach leaves WAR, and declares at the walls (new AI)
 Class (cmp10 i23c303, long21C606): Japan's first operation (t48, 7 units incl. 4 Composite Bowmen, sneak attack on
