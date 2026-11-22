@@ -110,7 +110,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
 
 ## The lab (ai-lab/siege)
 
-- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 19 (v19: opening/transfer give the active civ its leader's flavors, `FLAVORS` line); march battles show the attacker the home-target corridor (army paths only cross seen tiles); battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
+- `SiegeLab.lua` (in-game add-in, `VERSION` at the top, now 22 (v21: in opening/transfer mode, `siegeSnapshot` logs SMAP (ground within 4 of an enemy city with our land unit within 4, once), SCITY (hp, max, strength, pop), SUNIT (every land unit within 4: owner, type, id, dx:dy offset, distance, hp, can shoot now), SSPOT (per ranged unit of ours: the plots within its range it could shoot the city from, line of sight, vision ignored, and who stands there); logging only. v22: a scenario can copy such a siege: `ground = { y = <the real city's row>, map = <SMAP codes> }`, `armyAt`/`defendersAt = { {type, dx, dy, hp[, xp]} }` (offsets turned into hex steps on the real row parity), `city.damage`; `siege/make_stall_scenario.py <Lua.log> <city> <turn> <name>` prints one. v19: opening/transfer give the active civ its leader's flavors, `FLAVORS` line); march battles show the attacker the home-target corridor (army paths only cross seen tiles); battles grouped by scenario `era`, lowest first, repeats outer within a group: an era never drops, so later-era battles must come last): on turn 0 clears a flat arena; per battle, during the
   defender's turn, stages the army and city (techs set, research cleared, city tile revealed to the attacker, palace
   moved for `capital`, sea for `coast`, rough ring for `terrain = "rough"`, `homeDistance` moves the target), ends both
   sides' operations; logs a TURN line each turn and a RESULT line per battle; fixed +10 gold a turn for the attacker.
@@ -144,7 +144,7 @@ Most useful: `PlayerTacticalAILog.csv` (assault), `OperationalAILog.csv` (operat
   (`launches/<id>/<label>.claim.json`), run `Run-SiegeLab.ps1`, write `launches/<id>/<label>.json`, done marker
   `done/<id>.json`, status `status/<PC>.json`; self-heals a failed pull; unpinned launches only on hosts in
   `trusted-hosts.txt`. Waits up to 90 min for a release to publish.
-- `wait-for-results.sh`: how the implementing session waits (PLAN section 7, step 7).
+- `wait-for-results.sh`: how the implementing session waits (PLAN section 7, step 7). `wait-for-results.sh 110 done` waits for done markers only (5-minute games otherwise wake it every few minutes).
 - Builds: every push to `ai/**` that touches files outside `ai-lab/` runs `.github/workflows/build_vp.yml` (about
   12 min) and publishes release `ab-<short commit>` **of the pushed tip only**. So fetch and merge `origin/ai/v2` before
   committing code (the lab PCs push results all the time); if a push is refused and you merge, the release is named

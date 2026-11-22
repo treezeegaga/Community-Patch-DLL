@@ -1,0 +1,30 @@
+diff --git a/CvGameCoreDLL_Expansion2/CvTacticalAI.cpp b/CvGameCoreDLL_Expansion2/CvTacticalAI.cpp
+index ecbbe3161..4359800b2 100644
+--- a/CvGameCoreDLL_Expansion2/CvTacticalAI.cpp
++++ b/CvGameCoreDLL_Expansion2/CvTacticalAI.cpp
+@@ -7748,14 +7748,24 @@ bool ScoreAttackDamage(const CvTacticalPlot* tactPlot, const CvUnit* pUnit, cons
+ 				//AI lab (M3 it. 2): the new AI judges the army, not the unit: too early only if the one siege estimate says the
+ 				//army near the city can't take it
+ 				CvPlayer& kOwner = GET_PLAYER(pUnit->getOwner());
++				//AI lab (M3 it. 25): and a hit that doesn't take the city waits while the estimate's plan has the ranged units
++				//do the work first (melee hold and heal, bMeleeNow false): Warriors chipping 9 off a walled city for 48 each were
++				//gone before the city came under half (stalled sieges, kind b2)
++				const char* szTooEarly = "refused (too early)";
+ 				if (kOwner.IsNewAI())
+ 				{
+ 					const CvSiegeEstimate* pEst = kOwner.GetTacticalAI()->GetSiegeEstimate(pEnemyCity);
+ 					bTooEarly = !pEst || pEst->iTurnTaken < 0;
++					szTooEarly = "refused (too early, siege estimate NO)";
++					if (!bTooEarly && !pEst->bMeleeNow)
++					{
++						bTooEarly = true;
++						szTooEarly = "refused (hold, siege estimate has the ranged units first)";
++					}
+ 				}
+ 				if (bTooEarly)
+ 				{
+-					LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, kOwner.IsNewAI() ? "refused (too early, siege estimate NO)" : "refused (too early)", CvString::format(
++					LogMeleeCityAttack(pUnit, pUnitPlot, pEnemyCity, szTooEarly, CvString::format(
+ 						"city hp %d, damage %d, received %d, city strike %d, last turn %d, turns on city %.1f, on attacker %.1f, agg %d bias %.2f, adjacent %d",
+ 						iPrevCityHitPoints, iCityDamageDealt, iDamageReceived, iCounterattackDamage, pEnemyCity->getDamageTakenLastTurn(),
+ 						fRemainingTurnsOnCity, fRemainingTurnsOnAttacker, (int)eAggLvl, fAggBias, tactPlot->getNumAdjacentFriendlies(CvTacticalPlot::TD_BOTH, -1)));

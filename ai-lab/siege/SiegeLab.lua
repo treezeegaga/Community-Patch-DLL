@@ -15,6 +15,8 @@
 -- city-state and barbarian), autoplays SiegeLabScenarios.opening.turns turns with every major civ played by the AI,
 -- and logs one OPEN line per major civ per turn (economy and army) plus CAPTURE and WAR lines, then DONE.
 -- Lab v21: also SMAP/SCITY/SUNIT/SSPOT lines for every enemy city with our army near it (siegeSnapshot).
+-- Lab v22: a battle scenario can copy a full-game siege: `ground` (the SMAP plots) and `armyAt`/`defendersAt` (units at
+-- their SUNIT offsets and hit points).
 --
 -- Every engine call below was checked against the DLL's Lua bindings (CvGameCoreDLL_Expansion2/Lua), but the
 -- lab had not been run in the game when this was written. Arguments are always passed in full: the bindings
@@ -23,7 +25,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 21
+local VERSION = 22
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -68,12 +70,15 @@ local function scenarioProblem(sc)
 	local problems = {}
 	if type(sc.name) ~= "string" or sc.name:find(",") then problems[#problems + 1] = "name" end
 	if type(sc.turns) ~= "number" or sc.turns < 1 then problems[#problems + 1] = "turns" end
-	if type(sc.army) ~= "table" or #sc.army == 0 then problems[#problems + 1] = "army" end
+	if (type(sc.army) ~= "table" or #sc.army == 0) and (type(sc.armyAt) ~= "table" or #sc.armyAt == 0) then problems[#problems + 1] = "army" end
+	if (sc.armyAt or sc.defendersAt) and not (sc.ground and type(sc.ground.y) == "number") then problems[#problems + 1] = "armyAt needs ground.y" end
 	if type(sc.city) ~= "table" then problems[#problems + 1] = "city" end
 	checkNames(sc.attackerTechs, "tech", problems)
 	checkNames(sc.defenderTechs, "tech", problems)
 	for _, entry in ipairs(sc.army or {}) do checkNames({ entry[1] }, "unit", problems) end
 	for _, entry in ipairs(sc.defenders or {}) do checkNames({ entry[1] }, "unit", problems) end
+	for _, entry in ipairs(sc.armyAt or {}) do checkNames({ entry[1] }, "unit", problems) end
+	for _, entry in ipairs(sc.defendersAt or {}) do checkNames({ entry[1] }, "unit", problems) end
 	if sc.city then
 		checkNames(sc.city.buildings, "building", problems)
 		if sc.city.garrison then checkNames({ sc.city.garrison }, "unit", problems) end
@@ -205,6 +210,42 @@ local function buildReserveSite()
 	return best
 end
 
+-- Lab v22: a plot given as an offset (dx, dy) from a city on row `fromY` of another map (a full game's SMAP/SUNIT line),
+-- placed at the same hex offset from the target city. Rows are shifted by half a tile on odd rows, so the offset is
+-- turned into hex steps on the old row parity and back on the target's.
+local function groundPlot(fromY, dx, dy)
+	local function q(x, y) return x - (y - y % 2) / 2 end
+	local dq = q(dx, fromY + dy) - q(0, fromY)
+	local r = lab.ty + dy
+	local x = q(lab.tx, lab.ty) + dq + (r - r % 2) / 2
+	return Map.GetPlot(x, r)
+end
+
+local GROUND_FEATURES = { F = "FEATURE_FOREST", J = "FEATURE_JUNGLE", M = "FEATURE_MARSH", O = "FEATURE_OASIS", P = "FEATURE_FLOOD_PLAINS" }
+
+-- Lab v22: the plots of a full game's SMAP line around the target (plot type and feature; rivers and other features
+-- are left out). Only plots within 4 tiles; the target's own plot keeps a hill if the code says so.
+local function applyGround(ground)
+	for item in string.gmatch(ground.map or "", "[^;]+") do
+		local dx, dy, code = item:match("^(%-?%d+):(%-?%d+):(%a+)$")
+		dx, dy = tonumber(dx), tonumber(dy)
+		local p = dx and groundPlot(ground.y, dx, dy)
+		if p then
+			local t, f = code:sub(1, 1), code:sub(2, 2)
+			if t == "m" and not (dx == 0 and dy == 0) then setLand(p, PLOT_MOUNTAIN, "TERRAIN_MOUNTAIN")
+			elseif t == "h" then setLand(p, PLOT_HILLS, "TERRAIN_GRASS")
+			elseif t == "w" and not (dx == 0 and dy == 0) then
+				clearPlot(p)
+				p:SetPlotType(PLOT_OCEAN, false, true, false)
+				p:SetTerrainType(typeID("TERRAIN_COAST"), false, true)
+			else setLand(p, PLOT_LAND, "TERRAIN_GRASS") end
+			local feature = GROUND_FEATURES[f] and typeID(GROUND_FEATURES[f])
+			if feature and t ~= "w" and t ~= "m" and not (dx == 0 and dy == 0) then p:SetFeatureType(feature) end
+			lab.changedPlots[#lab.changedPlots + 1] = p
+		end
+	end
+end
+
 -- Puts the arena back to flat grass where the last scenario changed it, then applies this scenario's terrain.
 local function applyScenarioTerrain(sc)
 	for _, plot in ipairs(lab.changedPlots) do
@@ -247,6 +288,7 @@ local function applyScenarioTerrain(sc)
 			end
 		end
 	end
+	if sc.ground then applyGround(sc.ground) end
 	if sc.city.coast then
 		-- Lab v12: sea on the city's north side, out to 4 tiles, so the city is on the coast (a body of water
 		-- this size counts as sea, not a lake). The attacker's row and the defenders' east side stay land.
@@ -390,6 +432,34 @@ local function placeUnits(playerID, entries, plots, justDeployed)
 	end
 	if placed < #order then
 		out("WARN," .. cur.sc.name .. ": placed " .. placed .. " of " .. #order .. " units for player " .. playerID)
+	end
+	return roster, placed
+end
+
+-- Lab v22: units at given offsets, { { type, dx, dy [, hp [, xp]] }, ... }, offsets as in a full game's SUNIT lines
+-- from a city on row fromY. A plot that is taken or can't hold the unit falls back to the nearest free plot.
+local function placeUnitsAt(playerID, entries, fromY, justDeployed)
+	local player = Players[playerID]
+	local roster, placed = {}, 0
+	for _, entry in ipairs(entries or {}) do
+		local id = typeID(entry[1])
+		local info = GameInfo.Units[id]
+		local p = groundPlot(fromY, entry[2], entry[3])
+		if not p or p:IsCity() or p:IsWater() or p:IsMountain() or p:GetNumUnits() > 0 then
+			local alt = p and openPlots(p:GetX(), p:GetY(), 1, 2, nil)[1]
+			p = alt and alt.plot or nil
+		end
+		local unit = p and player:InitUnit(id, p:GetX(), p:GetY())
+		if unit then
+			if entry[4] and entry[4] < 100 then unit:SetDamage(100 - entry[4], NO_PLAYER, 1) end
+			if entry[5] then unit:SetExperience(entry[5]) end
+			if justDeployed then unit:SetDeployFromOperationTurn(Game.GetGameTurn()) end
+			roster[unit:GetID()] = (info and (info.Range or 0) > 0) and "ranged" or "melee"
+			placed = placed + 1
+		end
+	end
+	if placed < #(entries or {}) then
+		out("WARN," .. cur.sc.name .. ": placed " .. placed .. " of " .. #entries .. " units at their offsets for player " .. playerID)
 	end
 	return roster, placed
 end
@@ -550,7 +620,7 @@ local function beginScenario()
 		city:SetNumRealBuilding(palace, 1)
 		if not city:IsCapital() then out("WARN," .. sc.name .. ": the target city did not become the capital") end
 	end
-	city:SetDamage(0, true)
+	city:SetDamage(sc.city.damage or 0, true)   -- lab v22: a copied siege can start with the city already hit
 
 	-- The defenders: one unit inside the city, the rest next to it on the far side.
 	cur.defRoster = {}
@@ -559,6 +629,10 @@ local function beginScenario()
 		if unit then cur.defRoster[unit:GetID()] = "garrison" end
 	end
 	local fieldRoster = placeUnits(lab.defender, sc.defenders, openPlots(lab.tx, lab.ty, 1, 2, "east"), false)
+	if sc.defendersAt then
+		local atRoster = placeUnitsAt(lab.defender, sc.defendersAt, sc.ground.y, false)
+		for id in pairs(atRoster) do fieldRoster[id] = true end
+	end
 	for id in pairs(fieldRoster) do cur.defRoster[id] = true end
 
 	-- The attackers: in front of the city as if an operation had just delivered them, or around home.
@@ -569,7 +643,11 @@ local function beginScenario()
 		local d = sc.startDistance or 3
 		plots = openPlots(lab.tx, lab.ty, d, d + 2, "west")
 	end
-	cur.attRoster = placeUnits(lab.attacker, sc.army, plots, not sc.atHome)
+	if sc.armyAt then
+		cur.attRoster = placeUnitsAt(lab.attacker, sc.armyAt, sc.ground.y, true)
+	else
+		cur.attRoster = placeUnits(lab.attacker, sc.army, plots, not sc.atHome)
+	end
 
 	cur.attStart, cur.defStart, cur.meleeStart = 0, 0, 0
 	for _, kind in pairs(cur.attRoster) do
@@ -1120,7 +1198,7 @@ end
 --   SMAP,turn,city,cx,cy,owner,hp,maxhp,codes     once per city: every plot within 4 as dx:dy:code (code: plot type
 --                                                 m/h/f/w, feature -/F forest/J jungle/M marsh/O oasis/P flood plains/
 --                                                 X other, r on a river, c the city)
---   SCITY,turn,city,hp,maxhp,strength             every turn
+--   SCITY,turn,city,hp,maxhp,strength[,pop]       every turn (pop from lab v22)
 --   SUNIT,turn,city,owner,unit,id,dx,dy,dist,hp,canShootNow   every land unit within 4, both sides, every turn
 --   SSPOT,turn,city,unit,id,range,spots           for each of the active civ's ranged units within 4: every plot within
 --                                                 its range of the city it could shoot from (line of sight, vision
@@ -1176,8 +1254,8 @@ local function siegeSnapshot(activeID)
 						out(string.format("SMAP,%d,%s,%d,%d,%d,%d,%d,%s", turn, name, cx, cy, id, city:GetMaxHitPoints() - city:GetDamage(),
 							city:GetMaxHitPoints(), table.concat(codes, ";")))
 					end
-					out(string.format("SCITY,%d,%s,%d,%d,%d", turn, name, city:GetMaxHitPoints() - city:GetDamage(), city:GetMaxHitPoints(),
-						city:GetStrengthValue(false, false, nil)))
+					out(string.format("SCITY,%d,%s,%d,%d,%d,%d", turn, name, city:GetMaxHitPoints() - city:GetDamage(), city:GetMaxHitPoints(),
+						city:GetStrengthValue(false, false, nil), city:GetPopulation()))
 					for dy = -4, 4 do for dx = -4, 4 do
 						local p = Map.GetPlot(cx + dx, cy + dy)
 						if p and Map.PlotDistance(cx + dx, cy + dy, cx, cy) <= 4 then
