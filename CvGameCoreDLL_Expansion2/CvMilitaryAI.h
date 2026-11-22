@@ -193,6 +193,7 @@ public:
 		const char* szResearchUnitClass;	// research toward this unit first (the rush's strike unit)
 	};
 	const SAIPlan* GetActivePlan() const;
+	bool IsPlanWindowOpen() const;
 	UnitTypes GetPlanBuild(CvCity* pCity) const;
 	TechTypes GetPlanResearch() const;
 	bool IsPlanArmyReady() const;

@@ -100,6 +100,20 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
+## 2026-11-22 M3 iteration 25: city-states stay off limits through the plan's whole window (new AI)
+Class: the plan's army sent to a city-state when the plan ends at t60 with no war on a major (measuring maps: 5 of the
+25 stalled wars, Review 2's point 2; new tuning set 3, seeds 7070-9393 on `ab-45cd73b` (`tune3`): 8 of 24, 7272 7777 7979
+8383 8787 8989 9090 9191, operations on a city-state at t60-74 before any capture).
+Cause: `CvMilitaryAI::GetActivePlan` returns NULL from the row's end turn (60) when no war on a major has started, and
+it. 16's blocks in `RequestCityAttack` (minor targets) and `RequestBullyingOperation` test `GetActivePlan`.
+Change: new `CvMilitaryAI::IsPlanWindowOpen()` (new AI, warmonger, no city taken, before turn 90 Quick); both blocks
+also hold while it is true (the bullying block covers shows of force on majors too, as during the plan). New AI only.
+Built on top of it. 26 (decision on 26 pending its guard sets).
+Predicted (tuning set 3, i25 against i26 on the same build line, Songhai new AI to turn 100): Songhai operations on a
+city-state before its first capture and before turn 90 fall from 8 seeds to 0; seeds with a capture by turn 100 not
+fewer; on the 8 diversion seeds, at least 2 gain a war on a major or a capture before turn 80. 12 tuning seeds: no
+seed loses a capture. Guard sets: no scenario loses more than 1 in 6. Holdout and measuring maps untouched.
+
 ## 2026-11-22 M3 iteration 26: a ranged unit holds only where it can shoot the city (new AI)
 Class: "TAKE, the city never below 90%" (5 of the 25 stalled wars on the measuring maps; tuning seed 505 too). Review 2's
 point 3 (10:30 AM): in 4848 (Sparta t71-86) and 505 the bowmen stand 2 tiles out and the city isn't shot.

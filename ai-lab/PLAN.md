@@ -223,6 +223,7 @@ and stock on the same maps, captures and the state at turn 100); never used to c
 a check (stock and new AI), now as a baseline and again before M3 closes. If it does clearly worse than the tuning set
 (101-606), LOG.md says so plainly. Tuning set: seeds 101, 202, 303, 404, 505, 606, and from 2026-11-21 12:35 PM ET also 1313, 1414, 1515, 1616, 1717, 1818
 (widened because a failure class showed on the holdout only; the holdout itself is never used to choose).
+From 2026-11-22 also tuning set 3: seeds 7070-9393, step 101 (24 maps; chosen because the city-state class shows there).
 
 Anything that changes the user's PC beyond the lab (installing the setup switch in the pack, graphics, saves) or
 needs the user at the PC (the multiplayer smoke test) is not on this list.
