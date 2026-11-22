@@ -4,6 +4,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 ## Current state (2026-11-22, 12:15 PM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
+- **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. Iteration 25's runs were re-queued as `00k-i25` (00j failed: build ab-b8c9ffb was cancelled, re-run at 1:36 PM).
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
 - **The review session speaks for the user:** from 10:10 AM Nov 22 that is "Project review 2"
