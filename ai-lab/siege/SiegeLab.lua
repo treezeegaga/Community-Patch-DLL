@@ -14,6 +14,7 @@
 -- Opening mode (lab v18, M3): with set = "opening" (or "transfer", 100 turns: PLAN 8a item 4) the lab leaves the game as it is (a normal start: every civ,
 -- city-state and barbarian), autoplays SiegeLabScenarios.opening.turns turns with every major civ played by the AI,
 -- and logs one OPEN line per major civ per turn (economy and army) plus CAPTURE and WAR lines, then DONE.
+-- Lab v21: also SMAP/SCITY/SUNIT/SSPOT lines for every enemy city with our army near it (siegeSnapshot).
 --
 -- Every engine call below was checked against the DLL's Lua bindings (CvGameCoreDLL_Expansion2/Lua), but the
 -- lab had not been run in the game when this was written. Arguments are always passed in full: the bindings
@@ -22,7 +23,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 20
+local VERSION = 21
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -1114,6 +1115,109 @@ local function openingLine(player, id)
 		upgradeGold, settlers, workers, wars, player:GetMilitaryMight()))
 end
 
+-- Lab v21 (logging only): the ground of a full-game siege, so a stalled one can be copied into the battle lab with its
+-- terrain. For each city of a major at war with the active civ with one of the active civ's land combat units within 4:
+--   SMAP,turn,city,cx,cy,owner,hp,maxhp,codes     once per city: every plot within 4 as dx:dy:code (code: plot type
+--                                                 m/h/f/w, feature -/F forest/J jungle/M marsh/O oasis/P flood plains/
+--                                                 X other, r on a river, c the city)
+--   SCITY,turn,city,hp,maxhp,strength             every turn
+--   SUNIT,turn,city,owner,unit,id,dx,dy,dist,hp,canShootNow   every land unit within 4, both sides, every turn
+--   SSPOT,turn,city,unit,id,range,spots           for each of the active civ's ranged units within 4: every plot within
+--                                                 its range of the city it could shoot from (line of sight, vision
+--                                                 ignored) as dx:dy:o (o: 0 free, 1 ours, 2 theirs)
+local siegeMapDone = {}
+
+local function featureCode(plot)
+	local f = plot:GetFeatureType()
+	if f == nil or f < 0 then return "-" end
+	local info = GameInfo.Features[f]
+	local t = info and info.Type or ""
+	if t == "FEATURE_FOREST" then return "F" elseif t == "FEATURE_JUNGLE" then return "J"
+	elseif t == "FEATURE_MARSH" then return "M" elseif t == "FEATURE_OASIS" then return "O"
+	elseif t == "FEATURE_FLOOD_PLAINS" then return "P" end
+	return "X"
+end
+
+local function plotCode(plot)
+	local pt = plot:GetPlotType()
+	local c = (pt == PLOT_MOUNTAIN and "m") or (pt == PLOT_HILLS and "h") or (pt == PLOT_OCEAN and "w") or "f"
+	c = c .. featureCode(plot)
+	if plot:IsRiver() then c = c .. "r" end
+	if plot:IsCity() then c = c .. "c" end
+	return c
+end
+
+local function siegeSnapshot(activeID)
+	local active = Players[activeID]
+	local team = Teams[active:GetTeam()]
+	local turn = Game.GetGameTurn()
+	for id = 0, maxMajors() - 1 do
+		local enemy = Players[id]
+		if id ~= activeID and enemy and enemy:IsAlive() and not enemy:IsMinorCiv() and team:IsAtWar(enemy:GetTeam()) then
+			for city in enemy:Cities() do
+				local cx, cy = city:GetX(), city:GetY()
+				local near = false
+				for unit in active:Units() do
+					if unit:IsCombatUnit() and unit:GetDomainType() == DomainTypes.DOMAIN_LAND
+						and Map.PlotDistance(unit:GetX(), unit:GetY(), cx, cy) <= 4 then near = true break end
+				end
+				if near then
+					local name = city:GetName():gsub(",", " ")
+					local key = id .. ":" .. city:GetID()
+					if not siegeMapDone[key] then
+						siegeMapDone[key] = true
+						local codes = {}
+						for dy = -4, 4 do for dx = -4, 4 do
+							local p = Map.GetPlot(cx + dx, cy + dy)
+							if p and Map.PlotDistance(cx + dx, cy + dy, cx, cy) <= 4 then
+								codes[#codes + 1] = string.format("%d:%d:%s", dx, dy, plotCode(p))
+							end
+						end end
+						out(string.format("SMAP,%d,%s,%d,%d,%d,%d,%d,%s", turn, name, cx, cy, id, city:GetMaxHitPoints() - city:GetDamage(),
+							city:GetMaxHitPoints(), table.concat(codes, ";")))
+					end
+					out(string.format("SCITY,%d,%s,%d,%d,%d", turn, name, city:GetMaxHitPoints() - city:GetDamage(), city:GetMaxHitPoints(),
+						city:GetStrengthValue(false, false, nil)))
+					for dy = -4, 4 do for dx = -4, 4 do
+						local p = Map.GetPlot(cx + dx, cy + dy)
+						if p and Map.PlotDistance(cx + dx, cy + dy, cx, cy) <= 4 then
+							for i = 0, p:GetNumUnits() - 1 do
+								local u = p:GetUnit(i)
+								if u and u:IsCombatUnit() and u:GetDomainType() == DomainTypes.DOMAIN_LAND then
+									local shoot = -1
+									if u:GetOwner() == activeID and u:GetBaseRangedCombatStrength() > 0 then
+										shoot = u:CanRangeStrikeAt(cx, cy, true, true) and 1 or 0
+									end
+									out(string.format("SUNIT,%d,%s,%d,%s,%d,%d,%d,%d,%d,%d", turn, name, u:GetOwner(),
+										GameInfo.Units[u:GetUnitType()].Type, u:GetID(), dx, dy, Map.PlotDistance(cx + dx, cy + dy, cx, cy),
+										u:GetCurrHitPoints(), shoot))
+									if shoot >= 0 then
+										local r = u:Range()
+										local spots = {}
+										for sy = -r, r do for sx = -r, r do
+											local q = Map.GetPlot(cx + sx, cy + sy)
+											local d = Map.PlotDistance(cx + sx, cy + sy, cx, cy)
+											if q and d >= 1 and d <= r and u:CanEverRangeStrikeAt(cx, cy, cx + sx, cy + sy, true) then
+												local o = 0
+												if q:GetNumUnits() > 0 then
+													o = (q:GetUnit(0):GetOwner() == activeID) and 1 or 2
+												end
+												spots[#spots + 1] = string.format("%d:%d:%d", sx, sy, o)
+											end
+										end end
+										out(string.format("SSPOT,%d,%s,%s,%d,%d,%s", turn, name, GameInfo.Units[u:GetUnitType()].Type,
+											u:GetID(), r, table.concat(spots, ";")))
+									end
+								end
+							end
+						end
+					end end
+				end
+			end
+		end
+	end
+end
+
 local function onOpeningTurn(playerID)
 	if not opening or opening.finished or playerID ~= opening.active then return end
 	local turn = Game.GetGameTurn()
@@ -1121,6 +1225,7 @@ local function onOpeningTurn(playerID)
 		local player = Players[id]
 		if player and player:IsAlive() and not player:IsMinorCiv() and not player:IsBarbarian() then openingLine(player, id) end
 	end
+	siegeSnapshot(opening.active)
 	if turn >= opening.turns then
 		opening.finished = true
 		out("DONE")

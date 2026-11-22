@@ -1,0 +1,54 @@
+{
+ "id": "2026-11-22-00-sdiag",
+ "why": "Lab v21 siege snapshot (logging only, Lua): the six stalled tuning seeds replayed on it. 24b, Songhai new AI to turn 100, to record the ground, unit positions and line-of-sight spots at each stalled siege (to copy 505 and 1616 into the battle lab). Should match i24bs/l24bN games. Either trusted PC.",
+ "launches": [
+  {
+   "label": "sd24bN505",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 505
+  },
+  {
+   "label": "sd24bN1616",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1616
+  },
+  {
+   "label": "sd24bN404",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 404
+  },
+  {
+   "label": "sd24bN1313",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1313
+  },
+  {
+   "label": "sd24bN1414",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1414
+  },
+  {
+   "label": "sd24bN1717",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1717
+  }
+ ]
+}

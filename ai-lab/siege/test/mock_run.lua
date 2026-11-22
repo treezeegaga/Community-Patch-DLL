@@ -40,6 +40,11 @@ local function newPlot(x, y)
 	function m:IsCity() return p.city ~= nil end
 	function m:GetPlotCity() return p.city end
 	function m:GetNumUnits() local n = 0 for _ in pairs(p.units) do n = n + 1 end return n end
+	-- lab v21 siege snapshot
+	function m:GetUnit(i) assert(type(i) == "number") local list = {} for _, u in pairs(p.units) do list[#list + 1] = u end table.sort(list, function(a, b) return a._u.id < b._u.id end) return list[i + 1] end
+	function m:GetPlotType() return (p.water and 3) or (p.mountain and 0) or (((p.x + p.y) % 5 == 0) and 1) or 2 end
+	function m:GetFeatureType() return ((p.x * 3 + p.y) % 7 == 0) and GameInfoTypes.FEATURE_FOREST or -1 end
+	function m:IsRiver() return p.river end
 	function m:SetFeatureType(f) assert(type(f) == "number") end
 	function m:SetResourceType(r, n, b) assert(type(r) == "number" and type(n) == "number" and type(b) == "boolean") end
 	function m:SetImprovementType(i, pl, b) assert(type(i) == "number" and type(pl) == "number" and type(b) == "boolean") end
@@ -94,6 +99,13 @@ local function newUnit(owner, unitType, x, y)
 	function m:GetBaseRangedCombatStrength() return (u.type % 2 == 0) and 7 or 0 end
 	function m:GetUpgradeUnitType() return -1 end
 	function m:UpgradePrice(t) assert(type(t) == "number") return 0 end
+	-- lab v21 siege snapshot
+	function m:GetOwner() return u.owner end
+	function m:GetUnitType() return u.type end
+	function m:GetCurrHitPoints() return 100 end
+	function m:Range() return 2 end
+	function m:CanRangeStrikeAt(x, y, needWar, noncombat) assert(type(x) == "number" and type(y) == "number" and needWar == true and noncombat == true) return distance(u.x, u.y, x, y) <= 2 end
+	function m:CanEverRangeStrikeAt(x, y, sx, sy, ignoreVision) assert(type(sx) == "number" and type(sy) == "number" and ignoreVision == true) return distance(sx, sy, x, y) <= 2 and (sx + sy) % 3 ~= 0 end
 	m._u = u
 	return strict(m, "unit")
 end
@@ -103,6 +115,11 @@ local function newCity(owner, x, y)
 	nextCityID = nextCityID + 1
 	local m = {}
 	function m:GetOwner() return c.owner end
+	function m:GetX() return c.x end
+	function m:GetY() return c.y end
+	function m:GetID() return c.id end
+	function m:GetName() return "Fake, City" end
+	function m:GetPopulation() return c.pop end
 	function m:GetDamage() return c.damage end
 	function m:SetDamage(v, quiet) assert(type(v) == "number" and type(quiet) == "boolean") c.damage = v end
 	function m:GetMaxHitPoints() return 200 end
@@ -286,6 +303,7 @@ GameInfo = {
 		{ TechType = "TECH_IRON_WORKING", PrereqTech = "TECH_BRONZE_WORKING" } }),
 	Victories = rows({ { ID = 0 }, { ID = 1 } }),
 	Units = unitRows,
+	Features = { [GameInfoTypes.FEATURE_FOREST] = { Type = "FEATURE_FOREST" } },
 	HandicapInfos = { [0] = { Type = "HANDICAP_KING" } },
 	GameSpeeds = { [0] = { Type = "GAMESPEED_QUICK" } },
 }
@@ -304,6 +322,15 @@ end
 SiegeLabConfig = { enabled = true, set = arg[1] or "siege", repeats = 2, only = {}, human = false, seed = 4242 }
 dofile("SiegeLab.lua")
 Events.LoadScreenClose.fire()
+if SiegeLabConfig.set == "opening" or SiegeLabConfig.set == "transfer" then
+	-- lab v21: a city of civ 1 at war with civ 0, with civ 0's bowmen and a warrior around it, for the siege snapshot
+	players[1]:InitCity(20, 8)
+	teams[0]._war[1], teams[1]._war[0] = true, true
+	for i, xy in ipairs({ { 21, 8 }, { 18, 8 }, { 20, 10 }, { 22, 9 } }) do
+		players[0]:InitUnit(i == 4 and GameInfoTypes.UNIT_WARRIOR or GameInfoTypes.UNIT_COMPOSITE_BOWMAN, xy[1], xy[2])
+	end
+	players[1]:InitUnit(GameInfoTypes.UNIT_SPEARMAN, 19, 8)
+end
 
 -- The fake game: each turn every attacking unit damages the city from where it stands and gains experience;
 -- every third scenario's city can fall; the defender then heals a little and kills one attacker every
@@ -383,8 +410,9 @@ if SiegeLabConfig.set == "opening" or SiegeLabConfig.set == "transfer" then   --
 	assert(counts.FLAVORS == 1 and (counts.WARN or 0) == 0, "expected one FLAVORS line (lab v19: the active civ gets its leader's flavors)")
 	local startsLine
 	for _, line in ipairs(log) do startsLine = startsLine or line:match("^%[SiegeLab%] STARTS,(.*)$") end
+	assert((counts.SMAP or 0) == 1 and (counts.SCITY or 0) >= 1 and (counts.SUNIT or 0) >= 2 and (counts.SSPOT or 0) >= 1, "expected the lab v21 siege snapshot lines")
 	assert(counts.STARTS == 1 and startsLine and startsLine:match("^4242,Civ0:%d+:%d+"), "expected one STARTS line with the seed and the starts (lab v20)")
-	realPrint(string.format("-- %d OPEN lines", counts.OPEN))
+	realPrint(string.format("-- %d OPEN lines, siege snapshot: %d SMAP, %d SCITY, %d SUNIT, %d SSPOT", counts.OPEN, counts.SMAP or 0, counts.SCITY or 0, counts.SUNIT or 0, counts.SSPOT or 0))
 	realPrint("-- mock run passed")
 	return
 end
