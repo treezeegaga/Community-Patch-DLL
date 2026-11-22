@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-22, 10:10 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-22, 12:15 PM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -11,7 +11,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   send_message replies, and starts the next implementer when this heading says HANDOVER READY.
 - **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital by about turn 60
   on Quick, about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero before the war is decided.
-- **Newest build:** `ab-45cd73b` (it. 24b); no code change since. Accepted M3 work: CODEMAP "Plans" and the override
+- **Newest build:** `ab-b8c9ffb` = it. 26 (accepted 12:15 PM, `ab-434eecf`: ranged units hold only where they can shoot
+  the city) + it. 25 (pending: city-states off limits through the plan's window). Accepted M3 work: CODEMAP "Plans" and the override
   table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch` (no scenario reproduces its cause).
 - **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning), build of it. 22:
   Songhai new AI takes a major's city by turn 100 on 13 of 48 (stock 0), a capital by turn 60 on 1; army 42, war 38.
@@ -27,7 +28,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Queued:** `2026-11-22-01..04` backlog on `ab-45cd73b` (Songhai and other civs to turn 100 on tuning and holdout,
   Songhai on the 48 measuring maps, guard sets); running on both PCs.
 - **Next:**
-  1. Seed 505 full game: why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
+  0. It. 25's runs (`00j-i25`: tuning set 3 on it. 26 and it. 25, tuning seeds on it. 25); decide it.
+  1. Seed 505 full game (still holds after it. 26): why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
      t61-67 (tactical moves REINFORCE/STEAMROLL), against the lab copy where they do. Then the other stalled tuning seeds
      (404, 1313, 1414, 1616, 1717, snapshots in `sd24bN*`).
   2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with "state
@@ -150,7 +152,10 @@ new AI to turn 100, against `l24bN`; 1818 against `long22N`):
 
 Capitals 4 to 5; seeds with a capture 6 to 7; captures by turn 80 on 4 to 6 seeds; two late second captures lost (202
 t85, 1515 t95). 505: "to firing plot" 16 times, St. Petersburg down only to 185/200 (92.5%): that prediction missed.
-Predictions met: stall505b, stall505s, no seed lost its capture. **Decision waits for the guard sets** (`00i-i26guard`).
+Predictions met: stall505b, stall505s, no seed lost its capture.
+**Guard (i26guard, 12:12 PM):** siege 73/90 (it. 22's guard 74; melee_only_vs_medium 6 to 5, all else equal), units lost
+19 to 20; march 42/42; regress 24/24. **Decision: accepted.** A ranged unit at a city on a hill ringed by forest now
+finds a plot that sees the city; the 505 game itself still holds (185/200), so b1 is not all of it there.
 
 ## 2026-11-22 Rule 3 on the stalled sieges: the copies don't stall (lab v21-v24, build `ab-45cd73b`)
 Seeds 505 (b1) and 1616 (b2) replayed with the siege snapshot (`sd24bN*`, `sd2N*`: the same games as before) and copied
