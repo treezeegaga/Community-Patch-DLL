@@ -3,12 +3,16 @@
 # Polls origin/ai/v2 every 2 minutes and exits as soon as a new done marker or launch result lands, or after
 # MAX_MINUTES (default 110). Run it as a background command; when it exits, read what arrived, record it, queue
 # what's next, and start it again. Prints the new files (paths on origin/ai/v2), or "timeout".
-# Usage: ai-lab/runs/wait-for-results.sh [MAX_MINUTES]
+# Usage: ai-lab/runs/wait-for-results.sh [MAX_MINUTES] [done]
+# With "done" as the second argument, only new done markers count (launch results of 5-minute games would
+# otherwise wake the session every few minutes).
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 2
 MAX_MINUTES="${1:-110}"
+WHERE="ai-lab/runs/done ai-lab/runs/launches"
+[ "${2:-}" = "done" ] && WHERE="ai-lab/runs/done"
 list() {
-	git ls-tree -r --name-only origin/ai/v2 -- ai-lab/runs/done ai-lab/runs/launches 2>/dev/null \
+	git ls-tree -r --name-only origin/ai/v2 -- $WHERE 2>/dev/null \
 		| grep -E '\.json$' | grep -v '\.claim\.json$' | sort
 }
 git fetch -q origin ai/v2 2>/dev/null
