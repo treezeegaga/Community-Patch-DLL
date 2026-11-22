@@ -1,0 +1,26 @@
+{
+ "id": "2026-11-22-00e-stall4",
+ "why": "Calibrate stall1616 to the real city (strength 1496): capital, Construction; new AI and stock, 6 battles each.",
+ "launches": [
+  {
+   "label": "st4N",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall1616cap"
+   ],
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "st4S",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall1616cap"
+   ],
+   "newAI": "none",
+   "repeats": 6
+  }
+ ]
+}

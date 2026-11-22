@@ -201,4 +201,9 @@ SiegeLabScenarios.stall = {
 	  city = { population = 4, buildings = {  }, garrison = WARRIOR },
 	  armyAt = { { "UNIT_WARRIOR", -4, -1, 100 }, { "UNIT_WARRIOR", -3, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -4, 0, 100 }, { "UNIT_WARRIOR", -2, 0, 100 }, { "UNIT_COMPOSITE_BOWMAN", -3, 1, 100 } },
 	  defendersAt = {  } },
+	-- calibration: Attila's Court was the Huns' capital (real strength 1496 at pop 4)
+	{ name = "stall1616cap", turns = 15, attackerTechs = A_CLASSICAL, defenderTechs = D_CLASSICAL, ground = { y = 26, map = "-2:-4:h-r;-1:-4:f-;0:-4:hF;1:-4:f-;2:-4:fF;-3:-3:fFr;-2:-3:f-r;-1:-3:f-;0:-3:f-;1:-3:f-;2:-3:fF;-3:-2:f-r;-2:-2:fFr;-1:-2:f-r;0:-2:f-;1:-2:f-;2:-2:f-;3:-2:fM;-4:-1:h-;-3:-1:fPr;-2:-1:f-r;-1:-1:f-r;0:-1:f-;1:-1:f-;2:-1:h-;3:-1:fM;-4:0:f-;-3:0:m-;-2:0:hFr;-1:0:h-r;0:0:f-c;1:0:fF;2:0:f-;3:0:fM;4:0:fM;-4:1:h-;-3:1:f-r;-2:1:m-r;-1:1:m-;0:1:h-;1:1:fM;2:1:fM;3:1:fM;-3:2:f-;-2:2:f-r;-1:2:h-r;0:2:h-;1:2:h-;2:2:fF;3:2:f-;-3:3:h-r;-2:3:f-r;-1:3:fF;0:3:h-;1:3:m-;2:3:m-;-2:4:f-r;-1:4:f-r;0:4:h-;1:4:h-;2:4:h-" },
+	  city = { population = 4, capital = true, buildings = {  }, garrison = WARRIOR },
+	  armyAt = { { "UNIT_WARRIOR", -4, -1, 100 }, { "UNIT_WARRIOR", -3, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -4, 0, 100 }, { "UNIT_WARRIOR", -2, 0, 100 }, { "UNIT_COMPOSITE_BOWMAN", -3, 1, 100 } },
+	  defendersAt = {  } },
 }
