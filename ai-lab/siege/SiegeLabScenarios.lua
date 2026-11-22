@@ -178,3 +178,13 @@ SiegeLabScenarios.opening = { turns = 80 }
 -- fire in a real game. Run with -Set transfer -NewAI attacker. Maps are not seeded: each game is a fresh map of the
 -- PC's set-up (Tiny, 4 civs).
 SiegeLabScenarios.transfer = { turns = 100 }
+
+-- Lab v22 (M3, stalled sieges): full-game sieges copied with their ground and units (make_stall_scenario.py). Kind b1:
+-- the ranged units stand where they can't see the city. Population is a guess (the snapshot didn't log it then).
+SiegeLabScenarios.stall = {
+	-- St. Petersburg on turn 60 of the full game (sd24bN505, build ab-45cd73b, seed 505): city 200 of 200 hp, strength 1585
+	{ name = "stall505", turns = 15, attackerTechs = A_CLASSICAL, defenderTechs = D_ANCIENT, ground = { y = 28, map = "-2:-4:f-;-1:-4:f-;0:-4:fF;1:-4:f-;2:-4:fF;-3:-3:h-;-2:-3:f-;-1:-3:f-;0:-3:f-;1:-3:f-;2:-3:h-;-3:-2:fF;-2:-2:f-;-1:-2:f-;0:-2:fF;1:-2:fF;2:-2:f-;3:-2:f-;-4:-1:f-;-3:-1:f-;-2:-1:f-;-1:-1:fF;0:-1:fF;1:-1:fF;2:-1:f-;3:-1:f-;-4:0:fF;-3:0:fF;-2:0:f-;-1:0:hF;0:0:h-c;1:0:f-;2:0:h-;3:0:f-;4:0:f-;-4:1:f-;-3:1:h-;-2:1:w-;-1:1:w-;0:1:w-;1:1:f-;2:1:h-;3:1:fF;-3:2:w-;-2:2:w-;-1:2:w-;0:2:w-;1:2:fF;2:2:f-;3:2:f-;-3:3:w-;-2:3:w-;-1:3:w-;0:3:w-;1:3:w-;2:3:w-;-2:4:w-;-1:4:w-;0:4:w-;1:4:w-;2:4:w-" },
+	  city = { population = 6, buildings = {  }, garrison = "UNIT_WARRIOR" },
+	  armyAt = { { "UNIT_SPEARMAN", -1, -4, 100 }, { "UNIT_WARRIOR", -2, -3, 100 }, { "UNIT_SPEARMAN", -1, -3, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -2, 100 }, { "UNIT_COMPOSITE_BOWMAN", -1, -2, 64 }, { "UNIT_COMPOSITE_BOWMAN", 0, -2, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 } },
+	  defendersAt = { { "UNIT_SPEARMAN", -4, 0, 100 } } },
+}

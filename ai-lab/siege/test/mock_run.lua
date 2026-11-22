@@ -103,6 +103,7 @@ local function newUnit(owner, unitType, x, y)
 	function m:GetOwner() return u.owner end
 	function m:GetUnitType() return u.type end
 	function m:GetCurrHitPoints() return 100 end
+	function m:SetDamage(d, pl, notify) assert(type(d) == "number" and pl == -1 and notify == 1) end
 	function m:Range() return 2 end
 	function m:CanRangeStrikeAt(x, y, needWar, noncombat) assert(type(x) == "number" and type(y) == "number" and needWar == true and noncombat == true) return distance(u.x, u.y, x, y) <= 2 end
 	function m:CanEverRangeStrikeAt(x, y, sx, sy, ignoreVision) assert(type(sx) == "number" and type(sy) == "number" and ignoreVision == true) return distance(sx, sy, x, y) <= 2 and (sx + sy) % 3 ~= 0 end

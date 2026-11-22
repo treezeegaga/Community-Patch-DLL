@@ -1,0 +1,20 @@
+{
+ "id": "2026-11-22-00b-stall1",
+ "why": "Rule 3: does the copied seed-505 siege (lab v22 stall set, b1: bowmen with no line of sight) stall in the battle lab too? New AI and stock attacker, 6 battles each, it. 24b build.",
+ "launches": [
+  {
+   "label": "st1N",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "st1S",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "newAI": "none",
+   "repeats": 6
+  }
+ ]
+}

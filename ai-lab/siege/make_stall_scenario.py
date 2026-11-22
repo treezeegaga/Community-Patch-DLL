@@ -31,7 +31,7 @@ def main():
     owner = int(smap[5])
     army, defenders, garrison = [], [], None
     for u in units:
-        o, utype, dx, dy, hp = int(u[3]), u[4], int(u[6]), int(u[7]), int(u[10])
+        o, utype, dx, dy, hp = int(u[3]), u[4], int(u[6]), int(u[7]), int(u[9])
         if o == active:
             army.append('{ "%s", %d, %d, %d }' % (utype, dx, dy, hp))
         elif o == owner:
