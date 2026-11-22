@@ -1,0 +1,15 @@
+2026-11-22 13:57:29  Host BOX (built-in calibration), Civ V in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V
+2026-11-22 13:57:29  Run 'i26t3_7070': set transfer, only [], repeats 1, DLL ab-434eecf
+2026-11-22 13:57:30    dll: Installed ab-434eecf (13907456 bytes, SHA-256 C947ECE74D94...) in 1 place(s); stock copy kept in C:\Users\itstr\AppData\Local\cp-ai-lab\stock-dll
+2026-11-22 13:57:31    installer: MapRandSeed and SyncRandSeed set to 7070 in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-22 13:57:31    installer: AILog is 1 in C:\Users\itstr\Documents\My Games\Sid Meier's Civilization 5\config.ini
+2026-11-22 13:57:31    installer: Siege lab installed in C:\Program Files (x86)\Steam\steamapps\common\Sid Meier's Civilization V\Assets\DLC\MP_CPLeaderheads
+2026-11-22 13:57:31    installer:   Runs the 'transfer' set, 1 time(s) each; the AI plays the attacker; new AI: attacker.
+2026-11-22 13:57:31    installer:   Start a new single-player game (2 or more civs, Quick Combat and Quick Movement on) and click Begin.
+2026-11-22 13:57:31    installer:   Afterwards: Get-SiegeLabResults.ps1, then Install-SiegeLab.ps1 -Remove before playing.
+2026-11-22 13:59:37  FAILED: no Civ V window
+2026-11-22 13:59:38  FAILED: Could not get a new game started (see the screenshots in C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\i26t3_7070-20261122-1357-run)
+2026-11-22 14:00:10  WARNING: could not remove the lab: Civ V is running. Close it first.. Run Install-SiegeLab.ps1 -Remove.
+2026-11-22 14:00:10  WARNING: could not restore the stock DLL: Civ V is running. Close it first.. Run Set-LabDll.ps1 -Restore.
+2026-11-22 14:00:10  No assertion dialogs.
+2026-11-22 14:00:10  Run FAILED. Civ V closed, lab removed. Log: C:\Users\itstr\cp-ai-lab\ai-lab\siege\results\i26t3_7070-20261122-1357-run\Run-SiegeLab.log
