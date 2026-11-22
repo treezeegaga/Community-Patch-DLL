@@ -3477,6 +3477,12 @@ void CvDiplomacyAI::SetCivApproach(PlayerTypes ePlayer, CivApproachTypes eApproa
 			}
 			// This parameter exists because SelectBestApproachTowardsMajorCiv() might update approach to something other than WAR
 			// However, DoUpdateWarTargets() overrides this logic sometimes, so we don't ALWAYS want to cancel the operation immediately
+			//new AI (M3 iteration 24): the plan's sneak attack on a major keeps going when the approach leaves WAR; it
+			//declares at the walls (DoMakeWarOnPlayer). Japan's 7-unit army on Gao was cancelled 3 turns into its march (i23c303).
+			else if (bResetAttackOperations && GetPlayer()->GetMilitaryAI()->GetActivePlan() != NULL && GET_PLAYER(ePlayer).isMajorCiv())
+			{
+				pCurrentSneakAttackOperation->LogOperationSpecialMessage("War goal changed; the plan keeps its sneak attack");
+			}
 			else if (bResetAttackOperations)
 			{
 				pCurrentSneakAttackOperation->LogOperationSpecialMessage("War goal changed, probably another war is more important");
@@ -27638,6 +27644,15 @@ void CvDiplomacyAI::DoMakeWarOnPlayer(PlayerTypes eTargetPlayer)
 	if (IsArmyInPlaceForAttack(eTargetPlayer))
 	{
 		SetArmyInPlaceForAttack(eTargetPlayer, false);
+
+		//new AI (M3 iteration 24): the plan's army at a major's walls declares, whatever the approach says now
+		if (!bWantToAttack && !bWantShowOfForce && GET_PLAYER(eTargetPlayer).isMajorCiv() && GetPlayer()->GetMilitaryAI()->GetActivePlan() != NULL)
+		{
+			bWantToAttack = true;
+			CvAIOperation* pPlanOp = GetPlayer()->getFirstOffensiveAIOperation(eTargetPlayer);
+			if (pPlanOp)
+				pPlanOp->LogOperationSpecialMessage("Plan army in place: declaring war although the approach is not WAR");
+		}
 
 		// Our Approach with this player calls for war
 		if (bWantToAttack)

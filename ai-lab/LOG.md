@@ -56,6 +56,20 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
+## 2026-11-21 M3 iteration 24: the plan's sneak attack on a major isn't cancelled when the approach leaves WAR, and declares at the walls (new AI)
+Class (cmp10 i23c303, long21C606): Japan's first operation (t48, 7 units incl. 4 Composite Bowmen, sneak attack on
+Songhai's Gao) moved at t53 and was cancelled t56: "War goal changed" / "Ended: DiploOpinionChange"
+(`CvDiplomacyAI` cancels sneak attacks when the approach toward that major stops being WAR; `DoMakeWarOnPlayer`
+declares at the walls only if the approach is WAR then). Mongolia's attacks restart 7 times the same way (on a
+city-state, after the plan ended; not touched here).
+Change (new AI, while `GetActivePlan()`; majors only): the cancel is skipped (log "War goal changed; the plan keeps
+its sneak attack", OperationalAILog); when the army is in place, war is declared even if the approach isn't WAR
+(log "Plan army in place: declaring war although the approach is not WAR"). The co-op war wait and `canDeclareWar`
+still apply.
+Predicted (11 other-civ seeds i24c against i22c; 12 Songhai seeds i24s against i22s): "plan keeps its sneak attack"
+on at least 2 seeds; Japan at war with Songhai by turn 65 on 303; plan-civ captures (not Songhai) by 80 at least 2
+(i22c: 1); Songhai captures not fewer (4 capitals). Regress 8 of 8. Holdout untouched.
+
 ## 2026-11-21 M3 iteration 23: iteration 15 again, for the other warmonger civs (the ready army feeds the war approach)
 Class (`24-long21`, other civs to turn 100, it. 21 build): the plan civs' armies stand ready around turn 40 (England's
 Composite Bowmen t39, Mongolia's t41-43) and no war comes before the plan ends at t60. England's approach toward
