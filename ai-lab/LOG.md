@@ -116,6 +116,9 @@ firing plot in reach". New AI only.
 Predicted (only if stall6 shows the stall on `ab-45cd73b`): stall505b new AI from at most 1/6 to at least 4/6; stall505s
 capture turn from 7.7 to 6 or less; no scenario of the siege, march, regress and stall sets loses more than 1 in 6;
 12 tuning seeds: 505 St. Petersburg shot (below 90%) and no seed loses its capture (4 capitals). Holdout untouched.
+**Baseline (stall6, `ab-45cd73b`, 10:24 AM):** stall505b reproduces the stall: new AI 2/6 (capture t12-13, mean
+damage 50%), stock 1/6 (35%); at the start of our turns the bowmen near the city could not shoot it on 236 of 334
+lines, 36 "ranged closing in ... holds". So the prediction's baseline is 2/6 (not "at most 1"); target unchanged: 4/6.
 
 ## 2026-11-22 Rule 3 on the stalled sieges: the copies don't stall (lab v21-v24, build `ab-45cd73b`)
 Seeds 505 (b1) and 1616 (b2) replayed with the siege snapshot (`sd24bN*`, `sd2N*`: the same games as before) and copied
