@@ -1,0 +1,28 @@
+{
+ "id": "2026-11-22-00g-stall5",
+ "why": "Copied sieges with the real city strength (population as the knob, real tech counts): stall505s, stall1616s; new AI and stock, 6 battles each.",
+ "launches": [
+  {
+   "label": "st5N",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall505s",
+    "stall1616s"
+   ],
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "st5S",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall505s",
+    "stall1616s"
+   ],
+   "newAI": "none",
+   "repeats": 6
+  }
+ ]
+}

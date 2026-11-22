@@ -188,6 +188,11 @@ SiegeLabScenarios.stall = {
 	  city = { population = 6, buildings = {  }, garrison = "UNIT_WARRIOR" },
 	  armyAt = { { "UNIT_SPEARMAN", -1, -4, 100 }, { "UNIT_WARRIOR", -2, -3, 100 }, { "UNIT_SPEARMAN", -1, -3, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -2, 100 }, { "UNIT_COMPOSITE_BOWMAN", -1, -2, 64 }, { "UNIT_COMPOSITE_BOWMAN", 0, -2, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 } },
 	  defendersAt = { { "UNIT_SPEARMAN", -4, 0, 100 } } },
+	-- strength matched by population (real 1585; the owner knew 15 techs; its city-strength bonus, likely a policy, can't be set from Lua)
+	{ name = "stall505s", turns = 15, attackerTechs = A_CLASSICAL, defenderTechs = D_CLASSICAL, defenderTechCount = 15, ground = { y = 28, map = "-2:-4:f-;-1:-4:f-;0:-4:fF;1:-4:f-;2:-4:fF;-3:-3:h-;-2:-3:f-;-1:-3:f-;0:-3:f-;1:-3:f-;2:-3:h-;-3:-2:fF;-2:-2:f-;-1:-2:f-;0:-2:fF;1:-2:fF;2:-2:f-;3:-2:f-;-4:-1:f-;-3:-1:f-;-2:-1:f-;-1:-1:fF;0:-1:fF;1:-1:fF;2:-1:f-;3:-1:f-;-4:0:fF;-3:0:fF;-2:0:f-;-1:0:hF;0:0:h-c;1:0:f-;2:0:h-;3:0:f-;4:0:f-;-4:1:f-;-3:1:h-;-2:1:w-;-1:1:w-;0:1:w-;1:1:f-;2:1:h-;3:1:fF;-3:2:w-;-2:2:w-;-1:2:w-;0:2:w-;1:2:fF;2:2:f-;3:2:f-;-3:3:w-;-2:3:w-;-1:3:w-;0:3:w-;1:3:w-;2:3:w-;-2:4:w-;-1:4:w-;0:4:w-;1:4:w-;2:4:w-" },
+	  city = { population = 14, buildings = {  }, garrison = "UNIT_WARRIOR" },
+	  armyAt = { { "UNIT_SPEARMAN", -1, -4, 100 }, { "UNIT_WARRIOR", -2, -3, 100 }, { "UNIT_SPEARMAN", -1, -3, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -2, 100 }, { "UNIT_COMPOSITE_BOWMAN", -1, -2, 64 }, { "UNIT_COMPOSITE_BOWMAN", 0, -2, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 } },
+	  defendersAt = { { "UNIT_SPEARMAN", -4, 0, 100 } } },
 	-- calibration of stall505: the defender with Construction, population 6 and 9 (real strength 1585, strike 34-46)
 	{ name = "stall505c6", turns = 15, attackerTechs = A_CLASSICAL, defenderTechs = D_CLASSICAL, ground = { y = 28, map = "-2:-4:f-;-1:-4:f-;0:-4:fF;1:-4:f-;2:-4:fF;-3:-3:h-;-2:-3:f-;-1:-3:f-;0:-3:f-;1:-3:f-;2:-3:h-;-3:-2:fF;-2:-2:f-;-1:-2:f-;0:-2:fF;1:-2:fF;2:-2:f-;3:-2:f-;-4:-1:f-;-3:-1:f-;-2:-1:f-;-1:-1:fF;0:-1:fF;1:-1:fF;2:-1:f-;3:-1:f-;-4:0:fF;-3:0:fF;-2:0:f-;-1:0:hF;0:0:h-c;1:0:f-;2:0:h-;3:0:f-;4:0:f-;-4:1:f-;-3:1:h-;-2:1:w-;-1:1:w-;0:1:w-;1:1:f-;2:1:h-;3:1:fF;-3:2:w-;-2:2:w-;-1:2:w-;0:2:w-;1:2:fF;2:2:f-;3:2:f-;-3:3:w-;-2:3:w-;-1:3:w-;0:3:w-;1:3:w-;2:3:w-;-2:4:w-;-1:4:w-;0:4:w-;1:4:w-;2:4:w-" },
 	  city = { population = 6, buildings = {  }, garrison = "UNIT_WARRIOR" },
@@ -205,6 +210,11 @@ SiegeLabScenarios.stall = {
 	-- calibration: Attila's Court was the Huns' capital (real strength 1496 at pop 4)
 	{ name = "stall1616cap", turns = 15, attackerTechs = A_CLASSICAL, defenderTechs = D_CLASSICAL, ground = { y = 26, map = "-2:-4:h-r;-1:-4:f-;0:-4:hF;1:-4:f-;2:-4:fF;-3:-3:fFr;-2:-3:f-r;-1:-3:f-;0:-3:f-;1:-3:f-;2:-3:fF;-3:-2:f-r;-2:-2:fFr;-1:-2:f-r;0:-2:f-;1:-2:f-;2:-2:f-;3:-2:fM;-4:-1:h-;-3:-1:fPr;-2:-1:f-r;-1:-1:f-r;0:-1:f-;1:-1:f-;2:-1:h-;3:-1:fM;-4:0:f-;-3:0:m-;-2:0:hFr;-1:0:h-r;0:0:f-c;1:0:fF;2:0:f-;3:0:fM;4:0:fM;-4:1:h-;-3:1:f-r;-2:1:m-r;-1:1:m-;0:1:h-;1:1:fM;2:1:fM;3:1:fM;-3:2:f-;-2:2:f-r;-1:2:h-r;0:2:h-;1:2:h-;2:2:fF;3:2:f-;-3:3:h-r;-2:3:f-r;-1:3:fF;0:3:h-;1:3:m-;2:3:m-;-2:4:f-r;-1:4:f-r;0:4:h-;1:4:h-;2:4:h-" },
 	  city = { population = 4, capital = true, buildings = {  }, garrison = WARRIOR },
+	  armyAt = { { "UNIT_WARRIOR", -4, -1, 100 }, { "UNIT_WARRIOR", -3, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -4, 0, 100 }, { "UNIT_WARRIOR", -2, 0, 100 }, { "UNIT_COMPOSITE_BOWMAN", -3, 1, 100 } },
+	  defendersAt = {  } },
+	-- strength matched by population (real 1496; capital, 14 techs, building defense 250)
+	{ name = "stall1616s", turns = 15, attackerTechs = A_CLASSICAL, defenderTechs = D_CLASSICAL, defenderTechCount = 14, ground = { y = 26, map = "-2:-4:h-r;-1:-4:f-;0:-4:hF;1:-4:f-;2:-4:fF;-3:-3:fFr;-2:-3:f-r;-1:-3:f-;0:-3:f-;1:-3:f-;2:-3:fF;-3:-2:f-r;-2:-2:fFr;-1:-2:f-r;0:-2:f-;1:-2:f-;2:-2:f-;3:-2:fM;-4:-1:h-;-3:-1:fPr;-2:-1:f-r;-1:-1:f-r;0:-1:f-;1:-1:f-;2:-1:h-;3:-1:fM;-4:0:f-;-3:0:m-;-2:0:hFr;-1:0:h-r;0:0:f-c;1:0:fF;2:0:f-;3:0:fM;4:0:fM;-4:1:h-;-3:1:f-r;-2:1:m-r;-1:1:m-;0:1:h-;1:1:fM;2:1:fM;3:1:fM;-3:2:f-;-2:2:f-r;-1:2:h-r;0:2:h-;1:2:h-;2:2:fF;3:2:f-;-3:3:h-r;-2:3:f-r;-1:3:fF;0:3:h-;1:3:m-;2:3:m-;-2:4:f-r;-1:4:f-r;0:4:h-;1:4:h-;2:4:h-" },
+	  city = { population = 8, capital = true, buildings = {  }, garrison = WARRIOR },
 	  armyAt = { { "UNIT_WARRIOR", -4, -1, 100 }, { "UNIT_WARRIOR", -3, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -2, -1, 100 }, { "UNIT_COMPOSITE_BOWMAN", -4, 0, 100 }, { "UNIT_WARRIOR", -2, 0, 100 }, { "UNIT_COMPOSITE_BOWMAN", -3, 1, 100 } },
 	  defendersAt = {  } },
 }
