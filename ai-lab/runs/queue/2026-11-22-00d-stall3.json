@@ -1,0 +1,17 @@
+{
+ "id": "2026-11-22-00d-stall3",
+ "why": "Calibrate stall505 to the real city (strength 1585): defender with Construction, pop 6 and 9; new AI, 6 battles each.",
+ "launches": [
+  {
+   "label": "st3N",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall505c6",
+    "stall505c9"
+   ],
+   "newAI": "attacker",
+   "repeats": 6
+  }
+ ]
+}
