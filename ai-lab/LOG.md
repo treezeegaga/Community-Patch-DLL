@@ -17,8 +17,9 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   Songhai new AI takes a major's city by turn 100 on 13 of 48 (stock 0), a capital by turn 60 on 1; army 42, war 38.
   At turn 100 science 10.8 vs stock 26.3, population 11.6 vs 15.7. All with Greece as a neighbour (fixed seat 1).
   Dashboard "Civ V AI Project" shows these (`ai-lab/runs/fullgames_csv.py` builds its table).
-- **Stalled wars (25 of 38):** estimate NO 5; TAKE with the city never below 90% 7, dented and healed 9, below half not
-  taken 4 (LOG entry of Nov 22). Battle-lab copies of 505 and 1616 (lab v21-v24) don't stall: the new AI takes both 6/6
+- **Stalled wars (25 of 38), corrected 10:30 AM:** army sent to a city-state 2; estimate NO 4; TAKE with the city never
+  below 90% 5, dented and healed 9, below half not taken 5 (LOG entry of Nov 22). City-states take the plan's army
+  when the plan ends at t60 with no war on a major (5 of the 25). Battle-lab copies of 505 and 1616 (lab v21-v24) don't stall: the new AI takes both 6/6
   even at the real city strength. **Provisional (rule 10):** work the sieges in full games on the tuning seeds, with the
   siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
 - **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
@@ -125,12 +126,21 @@ see what draws the army away; scenarios only for a cause the lab can stage.
 ## 2026-11-22 The 25 stalled wars of the measuring set, by kind (user ruling 9:40 AM, point 2; build of it. 22)
 Songhai new AI, seeds 1919-6666 (`nx22N*`): 38 wars with a major, 13 with a capture by turn 100, 25 without. Read from
 the siege estimate lines after the war starts (the city with the most TAKE turns; min hp over the whole war):
-- **estimate NO throughout: 5** (2020, 3737, 5353, 5858, 6262): the army near the city never looked enough.
-- **TAKE, then the city never under 90% (b1, as 505): 7** (2727, 4141, 4848, 5454, 5555, 6060, 6464).
+- **army sent to a city-state: 2** (2727 Riga, 5858 Bucharest: operations of t60 on a city-state, the wars on majors
+  declared later with nothing sent).
+- **estimate NO throughout: 4** (2020, 3737, 5353, 6262): the army near the city never looked enough.
+- **TAKE, then the city never under 90% (b1, as 505): 5** (4141, 4848, 5454, 6060, 6464).
 - **TAKE, city dented to 56-81% and healed back: 9** (2525, 2929, 3131, 3232, 3535, 4343, 4444, 5757, 5959).
-- **TAKE, city shot below half, not taken (b2, as 1616): 4** (3434, 4545, 4747, 4949).
-So 16 of the 20 TAKE stalls are cities that never come down: the ranged fire doesn't land (b1) or doesn't outpace the
-heal of 20 (dented). Script: `/tmp` one-off, logic as stages.py (not kept).
+- **TAKE, city shot below half, not taken (b2, as 1616): 5** (3434, 4545, 4747, 4949, 5555 Tenochtitlan to 26% t91).
+**Corrected 10:30 AM** after Review 2's recount (`ai-lab/review/recount_stalls.py` on `claude/bold-feynman-cgnhjs`):
+my first pass took the city with the most TAKE turns and didn't check its owner (2727, 5858 were city-states; 5555 read
+Teotihuacan 93% instead of Tenochtitlan 26%). Checked here against the tactical and operational logs: agreed.
+So 14 of the 19 TAKE stalls on majors are cities that never come below half (b1 + dented).
+**City-states take the plan's army at t60 (cause found, Review 2's point 2):** `GetActivePlan` ends the plan at its
+end turn (60) when no war on a major has started, and it. 16's block on city-state operations (`RequestCityAttack`,
+`RequestBullyingOperation`) ends with it: in 5 of the 25 stalled games an operation on a city-state starts at t60-64
+(2727, 5858, 6464 Kabul, 6060 Kuala Lumpur, 3737 Ragusa x8). Not seen on the 12 tuning seeds (their city-state
+operations come after a capture, 606 and 1818, or late, 505 t89, 202 t98): new tuning seeds needed to test a fix.
 
 ## 2026-11-21 Stalled sieges sorted (review relay of 11:40 PM: work the sieges now, alongside army completion)
 Siege estimate turn by turn while the army stood at the walls (PlayerTacticalAILog, it. 22 builds, to turn 100).
