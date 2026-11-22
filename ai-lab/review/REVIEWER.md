@@ -97,8 +97,10 @@ multiplayer smoke test on the two PCs, and installing the finished mod on both P
 ## Agreements with the user
 
 - **The review session speaks for the user** to the implementer, within what the plan allows (PLAN section 4). It
-  never widens access and stands in for a sign-off only when the user gave one. The clause names a session ID: a new
-  reviewer has a new ID, so the clause must be updated before the implementer will accept its relays (see below).
+  never widens access and stands in for a sign-off only when the user gave one. The clause names a session ID: since
+  2026-11-22 (about 10:10 AM ET) it names "Project review 2", session_01G2NZizyLCf9i5g45DQDYLB; the first session's
+  relays no longer count. A later reviewer has a new ID, so the clause must be updated again before the implementer
+  will accept its relays. Implementer 9 can message this reviewer directly (send_message works both ways).
 - **No approvals or questions between about 11 PM and 7:30 AM Eastern.** Rulings wait on a list; the implementer adopts
   its own proposal provisionally.
 - **Keep the PCs busy overnight.** The implementer queues several hours of decision-free runs before it goes quiet.
