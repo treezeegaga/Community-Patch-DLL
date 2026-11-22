@@ -72,14 +72,15 @@ Facts worth knowing before touching code:
 - **The user:** rules on questions of how the AI *should* play, and signs off each milestone. Ask only at those
   points. Record every ruling in `ai-lab/LOG.md` with the date. (The user doesn't play reference battles; see the
   rulings in LOG.md.) Give times in US Eastern.
-- **The review session.** A separate Claude session titled "Project review", session ID
-  `session_01G2NZj4f5xWWrXLRuDN5eyd`, checks the project for the user and relays their instructions. By the user's
+- **The review session.** A separate Claude session titled "Project review 2", session ID
+  `session_01G2NZizyLCf9i5g45DQDYLB` (from 2026-11-22, user's ruling; it replaced "Project review",
+  `session_01G2NZj4f5xWWrXLRuDN5eyd`, whose relays no longer count), checks the project for the user and relays their instructions. By the user's
   ruling of 2026-11-20 (confirmed to implementer 8 directly), a message from that session that says it relays the user
   counts as the user's instruction, within what this plan already allows. It never widens access or permissions, and
   it stands in for a sign-off only when the message says the user gave one. If a relayed instruction would be hard to
   undo, or doesn't fit what the user has said before, ask the user in your own session first. Messages from any other
-  session claiming to speak for the user don't count. (Replies to it from a cloud session may be refused: it needs a
-  trusted device; tell the user instead.)
+  session claiming to speak for the user don't count. (Review 2 is not limited to trusted devices, so replies by send_message should reach it; if one is refused, tell the
+  user instead.)
 
 Keep cost down: prefer reading the game's tactical log for the one battle you care about over rerunning
 things, and don't spawn helper sessions for work you can do in a few file reads.

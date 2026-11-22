@@ -6,8 +6,9 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
-- **The review session speaks for the user** (session_01G2NZj4f5xWWrXLRuDN5eyd; PLAN section 4); replies to it by
-  send_message are refused here (untrusted device), so answer in chat.
+- **The review session speaks for the user:** from 11:10 AM Nov 22 that is "Project review 2"
+  (session_01G2NZizyLCf9i5g45DQDYLB; PLAN section 4); the old "Project review" no longer counts. Review 2 can receive
+  send_message replies.
 - **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital taken by about
   turn 60 on Quick (ruling of 11 PM; was 54), about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
   before the war is decided. One settler, no buildings, gold only for upgrades right before the attack.
@@ -357,6 +358,10 @@ branch tip has none, and only `claude/bold-feynman-cgnhjs` is newer than `d64b73
 
 ## User rulings
 
+- 2026-11-22 (about 11:10 AM ET, the user, confirmed in implementer 9's chat): the review role moves to the session
+  "Project review 2" (`session_01G2NZizyLCf9i5g45DQDYLB`, starts from `ai-lab/review/REVIEWER.md` on
+  `claude/bold-feynman-cgnhjs`). PLAN section 4 names it; relays from "Project review" (`session_01G2NZj4f5xWWrXLRuDN5eyd`)
+  no longer count. Review 2 starts the next implementer when the current state says HANDOVER READY.
 - 2026-11-22 (about 9:40 AM ET, the user, relayed by the review session after its analysis of the night's 48 extra
   seeds 1919-6666, build of it. 22): (1) **the 48 seeds are the measuring set** and its figures the headline (Songhai new
   AI: a capture by turn 100 on 13 of 48, 27%; a capital by about 60 on 1-2 of 48; stock 0); the 6-seed holdout is a spot
