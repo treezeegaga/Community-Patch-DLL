@@ -1,0 +1,58 @@
+diff --git a/CvGameCoreDLL_Expansion2/CvMilitaryAI.cpp b/CvGameCoreDLL_Expansion2/CvMilitaryAI.cpp
+index 41f2ae504a..04632313e3 100644
+--- a/CvGameCoreDLL_Expansion2/CvMilitaryAI.cpp
++++ b/CvGameCoreDLL_Expansion2/CvMilitaryAI.cpp
+@@ -539,8 +539,9 @@ bool CvMilitaryAI::RequestBullyingOperation(PlayerTypes eEnemy)
+ 	if (GET_PLAYER(eEnemy).isBarbarian())
+ 		return false;
+ 
+-	//new AI (M3 iteration 16): no shows of force while the early-rush plan is active (see RequestCityAttack)
+-	if (GetActivePlan() != NULL)
++	//new AI (M3 iteration 16): no shows of force while the early-rush plan is active (see RequestCityAttack); iteration
++	//25: through the plan's whole window
++	if (GetActivePlan() != NULL || IsPlanWindowOpen())
+ 		return false;
+ 
+ 	// If we already have an operation on the way, don't send another one
+@@ -1078,6 +1079,19 @@ const CvMilitaryAI::SAIPlan* CvMilitaryAI::GetActivePlan() const
+ 	return pPlan;
+ }
+ 
++/// AI lab (M3 iteration 25): the plan's whole window, war or not: a warmonger civ on the new AI that has taken no city
++/// yet, before turn 90 (Quick). GetActivePlan ends at the row's end turn (60) when no war on a major has started, and
++/// iteration 16's block on city-state operations ended with it: the unused army then marched on a city-state at t60-64
++/// (measuring maps 2727 Riga, 5858 Bucharest, 6464 Kabul, 6060 Kuala Lumpur, 3737 Ragusa)
++bool CvMilitaryAI::IsPlanWindowOpen() const
++{
++	if (!m_pPlayer->IsNewAI() || !m_pPlayer->isMajorCiv() || m_pPlayer->isHuman() || !m_pPlayer->GetPlayerTraits()->IsWarmonger())
++		return false;
++	bool bCaptured = m_pPlayer->getNumCities() + m_pPlayer->getCitiesLost() > m_pPlayer->GetNumCitiesFounded();
++	int iTrainPercent = GC.getGame().getGameSpeedInfo().getTrainPercent();
++	return !bCaptured && GC.getGame().getElapsedGameTurns() < 90 * iTrainPercent / 67;
++}
++
+ /// The plan's army as it stands: land melee, land ranged and settlers, plus (bIncludeProduction) what our cities other
+ /// than pExceptCity are building. Once the plan's strike unit (row's research target) can be built, only ranged units at least as strong count
+ /// (M3 iteration 10: Archers at the walls can't take a city; they are upgraded, or Composite Bowmen are built).
+@@ -1403,7 +1417,8 @@ bool CvMilitaryAI::RequestCityAttack(PlayerTypes eIntendedTarget, int iNumUnitsW
+ {
+ 	//new AI (M3 iteration 16): while the early-rush plan is active its army is kept for a major civ's city; no
+ 	//operations against city-states (diag606: shows of force on Mombasa and Cape Town every 2 turns took 6-7 units)
+-	if (GET_PLAYER(eIntendedTarget).isMinorCiv() && GetActivePlan() != NULL)
++	//iteration 25: and after the row's end turn while the plan's window is open (no city taken yet, before turn 90)
++	if (GET_PLAYER(eIntendedTarget).isMinorCiv() && (GetActivePlan() != NULL || IsPlanWindowOpen()))
+ 		return false;
+ 
+ 	//note that a given target might be repeated with different muster points / army types
+diff --git a/CvGameCoreDLL_Expansion2/CvMilitaryAI.h b/CvGameCoreDLL_Expansion2/CvMilitaryAI.h
+index e9f07edac8..fce34da660 100644
+--- a/CvGameCoreDLL_Expansion2/CvMilitaryAI.h
++++ b/CvGameCoreDLL_Expansion2/CvMilitaryAI.h
+@@ -193,6 +193,7 @@ public:
+ 		const char* szResearchUnitClass;	// research toward this unit first (the rush's strike unit)
+ 	};
+ 	const SAIPlan* GetActivePlan() const;
++	bool IsPlanWindowOpen() const;
+ 	UnitTypes GetPlanBuild(CvCity* pCity) const;
+ 	TechTypes GetPlanResearch() const;
+ 	bool IsPlanArmyReady() const;
