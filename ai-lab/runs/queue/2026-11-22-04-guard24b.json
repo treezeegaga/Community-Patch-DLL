@@ -1,0 +1,27 @@
+{
+ "id": "2026-11-22-04-guard24b",
+ "why": "Backlog (c): regression guard on it. 24b: siege and march sets (new AI), regress set. Either trusted PC.",
+ "launches": [
+  {
+   "label": "g24bsiegeN",
+   "release": "ab-45cd73b",
+   "set": "siege",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "g24bmarchN",
+   "release": "ab-45cd73b",
+   "set": "march",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "g24bregN",
+   "release": "ab-45cd73b",
+   "set": "regress",
+   "newAI": "attacker",
+   "repeats": 6
+  }
+ ]
+}
