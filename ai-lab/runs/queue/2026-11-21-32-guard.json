@@ -1,0 +1,48 @@
+{
+  "id": "2026-11-21-32-guard",
+  "why": "Night backlog (d): regression guard on the accepted build: siege set (new AI, stock, scripted), march set (new AI, stock), regress set. Either trusted PC.",
+  "launches": [
+    {
+      "label": "g22siegeN",
+      "release": "ab-d0f5828",
+      "set": "siege",
+      "newAI": "attacker",
+      "repeats": 6
+    },
+    {
+      "label": "g22siegeS",
+      "release": "ab-d0f5828",
+      "set": "siege",
+      "newAI": "none",
+      "repeats": 6
+    },
+    {
+      "label": "g22siegeX",
+      "release": "ab-d0f5828",
+      "set": "siege",
+      "script": true,
+      "repeats": 6
+    },
+    {
+      "label": "g22marchN",
+      "release": "ab-d0f5828",
+      "set": "march",
+      "newAI": "attacker",
+      "repeats": 6
+    },
+    {
+      "label": "g22marchS",
+      "release": "ab-d0f5828",
+      "set": "march",
+      "newAI": "none",
+      "repeats": 6
+    },
+    {
+      "label": "g22regN",
+      "release": "ab-d0f5828",
+      "set": "regress",
+      "newAI": "attacker",
+      "repeats": 6
+    }
+  ]
+}

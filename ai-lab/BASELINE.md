@@ -216,3 +216,7 @@ rough 6/6 t13-14. Regress: capital t4, coastal t4, medieval t3-4, artillery t6-8
   stock and new AI, at the current accepted build now (baseline: `2026-11-21-15-holdout`, build `ab-006a7f0`, its.
   4-5, 7-10, 12-14, 16) and again before M3 closes.
 
+
+
+### Extra picture seeds (2026-11-21, night)
+1919 + 101*k for k = 0..47 (1919-6666). Played only to fill the stage table (more rows per civ, stock rows). Not tuning seeds and not holdout: no change is chosen or tuned on them.

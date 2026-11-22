@@ -44,7 +44,10 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
   of this heading's text, push, **tell the user in chat that I'm ready** (correction 12:27 PM: no automatic check reads
   the marker; the user asks the review session to start implementer 9), stop. Keep the queue deep before going quiet.
-- **Queued:** `25c-cmp12` (it. 24b), `27-long24b` (other civs to turn 100 on it. 24b).
+- **Queued (user to bed 11:35 PM, "keep the tests pumping all night"; no questions to the user until 7:30 AM):**
+  `25c-cmp12` (it. 24b), `27-long24b`, then 168 night launches `28`-`36` on the accepted build `ab-d0f5828`: other
+  civs, Songhai and stock to turn 100 on **extra picture seeds 1919-6666 (step 101; not tuning, not holdout, for the
+  stage table only)**, stock on the tuning and holdout seeds, and the siege/march/regress guard sets.
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
   it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
