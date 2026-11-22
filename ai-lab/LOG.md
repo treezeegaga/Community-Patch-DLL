@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 5:35 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 7:40 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -15,18 +15,19 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
   override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
   plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
-  (14), no city-state operations during the plan (16), explorer Warriors back to attack duty when the plan marches (21). Reverted: 19 (strongest open upgrade: none open), 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
+  (14), no city-state operations during the plan (16), explorer Warriors back to attack duty when the plan marches (21) and kept out of exploring (22). Reverted: 19 (strongest open upgrade: none open), 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
 - **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
   Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
-- **Headline, holdout (check only, seeds 707-1212):** last measured on `ab-006a7f0` (before its. 16 and 21): new AI
-  2 of 6 captures (turns 78-79), no capital; stock 0 of 6. Holdout of the newest build queued (`23-ho21`).
-- **Tuning set (12 seeds), newest code (its. 14 + 16 + 21, build `ab-047437e`):** captures on 4 of 12, 4 of them
+- **Headline, holdout (check only, seeds 707-1212), build `ab-047437e` (it. 21):** Songhai new AI takes a city on
+  2 of 6 (Sparta t67, Argos t72), **no capital**; before it. 16/21 also 2 of 6 (t78, t79). Stock 0 of 6. Other
+  warmonger civs with the plan: no capture by turn 80.
+- **Tuning set (12 seeds), newest code (its. 14 + 16 + 21 + 22, build `ab-d0f5828`):** captures on 4 of 12, 4 of them
   capitals: Athens t56 (606), Stockholm t60 (1515), Edinburgh t64 (1818), Corinth t66 + Athens t71 (202). A capital by
   about turn 60 on 2 of 12. No capture on 101 (army ready t69), 303 (no major near), 404, 505, 1313, 1414, 1616, 1717.
   Gold at 0 by turn 80 on most seeds, after the war starts.
 - **Other warmonger civs with the plan:** first operations now 6.8 units on average (was 5.6); first capture by turn
   80: Aztecs take Sparta t72 (1515). Still: England's first army leaves t67 (past the plan's end, t60); its recruits
-  are skipped as "threatened zone or enemy near"; `DoReconState` turns Warriors back into explorers every turn.
+  are skipped as "threatened zone or enemy near". Explorer flip-flop fixed (it. 22) without changing any outcome.
 - **Screenshot purge done 3:50 PM** (history rewritten, see the purge entry); the user still has to delete 74 old
   build releases (`ai-lab/runs/purge/delete-tags.txt`). Older build names and hashes in this log refer to the old history.
 - **Tuning set widened** (12:35 PM): seeds 101-606 plus 1313, 1414, 1515, 1616, 1717, 1818 (baseline queued:
@@ -42,14 +43,14 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
   of this heading's text, push, **tell the user in chat that I'm ready** (correction 12:27 PM: no automatic check reads
   the marker; the user asks the review session to start implementer 9), stop. Keep the queue deep before going quiet.
-- **Queued:** `22-rlog2` (other civs, logs), `23-ho21` (holdout check of it. 21), `24-long21` (other civs to turn 100).
+- **Queued:** `24-long21` (other civs to turn 100, it. 21 build), `25-holong22` (holdout to turn 100, check only).
 - **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
   (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
   it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Next:** other warmonger civs first (review relay 3:10 PM): keep plan Warriors out of `DoReconState` (no explorer
-  flip-flop), then England's late army (plan ends t60; threatened-zone recruit skips). Then Songhai 101/505 losses.
+- **Next:** other warmonger civs (review relay 3:10 PM): why first armies stay at 4-8 units and leave late
+  (England t67: threatened-zone recruit skips; plan ends t60), then the holdout's missing capitals.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
@@ -62,6 +63,19 @@ it's true; log "Not exploring with X: plan army marches" (PlayerEconomyAILog). S
 Predicted (12 tuning seeds Songhai i22s against i21s; 11 other-civ seeds i22c against i21c): "back to attack duty"
 lines fall to about one per unit (cmp8: 25-64 per game on 7 seeds); plan civs' first operations not smaller (6.8);
 plan-civ captures by 80 at least 1; Songhai capitals not fewer than 4. Regress 8 of 8. Holdout untouched.
+**Result (cmp9, build `ab-d0f5828`, 7:30 PM ET): accepted, but no game outcome changed.** Regress 8 of 8. "Back to
+attack duty" lines per game 19-64 to 1-4 (7 seeds); "plan army marches" refusals 60-171 per game. Plan civs' first
+operations identical (England t67 5, Japan t48 7, Denmark t60 7, Persia t56 8, Mongolia t60 7); plan-civ capture by
+80: Aztecs Sparta t72 (1515), as before. Songhai: same captures on all 12 seeds (4 capitals: Athens t56, Stockholm
+t60, Edinburgh t64, Athens t71; plus Corinth t66); 606 ends with a larger army (9 melee + 7 ranged, was 4 + 4). All 4
+predictions met; kept because it fixes the flip-flop the next changes would otherwise trip over, and costs nothing
+measured. The explorers were not what keeps the first armies small.
+
+## 2026-11-21 Holdout check of iteration 21 (`23-ho21`, build `ab-047437e`; check only)
+Songhai new AI (ho21N against hoN on `ab-006a7f0`): captures 2 of 6 both, now **Sparta t67 (707), Argos t72 (909)**,
+before Onondaga t78 (1010), Teotihuacan t79 (1111); **no capital either way.** 1111 army ready t70 (was t52), 1010 t63
+(was t60). Other civs new AI (civh21N vs civhN, 5 seeds read): no capture by 80 either way; Mongolia's first operation
+t52 with 4 units both. Holdout stays well below the tuning set (4 capitals of 12 there, none of 6 here).
 
 ## 2026-11-21 M3 iteration 21: explorer Warriors return to attack duty when the plan marches (new AI)
 Direction (review relay 3:10 PM): before more Songhai tuning, why the other warmonger civs declare and take nothing.
