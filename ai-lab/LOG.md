@@ -20,13 +20,15 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   Dashboard "Civ V AI Project" shows these (`ai-lab/runs/fullgames_csv.py` builds its table).
 - **Stalled wars (25 of 38), corrected 10:30 AM:** army sent to a city-state 2; estimate NO 4; TAKE with the city never
   below 90% 5, dented and healed 9, below half not taken 5 (LOG entry of Nov 22). City-states take the plan's army
-  when the plan ends at t60 with no war on a major (5 of the 25). Battle-lab copies of 505 and 1616 (lab v21-v24) don't stall: the new AI takes both 6/6
-  even at the real city strength. **Provisional (rule 10):** work the sieges in full games on the tuning seeds, with the
+  when the plan ends at t60 with no war on a major (5 of the 25). Battle-lab copies of 505 and 1616 don't stall alone (6/6 even at real strength), but 505 with
+  its far-side tiles held (`stall505b`) does (2/6) and it. 26 fixed it (4/6): the lab can stage this one. **Provisional (rule 10):** work the sieges in full games on the tuning seeds, with the
   siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
 - **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
-- **Queued:** `2026-11-22-01..04` backlog on `ab-45cd73b` (Songhai and other civs to turn 100 on tuning and holdout,
-  Songhai on the 48 measuring maps, guard sets); running on both PCs.
+- **Queued:** `00j-i25` (it. 25's checks). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
+  (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
+  decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
+  the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
 - **Next:**
   0. It. 25's runs (`00j-i25`: tuning set 3 on it. 26 and it. 25, tuning seeds on it. 25); decide it.
   1. Seed 505 full game (still holds after it. 26): why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
