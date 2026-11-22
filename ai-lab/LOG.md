@@ -136,6 +136,29 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
+## 2026-11-22 Rule 3 on the stalled sieges: the copies don't stall (lab v21-v24, build `ab-45cd73b`)
+Seeds 505 (b1) and 1616 (b2) replayed with the siege snapshot (`sd24bN*`, `sd2N*`: the same games as before) and copied
+into the battle lab's `stall` set with their ground, units, hit points and (v24) tech count. Each copy, 6 battles:
+
+| copy | city strength (real) | new AI | stock |
+|---|---|---|---|
+| stall505 (pop 6, ancient techs) | 1144 (1585) | 6/6, t6.2 | 4/6 |
+| stall505c6 / c9 (Construction, pop 6 / 9) | 1158 / 1278 | 6/6, 6/6 | - |
+| stall505s (pop 14, 15 techs) | 1565 (1585) | **6/6, t7.7** | **1/6** (47% damage) |
+| stall1616 (pop 4) / cap (capital) | 1064 / 1328 (1496) | 6/6, 6/6 | 6/6, 6/6 |
+| stall1616s (capital, pop 8, 14 techs) | 1556 (1496) | **6/6, t4.0** | 4/6 |
+
+505's ground is the cause of its first turns (the city on a hill ringed by forest, sea south: from our side only the
+tiles next to it can shoot it): in the lab too the bowmen spend 2-6 turns at range 2 without a shot, then find the two
+firing tiles on the far side. 1616's real game had more than the army and the city: barbarian Warriors next to the city
+drew the bowmen's fire t57-59 (city 199-200), Hun rams and a horse archer arrived, and the real city's strength had a
+player-wide bonus (policy or trait; no Lua setter, so the copies use population). **Finding: alone at the walls, the new
+AI takes both cities; the full-game stalls come from what the lab leaves out** (other enemy units and barbarians drawing
+fire, reinforcements, the army's other fronts). The stall set stays as a guard (new AI 6/6 on all copies). Draft it. 25
+(melee hold, `drafts/it25-melee-hold.patch`) has no scenario to justify it: shelved.
+Provisional (rule 10, user told): the sieges are worked in full games on the tuning seeds, with the siege snapshot to
+see what draws the army away; scenarios only for a cause the lab can stage.
+
 ## 2026-11-22 The 25 stalled wars of the measuring set, by kind (user ruling 9:40 AM, point 2; build of it. 22)
 Songhai new AI, seeds 1919-6666 (`nx22N*`): 38 wars with a major, 13 with a capture by turn 100, 25 without. Read from
 the siege estimate lines after the war starts (the city with the most TAKE turns; min hp over the whole war):
