@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 11:15 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-22, 12:30 AM ET), implementer 8: HANDOVER READY (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -15,14 +15,14 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
   override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
   plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
-  (14), no city-state operations during the plan (16), explorer Warriors back to attack duty when the plan marches (21) and kept out of exploring (22). Reverted: 23 (it. 15 again, for other civs: no game changed), 19 (strongest open upgrade: none open), 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
+  (14), no city-state operations during the plan (16), explorer Warriors back to attack duty when the plan marches (21) and kept out of exploring (22), the plan's sneak attack on a major kept until it declares at the walls (24b). Reverted: 23 (it. 15 again, for other civs: no game changed), 19 (strongest open upgrade: none open), 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
 - **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
   Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
 - **Headline, holdout (check only, seeds 707-1212), builds `ab-047437e`/`ab-d0f5828` (its. 21-22):** Songhai new
   AI takes a city by turn 80 on 2 of 6 (Sparta t67, Argos t72), **no capital by 80**; by turn 100 on 3 of 6, with
   capitals Athens t86 and t88. Before its. 16/21: 2 of 6 by 80 (t78, t79). Stock 0 of 6. Other warmonger civs with
   the plan: no capture by turn 100.
-- **Tuning set (12 seeds), newest code (its. 14 + 16 + 21 + 22, build `ab-d0f5828`):** captures on 4 of 12, 4 of them
+- **Tuning set (12 seeds), newest code (its. 14 + 16 + 21 + 22 + 24b, build `ab-45cd73b`; 24b changed no Songhai game):** captures on 4 of 12, 4 of them
   capitals: Athens t56 (606), Stockholm t60 (1515), Edinburgh t64 (1818), Corinth t66 + Athens t71 (202). A capital by
   about turn 60 on 2 of 12. No capture on 101 (army ready t69), 303 (no major near), 404, 505, 1313, 1414, 1616, 1717.
   Gold at 0 by turn 80 on most seeds, after the war starts.
@@ -44,6 +44,12 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
   of this heading's text, push, **tell the user in chat that I'm ready** (correction 12:27 PM: no automatic check reads
   the marker; the user asks the review session to start implementer 9), stop. Keep the queue deep before going quiet.
+- **Handover (implementer 9):** start with the stalled-siege lab scenarios (copy 505 = b1 and 1616 = b2 from the
+  tuning games into `SiegeLabScenarios.lua`; check they reproduce; iterate there), and army completion in full games
+  (gold held when Construction lands vs the upgrades' cost). Overnight queue runs on `ab-d0f5828` (it. 22); the
+  stage table is on it. 22 too (24b only changes Japan on 303). Keep the queue topped up past 7:30 AM; no questions
+  to the user until then (rule 10: adopt proposals provisionally, list rulings under "waiting for the user").
+  Waiting for the user: nothing new.
 - **Queued (user to bed 11:35 PM, "keep the tests pumping all night"; no questions to the user until 7:30 AM):**
   `25c-cmp12` (it. 24b), `27-long24b`, then 168 night launches `28`-`36` on the accepted build `ab-d0f5828`: other
   civs, Songhai and stock to turn 100 on **extra picture seeds 1919-6666 (step 101; not tuning, not holdout, for the
@@ -59,7 +65,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   to range 2, e.g. 505; b2 city shot down but melee gone, e.g. 1616); next, copy 505 and 1616 into the battle lab as
   scenarios and iterate there; full games carry army completion (check the gold held when Construction lands; the
   user banked about 250 gold and spent it to 31 on the upgrades). Track "walls to under half" and the never-count.
-- **Earlier next step** (it. 24b in test): other warmonger civs' sneak attacks are cancelled before the declaration
+- **It. 24b accepted** (12:25 AM): Japan now declares on Songhai t58 (was never); its siege then stalls like Songhai's.
+- **Older note:** other warmonger civs' sneak attacks were cancelled before the declaration
   ("Ended: DiploOpinionChange": Japan on Gao t56 with 7 units, Mongolia on Ife 7 times), so keep the plan's sneak
   attack (or its WAR approach) until it declares. Also England's army completes only t69. Then the holdout capitals.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
@@ -165,6 +172,14 @@ force cancelled" / "Ended: DiploOpinionChange"): with the approach no longer WAR
 offensive operation toward the player. (Two runs, i24c606 and i24c1313, ended without a result on the first attempt
 and finished on the second.)
 **24b:** that branch also leaves the plan's operation toward a major alone. Same predictions, run as cmp12.
+**Result 24b (cmp12, build `ab-45cd73b`, 12:25 AM ET Nov 22): accepted.** Regress 8 of 8. Songhai: same captures on
+all 12 seeds. Other civs: identical on 10 of 11; on 303 Japan's 7-unit sneak attack is kept (t56-57), reaches Gao and
+**declares war t58** (before: cancelled t56, no war by 100); the siege estimate says TAKE from t58 (Gao 200 to 169 by
+t60) and the city holds to 80, the same stalled-siege kind as Songhai's (b1/b2 above). Predictions: kept attack on 2
+seeds, missed (1); Japan at war by 65, met; plan-civ captures by 80 at least 2, missed (1, Aztecs' Sparta); Songhai
+not fewer, met. Accepted anyway: the stage it targets (attack to war) now completes where it applies, nothing got
+worse, and the remaining loss is the siege stage the user ordered worked next.
+
 
 
 ## 2026-11-21 M3 iteration 23: iteration 15 again, for the other warmonger civs (the ready army feeds the war approach)
