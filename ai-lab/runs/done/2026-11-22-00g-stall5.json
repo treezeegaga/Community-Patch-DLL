@@ -1,0 +1,74 @@
+{
+    "id":  "2026-11-22-00g-stall5",
+    "status":  "done",
+    "message":  "",
+    "watcherVersion":  6,
+    "host":  "BOX, TREEDESKTOP",
+    "hosts":  [
+                  "BOX",
+                  "TREEDESKTOP"
+              ],
+    "markedBy":  "TREEDESKTOP",
+    "started":  "2026-11-22T09:48:49",
+    "finished":  "2026-11-22T09:53:32",
+    "requestCommit":  "bce5dea98",
+    "stockDll":  "BOX: ok; TREEDESKTOP: ok",
+    "launches":  [
+                     {
+                         "label":  "st5N",
+                         "host":  "BOX",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/st5N-20261122-0948-run",
+                         "summary":  [
+                                         "  results: Run: lab v24, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker on, defender off",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\st5N-20261122-0951.results.csv",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\st5N-20261122-0951.turns.csv",
+                                         "  results: Saved 378 log file(s) from this launch (22.4 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\st5N-20261122-0951-logs; folder listing in _logs-folder.txt",
+                                         "  results: Scenario   Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength Ready        ",
+                                         "  results: --------   ------- -------- ------------ ------------- ---------- -------------- ---------- ------------- -----        ",
+                                         "  results: stall505s        6        6 7.7          100           1.3        0.0            3.0 of 3   1565          6 of 6, tu...",
+                                         "  results: stall1616s       6        6 4.0          100           0.0        0.0            3.0 of 3   1556          6 of 6, tu...",
+                                         "  results: 12 of 12 battles ended in a capture.",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-22T09:48:49",
+                         "finished":  "2026-11-22T09:51:25",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  6
+                     },
+                     {
+                         "label":  "st5S",
+                         "host":  "TREEDESKTOP",
+                         "exitCode":  0,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/st5S-20261122-0950-run",
+                         "summary":  [
+                                         "  results: Run: lab v24, Songhai attacking Greece, map 56x36, HANDICAP_KING, GAMESPEED_QUICK, the AI played the attacker",
+                                         "  results: New AI: attacker off, defender off",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\st5S-20261122-0953.results.csv",
+                                         "  results: Saved C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\st5S-20261122-0953.turns.csv",
+                                         "  results: Saved 318 log file(s) from this launch (18.7 MB) to C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\st5S-20261122-0953-logs; folder listing in _logs-folder.txt",
+                                         "  results: Scenario   Battles Captured Capture turn City damage % Idle turns Attackers lost Melee left City strength Ready        ",
+                                         "  results: --------   ------- -------- ------------ ------------- ---------- -------------- ---------- ------------- -----        ",
+                                         "  results: stall505s        6        1 8.0          47            5.3        0.2            3.0 of 3   1565          2 of 6, tu...",
+                                         "  results: stall1616s       6        4 4.0          97            0.0        0.0            3.0 of 3   1556          6 of 6, tu...",
+                                         "  results: 5 of 12 battles ended in a capture.",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run saved. Civ V closed, lab removed, stock DLL restored."
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-22T09:50:05",
+                         "finished":  "2026-11-22T09:53:32",
+                         "stockDll":  "ok",
+                         "packDll":  "262AEE88C5312C4B",
+                         "watcherVersion":  6
+                     }
+                 ]
+}
