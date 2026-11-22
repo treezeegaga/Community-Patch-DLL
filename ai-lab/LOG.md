@@ -119,6 +119,24 @@ capture turn from 7.7 to 6 or less; no scenario of the siege, march, regress and
 **Baseline (stall6, `ab-45cd73b`, 10:24 AM):** stall505b reproduces the stall: new AI 2/6 (capture t12-13, mean
 damage 50%), stock 1/6 (35%); at the start of our turns the bowmen near the city could not shoot it on 236 of 334
 lines, 36 "ranged closing in ... holds". So the prediction's baseline is 2/6 (not "at most 1"); target unchanged: 4/6.
+**Result (i26a, build `ab-434eecf`, 11:13 AM):** stall set (new AI, 6 each): **stall505b 2/6 to 4/6** (mean damage 50% to
+69%), **stall505s capture t7.7 to t6.0**, every other copy 6/6 as before (1616 copies faster, t3-4). Tuning seeds (Songhai
+new AI to turn 100, against `l24bN`; 1818 against `long22N`):
+
+| seed | before (it. 24b) | after (it. 26) |
+|---|---|---|
+| 101 | York t92 | **York t69** |
+| 1616 | nothing | **Attila's Court t67 (capital)** |
+| 1515 | Stockholm t60 (capital), Helsinki t95 | Stockholm t58 (capital) |
+| 606 | Athens t56 (capital) | Athens t57 (capital) |
+| 202 | Corinth t66, Athens t71 (capital), Sparta t85 | Corinth t66, Athens t71 (capital) |
+| 1818 | Edinburgh t64 (capital) | Edinburgh t64 (capital) |
+| 303 | Osaka t97 | Osaka t97 |
+| 404, 505, 1313, 1414, 1717 | nothing | nothing |
+
+Capitals 4 to 5; seeds with a capture 6 to 7; captures by turn 80 on 4 to 6 seeds; two late second captures lost (202
+t85, 1515 t95). 505: "to firing plot" 16 times, St. Petersburg down only to 185/200 (92.5%): that prediction missed.
+Predictions met: stall505b, stall505s, no seed lost its capture. **Decision waits for the guard sets** (`00i-i26guard`).
 
 ## 2026-11-22 Rule 3 on the stalled sieges: the copies don't stall (lab v21-v24, build `ab-45cd73b`)
 Seeds 505 (b1) and 1616 (b2) replayed with the siege snapshot (`sd24bN*`, `sd2N*`: the same games as before) and copied
