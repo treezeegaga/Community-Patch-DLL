@@ -136,6 +136,16 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
+## 2026-11-22 The 25 stalled wars of the measuring set, by kind (user ruling 9:40 AM, point 2; build of it. 22)
+Songhai new AI, seeds 1919-6666 (`nx22N*`): 38 wars with a major, 13 with a capture by turn 100, 25 without. Read from
+the siege estimate lines after the war starts (the city with the most TAKE turns; min hp over the whole war):
+- **estimate NO throughout: 5** (2020, 3737, 5353, 5858, 6262): the army near the city never looked enough.
+- **TAKE, then the city never under 90% (b1, as 505): 7** (2727, 4141, 4848, 5454, 5555, 6060, 6464).
+- **TAKE, city dented to 56-81% and healed back: 9** (2525, 2929, 3131, 3232, 3535, 4343, 4444, 5757, 5959).
+- **TAKE, city shot below half, not taken (b2, as 1616): 4** (3434, 4545, 4747, 4949).
+So 16 of the 20 TAKE stalls are cities that never come down: the ranged fire doesn't land (b1) or doesn't outpace the
+heal of 20 (dented). Script: `/tmp` one-off, logic as stages.py (not kept).
+
 ## 2026-11-21 Stalled sieges sorted (review relay of 11:40 PM: work the sieges now, alongside army completion)
 Siege estimate turn by turn while the army stood at the walls (PlayerTacticalAILog, it. 22 builds, to turn 100).
 Every stall starts as **TAKE** for several turns and turns into NO as the army wears down; none is a plain "too weak
