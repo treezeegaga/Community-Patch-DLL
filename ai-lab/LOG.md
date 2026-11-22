@@ -2,76 +2,38 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-22, 12:30 AM ET), implementer 8: HANDOVER READY (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-22, 10:10 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
-- **The review session speaks for the user:** from 11:10 AM Nov 22 that is "Project review 2"
+- **The review session speaks for the user:** from 10:10 AM Nov 22 that is "Project review 2"
   (session_01G2NZizyLCf9i5g45DQDYLB; PLAN section 4); the old "Project review" no longer counts. Review 2 can receive
-  send_message replies.
-- **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital taken by about
-  turn 60 on Quick (ruling of 11 PM; was 54), about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero
-  before the war is decided. One settler, no buildings, gold only for upgrades right before the attack.
-- **M3 so far:** the siege estimate (its. 1-3b); sneak attacks may build missing units (it. 5); lab flavor leak fixed
-  (it. 4, lab v19); the early-rush plan for warmonger civs (`CvMilitaryAI::GetActivePlan`, CODEMAP "Plans" and the
-  override table): build order (7), research to Composite Bowmen (8), gold kept for upgrades (9), attack waits for the
-  plan's army (10), upgrades the turn the tech lands (12), no city-state gifts (13), plan carries on through its war
-  (14), no city-state operations during the plan (16), explorer Warriors back to attack duty when the plan marches (21) and kept out of exploring (22), the plan's sneak attack on a major kept until it declares at the walls (24b). Reverted: 23 (it. 15 again, for other civs: no game changed), 19 (strongest open upgrade: none open), 18 (Bronze Working again: no Warrior upgraded), 17 (garrisons not counted: 606 later), 3, 6, 11 (re-run seeded: no gain), 15 (war target fed to the approach: no game changed).
-- **How we measure now:** seeds hold (lab v20 / watcher v5): the same seed + build is the identical game on either PC.
-  Every decision: seeds 101, 202, 303, 404, 505, 606 before and after (`summ.sh`-style per-seed table in the LOG).
-- **Headline, holdout (check only, seeds 707-1212), builds `ab-047437e`/`ab-d0f5828` (its. 21-22):** Songhai new
-  AI takes a city by turn 80 on 2 of 6 (Sparta t67, Argos t72), **no capital by 80**; by turn 100 on 3 of 6, with
-  capitals Athens t86 and t88. Before its. 16/21: 2 of 6 by 80 (t78, t79). Stock 0 of 6. Other warmonger civs with
-  the plan: no capture by turn 100.
-- **Tuning set (12 seeds), newest code (its. 14 + 16 + 21 + 22 + 24b, build `ab-45cd73b`; 24b changed no Songhai game):** captures on 4 of 12, 4 of them
-  capitals: Athens t56 (606), Stockholm t60 (1515), Edinburgh t64 (1818), Corinth t66 + Athens t71 (202). A capital by
-  about turn 60 on 2 of 12. No capture on 101 (army ready t69), 303 (no major near), 404, 505, 1313, 1414, 1616, 1717.
-  Gold at 0 by turn 80 on most seeds, after the war starts.
-- **Other warmonger civs with the plan:** first operations now 6.8 units on average (was 5.6); first capture by turn
-  80: Aztecs take Sparta t72 (1515). Still: England's first army leaves t67 (past the plan's end, t60); its recruits
-  are skipped as "threatened zone or enemy near". Explorer flip-flop fixed (it. 22) without changing any outcome.
-- **Screenshot purge done 3:50 PM** (history rewritten, see the purge entry); the user still has to delete 74 old
-  build releases (`ai-lab/runs/purge/delete-tags.txt`). Older build names and hashes in this log refer to the old history.
-- **Tuning set widened** (12:35 PM): seeds 101-606 plus 1313, 1414, 1515, 1616, 1717, 1818 (baseline queued:
-  `19-tune2`). Holdout unchanged.
-- **Holdout (check only):** clearly worse than the tuning set: 2 of 6 captures, turns 78-79, no capital (LOG backlog
-  entry). Other warmonger civs with the plan declare war (5 of 6) but take nothing by turn 80.
-- **Gaps now:** 404: Persepolis (250 hp, heals 20) needs the 4 Composite Bowmen at its walls; only 2 arrive and the
-  melee are Warriors (it. 17 log). 101: army ready only turn 59. Gold runs out during the war on 4 of 6 (units then
-  gifted/scrapped "b/c bankrupt"). Lab logs added (no behaviour change): operation start names enemy and target;
-  "Recruit skip" says why a unit stayed out of an operation (OperationalAILog).
-- **Review relay of 10:05 AM Nov 21 (user):** (1) never leave the PCs idle: before going quiet, queue several hours
-  from the standing backlog (PLAN 7a); (2) holdout seeds 707-1212, check only, never for tuning (PLAN 7a, BASELINE);
-  (3) when ready to hand over: finish/revert the iteration, write this section, put HANDOVER READY on the first line
-  of this heading's text, push, **tell the user in chat that I'm ready** (correction 12:27 PM: no automatic check reads
-  the marker; the user asks the review session to start implementer 9), stop. Keep the queue deep before going quiet.
-- **Handover (implementer 9):** start with the stalled-siege lab scenarios (copy 505 = b1 and 1616 = b2 from the
-  tuning games into `SiegeLabScenarios.lua`; check they reproduce; iterate there), and army completion in full games
-  (gold held when Construction lands vs the upgrades' cost). Overnight queue runs on `ab-d0f5828` (it. 22); the
-  stage table is on it. 22 too (24b only changes Japan on 303). Keep the queue topped up past 7:30 AM; no questions
-  to the user until then (rule 10: adopt proposals provisionally, list rulings under "waiting for the user").
-  Waiting for the user: nothing new.
-- **Queued (user to bed 11:35 PM, "keep the tests pumping all night"; no questions to the user until 7:30 AM):**
-  `25c-cmp12` (it. 24b), `27-long24b`, then 168 night launches `28`-`36` on the accepted build `ab-d0f5828`: other
-  civs, Songhai and stock to turn 100 on **extra picture seeds 1919-6666 (step 101; not tuning, not holdout, for the
-  stage table only)**, stock on the tuning and holdout seeds, and the siege/march/regress guard sets.
-- **Review relay of 8 PM (user):** (1) 6 seeded games per decision: done. (2) CODEMAP override list: done, kept up.
-  (3) war when the army is ready and the estimate says a target can be taken: it. 15 (fed the approach) no effect;
-  it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
-  two other warmonger civs before M3 closes.
-- **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Stage table** (section below Current state, review relay 11:10 PM): the army is completed 12-23 turns after
-  Construction, and 7 of 18 Songhai sieges never bring a city under half. **User's order (11:40 PM): work the stalled
-  sieges now, alongside army completion**: stalls sorted (LOG entry "Stalled sieges sorted": b1 bowmen never close
-  to range 2, e.g. 505; b2 city shot down but melee gone, e.g. 1616); next, copy 505 and 1616 into the battle lab as
-  scenarios and iterate there; full games carry army completion (check the gold held when Construction lands; the
-  user banked about 250 gold and spent it to 31 on the upgrades). Track "walls to under half" and the never-count.
-- **It. 24b accepted** (12:25 AM): Japan now declares on Songhai t58 (was never); its siege then stalls like Songhai's.
-- **Older note:** other warmonger civs' sneak attacks were cancelled before the declaration
-  ("Ended: DiploOpinionChange": Japan on Gao t56 with 7 units, Mongolia on Ife 7 times), so keep the plan's sneak
-  attack (or its WAR approach) until it declares. Also England's army completes only t69. Then the holdout capitals.
-- **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
-  merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
+  send_message replies, and starts the next implementer when this heading says HANDOVER READY.
+- **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital by about turn 60
+  on Quick, about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero before the war is decided.
+- **Newest build:** `ab-45cd73b` (it. 24b); no code change since. Accepted M3 work: CODEMAP "Plans" and the override
+  table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch` (no scenario reproduces its cause).
+- **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning), build of it. 22:
+  Songhai new AI takes a major's city by turn 100 on 13 of 48 (stock 0), a capital by turn 60 on 1; army 42, war 38.
+  At turn 100 science 10.8 vs stock 26.3, population 11.6 vs 15.7. All with Greece as a neighbour (fixed seat 1).
+  Dashboard "Civ V AI Project" shows these (`ai-lab/runs/fullgames_csv.py` builds its table).
+- **Stalled wars (25 of 38):** estimate NO 5; TAKE with the city never below 90% 7, dented and healed 9, below half not
+  taken 4 (LOG entry of Nov 22). Battle-lab copies of 505 and 1616 (lab v21-v24) don't stall: the new AI takes both 6/6
+  even at the real city strength. **Provisional (rule 10):** work the sieges in full games on the tuning seeds, with the
+  siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
+- **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
+  defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
+- **Queued:** `2026-11-22-01..04` backlog on `ab-45cd73b` (Songhai and other civs to turn 100 on tuning and holdout,
+  Songhai on the 48 measuring maps, guard sets); running on both PCs.
+- **Next:**
+  1. Seed 505 full game: why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
+     t61-67 (tactical moves REINFORCE/STEAMROLL), against the lab copy where they do. Then the other stalled tuning seeds
+     (404, 1313, 1414, 1616, 1717, snapshots in `sd24bN*`).
+  2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with "state
+     at turn 100 vs stock on the same map" tracked beside captures.
+  3. Vary the neighbour (point 4): a lab-only setting for seat 1's civ chosen from the seed; mark all-Greece results.
+  4. Late declarations (point 5): army ready, no war for 20+ turns.
+- **Waiting for the user:** nothing. **For the user:** archive implementers 5-7 if not done; the old review session.
 
 ## Stage table (review relay of 11:10 PM Nov 21; update after every accepted change)
 Turn each game reached each stage. Songhai new AI on the newest accepted build (it. 22, `ab-d0f5828`), played to
@@ -358,7 +320,7 @@ branch tip has none, and only `claude/bold-feynman-cgnhjs` is newer than `d64b73
 
 ## User rulings
 
-- 2026-11-22 (about 11:10 AM ET, the user, confirmed in implementer 9's chat): the review role moves to the session
+- 2026-11-22 (about 10:10 AM ET, the user, confirmed in implementer 9's chat): the review role moves to the session
   "Project review 2" (`session_01G2NZizyLCf9i5g45DQDYLB`, starts from `ai-lab/review/REVIEWER.md` on
   `claude/bold-feynman-cgnhjs`). PLAN section 4 names it; relays from "Project review" (`session_01G2NZj4f5xWWrXLRuDN5eyd`)
   no longer count. Review 2 starts the next implementer when the current state says HANDOVER READY.
