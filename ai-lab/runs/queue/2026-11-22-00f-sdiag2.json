@@ -1,0 +1,22 @@
+{
+ "id": "2026-11-22-00f-sdiag2",
+ "why": "Lab v23 snapshot (river edges, capital, owner techs, building defense) for the two copied sieges: seeds 505 and 1616 replayed, Songhai new AI to turn 100.",
+ "launches": [
+  {
+   "label": "sd2N505",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 505
+  },
+  {
+   "label": "sd2N1616",
+   "release": "ab-45cd73b",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1616
+  }
+ ]
+}

@@ -42,7 +42,10 @@ def main():
     hp, maxhp, strength = int(scity[3]), int(scity[4]), int(scity[5])
     print("\t-- %s on turn %d of the full game (%s): city %d of %d hp, strength %d" % (city, turn, log, hp, maxhp, strength))
     print('\t{ name = "%s", turns = %d, ground = { y = %d, map = "%s" },' % (name, turns, cy, smap[8]))
-    print("\t  city = { population = POP, buildings = { %s }%s%s }," % (
+    capital = len(smap) > 9 and smap[9] == "1"
+    if len(smap) > 11:
+        print("\t-- owner knew %s techs; building defense %s; capital %s" % (smap[10], smap[11], smap[9]))
+    print("\t  city = { population = %s,%s buildings = { %s }%s%s }," % (scity[6] if len(scity) > 6 else "POP", " capital = true," if capital else "",
         '"BUILDING_WALLS"' if maxhp > 200 else "", (', garrison = "%s"' % garrison) if garrison else "",
         (", damage = %d" % (maxhp - hp)) if hp < maxhp else ""))
     print("\t  armyAt = { %s }," % ", ".join(army))

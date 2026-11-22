@@ -25,7 +25,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 22
+local VERSION = 23
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -241,6 +241,13 @@ local function applyGround(ground)
 			else setLand(p, PLOT_LAND, "TERRAIN_GRASS") end
 			local feature = GROUND_FEATURES[f] and typeID(GROUND_FEATURES[f])
 			if feature and t ~= "w" and t ~= "m" and not (dx == 0 and dy == 0) then p:SetFeatureType(feature) end
+			-- lab v23: river edges (flow directions as the engine allows them for each edge: south, south-west, south-east)
+			local edges = code:sub(3)
+			if t ~= "w" then
+				if edges:find("w") then p:SetWOfRiver(true, 3) end
+				if edges:find("n") then p:SetNWOfRiver(true, 4) end
+				if edges:find("e") then p:SetNEOfRiver(true, 2) end
+			end
 			lab.changedPlots[#lab.changedPlots + 1] = p
 		end
 	end
@@ -1195,9 +1202,9 @@ end
 
 -- Lab v21 (logging only): the ground of a full-game siege, so a stalled one can be copied into the battle lab with its
 -- terrain. For each city of a major at war with the active civ with one of the active civ's land combat units within 4:
---   SMAP,turn,city,cx,cy,owner,hp,maxhp,codes     once per city: every plot within 4 as dx:dy:code (code: plot type
+--   SMAP,turn,city,cx,cy,owner,hp,maxhp,codes[,capital,techs,bdef]   once per city (v23 adds the last three): every plot within 4 as dx:dy:code (code: plot type
 --                                                 m/h/f/w, feature -/F forest/J jungle/M marsh/O oasis/P flood plains/
---                                                 X other, r on a river, c the city)
+--                                                 X other, v21 r next to a river / v23 w n e its own river edges, c the city)
 --   SCITY,turn,city,hp,maxhp,strength[,pop]       every turn (pop from lab v22)
 --   SUNIT,turn,city,owner,unit,id,dx,dy,dist,hp,canShootNow   every land unit within 4, both sides, every turn
 --   SSPOT,turn,city,unit,id,range,spots           for each of the active civ's ranged units within 4: every plot within
@@ -1220,7 +1227,10 @@ local function plotCode(plot)
 	local pt = plot:GetPlotType()
 	local c = (pt == PLOT_MOUNTAIN and "m") or (pt == PLOT_HILLS and "h") or (pt == PLOT_OCEAN and "w") or "f"
 	c = c .. featureCode(plot)
-	if plot:IsRiver() then c = c .. "r" end
+	-- lab v23: the plot's own river edges (w west, n north-west, e north-east) in place of v21's "r" (next to a river)
+	if plot:IsWOfRiver() then c = c .. "w" end
+	if plot:IsNWOfRiver() then c = c .. "n" end
+	if plot:IsNEOfRiver() then c = c .. "e" end
 	if plot:IsCity() then c = c .. "c" end
 	return c
 end
@@ -1251,8 +1261,10 @@ local function siegeSnapshot(activeID)
 								codes[#codes + 1] = string.format("%d:%d:%s", dx, dy, plotCode(p))
 							end
 						end end
-						out(string.format("SMAP,%d,%s,%d,%d,%d,%d,%d,%s", turn, name, cx, cy, id, city:GetMaxHitPoints() - city:GetDamage(),
-							city:GetMaxHitPoints(), table.concat(codes, ";")))
+						-- lab v23: then capital (1/0), the owner's techs known, the city's building defense (x100)
+						out(string.format("SMAP,%d,%s,%d,%d,%d,%d,%d,%s,%d,%d,%d", turn, name, cx, cy, id, city:GetMaxHitPoints() - city:GetDamage(),
+							city:GetMaxHitPoints(), table.concat(codes, ";"), city:IsCapital() and 1 or 0,
+							Teams[enemy:GetTeam()]:GetTeamTechs():GetNumTechsKnown(), city:GetBuildingDefense()))
 					end
 					out(string.format("SCITY,%d,%s,%d,%d,%d,%d", turn, name, city:GetMaxHitPoints() - city:GetDamage(), city:GetMaxHitPoints(),
 						city:GetStrengthValue(false, false, nil), city:GetPopulation()))

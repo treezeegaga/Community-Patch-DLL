@@ -51,7 +51,7 @@ local function newPlot(x, y)
 	function m:SetRouteType(r, pl) assert(type(r) == "number" and type(pl) == "number") end
 	-- Every fourth plot has a river on one side. The engine asserts on any "no direction" value but 7.
 	function m:IsWOfRiver() return p.river end
-	function m:SetWOfRiver(b, d) assert(b == false and d == 7, "river removal must pass NO_FLOWDIRECTION (7)") p.river = false end
+	function m:SetWOfRiver(b, d) assert((b == false and d == 7) or (b == true and (d == 3 or d == 4 or d == 2)), "river removal must pass NO_FLOWDIRECTION (7); lab v23 sets edges with a valid flow") p.river = b end
 	m.IsNWOfRiver, m.IsNEOfRiver = m.IsWOfRiver, m.IsWOfRiver
 	m.SetNWOfRiver, m.SetNEOfRiver = m.SetWOfRiver, m.SetWOfRiver
 	function m:SetPlotType(t, a, b, c)
@@ -121,6 +121,7 @@ local function newCity(owner, x, y)
 	function m:GetID() return c.id end
 	function m:GetName() return "Fake, City" end
 	function m:GetPopulation() return c.pop end
+	function m:GetBuildingDefense() return 0 end
 	function m:GetDamage() return c.damage end
 	function m:SetDamage(v, quiet) assert(type(v) == "number" and type(quiet) == "boolean") c.damage = v end
 	function m:GetMaxHitPoints() return 200 end
