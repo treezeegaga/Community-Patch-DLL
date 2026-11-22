@@ -100,6 +100,23 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
+## 2026-11-22 M3 iteration 26: a ranged unit holds only where it can shoot the city (new AI)
+Class: "TAKE, the city never below 90%" (5 of the 25 stalled wars on the measuring maps; tuning seed 505 too). Review 2's
+point 3 (10:30 AM): in 4848 (Sparta t71-86) and 505 the bowmen stand 2 tiles out and the city isn't shot.
+Cause: `CvTacticalAI::PlotReinforcementMoves`, the new AI's "ranged closing in (ring 2)" (M2 it. 4/4b, ours) gives a
+ranged unit within 2 tiles a skip mission ("holds") without asking whether it sees the city. Around a city on a hill
+ringed by forest only the adjacent tiles (and a couple on the far side) see it (505's SSPOT lines): 4848's log has four
+Composite Bowmen "holds" at distance 2 with "can shoot it from here 0", and "capture attempt ... executed: 4 units in
+reach, 0 melee" every turn with no damage. The lab copy (stall505) shows the same opening, and gets out only because two
+far-side tiles were free; `stall505b` holds them with defenders, as the full game's enemy units did.
+Change: there, a ranged unit holds only if `canEverRangeStrikeAt` from its plot (line of sight over revealed ground);
+else it moves to the nearest free revealed plot within its range that sees the city, reachable within 3 turns, full
+range preferred (`LabFindFiringPlot`). Log: the closing-in line adds "can shoot from here" / "to firing plot x:y" / "no
+firing plot in reach". New AI only.
+Predicted (only if stall6 shows the stall on `ab-45cd73b`): stall505b new AI from at most 1/6 to at least 4/6; stall505s
+capture turn from 7.7 to 6 or less; no scenario of the siege, march, regress and stall sets loses more than 1 in 6;
+12 tuning seeds: 505 St. Petersburg shot (below 90%) and no seed loses its capture (4 capitals). Holdout untouched.
+
 ## 2026-11-22 Rule 3 on the stalled sieges: the copies don't stall (lab v21-v24, build `ab-45cd73b`)
 Seeds 505 (b1) and 1616 (b2) replayed with the siege snapshot (`sd24bN*`, `sd2N*`: the same games as before) and copied
 into the battle lab's `stall` set with their ground, units, hit points and (v24) tech count. Each copy, 6 battles:

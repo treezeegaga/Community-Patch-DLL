@@ -2015,6 +2015,39 @@ void CvTacticalAI::PlotWithdrawMoves(CvTacticalDominanceZone* pZone)
 	}
 }
 
+/// AI lab (M3 iteration 26): the nearest free plot within a ranged unit's range from which it can shoot the city (line
+/// of sight over revealed ground), reachable within 3 turns; prefers its full range. NULL if none.
+static CvPlot* LabFindFiringPlot(CvUnit* pUnit, const CvCity* pCity)
+{
+	int iRange = pUnit->GetRange();
+	CvPlot* pBest = NULL;
+	int iBestScore = INT_MAX;
+	for (int iDX = -iRange; iDX <= iRange; iDX++)
+	{
+		for (int iDY = -iRange; iDY <= iRange; iDY++)
+		{
+			CvPlot* pPlot = plotXYWithRangeCheck(pCity->getX(), pCity->getY(), iDX, iDY, iRange);
+			if (!pPlot || pPlot->isCity() || !pPlot->isRevealed(pUnit->getTeam()) || pPlot->getNumUnits() > 0)
+				continue;
+			int iDist = plotDistance(*pPlot, *pCity->plot());
+			if (iDist < 1 || !pUnit->canMoveInto(*pPlot, CvUnit::MOVEFLAG_DESTINATION))
+				continue;
+			if (!pUnit->canEverRangeStrikeAt(pCity->getX(), pCity->getY(), pPlot, true))
+				continue;
+			int iTurns = pUnit->TurnsToReachTarget(pPlot, false, false, 3);
+			if (iTurns > 3)
+				continue;
+			int iScore = iTurns * 100 + (iRange - iDist) * 20;
+			if (iScore < iBestScore)
+			{
+				iBestScore = iScore;
+				pBest = pPlot;
+			}
+		}
+	}
+	return pBest;
+}
+
 /// Close units in on primary target of this dominance zone
 void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 {
@@ -2066,21 +2099,37 @@ void CvTacticalAI::PlotReinforcementMoves(CvTacticalDominanceZone* pTargetZone)
 				continue;
 			int iUnitRing = bRanged ? max(1, min(2, pUnit->GetRange())) : iRing;
 
+			// M3 iteration 26: a ranged unit holds only where it can shoot the city; within two tiles of a city on a hill
+			// ringed by forest it often can't (seeds 505, 4848: four Composite Bowmen held two tiles out for 8-16 turns
+			// and the city was never shot). Otherwise it goes to the nearest plot in range that sees the city, if any.
+			bool bCanShootHere = false;
+			CvPlot* pFiringPlot = NULL;
+			if (bRanged)
+			{
+				bCanShootHere = iDist <= pUnit->GetRange() && pUnit->canEverRangeStrikeAt(pCityPlot->getX(), pCityPlot->getY(), pUnit->plot(), true);
+				if (!bCanShootHere)
+					pFiringPlot = LabFindFiringPlot(pUnit, pZoneCity);
+			}
+
 			int iTurns = 0;
-			if (iDist <= iUnitRing)
+			bool bHold = bRanged ? (bCanShootHere || (iDist <= iUnitRing && !pFiringPlot)) : iDist <= iUnitRing;
+			if (bHold)
 			{
 				pUnit->PushMission(CvTypes::getMISSION_SKIP());
 				UnitProcessed(pUnit->GetID());
 			}
+			else if (pFiringPlot)
+				iTurns = ExecuteMoveToPlot(pUnit, pFiringPlot, true, CvUnit::MOVEFLAG_NO_EMBARK);
 			else
 				iTurns = ExecuteMoveToPlot(pUnit, pCityPlot, true, CvUnit::MOVEFLAG_NO_EMBARK |
 					(iUnitRing == 1 ? CvUnit::MOVEFLAG_APPROX_TARGET_RING1 : CvUnit::MOVEFLAG_APPROX_TARGET_RING2));
 
 			if (GC.getLogging() && GC.getAILogging())
-				LogTacticalMessage(CvString::format("Zone %d, %s closing in on %s (ring %d): %s %d at distance %d, hp %d, %s",
+				LogTacticalMessage(CvString::format("Zone %d, %s closing in on %s (ring %d): %s %d at distance %d, hp %d, %s%s",
 					pTargetZone->GetZoneID(), bRanged ? "ranged" : "melee", pZoneCity->getNameNoSpace().c_str(), iUnitRing,
 					pUnit->getName().c_str(), pUnit->GetID(),
-					iDist, pUnit->GetCurrHitPoints(), iDist <= iUnitRing ? "holds" : iTurns == INT_MAX ? "no path" : "moves"));
+					iDist, pUnit->GetCurrHitPoints(), bHold ? "holds" : iTurns == INT_MAX ? "no path" : "moves",
+					!bRanged ? "" : bCanShootHere ? ", can shoot from here" : pFiringPlot ? CvString::format(", to firing plot %d:%d", pFiringPlot->getX(), pFiringPlot->getY()).c_str() : ", no firing plot in reach"));
 		}
 	}
 
