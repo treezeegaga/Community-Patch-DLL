@@ -44,7 +44,7 @@ def main():
     print('\t{ name = "%s", turns = %d, ground = { y = %d, map = "%s" },' % (name, turns, cy, smap[8]))
     capital = len(smap) > 9 and smap[9] == "1"
     if len(smap) > 11:
-        print("\t-- owner knew %s techs; building defense %s; capital %s" % (smap[10], smap[11], smap[9]))
+        print("\t-- owner knew %s techs (defenderTechCount); building defense %s; capital %s" % (smap[10], smap[11], smap[9]))
     print("\t  city = { population = %s,%s buildings = { %s }%s%s }," % (scity[6] if len(scity) > 6 else "POP", " capital = true," if capital else "",
         '"BUILDING_WALLS"' if maxhp > 200 else "", (', garrison = "%s"' % garrison) if garrison else "",
         (", damage = %d" % (maxhp - hp)) if hp < maxhp else ""))

@@ -19,6 +19,7 @@
 --                   coast (lab v12: sea on its north side out to 4 tiles)
 --   defenders       { { unit type, count }, ... } placed next to the city
 --   terrain         "open" (default) or "rough" (forest and hills on the approach)
+--   defenderTechCount  lab v24: the defender knows this many techs in all (cheapest added first): a copied siege's owner
 --   era             lab v15: the attacker's era group (default 0). Battles run lowest era first, all repeats of
 --                   a group before the next, because an era once reached never goes back down.
 --

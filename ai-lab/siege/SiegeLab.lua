@@ -25,7 +25,7 @@
 include("SiegeLabScenarios")
 include("SiegeLabConfig")
 
-local VERSION = 23
+local VERSION = 24
 local TAG = "[SiegeLab] "
 
 local PLOT_MOUNTAIN, PLOT_HILLS, PLOT_LAND, PLOT_OCEAN = 0, 1, 2, 3   -- PlotTypes in CvEnums.h
@@ -353,9 +353,32 @@ local function clearResearch(playerID)
 	player:SetOverflowResearch(0)
 end
 
-local function setTechs(playerID, names)
+-- Lab v24: count = how many techs the side should know in all (a copied siege's owner: its techs raise the city's
+-- strength, CvCity::updateStrengthValue); techs beyond the list are added cheapest first, prerequisites met.
+local function setTechs(playerID, names, count)
 	local team = Teams[Players[playerID]:GetTeam()]
 	local wanted = techSet(names)
+	if count then
+		local n = 0
+		for _ in pairs(wanted) do n = n + 1 end
+		local rows = {}
+		for tech in GameInfo.Technologies() do rows[#rows + 1] = tech end
+		table.sort(rows, function(a, b) if (a.Cost or 0) ~= (b.Cost or 0) then return (a.Cost or 0) < (b.Cost or 0) end return a.ID < b.ID end)
+		local added = true
+		while n < count and added do
+			added = false
+			for _, tech in ipairs(rows) do
+				if not wanted[tech.ID] then
+					local ok = true
+					for _, prereq in ipairs(g_prereqs[tech.Type] or {}) do
+						local pid = typeID(prereq)
+						if pid and not wanted[pid] then ok = false break end
+					end
+					if ok then wanted[tech.ID] = true n = n + 1 added = true break end
+				end
+			end
+		end
+	end
 	for tech in GameInfo.Technologies() do
 		local want = wanted[tech.ID] == true
 		if team:IsHasTech(tech.ID) ~= want then
@@ -604,7 +627,7 @@ local function beginScenario()
 
 	applyScenarioTerrain(sc)
 	setTechs(lab.attacker, sc.attackerTechs)
-	setTechs(lab.defender, sc.defenderTechs)
+	setTechs(lab.defender, sc.defenderTechs, sc.defenderTechCount)
 
 	-- The target city.
 	local city = defender:InitCity(lab.tx, lab.ty)
