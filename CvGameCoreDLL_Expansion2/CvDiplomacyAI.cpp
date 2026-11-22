@@ -27709,6 +27709,11 @@ void CvDiplomacyAI::DoMakeWarOnPlayer(PlayerTypes eTargetPlayer)
 		{
 			GetPlayer()->GetMilitaryAI()->RequestBullyingOperation(eTargetPlayer);
 		}
+		//new AI (M3 iteration 24b): the plan's sneak attack on a major marching to the walls isn't cancelled here either
+		//(i24c303: kept by the approach change, then cancelled the same turn as a "show of force")
+		else if (GET_PLAYER(eTargetPlayer).isMajorCiv() && GetPlayer()->GetMilitaryAI()->GetActivePlan() != NULL && GetPlayer()->getFirstOffensiveAIOperation(eTargetPlayer) != NULL)
+		{
+		}
 		else
 		{
 			//it's possible for an operation to be ongoing here if it was a demand, so cancel it

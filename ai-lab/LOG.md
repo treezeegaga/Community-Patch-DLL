@@ -69,6 +69,14 @@ still apply.
 Predicted (11 other-civ seeds i24c against i22c; 12 Songhai seeds i24s against i22s): "plan keeps its sneak attack"
 on at least 2 seeds; Japan at war with Songhai by turn 65 on 303; plan-civ captures (not Songhai) by 80 at least 2
 (i22c: 1); Songhai captures not fewer (4 capitals). Regress 8 of 8. Holdout untouched.
+**Result (cmp11, build `ab-9ed46d1`, 11 PM ET): no game changed; incomplete, fixed as 24b.** Regress 8 of 8. Songhai
+captures identical on all 12 seeds; other civs identical on all 11. "Plan keeps its sneak attack" once (303, Japan
+t56), but the same turn `DoMakeWarOnPlayer`'s not-in-place branch cancelled it as a "show of force" ("Show of
+force cancelled" / "Ended: DiploOpinionChange"): with the approach no longer WAR and no demand, that branch stops any
+offensive operation toward the player. (Two runs, i24c606 and i24c1313, ended without a result on the first attempt
+and finished on the second.)
+**24b:** that branch also leaves the plan's operation toward a major alone. Same predictions, run as cmp12.
+
 
 ## 2026-11-21 M3 iteration 23: iteration 15 again, for the other warmonger civs (the ready army feeds the war approach)
 Class (`24-long21`, other civs to turn 100, it. 21 build): the plan civs' armies stand ready around turn 40 (England's
