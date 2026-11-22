@@ -1,0 +1,26 @@
+{
+ "id": "2026-11-22-00ga-stall6",
+ "why": "Rule 3 for the 'never below 90%' stalls: stall505 with the far-side firing tiles held by defenders (the full game had enemy units by the city). Expect: no damage for many turns on it. 24b; new AI and stock, 6 battles each.",
+ "launches": [
+  {
+   "label": "st6N",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall505b"
+   ],
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "st6S",
+   "release": "ab-45cd73b",
+   "set": "stall",
+   "only": [
+    "stall505b"
+   ],
+   "newAI": "none",
+   "repeats": 6
+  }
+ ]
+}
