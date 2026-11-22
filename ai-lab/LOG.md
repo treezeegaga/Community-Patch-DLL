@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-21, 9:40 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-21, 11:35 PM ET), implementer 8 (rewrite after every accepted or reverted iteration)
 
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
@@ -50,11 +50,77 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   it. 16 (army not spent on city-states) gave 606 its war and Athens. (4) this section kept current. Later: the plan seen working on
   two other warmonger civs before M3 closes.
 - **Open for the user:** archive implementers 5, 6 and 7 in the Claude app (trusted device only).
-- **Next:** other warmonger civs (review relay 3:10 PM): their sneak attacks are cancelled before the declaration
+- **Stage table** (section below Current state, review relay 11:10 PM): the army is completed 12-23 turns after
+  Construction, and 7 of 18 Songhai sieges never bring a city under half. Next iterations aim at army completion.
+- **Earlier next step** (it. 24b in test): other warmonger civs' sneak attacks are cancelled before the declaration
   ("Ended: DiploOpinionChange": Japan on Gao t56 with 7 units, Mongolia on Ife 7 times), so keep the plan's sneak
   attack (or its WAR approach) until it declares. Also England's army completes only t69. Then the holdout capitals.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
+
+## Stage table (review relay of 11:10 PM Nov 21; update after every accepted change)
+Turn each game reached each stage. Songhai new AI on the newest accepted build (it. 22, `ab-d0f5828`), played to
+turn 100: 12 tuning seeds (`26-long22`), 6 holdout seeds (`25-holong22`; **picture only, never for choosing a fix**);
+other warmonger civs with the plan (new AI for all majors but Songhai): tuning seeds on it. 21 (`24-long21`, it. 22
+changed no outcome) and holdout seeds on it. 22 (`25-holong22`). How each stage is read: (a) first turn the land army
+count (lab OPEN line) rises; (b) TechAILog "COMPLETED, TECH_CONSTRUCTION"; (c) first turn with 6 melee + 4 ranged of
+Composite Bowman strength (OPEN); (d) first and last "plan upgrade:" (MilitaryAILog); (e) first OP_CITY_ATTACK on a
+major's city (OperationalAILog); (f) first war with a major, declared by us or on us; (g) after the war, first siege
+estimate with at least 5 of our units within 4 tiles of an enemy city (the estimate counts within 4, not 3); (h)
+first estimate showing that city under half its hit points; (i) first capture of a major's city.
+
+| game | civ | a first unit | b Construction | c army 6+4 | d upgrades (first-last) | e attack op | f war | g at walls | h city < half | i capture / where it stopped |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **user's own game (reference)** | | | **41-44** | **41-44** | **41-44** | | **41-50** | | | **capital 54 (bar: about 60)** |
+| 101 | Songhai | 7 | 35 | 69 | 35-59 | 60 | 63 | 65 | 91 | York t92 |
+| 202 | Songhai | 7 | 45 | 57 | 45-55 | 58 | 59 (by Greece) | 60 | 66 | Corinth t66 |
+| 303 | Songhai | 6 | 35 | 58 | 35-52 | 72 | 95 | 95 | 97 | Osaka t97 |
+| 404 | Songhai | 6 | 37 | 43 | 42-48 | 49 | 54 | 65 | 82 | city below half, no capture by 100 |
+| 505 | Songhai | 6 | 36 | 52 | 36-36 | 53 | 59 | 60 | - | at the walls from t60, city never below half by 100 |
+| 606 | Songhai | 6 | 37 | 47 | 37-45 | 48 | 51 | 51 | 56 | Athens t56 |
+| 1313 | Songhai | 7 | 37 | - | 42-42 | 60 | 78 | 79 | - | at the walls from t79, city never below half by 100 |
+| 1414 | Songhai | 6 | 38 | 49 | 38-54 | 52 | 64 | 68 | - | at the walls from t68, city never below half by 100 |
+| 1515 | Songhai | 5 | 34 | 39 | 34-34 | 45 | 51 | 54 | 59 | Stockholm t60 |
+| 1616 | Songhai | 6 | 34 | 47 | 34-42 | 48 | 56 | 56 | 68 | city below half, no capture by 100 |
+| 1717 | Songhai | 6 | 40 | 53 | 40-55 | 57 | 62 | 80 | - | at the walls from t80, city never below half by 100 |
+| 1818 | Songhai | 6 | 39 | 47 | 39-54 | 52 | 55 | 56 | 63 | Edinburgh t64 |
+| holdout ho707 | Songhai | 6 | 38 | 45 | 38-52 | 53 | 60 | 61 | 65 | Sparta t67 |
+| holdout ho808 | Songhai | 8 | 37 | - | 37-37 | 60 | 84 | 85 | 88 | Athens t88 |
+| holdout ho909 | Songhai | 6 | 39 | 58 | 39-49 | 59 | 64 | 65 | 70 | Argos t70 |
+| holdout ho1010 | Songhai | 7 | 36 | 63 | 36-36 | 60 | 71 | 75 | - | at the walls from t75, city never below half by 100 |
+| holdout ho1111 | Songhai | 7 | 40 | 70 | 40-40 | 60 | 66 | 67 | - | at the walls from t67, city never below half by 100 |
+| holdout ho1212 | Songhai | 8 | 42 | 42 | 42-49 | 50 | 56 | 56 | - | at the walls from t56, city never below half by 100 |
+| 202 | England | 7 | 39 | 69 | 39-39 | 67 | 80 | 82 | 87 | Amsterdam t87 |
+| 303 | Japan | 7 | 38 | 48 | 38-39 | 48 | - | - | - | operation started, no war (cancelled/never declared) |
+| 303 | Denmark | 7 | 34 | 60 | 34-44 | 60 | 64 | 64 | - | at the walls from t64, city never below half by 100 |
+| 404 | Persia | 7 | 40 | 53 | 40-54 | 56 | 59 | 60 | - | at the walls from t60, city never below half by 100 |
+| 606 | Mongolia | 6 | 41 | 45 | 41-43 | - | - | - | - | army complete, no attack on a major |
+| 1515 | The Aztecs | 8 | 39 | 62 | 39-45 | 60 | 68 | 68 | 72 | Sparta t72 |
+| 1414 | The Zulus | 8 | 33 | 59 | 33-76 | 59 | 64 | 65 | - | at the walls from t65, city never below half by 100 |
+| holdout civh707 | The Ottomans | 5 | 38 | - | 38-45 | 76 | 97 | 97 | - | at the walls from t97, city never below half by 100 |
+| holdout civh707 | The Shoshone | 7 | 41 | 55 | 41-41 | - | - | - | - | army complete, no attack on a major |
+| holdout civh1010 | Mongolia | 7 | 41 | 56 | 42-54 | 51 | 49 (by Greece) | 60 | - | at the walls from t60, city never below half by 100 |
+| holdout civh1111 | The Aztecs | 6 | 35 | 48 | 35-46 | 48 | 67 | 67 | - | at the walls from t67, city never below half by 100 |
+| holdout civh1212 | Assyria | 8 | 40 | - | 43-48 | 78 | 90 | 90 | 94 | Tombouctu t94 |
+
+Script: `ai-lab/runs/stages.py`.
+
+**Turns lost per stage** (median, total over games; "never" = stage not reached by turn 100, counted to 100):
+
+| stage | Songhai tuning (12) | Songhai holdout (6) | other civs (12) |
+|---|---|---|---|
+| Construction to army complete (b-c) | median 12.5, total 214, never 1 | median 23, total 146, never 1 | median 19, total 296, never 2 |
+| army complete to attack op (c-e) | median 3, total 33 | median 1, total 4 | median 0, total 94, never 2 |
+| attack op to war (e-f) | median 5.5, total 93 | median 6.5, total 59 | median 10, total 135, never 1 |
+| war to walls (f-g) | median 1, total 42 | median 1, total 8 | median 0, total 15 |
+| walls to city under half (g-h) | median 14.5, total 193, **never 4** | median 15, total 114, **never 3** | median 33, total 200, **never 6** |
+| under half to capture (h-i) | median 1, total 53, never 2 | median 0, total 2 | 0 |
+
+**Where the turns go.** Construction lands on time (turns 34-45; the user's game 41-44). Two stages lose the most:
+(1) **the army is completed 12-23 turns after Construction** (the user's was complete when Construction landed): the
+largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
+counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
+20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
 ## 2026-11-21 M3 iteration 24: the plan's sneak attack on a major isn't cancelled when the approach leaves WAR, and declares at the walls (new AI)
 Class (cmp10 i23c303, long21C606): Japan's first operation (t48, 7 units incl. 4 Composite Bowmen, sneak attack on
