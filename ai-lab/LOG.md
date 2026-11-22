@@ -54,6 +54,20 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **How to wait:** `ai-lab/runs/wait-for-results.sh` in the background, always (rule 12). Before pushing code, fetch and
   merge `origin/ai/v2` so your code commit is the tip (the release is named after the pushed tip, CODEMAP).
 
+## 2026-11-21 M3 iteration 23: iteration 15 again, for the other warmonger civs (the ready army feeds the war approach)
+Class (`24-long21`, other civs to turn 100, it. 21 build): the plan civs' armies stand ready around turn 40 (England's
+Composite Bowmen t39, Mongolia's t41-43) and no war comes before the plan ends at t60. England's approach toward
+both neighbours (Netherlands, Greece) is FRIENDLY from t40 to t60 with war weight 0 (DiplomacyAI_Approach_Log); its
+first operation starts t67, war t80, Amsterdam t87. Mongolia, with no major in reach, marches on Ife (city-state) from
+t60, the moment the plan ends, restarting 7 times ("Ended: DiploOpinionChange"). Iteration 15 fed the plan's target
+into the war approach and changed nothing, but it was tested on Songhai only, whose approach was already WAR.
+Change: iteration 15's code as it was (`CvMilitaryAI::GetPlanWarTarget`/`LogPlanWarTarget`, the WAR weight in
+`CvDiplomacyAI::SelectBestApproachTowardsMajorCiv`), on top of its. 16-22. New AI only.
+Predicted (11 other-civ seeds i23c against i22c; 12 Songhai seeds i23s against i22s): "plan war target" lines for
+at least 2 plan civs other than Songhai; a plan civ other than Songhai at war with a major earlier than in i22c on at
+least 2 seeds; plan-civ captures (not Songhai) by turn 80 at least 2 (i22c: 1). Songhai: no game changed, as in
+it. 15 (capitals 4). Regress 8 of 8. Holdout untouched.
+
 ## 2026-11-21 M3 iteration 22: plan soldiers stay soldiers while the army marches (new AI)
 Class (cmp8, other civs): after it. 21, `CvEconomicAI::DoReconState` makes the same Warriors explorers again the next
 turn (Denmark's Warrior 1111 sent "back to attack duty" 12 times on 303), so they only join an operation formed in
