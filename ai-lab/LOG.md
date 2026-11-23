@@ -33,7 +33,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Reverted Nov 23:** it. 27 (no heal bonus near a TAKE city: lab copy 5/6 -> 4/6, 505 unchanged) and it. 28
   (marching army walks its path with no enemy near: march lab faster, but tuning seeds lost captures on 202 and 1818,
   1414 lost its war, wars later). Lessons in their LOG entries.
-- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. Queued: `05-l29` (it. 29 logging, baseline), `06-l29b` (303 again), `07-i29` (it. 29's change and guards).
+- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. `05-l29` done (3 crashes, cause fixed); `06-l29b` (303 again, on the logging build); `08-i29` (it. 29 on `ab-e1652cd`).
 - **Next** (order: Review 2's suggestion of 7:55 AM Nov 23, sent under the user's go-ahead, **provisional**: the user can
   change it):
   1. **The late start of the war** (user point 5, moved first; **in hand as it. 29**: Archers left outside our land
@@ -144,7 +144,15 @@ Predicted (`i29s*` against `l29s*`, 12 tuning seeds): "territory 0" Archer-to-Co
 Construction and the first attack operation fall from 7-24 turns to at most 3 on each of 101, 202, 303, 404, 606, 1313,
 1414, 1515, 1616; the first attack operation on a major starts at least 3 turns earlier on at least 4 of 101, 202, 404,
 606, 1414, 1515; 505 unchanged to its war; no seed loses its capture of a major's city by turn 100. Guard sets
-(regress, siege, march x6): no scenario loses more than 1 in 6 (the change can't act at war). Run `2026-11-23-07-i29`.
+(regress, siege, march x6): no scenario loses more than 1 in 6 (the change can't act at war). Run `2026-11-23-07-i29`, **withdrawn unstarted**, re-queued
+as `08-i29` on build `ab-e1652cd` (below).
+**Crash found and fixed (10:30 AM):** 3 of the 18 `l29` games crashed (303 t56 and holdout 707 t38 on TREEDESKTOP,
+1717 t69 on BOX; access violation reading 0x1 in MSVCR90, 32-bit memory nearly full). Cause: the stock table
+`homelandMoveNames` has 32 names for 33 homeland moves (H_MOVE_OPPORTUNITY_ATTACK missing); the new log line indexes it
+by a unit's last homeland move and read past its end. Fixed by adding the name (`e1652cda0`). The 15 games that finished
+match `i25s*` turn for turn (logging changed no play). The `ab-2057a96` build carrying it. 29's change never published (its
+build's "Filter Changed Paths" step was cancelled after 3 min, as `ab-77652c5`'s was at 8:28 AM: a build-service hiccup to
+watch; re-run when it happens).
 
 ## 2026-11-23 M3 iteration 28: a marching army with no enemy in contact walks its path (new AI)
 Class: TAKE sieges where the first wave falls short and the follow-up wave comes too late (stalled tuning seeds 404,
