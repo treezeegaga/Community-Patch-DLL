@@ -200,6 +200,8 @@ public:
 	int DoPlanUpgrades();
 	bool IsPlanMarching() const;
 	void LogPlanArmy() const;
+	bool DoPlanPurchase();
+	void GetPlanBestUnits(CvCity* pCity, UnitTypes& eBestMelee, UnitTypes& eBestRanged, UnitTypes& eSettler) const;
 	void CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduction, int& iMelee, int& iRanged, int& iSettlers) const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);

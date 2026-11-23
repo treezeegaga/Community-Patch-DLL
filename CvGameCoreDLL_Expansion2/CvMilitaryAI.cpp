@@ -1159,20 +1159,11 @@ bool CvMilitaryAI::IsPlanArmyReady() const
 	return (iMelee >= pPlan->iMelee) && (iRanged >= pPlan->iRanged);
 }
 
-/// What the plan wants this city to build next: a unit type, or NO_UNIT when the plan has nothing to say (no plan, its
-/// army is complete, or the city can't build what is missing); the city then chooses as usual.
-UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
+/// The best melee unit, ranged unit (foot archers only: they upgrade along the bowman line) and settler pCity can build
+/// (M3 iteration 31: shared by GetPlanBuild and DoPlanPurchase)
+void CvMilitaryAI::GetPlanBestUnits(CvCity* pCity, UnitTypes& eBestMelee, UnitTypes& eBestRanged, UnitTypes& eSettler) const
 {
-	const SAIPlan* pPlan = GetActivePlan();
-	if (!pPlan || !pCity)
-		return NO_UNIT;
-
-	//what we have, and what our other cities are building
-	int iMelee = 0, iRanged = 0, iSettlers = 0;
-	CountPlanArmy(pCity, true, iMelee, iRanged, iSettlers);
-
-	//the best melee unit, ranged unit and settler this city can build (foot archers only: they upgrade along the bowman line)
-	UnitTypes eBestMelee = NO_UNIT, eBestRanged = NO_UNIT, eSettler = NO_UNIT;
+	eBestMelee = eBestRanged = eSettler = NO_UNIT;
 	int iBestMelee = 0, iBestRanged = 0;
 	for (int iUnitLoop = 0; iUnitLoop < GC.GetGameUnits()->GetNumUnits(); iUnitLoop++)
 	{
@@ -1203,6 +1194,23 @@ UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
 			eBestMelee = eUnit;
 		}
 	}
+}
+
+/// What the plan wants this city to build next: a unit type, or NO_UNIT when the plan has nothing to say (no plan, its
+/// army is complete, or the city can't build what is missing); the city then chooses as usual.
+UnitTypes CvMilitaryAI::GetPlanBuild(CvCity* pCity) const
+{
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || !pCity)
+		return NO_UNIT;
+
+	//what we have, and what our other cities are building
+	int iMelee = 0, iRanged = 0, iSettlers = 0;
+	CountPlanArmy(pCity, true, iMelee, iRanged, iSettlers);
+
+	//the best melee unit, ranged unit and settler this city can build (foot archers only: they upgrade along the bowman line)
+	UnitTypes eBestMelee = NO_UNIT, eBestRanged = NO_UNIT, eSettler = NO_UNIT;
+	GetPlanBestUnits(pCity, eBestMelee, eBestRanged, eSettler);
 
 	//the one settler, once two army units stand (the capital is not left empty); only the capital builds it
 	if (eSettler != NO_UNIT && pCity->isCapital() && iMelee + iRanged >= 2 && m_pPlayer->getNumCities() + iSettlers < 1 + pPlan->iSettlers)
@@ -1398,8 +1406,104 @@ int CvMilitaryAI::DoPlanUpgrades()
 			}
 		}
 	}
+
+	//M3 iteration 31: the plan buys the army unit it still lacks (l30: on 16 of 21 maps the army stood one or two units
+	//short for 4-17 turns before its end turn, 150-500 gold on hand; the capital had stopped building units because a
+	//slow second city's 13-25 turn Composite Bowman counted as built)
+	DoPlanPurchase();
 	return iUpgraded;
 }
+
+/// M3 iteration 31: before its war, once the strike unit's tech is known and the upgrades are done, the plan buys the
+/// melee or ranged unit its army still lacks (one per turn, in the capital if it can, else another city), with the gold
+/// left after the upgrades still waiting (weaker ranged units whose upgrade reaches the strike unit). New AI only (plan).
+bool CvMilitaryAI::DoPlanPurchase()
+{
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || !IsPlanMarching() || GetNumberCivsAtWarWith(false) > 0 || IsPlanArmyReady())
+		return false;
+	if (MOD_BALANCE_UNIT_INVESTMENTS)
+		return false;
+
+	int iMelee = 0, iRanged = 0, iSettlers = 0;
+	CountPlanArmy(NULL, false, iMelee, iRanged, iSettlers);
+
+	//weaker ranged units that an upgrade makes strike units: count them as ranged and keep their upgrade gold
+	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
+	UnitTypes eStrike = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
+	CvUnitEntry* pkStrike = (eStrike != NO_UNIT) ? GC.getUnitInfo(eStrike) : NULL;
+	if (!pkStrike)
+		return false;
+	int iReserve = 0;
+	int iLoop = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->isDelayedDeath())
+			continue;
+		int iRangedCombat = pLoopUnit->getUnitInfo().GetRangedCombat();
+		if (iRangedCombat <= 0 || iRangedCombat >= pkStrike->GetRangedCombat())
+			continue;
+		UnitTypes eUp = pLoopUnit->GetUpgradeUnitType();
+		CvUnitEntry* pkUp = (eUp != NO_UNIT) ? GC.getUnitInfo(eUp) : NULL;
+		if (!pkUp || pkUp->GetRangedCombat() < pkStrike->GetRangedCombat())
+			continue;
+		if (pkUp->GetPrereqAndTech() != NO_TECH && !m_pPlayer->HasTech((TechTypes)pkUp->GetPrereqAndTech()))
+			continue;
+		iRanged++;
+		iReserve += pLoopUnit->upgradePrice(eUp);
+	}
+
+	bool bWantMelee = iMelee < pPlan->iMelee;
+	bool bWantRanged = iRanged < pPlan->iRanged;
+	if (!bWantMelee && !bWantRanged)
+		return false;
+	//whichever kind is further behind its share (as GetPlanBuild)
+	bool bBuyRanged = bWantRanged && (!bWantMelee || iRanged * pPlan->iMelee < iMelee * pPlan->iRanged);
+
+	//the capital first, then the other cities
+	vector<CvCity*> vCities;
+	CvCity* pCapital = m_pPlayer->getCapitalCity();
+	if (pCapital)
+		vCities.push_back(pCapital);
+	for (CvCity* pLoopCity = m_pPlayer->firstCity(&iLoop); pLoopCity != NULL; pLoopCity = m_pPlayer->nextCity(&iLoop))
+		if (pLoopCity != pCapital)
+			vCities.push_back(pLoopCity);
+
+	for (size_t i = 0; i < vCities.size(); i++)
+	{
+		CvCity* pCity = vCities[i];
+		UnitTypes eMelee = NO_UNIT, eRanged = NO_UNIT, eSettler = NO_UNIT;
+		GetPlanBestUnits(pCity, eMelee, eRanged, eSettler);
+		UnitTypes eBuy = bBuyRanged ? eRanged : eMelee;
+		if (eBuy == NO_UNIT && bWantMelee && bWantRanged)
+			eBuy = bBuyRanged ? eMelee : eRanged;
+		if (eBuy == NO_UNIT)
+			continue;
+		if (!pCity->IsCanPurchase(/*bTestPurchaseCost*/ true, /*bTestTrainable*/ true, eBuy, NO_BUILDING, NO_PROJECT, YIELD_GOLD))
+			continue;
+		int iCost = pCity->GetPurchaseCost(eBuy);
+		int iGold = m_pPlayer->GetTreasury()->GetGold();
+		if (iCost <= 0 || iGold - iReserve < iCost)
+			continue;
+		if (!m_pPlayer->HasResourceForNewUnit(eBuy, false, true))
+			continue;
+		CvUnit* pNew = pCity->PurchaseUnit(eBuy, YIELD_GOLD);
+		if (!pNew)
+			continue;
+		pCity->CleanUpQueue();
+		if (GC.getLogging() && GC.getAILogging())
+		{
+			CvString strPlayerName = m_pPlayer->getCivilizationShortDescription();
+			FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(strPlayerName), FILogFile::kDontTimeStamp);
+			pLog->Msg(CvString::format("%03d, %s, plan purchase: %s in %s for %d gold, gold left %d, kept for upgrades %d, melee %d/%d, strike ranged %d/%d (counting upgrades)",
+				GC.getGame().getElapsedGameTurns(), strPlayerName.c_str(), GC.getUnitInfo(eBuy)->GetDescription(), pCity->getName().c_str(),
+				iCost, m_pPlayer->GetTreasury()->GetGold(), iReserve, iMelee, pPlan->iMelee, iRanged, pPlan->iRanged).c_str());
+		}
+		return true;
+	}
+	return false;
+}
+
 
 static bool IsTechOnPathTo(TechTypes eTech, TechTypes eTarget, vector<char>& vSeen)
 {
