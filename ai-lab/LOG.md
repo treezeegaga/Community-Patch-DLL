@@ -127,6 +127,11 @@ The logs don't say what the count lacked. Step 3: logging only, a per-turn "plan
 (melee and strike-class ranged against the row, the same with units in production, weaker ranged, units outside our land,
 in an army, explorers, hurt, cities, settlers, strike tech known, gold, ready) from `CvMilitaryAI::DoTurn` while the
 plan is active and before any war (`463f5241a`, build `ab-c1edc71`). Run `2026-11-23-11-l30`.
+**All 24 of tuning set 3 read (`r29t3`, 2:20 PM):** first attack on a major before t60 on 7 (41-57), **at t60-61 on 8**
+(7575, 7676, 7979, 8080, 8181, 8888, 9191, 9292), later or never by t100 on 9 (7070 64, 8383 65, 8585 64, 7171 72, 8484
+95; none on 7272, 8787, 8989, 9090). The last plan upgrade lands with Construction (same turn) on most of the t60 maps
+(7575 t42, 8080 t41, 8181 t37), so stranded Archers aren't what holds them (consistent with it. 29). Captures of a
+major's city by t100: 9 of 24. Holdout 707 (picture): Sparta t65.
 
 ## 2026-11-23 M3 iteration 29: plan Archers outside our land walk home for their upgrade (new AI; reverted)
 Class (Next 1, the late war start; tuning seeds on the accepted build, `i25s*`): Construction lands t34-45, the first
