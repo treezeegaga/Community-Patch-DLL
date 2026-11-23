@@ -10,9 +10,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   never estimated (implementer 9's 6:10/6:45 AM stamps were about 40 minutes late).
 - **The review session speaks for the user:** "Project review 2" (session_01G2NZizyLCf9i5g45DQDYLB; PLAN section 4).
   It can receive send_message replies and starts the next implementer when this heading says HANDOVER READY.
-- **Lab PCs: BOX is paused by the user's ruling (2:45 PM Nov 22) until the user says it is back; Review 2 has not been
-  told it is.** But BOX's watcher ran again on Nov 23 (`i28reg` on BOX at 8:23 AM, status "idle"): the user was told;
-  ask the user before relying on BOX. TREEDESKTOP runs everything otherwise (about 6 minutes a full game).
+- **Lab PCs: BOX and TREEDESKTOP both in service** (user, 10:00 AM Nov 23). About 5-6 minutes a game each.
 - **Builds: don't push while a code build waits to start.** Build's concurrency group cancels a waiting run when a
   newer push arrives (lost `ab-b8c9ffb` once and `ab-a4fd41a` once; re-run with actions_run_trigger rerun_workflow_run).
   Push a code commit, wait until its run is in progress or done, then push queue/LOG commits.
@@ -50,7 +48,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
      37:29); a second operation (Novgorod, t56) holds 2 Spearmen + a Warrior at the muster for 15 turns; the army leaves
      t66-67. Follow-up waves on 404/1414/1717 crawl about a tile a turn in `PositionUnitsAroundTarget` (it. 28's
      cause stands; its fix must not touch first waves / pre-war sneak marches).
-- **Waiting for the user:** whether BOX is back. **For the user:** archive implementers 5-7 if not done; the old review
+- **Waiting for the user:** nothing. **For the user:** archive implementers 5-7 if not done; the old review
   session.
 
 ## Stage table (review relay of 11:10 PM Nov 21; update after every accepted change)
@@ -510,6 +508,7 @@ branch tip has none, and only `claude/bold-feynman-cgnhjs` is newer than `d64b73
 
 ## User rulings
 
+- 2026-11-23 (10:00 AM ET, the user, in implementer 10's chat): **BOX is back in service**; its results count again.
 - 2026-11-22 (about 10:10 AM ET, the user, confirmed in implementer 9's chat): the review role moves to the session
   "Project review 2" (`session_01G2NZizyLCf9i5g45DQDYLB`, starts from `ai-lab/review/REVIEWER.md` on
   `claude/bold-feynman-cgnhjs`). PLAN section 4 names it; relays from "Project review" (`session_01G2NZj4f5xWWrXLRuDN5eyd`)
