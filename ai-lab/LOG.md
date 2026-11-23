@@ -31,7 +31,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
   the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
 - **Next:**
-  0. Guard sets (`00l`): revert it. 25 if a scenario loses more than 1 in 6. Then the measuring re-run (`00m`): map for map against `nx22N*`
+  0. Guard sets passed (8:12 PM). The measuring re-run (`00m`, running): map for map against `nx22N*`
      (captures, capitals, the bar, state at turn 100), what got worse included; this state and the dashboard (also stalls.csv to the corrected split).
   1. Seed 505 full game (still holds after it. 26): why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
      t61-67 (tactical moves REINFORCE/STEAMROLL), against the lab copy where they do. Then the other stalled tuning seeds
@@ -132,6 +132,7 @@ Results (`00k-i25`, re-queued after `00j` failed on a cancelled build; 60 games;
 Decision (7:50 PM ET, provisional under rule 10): **accepted.** The cause is gone on all 8 seeds, captures are not
 fewer, the gained capture is a capital; the miss is that freeing the army doesn't by itself start a war (late
 declarations, Next 4). 7777's loss and 8787's late war are logged against it. Guard sets queued (`00l-i25guard`).
+Guard sets (`00l-i25guard`, 8:12 PM): siege 74 of 90 (it. 26: 73), march 42 (42), regress 24 (24); no scenario loses more than 1 in 6 (small_vs_medium 6/6 both, melee_only_vs_medium 5 -> 6). **Acceptance stands.**
 
 ## 2026-11-22 M3 iteration 26: a ranged unit holds only where it can shoot the city (new AI)
 Class: "TAKE, the city never below 90%" (5 of the 25 stalled wars on the measuring maps; tuning seed 505 too). Review 2's
