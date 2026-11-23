@@ -1,0 +1,41 @@
+[69225.046] columns StrategicViewType, TileType are not unique
+[69225.046] While executing - 'INSERT INTO ArtDefine_StrategicView(StrategicViewType, TileType, Asset) VALUES(?,?,?)'
+[69226.359] no such table: ContentPackage.LocalizedText
+[69226.843] no such table: ContentPackage.LocalizedText
+[69227.843] columns StrategicViewType, TileType are not unique
+[69227.843] While executing - 'INSERT INTO ArtDefine_StrategicView(StrategicViewType, TileType, Asset) VALUES(?,?,?)'
+[69228.656] no such table: ContentPackage.LocalizedText
+[69229.843] columns StrategicViewType, TileType are not unique
+[69229.843] While executing - 'insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') values (?, ?, ?);'
+[69229.843] In XMLSerializer while inserting row into table insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') with  values (ART_DEF_FEATURE_FOUNTAIN_YOUTH, Feature, SV_Fountain_of_Youth.dds, ).
+[69229.843] In XMLSerializer while updating table ArtDefine_StrategicView from file Assets\DLC\Shared\StrategicView\Civ5ArtDefines_SV_Shared_Features.xml.
+[69229.843] columns StrategicViewType, TileType are not unique
+[69229.843] columns StrategicViewType, TileType are not unique
+[69229.843] While executing - 'insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') values (?, ?, ?);'
+[69229.843] In XMLSerializer while inserting row into table insert into ArtDefine_StrategicView('StrategicViewType', 'TileType', 'Asset') with  values (ART_DEF_RESOURCE_STONE, Resource, SV_Stone.dds, ).
+[69229.843] In XMLSerializer while updating table ArtDefine_StrategicView from file Assets\DLC\Shared\StrategicView\Civ5ArtDefines_SV_Shared_Resources.xml.
+[69229.843] columns StrategicViewType, TileType are not unique
+[69231.140] 
+-- SQLite Memory Statistics --
+Memory Usage:
+		[Cur]		[Max]
+Malloc:		8843576		79089664
+PageCache:	7		13
+LookAside:	0		0
+Scratch:	0		1
+
+Static Buffer Overflows:
+		[TooLarge]	[NoSpace]
+PageCache:	8029728		65803080
+Scratch:	0		0
+
+Largest Allocations:
+Malloc:		262144
+PageCache:	1172
+Scratch:	6640
+
+Prepared Statements:
+Current:		10
+------------------------------
+[69259.562] no such column: Type
+[69259.562] In Query - select * from Natural_Wonder_Placement where Type = ? LIMIT 1
