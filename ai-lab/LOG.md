@@ -28,7 +28,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
 - **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
-- **Queued:** nothing. Done: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (measuring re-run, reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
+- **Queued:** `01-log505` (3:05 AM Nov 23): seed 505 to turn 100 and stall505b x3 on `ab-41e754e` = `ab-b8c9ffb` plus lab logging of the tactical simulation's picks ("tactsim pick" lines). Why: at 505 bowmen 1101 and 1179 stand next to St. Petersburg with a shot ("can shoot it from here 1", tactical move 20) on t62-67 and the capture attempt says "executed", yet the city only drops 200 -> 185; the estimate counts 45 ranged damage a turn. Done before: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
   (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
   the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
