@@ -7022,6 +7022,7 @@ const char* homelandMoveNames[] =
 	"H_MOVE_DIPLOMAT_EMBASSY",
 	"H_MOVE_MESSENGER",
 	"H_MOVE_SECONDARY_SETTLER",
+	"H_MOVE_OPPORTUNITY_ATTACK", //ai/v2 M3 it. 29: was missing (33 moves, 32 names); reading past it crashed the game
 };
 
 const char* directiveNames[] = 
