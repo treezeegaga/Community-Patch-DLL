@@ -94,6 +94,27 @@ Still ahead in the plan: step 4 (who to attack, when, when to stop), step 5 (the
 toward humans, the user's original complaint), step 7 (whole games, then the user and their friend play), a
 multiplayer smoke test on the two PCs, and installing the finished mod on both PCs.
 
+## Update, 2026-11-23, 8:35 AM ET (Project review 2)
+
+- **Live implementer: "Civ V AI upgrade: implementer 10", session_01G2NZj21h7F5vCgt58ZnUJc**, created by Project
+  review 2 at 8:33 AM ET from implementer 9's HANDOVER READY state. Implementer 9 (session_01G2NZj26YonLmNaosfnLk2R)
+  was auto-compacted overnight before it handed over; watch the context figure (`get_session`) and ask for the
+  handover before 650,000, not after.
+- **Accepted build `ab-b8c9ffb`**: iteration 26 (a bowman holds only where it can shoot the city; this was the
+  project's own bug from the march work) and iteration 25 (city-states off limits until turn 90 if no city taken).
+  Reverted since: 27 (no healing near a takeable city) and 28 (marching army walks its path; lab faster, real games
+  lost captures).
+- **Headline on the 48 measuring maps, that build** (recounted with `compare_games.py`, labels `m25N`): a major's
+  city by turn 80 / 100 on 13 / 16 (was 9 / 13), 9 capitals (7), 2 meet the bar (1); army complete about turn 56,
+  first war about turn 68; wars that take nothing 23 of 39; science at turn 100 11.4 against stock's 26.3.
+- **The stalled-war split was recounted** (`recount_stalls.py` here): judge over all of a major's cities and check
+  the city's owner; the implementer's first split misfiled three games.
+- **Next list (provisional, the reviewer's suggestion under the user's "do it all")**: the late start of the war
+  first, then the way out of the rush plan, then varying the neighbour; seed 505 and the other stalls last.
+- **BOX is paused by the user** (since 2:45 PM Nov 22) until they say it is back; its watcher ran one request on the
+  morning of Nov 23 all the same. TREEDESKTOP carries the runs.
+- **Messages work both ways with implementers 9 and 10** (send_message), unlike with the first review session.
+
 ## Agreements with the user
 
 - **The review session speaks for the user** to the implementer, within what the plan allows (PLAN section 4). It
