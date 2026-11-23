@@ -12961,6 +12961,21 @@ vector<STacticalAssignment> TacticalAIHelpers::FindBestUnitAssignments(
 			GET_PLAYER(ePlayer).GetTacticalAI()->LogTacticalMessage(CvString::format("tactsim around (%d:%d) with agg %d finished in %d ms. started with %d units and %d enemies on %d plots. used %d positions, %d completed.",
 				pTarget->getX(),pTarget->getY(), eAggLvl, durationMs, initialPosition->GetNumAvailableUnits(), initialPosition->getNumEnemies(), initialPosition->getNumPlots(), iUsedPositions, completedPositions.size()));
 		}
+			//AI lab (lab logging, new AI only, no behaviour change): what the picked position does with each unit
+			if (GET_PLAYER(ePlayer).IsNewAI())
+			{
+				for (size_t iA = 0; iA < result.size(); iA++)
+				{
+					const STacticalAssignment& a = result[iA];
+					CvPlot* pFrom = GC.getMap().plotByIndex(a.iFromPlotIndex);
+					CvPlot* pTo = GC.getMap().plotByIndex(a.iToPlotIndex);
+					CvUnit* pU = GET_PLAYER(ePlayer).getUnit(a.iUnitID);
+					GET_PLAYER(ePlayer).GetTacticalAI()->LogTacticalMessage(CvString::format("tactsim pick around (%d:%d): %s %d, %s from %d:%d to %d:%d%s, score %d",
+						pTarget->getX(), pTarget->getY(), pU ? pU->getName().c_str() : "?", a.iUnitID, assignmentTypeNames[a.eAssignmentType],
+						pFrom ? pFrom->getX() : -1, pFrom ? pFrom->getY() : -1, pTo ? pTo->getX() : -1, pTo ? pTo->getY() : -1,
+						(pTo && pTo->isCity()) ? " (city)" : "", (int)a.iTotalScore));
+				}
+			}
 
 		//debug dump
 #if defined(MOD_CORE_DEBUGGING)
