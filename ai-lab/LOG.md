@@ -2,49 +2,55 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 7:30 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (HANDOVER READY, 2026-11-23, 8:45 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
-- **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. (BOX stopped reporting at 2:46 PM.)
+- **HANDOVER READY** (Review 2 relaying the user, 7:55 AM Nov 23: hand over once it. 28 is decided; implementer 9's
+  context had been auto-compacted). Review 2 starts implementer 10; tell Review 2 by send_message when you are up.
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
-  pack"; explain any term the first time. Times in US Eastern.
-- **The review session speaks for the user:** from 10:10 AM Nov 22 that is "Project review 2"
-  (session_01G2NZizyLCf9i5g45DQDYLB; PLAN section 4); the old "Project review" no longer counts. Review 2 can receive
-  send_message replies, and starts the next implementer when this heading says HANDOVER READY.
+  pack"; explain any term the first time. **Times in US Eastern, read from the clock** (`TZ=America/New_York date`),
+  never estimated (implementer 9's 6:10/6:45 AM stamps were about 40 minutes late).
+- **The review session speaks for the user:** "Project review 2" (session_01G2NZizyLCf9i5g45DQDYLB; PLAN section 4).
+  It can receive send_message replies and starts the next implementer when this heading says HANDOVER READY.
+- **Lab PCs: BOX is paused by the user's ruling (2:45 PM Nov 22) until the user says it is back; Review 2 has not been
+  told it is.** But BOX's watcher ran again on Nov 23 (`i28reg` on BOX at 8:23 AM, status "idle"): the user was told;
+  ask the user before relying on BOX. TREEDESKTOP runs everything otherwise (about 6 minutes a full game).
+- **Builds: don't push while a code build waits to start.** Build's concurrency group cancels a waiting run when a
+  newer push arrives (lost `ab-b8c9ffb` once and `ab-a4fd41a` once; re-run with actions_run_trigger rerun_workflow_run).
+  Push a code commit, wait until its run is in progress or done, then push queue/LOG commits.
 - **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital by about turn 60
   on Quick, about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero before the war is decided.
-- **Newest build:** `ab-b8c9ffb` = it. 26 (accepted 12:15 PM, `ab-434eecf`: ranged units hold only where they can shoot
-  the city) + it. 25 (accepted 7:50 PM, provisional: city-states off limits through the plan's window; tuning set 3: diversion 8 seeds -> 0, captures 7 -> 7, gained 8383 Athens t76, lost 7777 Sparta). Accepted M3 work: CODEMAP "Plans" and the override
-  table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch` (no scenario reproduces its cause).
-- **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning). **Newest, build
-  `ab-b8c9ffb` (it. 26 + it. 25, `00m-meas25`, Nov 23 1:09 AM):** Songhai new AI takes a major's city by turn 100 on
-  **16 of 48** (it. 22: 13; stock 0), a capital on 9 (7), a capital by turn 60 on 2 (1); army 43 (42), war 39 (38).
-  At turn 100 science 11.4 (10.8; stock 26.3), population 12.3 (11.6; stock 15.7). Map for map and what got worse: LOG
-  entry of Nov 23. All with Greece as a neighbour (fixed seat 1). Dashboard "Civ V AI Project" shows these
-  (`ai-lab/runs/fullgames_csv.py` builds its table; `runs/measure_compare.py` the map-for-map list).
-- **Stalled wars on the it. 22 build (25 of 38), corrected 10:30 AM** (dashboard stalls.csv now has this split): army sent to a city-state 2; estimate NO 4; TAKE with the city never
-  below 90% 5, dented and healed 9, below half not taken 5 (LOG entry of Nov 22). City-states take the plan's army
-  when the plan ends at t60 with no war on a major (5 of the 25). Battle-lab copies of 505 and 1616 don't stall alone (6/6 even at real strength), but 505 with
-  its far-side tiles held (`stall505b`) does (2/6) and it. 26 fixed it (4/6): the lab can stage this one. **Provisional (rule 10):** work the sieges in full games on the tuning seeds, with the
-  siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
-- **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
-  defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
-- **It. 27 reverted (6 AM Nov 23):** no heal bonus for ranged units near a TAKE city; lab copy 5/6 -> 4/6, 505 still
-  not taken (LOG entry). Newest build stays `ab-b8c9ffb` (`ab-41e754e` = same plus logging of tactical picks).
-- **Queued:** `04-i28b` (7:30 AM; `03-i28` failed: build `ab-a4fd41a` was cancelled because a later push arrived while it waited; Build's concurrency group cancels a waiting run. Re-run, published 7:22 AM. **Don't push while a code build waits to start.**): it. 28 (marching army walks its path when no enemy is near; build `ab-a4fd41a`), march/siege/regress x6 and the 12 tuning seeds.
-- **Done:** `01-log505` (3:05 AM Nov 23): seed 505 to turn 100 and stall505b x3 on `ab-41e754e` = `ab-b8c9ffb` plus lab logging of the tactical simulation's picks ("tactsim pick" lines). Why: at 505 bowmen 1101 and 1179 stand next to St. Petersburg with a shot ("can shoot it from here 1", tactical move 20) on t62-67 and the capture attempt says "executed", yet the city only drops 200 -> 185; the estimate counts 45 ranged damage a turn. Done before: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
-  (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
-  decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
-  the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
-- **Next:**
-  1. Seed 505 full game: healing is not it (it. 27). The simulation around (42:28) gets only 2 bowmen; the others work
-     targets around (40:28) and another city at 37:29; the army leaves t66-67. Find why in the `lg505`/`i27s505` logs.
-     Then the other stalled tuning seeds
-     (404, 1313, 1414, 1616, 1717, snapshots in `sd24bN*`).
-  2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with "state
-     at turn 100 vs stock on the same map" tracked beside captures.
+- **Newest accepted build:** `ab-b8c9ffb` = it. 26 (ranged units hold only where they can shoot the city) + it. 25
+  (provisional: city-states off limits through the plan's window). `ab-41e754e` = the same plus logging of the tactical
+  simulation's picks ("tactsim pick" lines, no behaviour change). Branch tip code = `ab-41e754e`'s after the reverts of
+  it. 27 (`83c97ed07e`) and it. 28 (`77652c59b7`); its build is `ab-77652c5` once published. Accepted M3 work: CODEMAP
+  "Plans" and the override table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch`.
+- **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning). Build
+  `ab-b8c9ffb` (`00m-meas25`, Nov 23 1:09 AM): Songhai new AI takes a major's city by turn 100 on **16 of 48** (it. 22:
+  13; stock 0), a capital on 9 (7), a capital by turn 60 on 2 (1); army complete about t56, first war with a major
+  about t68; army 43 (42), war 39 (38). At turn 100 science 11.4 (10.8; stock 26.3), population 12.3 (11.6; stock
+  15.7). Map for map: LOG entry of Nov 23. All with Greece as a neighbour (fixed seat 1). Dashboard "Civ V AI
+  Project" shows these (`ai-lab/runs/fullgames_csv.py`, `runs/measure_compare.py`).
+- **Stalled wars on the it. 22 build (25 of 38)**: army sent to a city-state 2; estimate NO 4; TAKE with the city
+  never below 90% 5, dented and healed 9, below half not taken 5 (LOG entry of Nov 22).
+- **Reverted Nov 23:** it. 27 (no heal bonus near a TAKE city: lab copy 5/6 -> 4/6, 505 unchanged) and it. 28
+  (marching army walks its path with no enemy near: march lab faster, but tuning seeds lost captures on 202 and 1818,
+  1414 lost its war, wars later). Lessons in their LOG entries.
+- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. Nothing queued.
+- **Next** (order: Review 2's suggestion of 7:55 AM Nov 23, sent under the user's go-ahead, **provisional**: the user can
+  change it):
+  1. **The late start of the war** (user point 5, moved first): on the measuring maps the army is complete about t56
+     but the first war with a major comes about t68 (bar 41-50); it. 25 moved two wars to t92/t97 (2727, 5858); only
+     2 of 48 take a capital by t60. Find where the ready army waits (plan row end, approach, sneak-attack gates).
+  2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with
+     "state at turn 100 vs stock on the same map" tracked beside captures.
   3. Vary the neighbour (point 4): a lab-only setting for seat 1's civ chosen from the seed; mark all-Greece results.
-  4. Late declarations (point 5): army ready, no war for 20+ turns.
-- **Waiting for the user:** nothing. **For the user:** archive implementers 5-7 if not done; the old review session.
+  4. Seed 505 and the other stalled sieges, later (three changes aimed at 505 already: rule 9). What is known: the
+     simulation around St. Petersburg gets only 2 bowmen, the rest work other targets (40:28, pillage, a city at
+     37:29); a second operation (Novgorod, t56) holds 2 Spearmen + a Warrior at the muster for 15 turns; the army leaves
+     t66-67. Follow-up waves on 404/1414/1717 crawl about a tile a turn in `PositionUnitsAroundTarget` (it. 28's
+     cause stands; its fix must not touch first waves / pre-war sneak marches).
+- **Waiting for the user:** whether BOX is back. **For the user:** archive implementers 5-7 if not done; the old review
+  session.
 
 ## Stage table (review relay of 11:10 PM Nov 21; update after every accepted change)
 Turn each game reached each stage. Songhai new AI on the newest accepted build (it. 22, `ab-d0f5828`), played to
@@ -131,6 +137,17 @@ earlier by at least 1 on at least 4 of the 7 scenarios (it. 25: 9.0, 11.0, 12.5,
 seeds against `i25s*`/`i27s*`: follow-up armies' moving stage on 404, 1414, 1717 at least a third shorter; no seed
 loses a capture; at least 1 of the 5 stalled (404, 505, 1313, 1414, 1717) gains one. Siege and regress sets: no
 scenario loses more than 1 in 6. Rule 3: staged on the march set (same request).
+Result (`04-i28b`; `03-i28` lost to a cancelled build; TREEDESKTOP and BOX, done 8:25 AM ET Nov 23): **missed,
+reverted** (`77652c59b7`).
+- March set: no capture lost; capture turn 9.0 -> 8.0, 11.0 -> 11.5, 12.5 -> 11.3, 11.3 -> 8.5, 10.3 -> 10.5,
+  16.5 -> 12.2, rough 11.8 -> 13.0 (4 of 7 faster by 1+: that part held).
+- Tuning seeds against `i27s*` (= it. 25 except 505): captures lost on 202 (Corinth t66, Athens t71 -> none) and 1818
+  (Edinburgh t64 -> none); 1414 no war at all (t64 before: the sneak march stuck at the border 28:18 for 6 turns,
+  then "Ended: DiploOpinionChange" t69); wars later on 1515 (51 -> 57), 1717 (62 -> 65), 606, 1818; captures later on
+  101, 303, 1515; 1616 earlier (t67 -> t65). 404's follow-up wave 13 -> 7 turns, but no stalled seed gained a capture.
+- Guards: siege set within 1 in 6 (melee_only 6 -> 5; medium_vs_strong 2 -> 4), regress 24 of 24.
+Lesson: the change also drove the first, pre-war sneak marches, which then arrive or stand differently (border,
+declaration timing); the march lab has no border or declaration. A retry should touch only follow-up waves at war.
 
 ## 2026-11-23 M3 iteration 27: no healing bonus for a ranged unit near a city the siege estimate says can be taken (new AI)
 Class: TAKE sieges where the city is dented and heals back (9 of the 25 stalled wars on the measuring maps, it. 22 build).
