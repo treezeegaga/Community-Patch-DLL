@@ -2,10 +2,9 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (HANDOVER READY, 2026-11-23, 8:28 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 9:05 AM ET), implementer 10 (rewrite after every accepted or reverted iteration)
 
-- **HANDOVER READY** (Review 2 relaying the user, 7:55 AM Nov 23: hand over once it. 28 is decided; implementer 9's
-  context had been auto-compacted). Review 2 starts implementer 10; tell Review 2 by send_message when you are up.
+- Implementer 10 started 8:36 AM Nov 23; implementer 9 archived; Review 2 told.
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. **Times in US Eastern, read from the clock** (`TZ=America/New_York date`),
   never estimated (implementer 9's 6:10/6:45 AM stamps were about 40 minutes late).
@@ -22,7 +21,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Newest accepted build:** `ab-b8c9ffb` = it. 26 (ranged units hold only where they can shoot the city) + it. 25
   (provisional: city-states off limits through the plan's window). `ab-41e754e` = the same plus logging of the tactical
   simulation's picks ("tactsim pick" lines, no behaviour change). Branch tip code = `ab-41e754e`'s after the reverts of
-  it. 27 (`83c97ed07e`) and it. 28 (`77652c59b7`); its build is `ab-77652c5` once published. Accepted M3 work: CODEMAP
+  it. 27 (`83c97ed07e`) and it. 28 (`77652c59b7`) plus it. 29's log line (logging only): build `ab-b8e474a` (`ab-77652c5`
+  was cancelled). Accepted M3 work: CODEMAP
   "Plans" and the override table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch`.
 - **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning). Build
   `ab-b8c9ffb` (`00m-meas25`, Nov 23 1:09 AM): Songhai new AI takes a major's city by turn 100 on **16 of 48** (it. 22:
@@ -35,10 +35,11 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Reverted Nov 23:** it. 27 (no heal bonus near a TAKE city: lab copy 5/6 -> 4/6, 505 unchanged) and it. 28
   (marching army walks its path with no enemy near: march lab faster, but tuning seeds lost captures on 202 and 1818,
   1414 lost its war, wars later). Lessons in their LOG entries.
-- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. Nothing queued.
+- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. Queued: `2026-11-23-05-l29` (it. 29 logging).
 - **Next** (order: Review 2's suggestion of 7:55 AM Nov 23, sent under the user's go-ahead, **provisional**: the user can
   change it):
-  1. **The late start of the war** (user point 5, moved first): on the measuring maps the army is complete about t56
+  1. **The late start of the war** (user point 5, moved first; **in hand as it. 29**: Archers left outside our land
+     can't be upgraded, so the plan's army waits; see its entry): on the measuring maps the army is complete about t56
      but the first war with a major comes about t68 (bar 41-50); it. 25 moved two wars to t92/t97 (2727, 5858); only
      2 of 48 take a capital by t60. Find where the ready army waits (plan row end, approach, sneak-attack gates).
   2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with
@@ -115,6 +116,23 @@ Script: `ai-lab/runs/stages.py`.
 largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
+
+## 2026-11-23 M3 iteration 29: why the ready army waits before the war (logging first)
+Class (Next 1, the late war start; tuning seeds on the accepted build, `i25s*`): Construction lands t34-45, the first
+attack operation on a major starts t45-72 (median 52), war t51-95. Of that, the operation's gathering and march take
+1-6 and 3-7 turns; **the wait before the operation starts is the larger part**, and on 9 of 12 seeds it is the same
+thing: 1-3 Archers stand **outside our territory** from Construction on, so `DoPlanUpgrades` can't upgrade them ("plan
+upgrade refused: Archer to Composite Bowman ... territory 0, why: Your unit must be in friendly territory"), with
+130-370 gold on hand, for 7-24 turns (101: t35-58; 202 t45-54; 303 t35-51; 404 t37-47; 606 t37-44; 1313 t37-41; 1414
+t38-51; 1515 t34+, a Composite Bowman built instead t39-44). `IsPlanArmyReady` counts ranged units only at Composite
+Bowman strength, so the army isn't ready until they wander home: the attack starts 1-3 turns after the last upgrade on
+101 (59 -> 60), 404 (48 -> 49), 606 (45 -> 48), 1515 (44 -> 45), 202 (55 -> 58). (The stage table's "c" counts Archers
+as ranged, so it reads ready too early.) The user upgraded all Archers the turn the tech landed and marched at once.
+What holds them out is not in the logs (no explorer lines for Archers; the tactical AI attacks barbarian camps at
+36:18 and 37:29 on 1414 t40, a likely cause). Step 3: logging only, the refusal line now names the unit, its plot,
+distance to our nearest city, unit AI, army, last tactical and homeland move (`b8e474a3b`, build `ab-b8e474a`; it also
+carries the reverts of its. 27-28: `ab-77652c5` was cancelled by this push's build).
+Run: `2026-11-23-05-l29` (12 tuning seeds to turn 100; holdout 707-1212 on the current build, picture only).
 
 ## 2026-11-23 M3 iteration 28: a marching army with no enemy in contact walks its path (new AI)
 Class: TAKE sieges where the first wave falls short and the follow-up wave comes too late (stalled tuning seeds 404,
