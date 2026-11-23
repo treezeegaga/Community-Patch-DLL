@@ -117,6 +117,17 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
+## 2026-11-23 M3 iteration 30: the plan's army never counts as ready before its end turn (logging first)
+Class (`r29t3_*`, tuning set 3 on `ab-7f79985` = accepted play, 16 of 25 read; and `i25s*`): the operation's gathering is
+short on the accepted build (0-3 turns, at most 6; it. 29's 23 turns came from its change). But the first attack on 7 of
+25 maps starts **exactly at turn 60** (101, 1313, 7575, 7676, 7979, 8080, 8181), the plan's end turn: `GetActivePlan` then
+returns NULL, `IsPlanArmyReady` returns true, and the request goes through. So on those maps the plan's army never counted
+as complete before the plan ran out; on others (7070 t64, 8383 t65, 7171 t72, 7272 t94) the attack comes later still.
+The logs don't say what the count lacked. Step 3: logging only, a per-turn "plan army:" line in `MilitaryAILog.csv`
+(melee and strike-class ranged against the row, the same with units in production, weaker ranged, units outside our land,
+in an army, explorers, hurt, cities, settlers, strike tech known, gold, ready) from `CvMilitaryAI::DoTurn` while the
+plan is active and before any war (`463f5241a`, build `ab-c1edc71`). Run `2026-11-23-11-l30`.
+
 ## 2026-11-23 M3 iteration 29: plan Archers outside our land walk home for their upgrade (new AI; reverted)
 Class (Next 1, the late war start; tuning seeds on the accepted build, `i25s*`): Construction lands t34-45, the first
 attack operation on a major starts t45-72 (median 52), war t51-95. Of that, the operation's gathering and march take
