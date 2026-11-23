@@ -1,0 +1,22 @@
+{
+ "id": "2026-11-23-01-log505",
+ "why": "Seed-505 stall: log the tactical simulation's picks (lab logging build, no behaviour change; same play as ab-b8c9ffb). Songhai new AI to turn 100 on tuning seed 505, plus the stall505b lab copy. Either trusted PC.",
+ "launches": [
+  {
+   "label": "lg505",
+   "release": "ab-41e754e",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 505
+  },
+  {
+   "label": "lgst505b",
+   "release": "ab-41e754e",
+   "set": "stall",
+   "only": "stall505b",
+   "newAI": "attacker",
+   "repeats": 3
+  }
+ ]
+}
