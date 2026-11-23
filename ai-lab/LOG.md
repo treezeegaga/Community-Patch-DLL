@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 6:10 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 6:40 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
 - **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. (BOX stopped reporting at 2:46 PM.)
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
@@ -30,6 +30,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
 - **It. 27 reverted (6 AM Nov 23):** no heal bonus for ranged units near a TAKE city; lab copy 5/6 -> 4/6, 505 still
   not taken (LOG entry). Newest build stays `ab-b8c9ffb` (`ab-41e754e` = same plus logging of tactical picks).
+- **Queued:** `03-i28` (6:40 AM): it. 28 (marching army walks its path when no enemy is near; build `ab-a4fd41a`), march/siege/regress x6 and the 12 tuning seeds.
 - **Done:** `01-log505` (3:05 AM Nov 23): seed 505 to turn 100 and stall505b x3 on `ab-41e754e` = `ab-b8c9ffb` plus lab logging of the tactical simulation's picks ("tactsim pick" lines). Why: at 505 bowmen 1101 and 1179 stand next to St. Petersburg with a shot ("can shoot it from here 1", tactical move 20) on t62-67 and the capture attempt says "executed", yet the city only drops 200 -> 185; the estimate counts 45 ranged damage a turn. Done before: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
   (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
@@ -108,6 +109,28 @@ Script: `ai-lab/runs/stages.py`.
 largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
+
+## 2026-11-23 M3 iteration 28: a marching army with no enemy in contact walks its path (new AI)
+Class: TAKE sieges where the first wave falls short and the follow-up wave comes too late (stalled tuning seeds 404,
+1414, 1717; 1515's second target too).
+Diagnosis (`i27s*` logs, operations identical to it. 25's): the follow-up army crawls. 1414 op 1369: 15 plots in 15
+turns, centre stuck t72-76 and t79-81 (progress 34% for 5 turns, "No progress to target"), no enemy contact; 1717 op
+1368 t69-82 42% -> 59% with contact only from t80; 404 op 1231 10% for 4 turns. Units have 2 moves. The tactical picks
+show units moving one tile, sideways or back (1717 t70: Composite Bowman 1258 19:23 -> 19:24, away from the target;
+scores about 10).
+Cause: `PlotArmyMovesCombat` (moving stage) calls `ExecuteGatherMoves` -> `PositionUnitsAroundTarget` with a target
+only movement rate + 1 plots ahead of the centre. Every unit is within the simulation's reach of that target, so all
+go through the defensive positioning simulation (AL_LOW), which scores holding a good tile about as high as advancing;
+the "walk the path" second round only gets units that are far out.
+Change: for the new AI, in the moving stage with no enemy near the army (`CheckForEnemiesNearArmy` false), each land
+unit first walks its path to this turn's target (ring 2, no embarking) unless the first turn's end plot is in danger
+above half its hp (the same rule as the second round); units left over get the old gather moves. Contact keeps the
+stock behaviour. Logs "lab march army N to x:y: k units walked". New AI only.
+Predicted: march set x6 against `i25march` (same code for marching): no scenario loses a capture, mean capture turn
+earlier by at least 1 on at least 4 of the 7 scenarios (it. 25: 9.0, 11.0, 12.5, 11.3, 10.3, 16.5, 11.8). Tuning
+seeds against `i25s*`/`i27s*`: follow-up armies' moving stage on 404, 1414, 1717 at least a third shorter; no seed
+loses a capture; at least 1 of the 5 stalled (404, 505, 1313, 1414, 1717) gains one. Siege and regress sets: no
+scenario loses more than 1 in 6. Rule 3: staged on the march set (same request).
 
 ## 2026-11-23 M3 iteration 27: no healing bonus for a ranged unit near a city the siege estimate says can be taken (new AI)
 Class: TAKE sieges where the city is dented and heals back (9 of the 25 stalled wars on the measuring maps, it. 22 build).

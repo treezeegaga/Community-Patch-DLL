@@ -1,0 +1,123 @@
+{
+ "id": "2026-11-23-03-i28",
+ "why": "M3 it. 28 checks: march set first (compare i25march), the 12 tuning seeds to turn 100 (compare i25s*/i27s*), siege and regress guards (compare i25*). Either trusted PC.",
+ "launches": [
+  {
+   "label": "i28march",
+   "release": "ab-a4fd41a",
+   "set": "march",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i28s404",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 404
+  },
+  {
+   "label": "i28s1414",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1414
+  },
+  {
+   "label": "i28s1717",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1717
+  },
+  {
+   "label": "i28s505",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 505
+  },
+  {
+   "label": "i28s1313",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1313
+  },
+  {
+   "label": "i28s101",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 101
+  },
+  {
+   "label": "i28s202",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 202
+  },
+  {
+   "label": "i28s303",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 303
+  },
+  {
+   "label": "i28s606",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 606
+  },
+  {
+   "label": "i28s1515",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1515
+  },
+  {
+   "label": "i28s1616",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1616
+  },
+  {
+   "label": "i28s1818",
+   "release": "ab-a4fd41a",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1818
+  },
+  {
+   "label": "i28siege",
+   "release": "ab-a4fd41a",
+   "set": "siege",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i28reg",
+   "release": "ab-a4fd41a",
+   "set": "regress",
+   "newAI": "attacker",
+   "repeats": 6
+  }
+ ]
+}
