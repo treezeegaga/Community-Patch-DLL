@@ -2691,10 +2691,8 @@ void CvTacticalAI::PlotArmyMovesCombat(CvArmyAI* pThisArmy)
 	}
 
 	//this may force detours, but whatever
-	bool bLabContact = false;
 	if (CheckForEnemiesNearArmy(pThisArmy))
 	{
-		bLabContact = true;
 		//try to keep our units together, do not move on while there are enemies around, it's too dangerous
 		pThisTurnTarget = pThisArmy->GetCenterOfMass(true);
 		pOperation->LogOperationSpecialMessage("Contact with enemy!");
@@ -2723,33 +2721,7 @@ void CvTacticalAI::PlotArmyMovesCombat(CvArmyAI* pThisArmy)
 			}
 		}
 
-		//lab (new AI): with no enemy in contact, walk the path to this turn's target. The defensive simulation around a
-		//target three plots ahead scores holding ground about as high as advancing, so armies crept a tile a turn.
-		if (m_pPlayer->IsNewAI() && !bLabContact)
-		{
-			int iLabMoved = 0;
-			for (CvUnit* pUnit = pThisArmy->GetFirstUnit(); pUnit; pUnit = pThisArmy->GetNextUnit(pUnit))
-			{
-				if (!pUnit->canUseNow() || pUnit->getDomainType() != DOMAIN_LAND || pUnit->plot() == pThisTurnTarget)
-					continue;
-				int iFlags = CvUnit::MOVEFLAG_NO_STOPNODES | CvUnit::MOVEFLAG_APPROX_TARGET_RING2 | CvUnit::MOVEFLAG_NO_EMBARK;
-				if (pUnit->isNativeDomain(pThisTurnTarget))
-					iFlags |= CvUnit::MOVEFLAG_APPROX_TARGET_NATIVE_DOMAIN;
-				if (!pUnit->GeneratePath(pThisTurnTarget, iFlags, GetRecruitRange()))
-					continue;
-				//same danger rule as PositionUnitsAroundTarget's second round
-				int iDanger = pUnit->GetDanger(pUnit->GetPathEndFirstTurnPlot());
-				int iDangerLimit = (pUnit->IsCanAttack() && pUnit->AI_getUnitAIType() != UNITAI_CITY_BOMBARD) ? pUnit->GetCurrHitPoints() / 2 : 0;
-				if (iDanger > iDangerLimit)
-					continue;
-				ExecuteMoveToPlot(pUnit, pThisTurnTarget, true, iFlags);
-				iLabMoved++;
-			}
-			if (GC.getLogging() && GC.getAILogging())
-				LogTacticalMessage(CvString::format("lab march army %d to %d:%d: %d units walked", pThisArmy->GetID(), pThisTurnTarget->getX(), pThisTurnTarget->getY(), iLabMoved));
-		}
-
-		//try to arrange the units somewhat closer to the target (the rest, for the new AI)
+		//try to arrange the units somewhat closer to the target
 		ExecuteGatherMoves(pThisArmy,pThisTurnTarget);
 	}
 }
