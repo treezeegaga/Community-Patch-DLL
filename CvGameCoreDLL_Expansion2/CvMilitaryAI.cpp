@@ -1308,6 +1308,17 @@ int CvMilitaryAI::DoPlanUpgrades()
 						GC.getUnitInfo(eWant)->GetDescription(), pUnit->getMoves(), pUnit->upgradePrice(eWant), m_pPlayer->GetTreasury()->GetGold(),
 						GC.getUnitInfo(eWant)->GetPrereqAndTech() == NO_TECH || m_pPlayer->HasTech((TechTypes)GC.getUnitInfo(eWant)->GetPrereqAndTech()) ? 1 : 0,
 						pUnit->CanUpgradeInTerritory(false) ? 1 : 0, strWhy.c_str());
+					//M3 iteration 29 (logging only): where the unit is and what holds it there (i25s*: Archers outside our
+					//territory, gold on hand, for 7-24 turns after Construction while the plan's army stays incomplete)
+					int iTacTurn = -1, iHomeTurn = -1;
+					AITacticalMove eTac = pUnit->getTacticalMove(&iTacTurn);
+					AIHomelandMove eHome = pUnit->getHomelandMove(&iHomeTurn);
+					CvBaseInfo* pkAI = GC.getUnitAIInfo(pUnit->AI_getUnitAIType());
+					strLog += CvString::format(", unit %d at %d:%d, city distance %d, unit AI %s, army %d, tactical %s (t%d), homeland %s (t%d)",
+						pUnit->GetID(), pUnit->getX(), pUnit->getY(), m_pPlayer->GetCityDistanceInPlots(pUnit->plot()),
+						pkAI ? pkAI->GetType() : "?", pUnit->getArmyID(),
+						(eTac >= 0 && eTac < NUM_AI_TACTICAL_MOVES) ? tacticalMoveNames[eTac] : "?", iTacTurn,
+						(eHome >= 0 && eHome < NUM_AI_HOMELAND_MOVES) ? homelandMoveNames[eHome] : "?", iHomeTurn);
 					CvString strPlayerName = m_pPlayer->getCivilizationShortDescription();
 					FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(strPlayerName), FILogFile::kDontTimeStamp);
 					pLog->Msg(strLog.c_str());
