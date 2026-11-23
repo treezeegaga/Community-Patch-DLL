@@ -115,6 +115,39 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
+## 2026-11-23 What the first attacks set out with, on the maps its. 28/29 lost (user via Review 2, relayed 5:23 PM)
+Script `ai-lab/runs/firstattack.py <label>`: the first OP_CITY_ATTACK on a major (start turn, target), units at its
+start and at the march (Composite Bowmen), war turn, how the operation ended, then at the target over the 15 turns
+from the war the most of our units within 4 tiles and the city's lowest hp (siege estimates), and the first capture.
+Before = `l30` (accepted play, logging only; same as `i26` on all six).
+
+| map | run | op start | units at start (CB) | march | war | most within 4 / lowest hp | capture |
+|---|---|---|---|---|---|---|---|
+| 202 | before | t58 Athens | 8 (3) | t58 8 (3) | t59 | 8 / 65% | t66 Corinth |
+| 202 | it. 28 | t58 | 8 (3) | t58 8 (3) | t59 | 5 / 100% | none |
+| 202 | it. 29 | t54 | 8 (3) | t55 8 (3) | t59 | 8 / 43% | none |
+| 303 | before | t72 Osaka | 7 (4) | t72 7 (4) | t95 | 6 / 43% | t97 Osaka |
+| 303 | it. 29 | none | | | none | | none |
+| 1515 | before | t45 Stockholm | 6 (4) | t46 6 (4) | t51 | 6 / 26% | t58 |
+| 1515 | it. 29 | t40 | 5 (2) | never | t79 | 0 | none |
+| 1616 | before | t48 Attila's Court | 7 (4) | t49 7 (4) | t56 | (no estimate lines) | t67 |
+| 1616 | it. 29 | t48 | 7 (4) | t49 7 (4) | t55 | (none) | none |
+| 1818 | before | t52 Edinburgh | 8 (3) | t52 8 (3) | t55 | 7 / 28% | t64 |
+| 1818 | it. 28 | t52 | 8 (3) | t52 8 (3) | t57 | 5 / 100% | none |
+| 1818 | it. 29 | t48 | 8 (3) | t48 8 (3) | t53 | 7 / 41% | none |
+| 1414 | before | t52 Athens | 7 (3) | t58 8 (4) | t64 | 5 / 53% | none |
+| 1414 | it. 28 | t52 | 7 (3) | t58 8 (4) | none | 0 | none |
+
+**Answer: mostly no.** Only one lost map set out under strength (it. 29 1515: 5 units with 2 Composite Bowmen at t40,
+never marched, war t79). Everywhere else the attack set out with the same 7-8 units as before. It. 28 started on the
+same turn with the same army. Fewer units reached the city (5 against 7-8) and the city was never hurt (202, 1818), or
+there was no war at all (1414). It. 29 started 4 turns earlier with the same 8 units. The same number reached the walls,
+the city went down to 41-43% and held (202 Athens, 1818 Edinburgh), where before it went to 28% and fell (1818), or
+202 took Corinth instead. So both reverts lost their captures at the walls and on the way there, not by setting out
+small. What the logs show instead: it. 28's faster march strung the army out (fewer within 4 tiles); it. 29's earlier
+arrival met the same defence and the siege stalled above a third of the city's hp. The readiness gap (army counted
+ready vs units recruitable) caused only the 1515 case.
+
 ## 2026-11-23 M3 iteration 31: the plan buys the army unit it still lacks with spare gold (new AI)
 **Finding (`l30`, 21 games clean, done 3:20 PM; "plan army:" lines):** the army stands 1-2 units short of 6 melee +
 4 Composite Bowmen for many turns while gold piles up. Counting units in production as built, the army is "complete" but
