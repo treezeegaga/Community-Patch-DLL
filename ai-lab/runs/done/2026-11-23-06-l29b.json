@@ -1,0 +1,36 @@
+{
+    "id":  "2026-11-23-06-l29b",
+    "status":  "failed",
+    "message":  "a launch ended with a non-zero exit code; see its run folder",
+    "watcherVersion":  6,
+    "host":  "BOX",
+    "hosts":  [
+                  "BOX"
+              ],
+    "markedBy":  "BOX",
+    "started":  "2026-11-23T10:25:10",
+    "finished":  "2026-11-23T10:43:04",
+    "requestCommit":  "87b38b70d5",
+    "stockDll":  "BOX: ok",
+    "launches":  [
+                     {
+                         "label":  "l29s303b",
+                         "host":  "BOX",
+                         "exitCode":  1,
+                         "attempts":  1,
+                         "runFolder":  "ai-lab/siege/results/l29s303b-20261123-1025-run",
+                         "summary":  [
+                                         "FAILED: Lua.log has not grown for 15 minutes (game stuck?)",
+                                         "  dll: Stock DLL restored and checked (1 copy).",
+                                         "Run FAILED. Civ V closed, lab removed. Log: C:\\Users\\itstr\\cp-ai-lab\\ai-lab\\siege\\results\\l29s303b-20261123-1025-run\\Run-SiegeLab.log"
+                                     ],
+                         "assertions":  0,
+                         "labErrors":  0,
+                         "started":  "2026-11-23T10:25:10",
+                         "finished":  "2026-11-23T10:43:04",
+                         "stockDll":  "ok",
+                         "packDll":  "2FB6A9B93301C7E1",
+                         "watcherVersion":  6
+                     }
+                 ]
+}
