@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 6:40 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 7:30 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
 - **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. (BOX stopped reporting at 2:46 PM.)
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
@@ -30,7 +30,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
 - **It. 27 reverted (6 AM Nov 23):** no heal bonus for ranged units near a TAKE city; lab copy 5/6 -> 4/6, 505 still
   not taken (LOG entry). Newest build stays `ab-b8c9ffb` (`ab-41e754e` = same plus logging of tactical picks).
-- **Queued:** `03-i28` (6:40 AM): it. 28 (marching army walks its path when no enemy is near; build `ab-a4fd41a`), march/siege/regress x6 and the 12 tuning seeds.
+- **Queued:** `04-i28b` (7:30 AM; `03-i28` failed: build `ab-a4fd41a` was cancelled because a later push arrived while it waited; Build's concurrency group cancels a waiting run. Re-run, published 7:22 AM. **Don't push while a code build waits to start.**): it. 28 (marching army walks its path when no enemy is near; build `ab-a4fd41a`), march/siege/regress x6 and the 12 tuning seeds.
 - **Done:** `01-log505` (3:05 AM Nov 23): seed 505 to turn 100 and stall505b x3 on `ab-41e754e` = `ab-b8c9ffb` plus lab logging of the tactical simulation's picks ("tactsim pick" lines). Why: at 505 bowmen 1101 and 1179 stand next to St. Petersburg with a shot ("can shoot it from here 1", tactical move 20) on t62-67 and the capture attempt says "executed", yet the city only drops 200 -> 185; the estimate counts 45 ranged damage a turn. Done before: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
   (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
