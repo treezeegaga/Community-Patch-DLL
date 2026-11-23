@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 8:56 AM ET), implementer 10 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 12:05 PM ET), implementer 10 (rewrite after every accepted or reverted iteration)
 
 - Implementer 10 started 8:36 AM Nov 23; implementer 9 archived; Review 2 told.
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
@@ -19,8 +19,8 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Newest accepted build:** `ab-b8c9ffb` = it. 26 (ranged units hold only where they can shoot the city) + it. 25
   (provisional: city-states off limits through the plan's window). `ab-41e754e` = the same plus logging of the tactical
   simulation's picks ("tactsim pick" lines, no behaviour change). Branch tip code = `ab-41e754e`'s after the reverts of
-  it. 27 (`83c97ed07e`) and it. 28 (`77652c59b7`) plus it. 29's log line (logging only): build `ab-b8e474a` (`ab-77652c5`
-  was cancelled). Accepted M3 work: CODEMAP
+  its. 27-29 plus it. 29's log line (logging only) and the `homelandMoveNames` crash fix: build `ab-7f79985`. Build jobs'
+  time limits raised (5 min cancelled 3 builds on Nov 23). Accepted M3 work: CODEMAP
   "Plans" and the override table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch`.
 - **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning). Build
   `ab-b8c9ffb` (`00m-meas25`, Nov 23 1:09 AM): Songhai new AI takes a major's city by turn 100 on **16 of 48** (it. 22:
@@ -36,8 +36,10 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. `05-l29` done (3 crashes, cause fixed); `06-l29b` (303 again, on the logging build); `09-i29` (it. 29 on `ab-d367ce4`; 07/08 withdrawn, builds never published).
 - **Next** (order: Review 2's suggestion of 7:55 AM Nov 23, sent under the user's go-ahead, **provisional**: the user can
   change it):
-  1. **The late start of the war** (user point 5, moved first; **in hand as it. 29**: Archers left outside our land
-     can't be upgraded, so the plan's army waits; see its entry): on the measuring maps the army is complete about t56
+  1. **The late start of the war** (user point 5, moved first). It. 29 (Archers walk home for the upgrade) reverted:
+     readiness came earlier but captures fell 7 -> 3. **Next look:** the gap between the plan's readiness count and what the
+     operation can recruit (garrison, healing, threatened units; 1515 gathered 23 turns), on tuning set 3 (`10-r29t3`).
+     Earlier notes: on the measuring maps the army is complete about t56
      but the first war with a major comes about t68 (bar 41-50); it. 25 moved two wars to t92/t97 (2727, 5858); only
      2 of 48 take a capital by t60. Find where the ready army waits (plan row end, approach, sneak-attack gates).
   2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with
@@ -115,7 +117,7 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
-## 2026-11-23 M3 iteration 29: why the ready army waits before the war (logging first)
+## 2026-11-23 M3 iteration 29: plan Archers outside our land walk home for their upgrade (new AI; reverted)
 Class (Next 1, the late war start; tuning seeds on the accepted build, `i25s*`): Construction lands t34-45, the first
 attack operation on a major starts t45-72 (median 52), war t51-95. Of that, the operation's gathering and march take
 1-6 and 3-7 turns; **the wait before the operation starts is the larger part**, and on 9 of 12 seeds it is the same
@@ -146,6 +148,19 @@ Construction and the first attack operation fall from 7-24 turns to at most 3 on
 606, 1414, 1515; 505 unchanged to its war; no seed loses its capture of a major's city by turn 100. Guard sets
 (regress, siege, march x6): no scenario loses more than 1 in 6 (the change can't act at war). Run `2026-11-23-07-i29`, **withdrawn unstarted**, re-queued
 as `08-i29` on build `ab-e1652cd` (below).
+**Result (`09-i29`, build `ab-d367ce4`, both PCs, 16 launches clean, done 11:58 AM): missed, reverted** (`7f799853d`).
+Against `l29s*` (303, 1717: `i25s*`, same play): "goes home" 0-8 times a game; Archer refusals outside our land
+24->2 (101), 10->3, 26->8 (303), 17->5 (404), 8->1, 10->3, 27->5 (1414), 25->1, 8->3, 30->5, 15->1; last plan upgrade
+4-22 turns earlier on 10 seeds. Attack op (e): 101 60->60, 202 58->54, 404 49->44, 606 48->56, 1414 52->50, 1515 45->40
+(3 of 6 at least 3 earlier: missed, predicted 4); 505 identical (met). **Captures of a major's city by t100: 7 seeds ->
+3** (lost 202 Corinth, 303 Osaka, 1515 Stockholm, 1616 Attila's Court, 1818 Edinburgh: 3 capitals; gained 1717 Corinth;
+101 York t69->t64): missed. Wars: 1414 none (t64), 1515 t51->t79, 303 none (t95). Guard sets not needed for the decision.
+Lesson: an army that counts as ready earlier doesn't march earlier. 1515: the operation started t40 with 5 units (2
+Composite Bowmen skipped as "needed garrison", 3 Warriors "healing" / "threatened zone"), gathered for 23 turns with 3
+slots open, and was cancelled t63 once the plan ended ("War goal changed"). The plan's readiness counts units the
+operation can't take: the gap between `IsPlanArmyReady` and recruitment (it. 17 touched it and was reverted) matters
+more than when the upgrade lands. The earlier timing also reshuffles every later siege (1818: war t53, no capture).
+
 **Crash found and fixed (10:30 AM):** 3 of the 18 `l29` games crashed (303 t56 and holdout 707 t38 on TREEDESKTOP,
 1717 t69 on BOX; access violation reading 0x1 in MSVCR90, 32-bit memory nearly full). Cause: the stock table
 `homelandMoveNames` has 32 names for 33 homeland moves (H_MOVE_OPPORTUNITY_ATTACK missing); the new log line indexes it
