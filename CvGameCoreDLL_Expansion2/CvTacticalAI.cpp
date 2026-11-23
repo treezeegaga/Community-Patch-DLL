@@ -8643,7 +8643,22 @@ static STacticalAssignment* ScorePlotForCombatUnitMove(const SUnitStats& unit, c
 	{
 		if (unit.iMovesLeft == unit.iMaxMoves)
 		{
-			if (pUnit->getDamage() + unit.iSelfDamage > 0 && !pUnit->IsCannotHeal(/*bConsiderResourceShortage*/ false) && !pUnit->isEmbarked())
+			//AI lab (M3 it. 27): in a siege the one estimate says can be taken, a ranged unit near the city with at least half
+			//its hit points gets no healing bonus for standing still, so it keeps moving into a firing position (new AI)
+			bool bLabSiegeNoHeal = false;
+			CvPlayer& kLabOwner = GET_PLAYER(pUnit->getOwner());
+			if (kLabOwner.IsNewAI() && pUnit->IsCanAttackRanged() && pUnit->getDomainType() == DOMAIN_LAND &&
+				(pUnit->GetCurrHitPoints() - unit.iSelfDamage) * 2 >= pUnit->GetMaxHitPoints())
+			{
+				CvPlot* pLabTarget = assumedPosition.getTarget();
+				CvCity* pLabCity = pLabTarget ? pLabTarget->getPlotCity() : NULL;
+				if (pLabCity && kLabOwner.IsAtWarWith(pLabCity->getOwner()) && plotDistance(*pTestPlot, *pLabTarget) <= pUnit->GetRange() + 2)
+				{
+					const CvSiegeEstimate* pLabEst = kLabOwner.GetTacticalAI()->GetSiegeEstimate(pLabCity);
+					bLabSiegeNoHeal = pLabEst && pLabEst->iTurnTaken >= 0;
+				}
+			}
+			if (!bLabSiegeNoHeal && pUnit->getDamage() + unit.iSelfDamage > 0 && !pUnit->IsCannotHeal(/*bConsiderResourceShortage*/ false) && !pUnit->isEmbarked())
 			{
 				int iHealRate = pUnit->ActualHealRate(pTestPlot, false);
 
