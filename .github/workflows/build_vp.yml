@@ -25,7 +25,7 @@ jobs:
   get-version:
     name: Extract Version
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -56,7 +56,7 @@ jobs:
     if: github.event.pull_request.draft == false && !startsWith(github.ref, 'refs/tags/')
     name: Detect File Changes
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20  # ai/v2: checkout of this repo takes 2-3 min; at 5 the filter step was cancelled (3 builds on Nov 23)
     outputs:
       dll-source: ${{ steps.filter.outputs.dll-source }}
       build-scripts: ${{ steps.filter.outputs.build-scripts }}
