@@ -1,0 +1,330 @@
+CvDllContext.cpp[247]: CvDllGameContext::InitializeSingleton - Community Patch v151 (PNM v51+) - Startup (Version 151 - Build Nov 22 2026 18:49:02)
+CvDllContext.cpp[248]: CvDllGameContext::InitializeSingleton - Supporting 22 major civilizations
+CvDllContext.cpp[250]: CvDllGameContext::InitializeSingleton - Gamecore was built from git version No-Tag b8c9ffb8b Clean
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_VP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ACTIVE_DIPLOMACY = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BIN_HOOKS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: MP_LEADERHEADS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ENABLE_ACHIEVEMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLO_DEBUG_MODE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLO_DEBUG_MODE_SETTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_DEBUGGING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: SQUADS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: SQLITE_LOGGING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_DELAYED_VISIBILITY = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_GARRISON_DAMAGE_ABSORPTION = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_PUPPET_BUILDING_LIMITATIONS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_CIVILIANS_RETREAT_WITH_MILITARY = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_PERSISTENT_DEFENSIVE_PACTS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_ENGINEER_HURRY = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_NO_NAVAL_RANGED_ATTACKS_FROM_CITIES = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_NO_NAVAL_RANGED_ATTACKS_FROM_CANALS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_NO_REPAIRING_FOREIGN_LANDS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_NO_INTERMAJOR_UNIT_GIFTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_NO_HEALING_ON_MOUNTAINS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CORE_NO_YIELD_ICE = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: COREUI_REDUCE_NOTIFICATIONS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: COREUI_DIPLOMACY_ERA_INFLUENCE = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: COREUI_SHUFFLE_SPY_NAMES = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: COREUI_COLLABORATOR_SPY_NAMES = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_HUMAN_PERMANENT_FOR_AI_TEMPORARY = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_NO_PEACETIME_SELLING_FOUNDED_CITIES = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_ENABLE_NUCLEAR_GANDHI = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_NUCLEAR_GANDHI_RANDOM_PERSONALITIES_SETTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_HONEST_OPINION_MODIFIERS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_TRULY_FREE_GP = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CS_LIBERATE_AFTER_BUYOUT = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_NO_LOST_GREATWORKS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_KEEP_PROPHET_OVERFLOW = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_RANDOMISE = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_SEPARATE_GP_COUNTERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_PASSABLE_FORTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_PARATROOPS_AA_DAMAGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CS_GIFTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CS_GIFT_SHIPS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CS_GIFTS_LOCAL_XP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CITY_FOREST_BONUS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CITY_FOREST_BONUS_PERCENT = 50
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CITY_JUNGLE_BONUS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CITY_JUNGLE_BONUS_PERCENT = 50
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BUILDINGS_NW_EXCLUDE_RAZING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BUILDINGS_PRO_RATA_PURCHASE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BUILDINGS_PRO_RATA_PURCHASE_DEPRECIATION = 80
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOMACY_TECH_BONUSES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CS_OVERSEAS_TERRITORY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_CS_UPGRADES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_GRATEFUL_SETTLERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_LOCAL_GENERALS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: LOCAL_GENERALS_NEAREST_CITY = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_NO_CONQUERED_SPACESHIPS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_NO_OCEAN_PLUNDERING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_NUKES_MELT_ICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_PURCHASE_FAITH_BUILDINGS_IN_PUPPETS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_RELIGIOUS_SETTLERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGIOUS_SETTLERS_WEIGHTED = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_SUBS_UNDER_ICE_IMMUNITY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: PROCESS_STOCKPILE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_ALLIED_INQUISITORS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_NO_PREFERENCES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_NO_PREFERRENCES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_RECURRING_PURCHASE_NOTIFY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UI_CITY_EXPANSION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UI_CITY_EXPANSION_BUTTONPOPUP_MODDER_OFFSET = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UNITS_HOVERING_LAND_ONLY_HEAL = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_QUICK_ROUTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: GLOBAL_STACKING_RULES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_INCA_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_INDONESIA_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_IROQUOIS_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_MAYA_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_SIAM_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_UNIQUE_BELIEFS_ONLY_FOR_CIV = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CULTURE_VICTORY_CHANGES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_BUILDING_INVESTMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_UNIT_UPGRADE_COST = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RESOURCE_MONOPOLIES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_STRATEGIC_RESOURCE_MONOPOLIES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_HEAVY_TRIBUTE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_MINOR_PROTECTION_REQUIREMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_XP_ON_FIRST_ATTACK = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CITY_STRENGTH_SWITCH = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RIVER_CITY_CONNECTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_SPY_POINTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NO_COUPS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_AIR_UNIT_CHANGES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RANGED_DEFENSE_UNIT_HEALTH = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_LAND_UNITS_ADJACENT_BLOCKADE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RECON_ONLY_ANCIENT_RUINS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_INQUISITOR_NERF = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RESOURCE_SHORTAGE_UNIT_HEALING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RESOURCE_SHORTAGE_BUILDING_REFUND = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RETROACTIVE_PROMOTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PUPPET_CHANGES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RAZING_CREATES_PARTISANS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_HALF_XP_GOLD_PURCHASES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PURCHASED_UNIT_DAMAGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_SETTLERS_CONSUME_POPULATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ENCAMPMENTS_SPAWN_ON_VISIBLE_TILES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_BARBARIAN_THEFT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_WORLD_WONDER_COST_INCREASE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_TRADE_ROUTE_PROXIMITY_PENALTY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_TRADE_ROUTE_DESTINATION_RESTRICTION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_WONDERS_VARIABLE_CONSOLATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_FLIPPED_OPEN_BORDERS_TOURISM = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NO_WARTIME_CONCERT_TOURS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PRISONERS_OF_WAR = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PERMANENT_VOTE_COMMITMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_QUEST_CHANGES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_MINORS_CANNOT_ENTER_ENCAMPMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RESILIENT_PANTHEONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_ASSYRIA_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ALTERNATE_CELTS_TRAIT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ANY_PANTHEON = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CACHE_CITY_MEDIAN = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CITY_STATE_SCALE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CITY_STATE_TRAITS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CITY_STATE_PERSONALITIES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ERA_RESTRICTION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_ERA_RESTRICTED_GENERALS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_GREAT_PEOPLE_ERA_SCALING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_HALF_XP_FAITH_PURCHASES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_MINOR_UNIT_SUPPLY_HANDICAP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NO_AUTO_SPAWN_PROPHET = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NO_CITY_RANGED_ATTACK = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NO_GAP_DURING_GA = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NO_RESOURCE_YIELDS_FROM_GP_IMPROVEMENT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PASSIVE_SPREAD_BY_CONNECTION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PERMANENT_PANTHEONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PILLAGE_PERMANENT_IMPROVEMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_PURCHASE_COST_ADJUSTMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RANDOMIZED_GREAT_PROPHET_SPAWNS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_RELAXED_BORDER_CHECK = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_SANE_UNIT_MOVEMENT_COST = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_SETTLERS_RESET_GROWTH = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_UNCAPPED_UNHAPPINESS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_UNIT_INVESTMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CARGO_SHIPS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UI_DISPLAY_PRECISE_MOVEMENT_POINTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UI_NO_RANDOM_CIV_DIALOGUE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UI_QUICK_ANIMATIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_CITY_MANAGEMENT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_CITY_PRODUCTION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_DIPLOMACY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_ECONOMY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_ESPIONAGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_EVENT_CHOICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_FAITH_SPENDING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_GREAT_PERSON_CHOICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_POLICY_CHOICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_RELIGION_CHOICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_TECH_CHOICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_TOURISM = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_UNIT_PROMOTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_UNITS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_CONTROL_WORLD_CONGRESS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: HUMAN_USES_AI_HANDICAP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: HUMAN_USES_AI_MECHANICS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: COMBATAI_TWO_PASS_DANGER = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_DISABLE_CITY_TRADES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_DISABLE_CITY_TRADES_SETTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_DISABLE_WAR_BRIBES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_DISABLE_WAR_BRIBES_SETTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DEALAI_GLOBAL_PERMANENT_FOR_TEMPORARY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_AGGRESSIVE_MODE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_AGGRESSIVE_MODE_SETTING = 2
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_DISABLE_DOMINATION_ONLY_AGGRESSION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_HIDE_OPINION_TABLE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_LIMIT_VICTORY_PURSUIT_RANDOMIZATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_LIMIT_VICTORY_PURSUIT_SETTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_NO_FLAVOR_RANDOMIZATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_PASSIVE_MODE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_PASSIVE_MODE_SETTING = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHOW_ALL_OPINION_VALUES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHOW_BASE_HUMAN_OPINION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHOW_HIDDEN_OPINION_MODIFIERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_COMPLIMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_COOP_WAR_OFFERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_DEMANDS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_FRIENDSHIP_OFFERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_GIFT_OFFERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_HELP_REQUESTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_INDEPENDENCE_REQUESTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_INSULTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_PEACE_OFFERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_TRADE_OFFERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: DIPLOAI_SHUT_UP_TRADE_RENEWALS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: LEAGUEAI_NO_OTHER_HOST_VOTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: LEAGUEAI_NO_OTHER_WORLD_LEADER_VOTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: API_AREA_EFFECT_PROMOTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: API_DISABLE_LUA_HOOKS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: API_HOVERING_UNITS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BUILDINGS_THOROUGH_PREREQUISITES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: IMPROVEMENTS_EXTENSIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: LOG_MAP_STATE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: PLOTS_EXTENSIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: PROMOTIONS_FLAGSHIP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: PROMOTIONS_IMPROVEMENT_BONUS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_EXTENSIONS = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RELIGION_LOCAL_RELIGIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: RESOURCES_PRODUCTION_COST_MODIFIERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: TRADE_INTERNAL_GOLD_ROUTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: TRADE_WONDER_RESOURCE_ROUTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: TRAITS_TRADE_ROUTE_PRODUCTION_SIPHON = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: TRAITS_YIELD_FROM_ROUTE_MOVEMENT_IN_FOREIGN_TERRITORY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UNIT_KILL_STATS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UNITS_CIVILIANS_GAIN_XP = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: UNITS_RESOURCE_QUANTITY_TOTALS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: WH_MILITARY_LOG = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: YIELD_MODIFIER_FROM_UNITS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_ACQUIRE_BELIEFS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_AI_OVERRIDE_TECH = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_AIRLIFT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_SEALIFT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_AREA_RESOURCES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_BARBARIANS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_BATTLES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_BATTLES_DAMAGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CAN_MOVE_INTO = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CIRCUMNAVIGATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_AIRLIFT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_BOMBARD = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_BORDERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_CAPITAL = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_CONNECTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_FOUNDING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CITY_RAZING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_COMMAND = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_CUSTOM_MISSIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_DIPLO_EVENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_DIPLO_MODIFIERS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_ESPIONAGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_FOUND_RELIGION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_GAME_SAVE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_GOLDEN_AGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_GOODY_CHOICE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_GOODY_TECH = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_GREAT_PEOPLE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_IDEOLOGIES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_LIBERATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_MINORS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_MINORS_GIFTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_MINORS_INTERACTION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_NEW_ERA = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_NUCLEAR_DETONATION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_NW_DISCOVERY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_PARADROPS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_PLAYER_TURN = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_PLOT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_REBASE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RED_TURN = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RED_COMBAT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RED_COMBAT_MISSION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RED_COMBAT_ABORT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RED_COMBAT_RESULT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RED_COMBAT_ENDED = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RELIGION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_RESOLUTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_TERRAFORMING = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_TILE_IMPROVEMENTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_TILE_REVEALED = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_TRADE_ROUTE_PLUNDERED = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_TRADE_ROUTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_ACTIONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_CAPTURE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_CONVERTS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_CREATED = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_DATA = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_FOUNDED = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_PREKILL = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_RANGEATTACK = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_UNIT_UPGRADES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: EVENTS_WAR_AND_PEACE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_UNIT_PRODUCTION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_BOMBARD_RANGE_BUILDINGS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_NEW_GREAT_PERSON_ATTRIBUTES = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: LINKED_MOVEMENT = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: PROMOTIONS_DEEP_WATER_EMBARKATION = 1
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ALTERNATIVE_DIFFICULTY = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ATTRITION = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CIV6_EUREKAS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CIV6_ROADS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: CIV6_WORKER = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ISKA_HERITAGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ISKA_PANTHEONS = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ISKA_GOLDENAGEPOINTS_TO_PRESTIGE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: NOT_FOR_SALE = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: ROUTE_PLANNER = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: BALANCE_CORE_JFD = 0
+CustomMods.cpp[280]: CustomMods::getOption - Cache: AI_AB_TEST = 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_SCORE for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_PRODUCTIONPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_TOTALGOLD for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_GOLDPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_CITYCOUNT for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_TECHSKNOWN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_SCIENCEPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_TOTALCULTURE for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_CULTUREPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_TOURISMPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_GAPPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_EXCESSHAPINESS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_HAPPINESS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_UNHAPPINESS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_GOLDENAGETURNS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_POPULATION for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_FOODPERTURN for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_TOTALLAND for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_GPTCITYCONNECTIONS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_GPTINTERNATIONALTRADE for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_GPTDEALS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_UNITMAINTENANCE for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_BUILDINGMAINTENANCE for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_IMPROVEMENTMAINTENANCE for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_NUMBEROFPOLICIES for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_NUMBEROFWORKERS for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_IMPROVEDTILES for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_WORKEDTILES for player 0
+CvPlayer.cpp[42523]: CvPlayer::setReplayDataValue - Adding replay dataset REPLAYDATASET_MILITARYMIGHT for player 0
+CvUnit.cpp[31126]: CvUnit::PushMission - illegal range strike target (20,8)!
