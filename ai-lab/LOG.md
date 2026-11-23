@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 1:30 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 6:10 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
 - **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. (BOX stopped reporting at 2:46 PM.)
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
@@ -28,13 +28,16 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
 - **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
-- **Queued:** `01-log505` (3:05 AM Nov 23): seed 505 to turn 100 and stall505b x3 on `ab-41e754e` = `ab-b8c9ffb` plus lab logging of the tactical simulation's picks ("tactsim pick" lines). Why: at 505 bowmen 1101 and 1179 stand next to St. Petersburg with a shot ("can shoot it from here 1", tactical move 20) on t62-67 and the capture attempt says "executed", yet the city only drops 200 -> 185; the estimate counts 45 ranged damage a turn. Done before: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
+- **It. 27 reverted (6 AM Nov 23):** no heal bonus for ranged units near a TAKE city; lab copy 5/6 -> 4/6, 505 still
+  not taken (LOG entry). Newest build stays `ab-b8c9ffb` (`ab-41e754e` = same plus logging of tactical picks).
+- **Done:** `01-log505` (3:05 AM Nov 23): seed 505 to turn 100 and stall505b x3 on `ab-41e754e` = `ab-b8c9ffb` plus lab logging of the tactical simulation's picks ("tactsim pick" lines). Why: at 505 bowmen 1101 and 1179 stand next to St. Petersburg with a shot ("can shoot it from here 1", tactical move 20) on t62-67 and the capture attempt says "executed", yet the city only drops 200 -> 185; the estimate counts 45 ranged damage a turn. Done before: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
   (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
   the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
 - **Next:**
-  1. Seed 505 full game (still holds after it. 26): why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
-     t61-67 (tactical moves REINFORCE/STEAMROLL), against the lab copy where they do. Then the other stalled tuning seeds
+  1. Seed 505 full game: healing is not it (it. 27). The simulation around (42:28) gets only 2 bowmen; the others work
+     targets around (40:28) and another city at 37:29; the army leaves t66-67. Find why in the `lg505`/`i27s505` logs.
+     Then the other stalled tuning seeds
      (404, 1313, 1414, 1616, 1717, snapshots in `sd24bN*`).
   2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with "state
      at turn 100 vs stock on the same map" tracked beside captures.
@@ -105,6 +108,38 @@ Script: `ai-lab/runs/stages.py`.
 largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
+
+## 2026-11-23 M3 iteration 27: no healing bonus for a ranged unit near a city the siege estimate says can be taken (new AI)
+Class: TAKE sieges where the city is dented and heals back (9 of the 25 stalled wars on the measuring maps, it. 22 build).
+Diagnosis (seed 505, `lg505` on `ab-41e754e` = `ab-b8c9ffb` plus logging of the tactical simulation's picks): on t62-67
+the estimate says TAKE counting 4 Composite Bowmen (45 damage a turn); the city-attack simulation has 2 of them shoot
+the city (about 25 a turn, the city heals 20: 200 -> 185 -> back to 200) and picks HEAL for the damaged two (62 and
+71 hp) at distance 2-3, where they can't shoot. The free firing spots are on the far side (forest/hill, a 2-turn
+move); one bowman that walks there alone (1254, t65) is hit to 24 hp and leaves. Same in the lab copy `stall505b`
+(`lgst505b`, 2 of 3 taken): bowman picks HEAL 24, shoot the city 40.
+Cause: `ScorePlotForCombatUnitMove` gives a unit that ends its turn unmoved a bonus worth its heal rate, so a ranged
+unit with 60-70 hp prefers to stand and heal out of range over moving into a firing position.
+Change: for the new AI, a land ranged unit with at least half its hit points, within range + 2 of the simulation's
+target city, when the siege estimate for that city says TAKE, gets no heal bonus (the assignment stays FINISH; the
+unit still heals if it ends up not moving). New AI only.
+Predicted: `stall505b` x6 at least 4 captures (baseline on the same build x6 queued alongside; `lgst505b` 2 of 3,
+it. 26 4 of 6) with bowman HEAL picks within range + 2 of the city down by half; attackers lost not up by more
+than 1 a battle. 12 tuning seeds: no seed loses a capture; 505 takes St. Petersburg by turn 80 or the city drops
+below half. Guard sets: no scenario loses more than 1 in 6. Rule 3: staged in the lab first (stall505b).
+Result (`02-i27`, TREEDESKTOP; 6 AM ET Nov 23): **missed, reverted** (`83c97ed07e`).
+- `stall505b` x6: baseline (`b27st505b`, same build without it) **5 of 6**, attackers lost 0.3 a battle; it. 27
+  (`i27st505b`) **4 of 6**, lost 1.2. Bowman HEAL picks 51 -> 48 (not halved): in the lab copy the healers are mostly
+  under half hp or further than range + 2. The baseline taking 5 of 6 also means `stall505b` hardly stalls on this
+  build (2 of 3 in `lgst505b`): a weak stage for this cause.
+- 12 tuning seeds: captures and war turns identical (York t69, Corinth t66 + Athens t71, Osaka t97, Athens t57,
+  Stockholm t58, Attila's Court t67, Edinburgh t64); only 505's game moves. **At 505 the change does what it says**
+  (bowman HEAL picks near St. Petersburg t61-67: 10 -> 0; 1254 now shoots), **but the city never drops below 184 of
+  200**: the freed bowmen go after other targets (a unit at 40:28, pillage at 39:28, another city at 37:29), so still
+  only 2 bowmen shoot St. Petersburg a turn; on t66-67 the army walks off as before.
+- Guards: `i27siege`/`i27march` ran or are running (not needed for the decision); `i27reg` withdrawn unstarted.
+Lesson: at 505 healing is not what keeps the bowmen off the city; the simulation splits them between targets around
+(40:28) and (42:28). Next look: why the city-attack simulation around (42:28) doesn't pull in the bowmen the estimate
+counts, and why the army leaves on t66-67.
 
 ## 2026-11-23 Measuring maps on the newest build (`00m-meas25`, `ab-b8c9ffb` = it. 26 + it. 25; user via Review 2, 12:30 PM Nov 22)
 Songhai new AI to turn 100 on seeds 1919-6666, map for map against `nx22N*` (it. 22). Stock not re-run.
