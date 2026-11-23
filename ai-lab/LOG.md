@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-22, 7:50 PM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 1:30 AM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
 - **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. (BOX stopped reporting at 2:46 PM.)
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
@@ -15,24 +15,24 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Newest build:** `ab-b8c9ffb` = it. 26 (accepted 12:15 PM, `ab-434eecf`: ranged units hold only where they can shoot
   the city) + it. 25 (accepted 7:50 PM, provisional: city-states off limits through the plan's window; tuning set 3: diversion 8 seeds -> 0, captures 7 -> 7, gained 8383 Athens t76, lost 7777 Sparta). Accepted M3 work: CODEMAP "Plans" and the override
   table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch` (no scenario reproduces its cause).
-- **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning), build of it. 22:
-  Songhai new AI takes a major's city by turn 100 on 13 of 48 (stock 0), a capital by turn 60 on 1; army 42, war 38.
-  At turn 100 science 10.8 vs stock 26.3, population 11.6 vs 15.7. All with Greece as a neighbour (fixed seat 1).
-  Dashboard "Civ V AI Project" shows these (`ai-lab/runs/fullgames_csv.py` builds its table).
-- **Stalled wars (25 of 38), corrected 10:30 AM:** army sent to a city-state 2; estimate NO 4; TAKE with the city never
+- **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning). **Newest, build
+  `ab-b8c9ffb` (it. 26 + it. 25, `00m-meas25`, Nov 23 1:09 AM):** Songhai new AI takes a major's city by turn 100 on
+  **16 of 48** (it. 22: 13; stock 0), a capital on 9 (7), a capital by turn 60 on 2 (1); army 43 (42), war 39 (38).
+  At turn 100 science 11.4 (10.8; stock 26.3), population 12.3 (11.6; stock 15.7). Map for map and what got worse: LOG
+  entry of Nov 23. All with Greece as a neighbour (fixed seat 1). Dashboard "Civ V AI Project" shows these
+  (`ai-lab/runs/fullgames_csv.py` builds its table; `runs/measure_compare.py` the map-for-map list).
+- **Stalled wars on the it. 22 build (25 of 38), corrected 10:30 AM** (dashboard stalls.csv now has this split): army sent to a city-state 2; estimate NO 4; TAKE with the city never
   below 90% 5, dented and healed 9, below half not taken 5 (LOG entry of Nov 22). City-states take the plan's army
   when the plan ends at t60 with no war on a major (5 of the 25). Battle-lab copies of 505 and 1616 don't stall alone (6/6 even at real strength), but 505 with
   its far-side tiles held (`stall505b`) does (2/6) and it. 26 fixed it (4/6): the lab can stage this one. **Provisional (rule 10):** work the sieges in full games on the tuning seeds, with the
   siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
 - **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
-- **Queued:** `00l-i25guard` (it. 25's guard sets), then `00m-meas25` (the 48 measuring maps on `ab-b8c9ffb`, labels `m25N<seed>`). `00j-i25` failed (build cancelled); ran as `00k-i25`. Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
+- **Queued:** nothing. Done: `00k-i25`, `00l-i25guard` (passed), `00m-meas25` (measuring re-run, reported). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
   (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
   the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
 - **Next:**
-  0. Guard sets passed (8:12 PM). The measuring re-run (`00m`, running): map for map against `nx22N*`
-     (captures, capitals, the bar, state at turn 100), what got worse included; this state and the dashboard (also stalls.csv to the corrected split).
   1. Seed 505 full game (still holds after it. 26): why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
      t61-67 (tactical moves REINFORCE/STEAMROLL), against the lab copy where they do. Then the other stalled tuning seeds
      (404, 1313, 1414, 1616, 1717, snapshots in `sd24bN*`).
@@ -105,6 +105,18 @@ Script: `ai-lab/runs/stages.py`.
 largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
+
+## 2026-11-23 Measuring maps on the newest build (`00m-meas25`, `ab-b8c9ffb` = it. 26 + it. 25; user via Review 2, 12:30 PM Nov 22)
+Songhai new AI to turn 100 on seeds 1919-6666, map for map against `nx22N*` (it. 22). Stock not re-run.
+- Capture of a major's city by turn 100: 13 -> **16**; capital 7 -> 9; capital by turn 60: 1 -> 2 (1919: t61 -> t60).
+  Gained: 4242 (war t74, capital t80; before no war), 4444 (t72), 4848 (t76), 6464 (capital t77).
+- **Worse:** 3636 lost its capture (now no war at all; before war t92, city t97). Wars later: 2727 t64 -> t92, 5858
+  t76 -> t97 (both city-state stalls before: the freed army still doesn't declare; late declarations, Next). Science at
+  turn 100 down: 3838 20 -> 0, 3131 19 -> 4, 6464 16 -> 5, 5959 13 -> 4, 4040 16 -> 8, 2020 14 -> 7 (up on 2626 5 -> 24,
+  4444 0 -> 20, 5454 3 -> 15, 4949 3 -> 15, 5858 0 -> 14).
+- Averages at turn 100: science 11.4 (10.8; stock 26.3), population 12.3 (11.6; stock 15.7), cities 2.71 (2.58), gold 30 (32).
+- The bar (capital by about turn 60 with the rest of M3's bar): still not met on most maps; the economy gap to stock
+  stays the largest gap (the plan's way out, Next 2).
 
 ## 2026-11-22 M3 iteration 25: city-states stay off limits through the plan's whole window (new AI)
 Class: the plan's army sent to a city-state when the plan ends at t60 with no war on a major (measuring maps: 5 of the

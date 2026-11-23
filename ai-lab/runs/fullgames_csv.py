@@ -1,8 +1,9 @@
-# Dashboard data: one row per measuring map and AI (Songhai new AI nx22N*, stock stx22S*) from Lua.log; run from ai-lab/siege/results. Prefixes are the build of it. 22.
+# Dashboard data: one row per measuring map and AI from Lua.log; run from ai-lab/siege/results. 'New AI' = newest accepted build
+# (m25N*: it. 26 + it. 25), 'New AI (it. 22)' = nx22N* (kept for the map-for-map comparison), 'Stock' = stx22S*.
 import glob,re,csv,sys
 out=csv.writer(open('/tmp/claude-0/dashdata/full_games.csv','w',newline=''))
 out.writerow(['Seed','AI','ArmyTurn','WarTurn','FirstCaptureTurn','CapitalTurn','Captures','Cities100','Pop100','Techs100','Science100','Gold100'])
-for arm,pre in (('New AI','nx22N'),('Stock','stx22S')):
+for arm,pre in (('New AI','m25N'),('New AI (it. 22)','nx22N'),('Stock','stx22S')):
     for d in sorted(glob.glob(pre+'*-logs')):
         seed=int(re.match(pre+r'(\d+)',d).group(1))
         L=[l.split('[SiegeLab] ',1)[1].strip().split(',') for l in open(d+'/Lua.log',errors='replace') if '[SiegeLab] ' in l]
