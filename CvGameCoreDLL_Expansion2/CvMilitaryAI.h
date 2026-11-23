@@ -199,6 +199,7 @@ public:
 	bool IsPlanArmyReady() const;
 	int DoPlanUpgrades();
 	bool IsPlanMarching() const;
+	bool IsPlanUpgradeWaiting(const CvUnit* pUnit) const;
 	void CountPlanArmy(const CvCity* pExceptCity, bool bIncludeProduction, int& iMelee, int& iRanged, int& iSettlers) const;
 	bool RequestPillageAttack(PlayerTypes eEnemy);
 	bool RequestNukeAttack(PlayerTypes eEnemy);
