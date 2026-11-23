@@ -1,0 +1,139 @@
+{
+ "id": "2026-11-23-02-i27",
+ "why": "M3 it. 27 checks: stall505b x6 on the baseline build and on it. 27, the 12 tuning seeds to turn 100 (compare i25s*), guard sets (compare i25*). Either trusted PC.",
+ "launches": [
+  {
+   "label": "b27st505b",
+   "release": "ab-41e754e",
+   "set": "stall",
+   "only": "stall505b",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i27st505b",
+   "release": "ab-aef6cf4",
+   "set": "stall",
+   "only": "stall505b",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i27s101",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 101
+  },
+  {
+   "label": "i27s202",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 202
+  },
+  {
+   "label": "i27s303",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 303
+  },
+  {
+   "label": "i27s404",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 404
+  },
+  {
+   "label": "i27s505",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 505
+  },
+  {
+   "label": "i27s606",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 606
+  },
+  {
+   "label": "i27s1313",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1313
+  },
+  {
+   "label": "i27s1414",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1414
+  },
+  {
+   "label": "i27s1515",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1515
+  },
+  {
+   "label": "i27s1616",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1616
+  },
+  {
+   "label": "i27s1717",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1717
+  },
+  {
+   "label": "i27s1818",
+   "release": "ab-aef6cf4",
+   "set": "transfer",
+   "newAI": "attacker",
+   "repeats": 1,
+   "seed": 1818
+  },
+  {
+   "label": "i27siege",
+   "release": "ab-aef6cf4",
+   "set": "siege",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i27march",
+   "release": "ab-aef6cf4",
+   "set": "march",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i27reg",
+   "release": "ab-aef6cf4",
+   "set": "regress",
+   "newAI": "attacker",
+   "repeats": 6
+  }
+ ]
+}
