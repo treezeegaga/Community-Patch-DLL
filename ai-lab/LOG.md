@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 9:05 AM ET), implementer 10 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 8:56 AM ET), implementer 10 (rewrite after every accepted or reverted iteration)
 
 - Implementer 10 started 8:36 AM Nov 23; implementer 9 archived; Review 2 told.
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
