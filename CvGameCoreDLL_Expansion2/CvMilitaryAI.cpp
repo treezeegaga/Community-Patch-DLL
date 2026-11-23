@@ -1240,37 +1240,6 @@ bool CvMilitaryAI::IsPlanMarching() const
 	return true;
 }
 
-/// M3 iteration 29: a plan ranged unit outside our territory that the upgrade would make a strike unit, with the gold
-/// for it on hand, while the plan's army is short. Upgrades need our territory; on 8 of 12 tuning seeds (l29s*) such
-/// Archers kept fighting barbarians 2-6 tiles out for 7-24 turns after Construction and the attack waited for them
-/// (the user upgraded every Archer the turn the tech landed). The tactical AI walks these units home first.
-bool CvMilitaryAI::IsPlanUpgradeWaiting(const CvUnit* pUnit) const
-{
-	if (!pUnit || pUnit->getOwner() != m_pPlayer->GetID() || pUnit->getDomainType() != DOMAIN_LAND || !pUnit->IsCombatUnit())
-		return false;
-	if (pUnit->getArmyID() != -1 || pUnit->plot()->getOwner() == m_pPlayer->GetID() || pUnit->isDelayedDeath())
-		return false;
-	if (pUnit->getUnitInfo().GetRangedCombat() <= 0 || pUnit->getUnitInfo().GetDefaultUnitAIType() == UNITAI_EXPLORE)
-		return false;
-	if (!IsPlanMarching() || IsPlanArmyReady())
-		return false;
-
-	const SAIPlan* pPlan = GetActivePlan();
-	UnitClassTypes eClass = (UnitClassTypes)GC.getInfoTypeForString(pPlan->szResearchUnitClass, true);
-	UnitTypes eStrike = (eClass != NO_UNITCLASS) ? m_pPlayer->GetSpecificUnitType(eClass) : NO_UNIT;
-	CvUnitEntry* pkStrike = (eStrike != NO_UNIT) ? GC.getUnitInfo(eStrike) : NULL;
-	if (!pkStrike || pUnit->getUnitInfo().GetRangedCombat() >= pkStrike->GetRangedCombat())
-		return false;
-
-	UnitTypes eUpgrade = pUnit->GetUpgradeUnitType();
-	CvUnitEntry* pkUpgrade = (eUpgrade != NO_UNIT) ? GC.getUnitInfo(eUpgrade) : NULL;
-	if (!pkUpgrade || pkUpgrade->GetRangedCombat() < pkStrike->GetRangedCombat())
-		return false;
-	if (pkUpgrade->GetPrereqAndTech() != NO_TECH && !m_pPlayer->HasTech((TechTypes)pkUpgrade->GetPrereqAndTech()))
-		return false;
-	return m_pPlayer->GetTreasury()->GetGold() >= pUnit->upgradePrice(eUpgrade);
-}
-
 int CvMilitaryAI::DoPlanUpgrades()
 {
 	if (!IsPlanMarching())

@@ -1450,30 +1450,6 @@ void CvTacticalAI::PlotHealMoves(bool bFirstPass)
 
 	if(m_CurrentMoveUnits.size() > 0)
 		ExecuteHeals(bFirstPass);
-
-	//new AI (M3 iteration 29): plan Archers outside our land walk home to be upgraded the turn the strike unit's tech is
-	//known (CvMilitaryAI::IsPlanUpgradeWaiting), instead of fighting barbarians while the plan's army stays short
-	if (bFirstPass && m_pPlayer->IsNewAI())
-	{
-		vector<int> vGoHome;
-		for (list<int>::const_iterator it = m_CurrentTurnUnits.begin(); it != m_CurrentTurnUnits.end(); it++)
-		{
-			CvUnit* pUnit = m_pPlayer->getUnit(*it);
-			if (pUnit && pUnit->canUseForTacticalAI() && m_pPlayer->GetMilitaryAI()->IsPlanUpgradeWaiting(pUnit))
-				vGoHome.push_back(pUnit->GetID());
-		}
-		for (size_t i = 0; i < vGoHome.size(); i++)
-		{
-			CvUnit* pUnit = m_pPlayer->getUnit(vGoHome[i]);
-			CvCity* pCity = pUnit ? m_pPlayer->GetClosestCityByPlots(pUnit->plot()) : NULL;
-			if (!pCity)
-				continue;
-			int iTurns = ExecuteMoveToPlot(pUnit, pCity->plot(), true, CvUnit::MOVEFLAG_APPROX_TARGET_RING1);
-			if (GC.getLogging() && GC.getAILogging())
-				LogTacticalMessage(CvString::format("plan upgrade: %s %d at %d:%d goes home to %s for its upgrade, turns %d",
-					pUnit->getName().c_str(), pUnit->GetID(), pUnit->getX(), pUnit->getY(), pCity->getName().c_str(), iTurns));
-		}
-	}
 }
 
 /// Assigns a barbarian to go protect an undefended camp
