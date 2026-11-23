@@ -2,9 +2,9 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-22, 12:15 PM ET), implementer 9 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-22, 7:50 PM ET), implementer 9 (rewrite after every accepted or reverted iteration)
 
-- **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. Iteration 25's runs were re-queued as `00k-i25` (00j failed: build ab-b8c9ffb was cancelled, re-run at 1:36 PM).
+- **BOX is paused (2:45 PM ET Nov 22, user's ruling): the user is using it for other things.** Lab runs go to TREEDESKTOP only until the user says BOX is back, so a request takes about twice as long. (BOX stopped reporting at 2:46 PM.)
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. Times in US Eastern.
 - **The review session speaks for the user:** from 10:10 AM Nov 22 that is "Project review 2"
@@ -13,7 +13,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Milestones:** M0-M2 closed. **M3 in progress.** Bar: early rush, war about turn 41-50, a capital by about turn 60
   on Quick, about 6 melee + 4 Composite Bowmen, at least 2 cities, gold not at zero before the war is decided.
 - **Newest build:** `ab-b8c9ffb` = it. 26 (accepted 12:15 PM, `ab-434eecf`: ranged units hold only where they can shoot
-  the city) + it. 25 (pending: city-states off limits through the plan's window). Accepted M3 work: CODEMAP "Plans" and the override
+  the city) + it. 25 (accepted 7:50 PM, provisional: city-states off limits through the plan's window; tuning set 3: diversion 8 seeds -> 0, captures 7 -> 7, gained 8383 Athens t76, lost 7777 Sparta). Accepted M3 work: CODEMAP "Plans" and the override
   table. Draft it. 25 (melee hold) shelved in `drafts/it25-melee-hold.patch` (no scenario reproduces its cause).
 - **Headline (user ruling 9:40 AM Nov 22): the 48 measuring maps, seeds 1919-6666** (never for tuning), build of it. 22:
   Songhai new AI takes a major's city by turn 100 on 13 of 48 (stock 0), a capital by turn 60 on 1; army 42, war 38.
@@ -26,12 +26,13 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
   siege snapshot (SMAP/SCITY/SUNIT/SSPOT lines) to see what draws the army away.
 - **Lab:** v24 (siege snapshot in transfer mode; stall scenarios with ground, units at offsets, river edges, city damage,
   defenderTechCount). `wait-for-results.sh 110 done` waits for done markers only.
-- **Queued:** `00j-i25` (it. 25's checks). Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
+- **Queued:** `00l-i25guard` (it. 25's guard sets), then `00m-meas25` (the 48 measuring maps on `ab-b8c9ffb`, labels `m25N<seed>`). `00j-i25` failed (build cancelled); ran as `00k-i25`. Withdrawn unstarted (12:25 PM): `02-holdC24b`, `03-songx24b`, `04-guard24b`
   (old build; superseded by it. 26's guard and by the measuring re-run). **User via Review 2 (12:30 PM): once it. 25 is
   decided, re-run the 48 measuring maps (Songhai new AI, seeds 1919-6666) on the newest accepted build** and report
   the headline map for map against it. 22, what got worse included, in this state and on the dashboard. Stock not re-run.
 - **Next:**
-  0. It. 25's runs (`00j-i25`: tuning set 3 on it. 26 and it. 25, tuning seeds on it. 25); decide it.
+  0. Guard sets (`00l`): revert it. 25 if a scenario loses more than 1 in 6. Then the measuring re-run (`00m`): map for map against `nx22N*`
+     (captures, capitals, the bar, state at turn 100), what got worse included; this state and the dashboard (also stalls.csv to the corrected split).
   1. Seed 505 full game (still holds after it. 26): why the one bowman with a shot and the two "allowed" Spearmen never attack St. Petersburg
      t61-67 (tactical moves REINFORCE/STEAMROLL), against the lab copy where they do. Then the other stalled tuning seeds
      (404, 1313, 1414, 1616, 1717, snapshots in `sd24bN*`).
@@ -118,6 +119,19 @@ Predicted (tuning set 3, i25 against i26 on the same build line, Songhai new AI 
 city-state before its first capture and before turn 90 fall from 8 seeds to 0; seeds with a capture by turn 100 not
 fewer; on the 8 diversion seeds, at least 2 gain a war on a major or a capture before turn 80. 12 tuning seeds: no
 seed loses a capture. Guard sets: no scenario loses more than 1 in 6. Holdout and measuring maps untouched.
+Results (`00k-i25`, re-queued after `00j` failed on a cancelled build; 60 games; i26t3_7070 failed to run, so 23 pairs):
+- City-state operations before the first capture and turn 90: **8 seeds -> 0** (held).
+- Seeds with a capture of a major's city by turn 100: 7 of 23 -> 7 of 23 (held: not fewer), plus 7070 Corinth t80 on it. 25.
+  Gained: **8383 Athens t76 (a capital; war t72, before: no war)**. Lost: **7777 Sparta t68 -> none**: same war t62, same
+  army at Sparta (3 melee, 4 ranged within 4), but ranged damage 42 a turn instead of 88; Greece hit Tombouctu t62 and
+  an OP_RAPID_RESPONSE took 2 units home (in i26 the units were tied to the city-state sneak operation instead).
+- Of the 8 diversion seeds, gained a war or capture before t80: 1 (8383); predicted at least 2: **missed**. The other
+  six never go to war with a major by t80 (7272, 7979, 8989, 9090, 9191 none at all; **8787's war moves t69 -> t98**,
+  a worse late declaration).
+- 12 tuning seeds: identical to it. 26 (no diversion there): no seed loses a capture (held).
+Decision (7:50 PM ET, provisional under rule 10): **accepted.** The cause is gone on all 8 seeds, captures are not
+fewer, the gained capture is a capital; the miss is that freeing the army doesn't by itself start a war (late
+declarations, Next 4). 7777's loss and 8787's late war are logged against it. Guard sets queued (`00l-i25guard`).
 
 ## 2026-11-22 M3 iteration 26: a ranged unit holds only where it can shoot the city (new AI)
 Class: "TAKE, the city never below 90%" (5 of the 25 stalled wars on the measuring maps; tuning seed 505 too). Review 2's

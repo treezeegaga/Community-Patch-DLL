@@ -1,0 +1,27 @@
+{
+ "id": "2026-11-22-00l-i25guard",
+ "why": "M3 it. 25 guard: siege, march and regress sets, new AI, 6 battles each (compare i26*). Either trusted PC.",
+ "launches": [
+  {
+   "label": "i25siege",
+   "release": "ab-b8c9ffb",
+   "set": "siege",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i25march",
+   "release": "ab-b8c9ffb",
+   "set": "march",
+   "newAI": "attacker",
+   "repeats": 6
+  },
+  {
+   "label": "i25reg",
+   "release": "ab-b8c9ffb",
+   "set": "regress",
+   "newAI": "attacker",
+   "repeats": 6
+  }
+ ]
+}
