@@ -33,7 +33,7 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Reverted Nov 23:** it. 27 (no heal bonus near a TAKE city: lab copy 5/6 -> 4/6, 505 unchanged) and it. 28
   (marching army walks its path with no enemy near: march lab faster, but tuning seeds lost captures on 202 and 1818,
   1414 lost its war, wars later). Lessons in their LOG entries.
-- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. Queued: `2026-11-23-05-l29` (it. 29 logging).
+- **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. Queued: `05-l29` (it. 29 logging, baseline), `06-l29b` (303 again), `07-i29` (it. 29's change and guards).
 - **Next** (order: Review 2's suggestion of 7:55 AM Nov 23, sent under the user's go-ahead, **provisional**: the user can
   change it):
   1. **The late start of the war** (user point 5, moved first; **in hand as it. 29**: Archers left outside our land
@@ -131,6 +131,20 @@ What holds them out is not in the logs (no explorer lines for Archers; the tacti
 distance to our nearest city, unit AI, army, last tactical and homeland move (`b8e474a3b`, build `ab-b8e474a`; it also
 carries the reverts of its. 27-28: `ab-77652c5` was cancelled by this push's build).
 Run: `2026-11-23-05-l29` (12 tuning seeds to turn 100; holdout 707-1212 on the current build, picture only).
+Found (`l29s*`, 9 seeds read by 10 AM): on 8 of them the Archers left out are plain UNITAI_RANGED units in no army,
+2-6 tiles from our nearest city, whose last tactical moves are against barbarians (B_CAMP, counterattack, flank attack,
+attrition); no homeland move. 505 had none (all upgraded the turn Construction landed).
+Change (user: "go ahead with the fix", 10 AM): new `CvMilitaryAI::IsPlanUpgradeWaiting(unit)`: the plan marches (strike
+tech known), its army isn't ready (so never at war), the unit is a land ranged unit in no army, outside our territory,
+below strike strength, its upgrade reaches it, the tech is known and the gold covers the price. On the tactical AI's
+first heal pass (`PlotHealMoves(true)`), such units move toward our nearest city (ring 1, always our land); `DoPlanUpgrades`
+upgrades them once inside. Log "plan upgrade: <unit> goes home to <city> for its upgrade" (tactical log). New AI only
+(`2057a96c8`, build `ab-2057a96`).
+Predicted (`i29s*` against `l29s*`, 12 tuning seeds): "territory 0" Archer-to-Composite-Bowman refusals between
+Construction and the first attack operation fall from 7-24 turns to at most 3 on each of 101, 202, 303, 404, 606, 1313,
+1414, 1515, 1616; the first attack operation on a major starts at least 3 turns earlier on at least 4 of 101, 202, 404,
+606, 1414, 1515; 505 unchanged to its war; no seed loses its capture of a major's city by turn 100. Guard sets
+(regress, siege, march x6): no scenario loses more than 1 in 6 (the change can't act at war). Run `2026-11-23-07-i29`.
 
 ## 2026-11-23 M3 iteration 28: a marching army with no enemy in contact walks its path (new AI)
 Class: TAKE sieges where the first wave falls short and the follow-up wave comes too late (stalled tuning seeds 404,
