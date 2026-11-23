@@ -1,6 +1,6 @@
 {
  "id": "2026-11-23-02-i27",
- "why": "M3 it. 27 checks: stall505b x6 on the baseline build and on it. 27, the 12 tuning seeds to turn 100 (compare i25s*), guard sets (compare i25*). Either trusted PC.",
+ "why": "M3 it. 27 checks: stall505b x6 on the baseline build and on it. 27, the 12 tuning seeds to turn 100 (compare i25s*), guard sets (compare i25*). Either trusted PC. i27reg withdrawn unstarted 6 AM ET Nov 23: it. 27 reverted.",
  "launches": [
   {
    "label": "b27st505b",
@@ -125,13 +125,6 @@
    "label": "i27march",
    "release": "ab-aef6cf4",
    "set": "march",
-   "newAI": "attacker",
-   "repeats": 6
-  },
-  {
-   "label": "i27reg",
-   "release": "ab-aef6cf4",
-   "set": "regress",
    "newAI": "attacker",
    "repeats": 6
   }
