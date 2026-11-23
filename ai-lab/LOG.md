@@ -583,6 +583,10 @@ branch tip has none, and only `claude/bold-feynman-cgnhjs` is newer than `d64b73
 ## User rulings
 
 - 2026-11-23 (10:00 AM ET, the user, in implementer 10's chat): **BOX is back in service**; its results count again.
+- 2026-11-23 (1:00 PM ET, the user via Review 2, relayed 5:23 PM): **full-game changes are decided on all 36 tuning maps
+  by the net result** (captures gained vs lost, capitals, first war and first capture turns, list of what got worse); one
+  map losing its capture no longer vetoes. PLAN section 7. Also: before the next fix, a table of how many units each
+  first attack set out with, before and after, on the maps its. 28/29 lost (202, 303, 1515, 1616, 1818, 1414).
 - 2026-11-22 (about 10:10 AM ET, the user, confirmed in implementer 9's chat): the review role moves to the session
   "Project review 2" (`session_01G2NZizyLCf9i5g45DQDYLB`, starts from `ai-lab/review/REVIEWER.md` on
   `claude/bold-feynman-cgnhjs`). PLAN section 4 names it; relays from "Project review" (`session_01G2NZj4f5xWWrXLRuDN5eyd`)

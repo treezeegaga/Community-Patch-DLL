@@ -194,6 +194,14 @@ drops by more than 1 in 6 or its losses rise by more than a third. An effect too
 is not what this stage is after; don't chase it with more repeats. When repeats of the *same build*
 disagree wildly, the lab has a leak: fix the lab first.
 
+**Decision rule for full games (user, 1:00 PM ET Nov 23, via Review 2).** A full-game change is decided on the 36
+tuning maps: the 12 tuning seeds plus tuning set 3 (7070-9393), before and after on the same maps, by the net result:
+maps that gain a capture of a major's city against maps that lose one, capitals gained and lost, the turn of the first
+war with a major and of the first capture, with the list of what got worse. One map losing its capture doesn't veto a
+change on its own (timing shifts swing captures on 12 maps by several either way). Write the prediction in those terms
+before the run. The lab's 6-battle rule above, the measuring maps (headline only) and the holdout (check only) are
+unchanged.
+
 ## 7a. Work that never needs the user (when blocked on the user, work down this list)
 
 In this order, unless an item is already in hand or can't move:
