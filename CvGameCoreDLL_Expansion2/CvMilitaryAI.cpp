@@ -507,6 +507,7 @@ void CvMilitaryAI::DoTurn()
 		DisbandObsoleteUnits();
 	}
 
+	LogPlanArmy();
 	LogMilitaryStatus();
 
 	if(IsBuildingArmy(ARMY_TYPE_ANY))
@@ -1238,6 +1239,47 @@ bool CvMilitaryAI::IsPlanMarching() const
 	if (pkStrike->GetPrereqAndTech() != NO_TECH && !GET_TEAM(m_pPlayer->getTeam()).GetTeamTechs()->HasTech((TechTypes)pkStrike->GetPrereqAndTech()))
 		return false;
 	return true;
+}
+
+/// ai/v2 lab (M3 iteration 30, logging only): the plan's army as IsPlanArmyReady counts it, every turn before the war
+/// (r29t3: on 7 of 25 maps the first attack starts at exactly turn 60, the turn the plan ends without the army ever ready)
+void CvMilitaryAI::LogPlanArmy() const
+{
+	if (!(GC.getLogging() && GC.getAILogging()))
+		return;
+	const SAIPlan* pPlan = GetActivePlan();
+	if (!pPlan || GetNumberCivsAtWarWith(false) > 0)
+		return;
+	int iMelee = 0, iRanged = 0, iSettlers = 0;
+	CountPlanArmy(NULL, false, iMelee, iRanged, iSettlers);
+	int iMeleeBuild = 0, iRangedBuild = 0, iSettlersBuild = 0;
+	CountPlanArmy(NULL, true, iMeleeBuild, iRangedBuild, iSettlersBuild);
+	int iWeakRanged = 0, iOutside = 0, iInArmy = 0, iExplore = 0, iHurt = 0;
+	int iLoop = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+	{
+		if (pLoopUnit->getDomainType() != DOMAIN_LAND || !pLoopUnit->IsCombatUnit() || pLoopUnit->getUnitInfo().GetDefaultUnitAIType() == UNITAI_EXPLORE)
+			continue;
+		if (pLoopUnit->plot()->getOwner() != m_pPlayer->GetID())
+			iOutside++;
+		if (pLoopUnit->getArmyID() != -1)
+			iInArmy++;
+		if (pLoopUnit->AI_getUnitAIType() == UNITAI_EXPLORE)
+			iExplore++;
+		if (pLoopUnit->getDamage() * 100 >= pLoopUnit->GetMaxHitPoints() * 30)
+			iHurt++;
+	}
+	int iAllRanged = 0;
+	for (CvUnit* pLoopUnit = m_pPlayer->firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = m_pPlayer->nextUnit(&iLoop))
+		if (pLoopUnit->getDomainType() == DOMAIN_LAND && pLoopUnit->IsCombatUnit() && pLoopUnit->getUnitInfo().GetRangedCombat() > 0 && pLoopUnit->getUnitInfo().GetDefaultUnitAIType() != UNITAI_EXPLORE)
+			iAllRanged++;
+	iWeakRanged = iAllRanged - iRanged;
+	CvString strPlayerName = m_pPlayer->getCivilizationShortDescription();
+	FILogFile* pLog = LOGFILEMGR.GetLog(GetLogFileName(strPlayerName), FILogFile::kDontTimeStamp);
+	pLog->Msg(CvString::format("%03d, %s, plan army: melee %d/%d (with production %d), strike ranged %d/%d (with production %d), weaker ranged %d, outside our land %d, in an army %d, explorers %d, hurt 30%%+ %d, cities %d, settlers %d, strike tech %d, gold %d, ready %d",
+		GC.getGame().getElapsedGameTurns(), strPlayerName.c_str(), iMelee, pPlan->iMelee, iMeleeBuild, iRanged, pPlan->iRanged, iRangedBuild,
+		iWeakRanged, iOutside, iInArmy, iExplore, iHurt, m_pPlayer->getNumCities(), iSettlers, IsPlanMarching() ? 1 : 0,
+		m_pPlayer->GetTreasury()->GetGold(), IsPlanArmyReady() ? 1 : 0).c_str());
 }
 
 int CvMilitaryAI::DoPlanUpgrades()
