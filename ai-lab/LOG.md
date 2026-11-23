@@ -2,7 +2,7 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 12:05 PM ET), implementer 10 (rewrite after every accepted or reverted iteration)
+## Current state (2026-11-23, 3:35 PM ET), implementer 10 (rewrite after every accepted or reverted iteration)
 
 - Implementer 10 started 8:36 AM Nov 23; implementer 9 archived; Review 2 told.
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
@@ -36,12 +36,10 @@ Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 - **Lab:** v24. `wait-for-results.sh 110 done` waits for done markers only. `05-l29` done (3 crashes, cause fixed); `06-l29b` (303 again, on the logging build); `09-i29` (it. 29 on `ab-d367ce4`; 07/08 withdrawn, builds never published).
 - **Next** (order: Review 2's suggestion of 7:55 AM Nov 23, sent under the user's go-ahead, **provisional**: the user can
   change it):
-  1. **The late start of the war** (user point 5, moved first). It. 29 (Archers walk home for the upgrade) reverted:
-     readiness came earlier but captures fell 7 -> 3. **Next look:** the gap between the plan's readiness count and what the
-     operation can recruit (garrison, healing, threatened units; 1515 gathered 23 turns), on tuning set 3 (`10-r29t3`).
-     Earlier notes: on the measuring maps the army is complete about t56
-     but the first war with a major comes about t68 (bar 41-50); it. 25 moved two wars to t92/t97 (2727, 5858); only
-     2 of 48 take a capital by t60. Find where the ready army waits (plan row end, approach, sneak-attack gates).
+  1. **The late start of the war** (user point 5, moved first). It. 29 reverted. It. 30 logging (`l30`) found the
+     plan's army 1-2 units short for 4-17 turns with 150-500 gold (a slow second city's Composite Bowman counted as
+     built). **It. 31 (buy the missing unit) running: `12-i31`, build `ab-7692063`.** Judge it on its LOG entry's
+     prediction. If it holds, the gap from ready to war (about 8 turns) is next.
   2. The plan's way out (user, point 3): back to the economy once the rush fails or succeeds; own iteration, with
      "state at turn 100 vs stock on the same map" tracked beside captures.
   3. Vary the neighbour (point 4): a lab-only setting for seat 1's civ chosen from the seed; mark all-Greece results.
@@ -116,6 +114,27 @@ Script: `ai-lab/runs/stages.py`.
 largest total in every group; the last plan upgrade comes late (101: first t35, last t59) and the ranged count only
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
+
+## 2026-11-23 M3 iteration 31: the plan buys the army unit it still lacks with spare gold (new AI)
+**Finding (`l30`, 21 games clean, done 3:20 PM; "plan army:" lines):** the army stands 1-2 units short of 6 melee +
+4 Composite Bowmen for many turns while gold piles up. Counting units in production as built, the army is "complete" but
+not ready for 4-17 turns on 16 of 21 maps (7979 16, 7171 17, 1313 15, 8181 11, 7676/8080/1818/606 10). Cause: the
+capital (`GetPlanBuild`, which counts what other cities build) stops making units because the small second city is
+building a Composite Bowman that takes 13-25 turns (7575 Tombouctu 25 turns; 8080 Gao then builds Granary, Water Mill);
+on 4 maps (101, 7070, 7272, 7575) production is simply short. Gold on hand meanwhile: 150-500 (8080 514, 8181 511 at
+t57). Unit supply blocks a unit only on 7979, 606, 1515 (late). Note: the line's "hurt 30%+" field is garbled (the log
+call formats twice), the fields after it are right.
+**Change (`7692063b3`, build `ab-7692063`):** `CvMilitaryAI::DoPlanPurchase`, called at the end of `DoPlanUpgrades`
+each turn: plan active, strike tech known, no war, army not ready -> buy one missing melee or ranged unit (the kind
+further behind, as `GetPlanBuild`), capital first, with gold above what the waiting upgrades need (weaker ranged whose
+upgrade reaches the strike unit count as ranged and keep their upgrade price). `PurchaseUnit` (stock path); skipped when
+unit investments are on. `GetPlanBuild`'s unit choice moved to `GetPlanBestUnits` (no behaviour change). New AI only.
+**Prediction (baseline = `l30`, same play as accepted):** on the 9 late maps (7070 7171 7272 7575 7676 7979 8080 8181
+8383; first attack before t60 on 0, captures 3) the army is ready before t58 on at least 6 and the first attack on a
+major starts before t60 on at least 4. Tuning seeds: first attack 3+ turns earlier on at least 3 of 101, 202, 303,
+1313, 1717. **Must not worsen:** captures of a major's city by t100 on the 12 tuning seeds at least 6 (baseline 7: 101,
+202, 303, 606, 1515, 1616, 1818); tuning set 3 captures not below 8 of 24 (r29t3: 9); no crash.
+Run `2026-11-23-12-i31` (36 games).
 
 ## 2026-11-23 M3 iteration 30: the plan's army never counts as ready before its end turn (logging first)
 Class (`r29t3_*`, tuning set 3 on `ab-7f79985` = accepted play, 16 of 25 read; and `i25s*`): the operation's gathering is
