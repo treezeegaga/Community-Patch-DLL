@@ -106,24 +106,6 @@ largest total in every group; the last plan upgrade comes late (101: first t35, 
 counts Composite Bowmen; (2) **the siege at the walls**: 7 of 18 Songhai games never get an enemy city under half in
 20-45 turns at its walls; once a city is under half it falls within 1 turn. Next iterations aim at (1), then (2).
 
-## 2026-11-23 M3 iteration 27: no healing bonus for a ranged unit near a city the siege estimate says can be taken (new AI)
-Class: TAKE sieges where the city is dented and heals back (9 of the 25 stalled wars on the measuring maps, it. 22 build).
-Diagnosis (seed 505, `lg505` on `ab-41e754e` = `ab-b8c9ffb` plus logging of the tactical simulation's picks): on t62-67
-the estimate says TAKE counting 4 Composite Bowmen (45 damage a turn); the city-attack simulation has 2 of them shoot
-the city (about 25 a turn, the city heals 20: 200 -> 185 -> back to 200) and picks HEAL for the damaged two (62 and
-71 hp) at distance 2-3, where they can't shoot. The free firing spots are on the far side (forest/hill, a 2-turn
-move); one bowman that walks there alone (1254, t65) is hit to 24 hp and leaves. Same in the lab copy `stall505b`
-(`lgst505b`, 2 of 3 taken): bowman picks HEAL 24, shoot the city 40.
-Cause: `ScorePlotForCombatUnitMove` gives a unit that ends its turn unmoved a bonus worth its heal rate, so a ranged
-unit with 60-70 hp prefers to stand and heal out of range over moving into a firing position.
-Change: for the new AI, a land ranged unit with at least half its hit points, within range + 2 of the simulation's
-target city, when the siege estimate for that city says TAKE, gets no heal bonus (the assignment stays FINISH; the
-unit still heals if it ends up not moving). New AI only.
-Predicted: `stall505b` x6 at least 4 captures (baseline on the same build x6 queued alongside; `lgst505b` 2 of 3,
-it. 26 4 of 6) with bowman HEAL picks within range + 2 of the city down by half; attackers lost not up by more
-than 1 a battle. 12 tuning seeds: no seed loses a capture; 505 takes St. Petersburg by turn 80 or the city drops
-below half. Guard sets: no scenario loses more than 1 in 6. Rule 3: staged in the lab first (stall505b).
-
 ## 2026-11-23 Measuring maps on the newest build (`00m-meas25`, `ab-b8c9ffb` = it. 26 + it. 25; user via Review 2, 12:30 PM Nov 22)
 Songhai new AI to turn 100 on seeds 1919-6666, map for map against `nx22N*` (it. 22). Stock not re-run.
 - Capture of a major's city by turn 100: 13 -> **16**; capital 7 -> 9; capital by turn 60: 1 -> 2 (1919: t61 -> t60).
