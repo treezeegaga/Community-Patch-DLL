@@ -2,8 +2,21 @@
 
 Newest first. Format and rules: `PLAN.md`, sections 7 and 10.
 
-## Current state (2026-11-23, 3:25 PM ET), implementer 10 (rewrite after every accepted or reverted iteration)
+## Current state: PAUSED until Thursday Nov 26 (user, via Review 2) (written 8:20 PM ET Nov 23, implementer 10)
 
+- **Paused** by the user's instruction of about 8:15 PM ET Nov 23 ("pause everything till Thursday"), relayed by Review 2.
+  Queue nothing, run no background wait; the pause overrides rule 12. Don't resume on your own on Thursday: wait for the
+  user or a relay from Review 2. On resuming, check context first and hand over if the plan's rule says so.
+- **Iteration 31 in testing, paused, undecided.** Build `ab-7692063` (commit `7692063b3`): the plan buys the army unit it
+  still lacks with spare gold. Prediction in its LOG entry (now to be read with the 36-map net rule of 1:00 PM). Run
+  `2026-11-23-12-i31`: **all 36 games have results** (12 tuning `i31s*`, 24 tuning set 3 `i31t3_*`); no launch was left to
+  withdraw. TREEDESKTOP claimed i31s606 again at 8:02 PM after BOX had finished it (8:06): a duplicate, ignore it. First
+  tally, not a decision (before = `l30s*` / `r29t3_*`): captures of a major's city by t100 15 -> 12 (gained 8181; lost
+  303, 1616, 7070, 7878); first attack on a major before t60 16 -> 19; wars with a major 30 -> 29, mean turn 66.9 -> 63.2.
+  It bought mostly Warriors (140 gold) and Spearmen. Decide on resuming, by the net rule.
+- **BOX**: its status hadn't updated from 4:00 PM to 8:06 PM ET (stuck on i31s606, then finished it). Not chased.
+- The table the user asked for (units each first attack set out with, maps its. 28/29 lost) is in the LOG entry above
+  iteration 31's: mostly not under strength; the losses came at the walls and on the march.
 - Implementer 10 started 8:36 AM Nov 23; implementer 9 archived; Review 2 told.
 - **Talk to the user in plain words**: "step 3: the AI builds that army in time" rather than "M3"; "the mod", not "the
   pack"; explain any term the first time. **Times in US Eastern, read from the clock** (`TZ=America/New_York date`),
