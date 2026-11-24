@@ -115,6 +115,16 @@ multiplayer smoke test on the two PCs, and installing the finished mod on both P
   morning of Nov 23 all the same. TREEDESKTOP carries the runs.
 - **Messages work both ways with implementers 9 and 10** (send_message), unlike with the first review session.
 
+## PAUSED until Thursday 2026-11-26 (user, 8:15 PM ET Nov 23)
+
+The user paused everything. Implementer 10 was told to withdraw the unstarted games of `2026-11-23-12-i31`, leave
+iteration 31 (the plan buys the army unit it still lacks with spare gold) undecided, mark the logbook PAUSED and
+stop without a wake-up. Nobody resumes on their own: wait for the user. On resuming, check that the logbook says
+PAUSED and the queue is empty, then relay "resume" to implementer 10 (it runs in default permission mode and was
+stuck on a permission prompt from 5:25 PM Nov 23; ask the user to switch it to Auto). Since Nov 23 afternoon,
+full-game changes are decided on 36 tuning maps (the 12 plus 7070-9393) by the net result (user's ruling via
+Review 2); the implementer's table of what each first attack set out with is in the LOG (Nov 23).
+
 ## Agreements with the user
 
 - **The review session speaks for the user** to the implementer, within what the plan allows (PLAN section 4). It
